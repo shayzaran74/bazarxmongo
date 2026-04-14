@@ -16,12 +16,11 @@ class LoginUserUseCase {
         if (!user) {
             return (0, shared_core_1.Err)(new Error('E-posta veya şifre hatalı.'));
         }
-        const props = user.props;
         // 2. Şifre doğrula
-        if (!props.passwordHash) {
+        if (!user.passwordHash) {
             return (0, shared_core_1.Err)(new Error('Bu hesap için şifre tanımlanmamış. Lütfen sosyal medya ile giriş yapın.'));
         }
-        const isPasswordValid = await this.hashingService.compare(input.password, props.passwordHash);
+        const isPasswordValid = await this.hashingService.compare(input.password, user.passwordHash);
         if (!isPasswordValid) {
             return (0, shared_core_1.Err)(new Error('E-posta veya şifre hatalı.'));
         }

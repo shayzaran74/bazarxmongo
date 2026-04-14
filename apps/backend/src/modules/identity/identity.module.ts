@@ -6,7 +6,8 @@ import { HashingService } from '@barterborsa/shared-security';
 import { 
   PrismaUserRepository, 
   RegisterUserUseCase, 
-  LoginUserUseCase 
+  LoginUserUseCase,
+  IUserRepository
 } from '@barterborsa/domain-identity';
 import { AuthController } from './auth.controller';
 
@@ -22,12 +23,12 @@ import { AuthController } from './auth.controller';
     },
     {
       provide: RegisterUserUseCase,
-      useFactory: (repo: any, hash: any) => new RegisterUserUseCase(repo, hash),
+      useFactory: (repo: IUserRepository, hash: HashingService) => new RegisterUserUseCase(repo, hash),
       inject: ['IUserRepository', HashingService],
     },
     {
       provide: LoginUserUseCase,
-      useFactory: (repo: any, hash: any) => new LoginUserUseCase(repo, hash),
+      useFactory: (repo: IUserRepository, hash: HashingService) => new LoginUserUseCase(repo, hash),
       inject: ['IUserRepository', HashingService],
     },
   ],

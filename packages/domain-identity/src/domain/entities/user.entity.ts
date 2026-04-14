@@ -60,7 +60,8 @@ export class User extends AggregateRoot<UserProps> {
   get phoneNumber(): string | undefined { return this.props.phoneNumber; }
   get firstName(): string | undefined { return this.props.firstName; }
   get lastName(): string | undefined { return this.props.lastName; }
-  get role(): string { return this.props.role; }
-  get status(): string { return this.props.status; }
-  get platform(): string { return this.props.platform; }
+  get role(): 'USER' | 'VENDOR' | 'ADMIN' | 'SUPER_ADMIN' { return this.props.role; }
+  get status(): 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING_VERIFICATION' { return this.props.status; }
+  get platform(): 'BAZARX' | 'BARTERBORSA' { return this.props.platform; }
+  get passwordHash(): string | undefined { return this.props.passwordHash; }
 }

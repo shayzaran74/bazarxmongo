@@ -19,14 +19,12 @@ export class LoginUserUseCase implements IUseCase<LoginUserInput, Result<User>> 
       return Err(new Error('E-posta veya şifre hatalı.'));
     }
 
-    const props = (user as any).props;
-
     // 2. Şifre doğrula
-    if (!props.passwordHash) {
+    if (!user.passwordHash) {
       return Err(new Error('Bu hesap için şifre tanımlanmamış. Lütfen sosyal medya ile giriş yapın.'));
     }
 
-    const isPasswordValid = await this.hashingService.compare(input.password, props.passwordHash);
+    const isPasswordValid = await this.hashingService.compare(input.password, user.passwordHash);
     if (!isPasswordValid) {
       return Err(new Error('E-posta veya şifre hatalı.'));
     }

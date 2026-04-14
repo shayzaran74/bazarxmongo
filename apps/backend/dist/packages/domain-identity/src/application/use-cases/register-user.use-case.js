@@ -12,7 +12,6 @@ class RegisterUserUseCase {
         this.hashingService = hashingService;
     }
     async execute(input) {
-        console.log('[USE-CASE] Registering user with input:', input);
         // 1. Email kontrolü
         const exists = await this.userRepository.exists(input.email);
         if (exists) {

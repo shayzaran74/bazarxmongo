@@ -50,8 +50,9 @@ export const useAuthStore = defineStore('auth', {
           return true;
         }
         return false;
-      } catch (err: any) {
-        this.error = err.data?.message || 'Kayıt sırasında hata oluştu.';
+      } catch (err: unknown) {
+        const error = err as { data?: { message?: string } };
+        this.error = error.data?.message || 'Kayıt sırasında hata oluştu.';
         return false;
       } finally {
         this.loading = false;
@@ -75,8 +76,9 @@ export const useAuthStore = defineStore('auth', {
           return true;
         }
         return false;
-      } catch (err: any) {
-        this.error = err.data?.message || 'Giriş sırasında hata oluştu.';
+      } catch (err: unknown) {
+        const error = err as { data?: { message?: string } };
+        this.error = error.data?.message || 'Giriş sırasında hata oluştu.';
         return false;
       } finally {
         this.loading = false;

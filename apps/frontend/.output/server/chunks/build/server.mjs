@@ -719,13 +719,13 @@ const _routes = [
     name: "profile",
     path: "/profile",
     meta: { "middleware": ["auth"] },
-    component: () => import('./profile-Bc0hytFO.mjs')
+    component: () => import('./profile-DwDlz649.mjs')
   },
   {
     name: "auth-login",
     path: "/auth/login",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./login-BPwdG3Sy.mjs')
+    component: () => import('./login-BAwpZyaz.mjs')
   },
   {
     name: "legal-kvkk",
@@ -741,7 +741,7 @@ const _routes = [
     name: "auth-register",
     path: "/auth/register",
     meta: __nuxt_page_meta || {},
-    component: () => import('./register-BpkBxS7_.mjs')
+    component: () => import('./register-DWNvosMx.mjs')
   },
   {
     name: "legal-privacy",
@@ -897,7 +897,7 @@ const globalMiddleware = [
   manifest_45route_45rule
 ];
 const namedMiddleware = {
-  auth: () => import('./auth-Ckz5r0Zv.mjs')
+  auth: () => import('./auth-Bk2-TZaO.mjs')
 };
 const plugin$1 = /* @__PURE__ */ defineNuxtPlugin({
   name: "nuxt:router",
@@ -7257,8 +7257,8 @@ const plugins = [
   i18n_DoUFXWV6LnxRosC_SK_Bj2CtWyhMaRdzR8GWTtTaSGc
 ];
 const layouts = {
-  auth: defineAsyncComponent(() => import('./auth-DqKy1RAw.mjs').then((m) => m.default || m)),
-  default: defineAsyncComponent(() => import('./default-CcnFQNKj.mjs').then((m) => m.default || m))
+  auth: defineAsyncComponent(() => import('./auth-ESQqosrl.mjs').then((m) => m.default || m)),
+  default: defineAsyncComponent(() => import('./default-B7MlT-qS.mjs').then((m) => m.default || m))
 };
 const routeRulesMatcher = _routeRulesMatcher;
 const LayoutLoader = defineComponent({

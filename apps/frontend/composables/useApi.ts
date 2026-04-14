@@ -11,20 +11,20 @@ export const useApi = () => {
 
   const $api = async <T>(
     path: string, 
-    options: any = {}
+    options: Record<string, unknown> = {}
   ): Promise<ApiResponse<T>> => {
     try {
       // Baştaki slash'ı silerek baseURL ile çakışmayı önle
       const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
       
       const response = await $fetch<ApiResponse<T>>(normalizedPath, {
-        baseURL: config.public.apiBase || 'http://localhost:3001/api/v1',
+        baseURL: config.public.apiBase,
         ...options,
       });
 
       return response;
-    } catch (error: any) {
-      console.error(`[API Error] ${path}:`, error.data || error.message);
+    } catch (error: unknown) {
+      console.error(`[API Error] ${path}:`, error);
       throw error;
     }
   };

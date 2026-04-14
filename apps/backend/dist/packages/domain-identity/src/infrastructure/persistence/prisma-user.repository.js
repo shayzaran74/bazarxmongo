@@ -60,20 +60,22 @@ class PrismaUserRepository {
         });
     }
     toDomain(record) {
+        // Record tipini açıkça tanımlayarak Prisma namespace hatalarını önlüyoruz
+        const userRecord = record;
         const userResult = user_entity_1.User.create({
-            email: record.email,
-            phoneNumber: record.phoneNumber,
-            passwordHash: record.password, // DB'deki 'password' alanı entity'de 'passwordHash'
-            role: record.role,
-            status: record.status,
-            platform: record.platform,
-            isEmailVerified: record.isEmailVerified,
-            googleId: record.googleId,
-            firstName: record.profile?.firstName,
-            lastName: record.profile?.lastName,
-            lastLoginAt: record.lastLoginAt,
-            lastSeenAt: record.lastSeenAt,
-        }, record.id);
+            email: userRecord.email,
+            phoneNumber: userRecord.phoneNumber || undefined,
+            passwordHash: userRecord.password || undefined,
+            role: userRecord.role,
+            status: userRecord.status,
+            platform: userRecord.platform,
+            isEmailVerified: userRecord.isEmailVerified,
+            googleId: userRecord.googleId || undefined,
+            firstName: userRecord.profile?.firstName || undefined,
+            lastName: userRecord.profile?.lastName || undefined,
+            lastLoginAt: userRecord.lastLoginAt || undefined,
+            lastSeenAt: userRecord.lastSeenAt || undefined,
+        }, userRecord.id);
         if (!userResult.success) {
             throw userResult.error;
         }
@@ -85,15 +87,15 @@ class PrismaUserRepository {
             id: user.id,
             email: user.email,
             phoneNumber: user.phoneNumber,
-            password: props.passwordHash, // Şemada 'password' olarak tanımlı
+            password: props.passwordHash,
             role: user.role,
             status: user.status,
             platform: user.platform,
             isEmailVerified: props.isEmailVerified,
             googleId: props.googleId,
             lastLoginAt: props.lastLoginAt,
-            firstName: user.firstName, // Mapper tarafından UserProfile'a ayrıştırılacak
-            lastName: user.lastName, // Mapper tarafından UserProfile'a ayrıştırılacak
+            firstName: user.firstName,
+            lastName: user.lastName,
         };
     }
 }

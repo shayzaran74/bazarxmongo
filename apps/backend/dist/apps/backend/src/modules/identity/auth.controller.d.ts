@@ -10,7 +10,7 @@ export declare class AuthController {
         data: {
             id: string;
             email: string;
-            role: string;
+            role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
             firstName: string | undefined;
             lastName: string | undefined;
         };
@@ -21,7 +21,7 @@ export declare class AuthController {
         data: {
             id: string;
             email: string;
-            role: string;
+            role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
             firstName: string | undefined;
             lastName: string | undefined;
         };

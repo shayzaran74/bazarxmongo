@@ -13,7 +13,6 @@ export class RegisterUserUseCase implements IUseCase<RegisterUserInput, Result<U
   ) {}
 
   async execute(input: RegisterUserInput): Promise<Result<User>> {
-    console.log('[USE-CASE] Registering user with input:', input);
     
     // 1. Email kontrolü
     const exists = await this.userRepository.exists(input.email);
@@ -31,7 +30,7 @@ export class RegisterUserUseCase implements IUseCase<RegisterUserInput, Result<U
       firstName: input.firstName,
       lastName: input.lastName,
       phoneNumber: input.phoneNumber,
-      platform: (input as any).platform || 'BAZARX',
+      platform: input.platform || 'BAZARX',
       role: 'USER',
       status: 'ACTIVE', // Test aşamasında hızlı ilerlemek için ACTIVE yapalım
       isEmailVerified: false,

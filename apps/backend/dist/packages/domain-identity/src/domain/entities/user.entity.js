@@ -39,6 +39,7 @@ class User extends shared_core_1.AggregateRoot {
     get role() { return this.props.role; }
     get status() { return this.props.status; }
     get platform() { return this.props.platform; }
+    get passwordHash() { return this.props.passwordHash; }
 }
 exports.User = User;
 //# sourceMappingURL=user.entity.js.map

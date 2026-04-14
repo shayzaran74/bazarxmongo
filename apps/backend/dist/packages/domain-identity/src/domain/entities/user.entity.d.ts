@@ -26,7 +26,8 @@ export declare class User extends AggregateRoot<UserProps> {
     get phoneNumber(): string | undefined;
     get firstName(): string | undefined;
     get lastName(): string | undefined;
-    get role(): string;
-    get status(): string;
-    get platform(): string;
+    get role(): 'USER' | 'VENDOR' | 'ADMIN' | 'SUPER_ADMIN';
+    get status(): 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING_VERIFICATION';
+    get platform(): 'BAZARX' | 'BARTERBORSA';
+    get passwordHash(): string | undefined;
 }
