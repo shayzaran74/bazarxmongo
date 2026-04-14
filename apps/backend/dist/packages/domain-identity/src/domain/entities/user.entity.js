@@ -8,27 +8,37 @@ class User extends shared_core_1.AggregateRoot {
         super(props, id);
     }
     static create(props, id) {
-        // Invariant kontrolleri burada yapılabilir (Örn: email formatı)
+        // Temel validasyonlar
         if (!props.email.includes('@')) {
             return (0, shared_core_1.Err)(new Error('Geçersiz e-posta adresi.'));
         }
         const user = new User({
             ...props,
-            status: props.status ?? 'INACTIVE',
+            status: props.status || 'ACTIVE',
+            platform: props.platform || 'BAZARX',
             isEmailVerified: props.isEmailVerified ?? false,
         }, id);
         return (0, shared_core_1.Ok)(user);
     }
-    // Domain Logic: Şifre değiştirme, profil güncelleme vb.
+    // Domain Logic
     updateProfile(firstName, lastName) {
         this.props.firstName = firstName;
         this.props.lastName = lastName;
-        // this._updatedAt handle edilebilir (shared-core'da setter yoksa eklenmeli)
+    }
+    verifyEmail() {
+        this.props.isEmailVerified = true;
+        this.props.status = 'ACTIVE';
+    }
+    updateLastLogin() {
+        this.props.lastLoginAt = new Date();
     }
     get email() { return this.props.email; }
+    get phoneNumber() { return this.props.phoneNumber; }
     get firstName() { return this.props.firstName; }
     get lastName() { return this.props.lastName; }
     get role() { return this.props.role; }
+    get status() { return this.props.status; }
+    get platform() { return this.props.platform; }
 }
 exports.User = User;
 //# sourceMappingURL=user.entity.js.map

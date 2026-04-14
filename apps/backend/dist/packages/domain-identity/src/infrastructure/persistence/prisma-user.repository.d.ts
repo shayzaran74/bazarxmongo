@@ -1,15 +1,16 @@
-import { PrismaService, BasePrismaRepository } from '@barterborsa/shared-persistence';
 import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
-import { User as PrismaUserModel } from '@prisma/client';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { Optional } from '@barterborsa/shared-core';
-export declare class PrismaUserRepository extends BasePrismaRepository<User, PrismaUserModel> implements IUserRepository {
-    protected readonly prisma: PrismaService;
+export declare class PrismaUserRepository implements IUserRepository {
+    private readonly prisma;
     constructor(prisma: PrismaService);
-    findById(id: string): Promise<User | null>;
+    findById(id: string): Promise<Optional<User>>;
+    findAll(): Promise<User[]>;
     findByEmail(email: string): Promise<Optional<User>>;
     exists(email: string): Promise<boolean>;
     save(user: User): Promise<void>;
-    protected toDomain(record: PrismaUserModel): User;
-    protected toPersistence(entity: User): any;
+    delete(id: string): Promise<void>;
+    protected toDomain(record: any): User;
+    protected toPersistence(user: User): any;
 }

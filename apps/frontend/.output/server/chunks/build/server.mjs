@@ -1,4 +1,4 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { toRef, isRef, toRaw, computed, isReactive, hasInjectionContext, getCurrentInstance, inject, ref, reactive, effectScope, shallowRef, getCurrentScope, onScopeDispose, watch, nextTick, toRefs, markRaw, defineComponent, createElementBlock, provide, cloneVNode, h, defineAsyncComponent, unref, shallowReactive, Suspense, Fragment, createApp, createVNode, Text, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, mergeProps, withCtx, isReadonly, useSSRContext, isShallow } from 'vue';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { getCurrentInstance, toRef, isRef, toRaw, computed, isReactive, hasInjectionContext, inject, shallowRef, ref, reactive, effectScope, getCurrentScope, onScopeDispose, watch, nextTick, toRefs, markRaw, defineComponent, createElementBlock, provide, cloneVNode, h, defineAsyncComponent, unref, shallowReactive, Suspense, Fragment, createApp, createVNode, Text, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, mergeProps, withCtx, isReadonly, useSSRContext, isShallow } from 'vue';
 import { s as sanitizeStatusCode, i as getContext, $ as $fetch, k as defu, l as createHooks, c as createError$1, m as executeAsync, n as getRequestHeaders, o as klona, p as parse$1, q as getRequestHeader, r as destr, t as isEqual$1, v as setCookie, w as getCookie, x as deleteCookie } from '../nitro/nitro.mjs';
 import { b as baseURL } from '../routes/renderer.mjs';
 import { useRoute as useRoute$1, RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
@@ -681,21 +681,77 @@ const __nuxt_page_meta = {
 };
 const _routes = [
   {
+    name: "faq",
+    path: "/faq",
+    component: () => import('./faq-DrEQ1hiS.mjs')
+  },
+  {
+    name: "cart",
+    path: "/cart",
+    component: () => import('./cart-B25Tb5me.mjs')
+  },
+  {
+    name: "help",
+    path: "/help",
+    component: () => import('./help-BgPlgAE-.mjs')
+  },
+  {
     name: "index",
     path: "/",
-    component: () => import('./index-DyToaWim.mjs')
+    component: () => import('./index-05Vif_mN.mjs')
+  },
+  {
+    name: "barter",
+    path: "/barter",
+    component: () => import('./barter-ByY1sFKH.mjs')
+  },
+  {
+    name: "contact",
+    path: "/contact",
+    component: () => import('./contact-u72_OA3x.mjs')
+  },
+  {
+    name: "premium",
+    path: "/premium",
+    component: () => import('./premium-mmzCnHbo.mjs')
+  },
+  {
+    name: "profile",
+    path: "/profile",
+    meta: { "middleware": ["auth"] },
+    component: () => import('./profile-Bc0hytFO.mjs')
   },
   {
     name: "auth-login",
     path: "/auth/login",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./login-BnNiReQl.mjs')
+    component: () => import('./login-BPwdG3Sy.mjs')
+  },
+  {
+    name: "legal-kvkk",
+    path: "/legal/kvkk",
+    component: () => import('./kvkk-Do6mw6uI.mjs')
+  },
+  {
+    name: "legal-terms",
+    path: "/legal/terms",
+    component: () => import('./terms-C1kWGO1s.mjs')
   },
   {
     name: "auth-register",
     path: "/auth/register",
     meta: __nuxt_page_meta || {},
-    component: () => import('./register-CLAHo4e5.mjs')
+    component: () => import('./register-BpkBxS7_.mjs')
+  },
+  {
+    name: "legal-privacy",
+    path: "/legal/privacy",
+    component: () => import('./privacy-BBfdn5S8.mjs')
+  },
+  {
+    name: "products",
+    path: "/products",
+    component: () => import('./index-DPFjtSa2.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -840,7 +896,9 @@ const globalMiddleware = [
   validate,
   manifest_45route_45rule
 ];
-const namedMiddleware = {};
+const namedMiddleware = {
+  auth: () => import('./auth-Ckz5r0Zv.mjs')
+};
 const plugin$1 = /* @__PURE__ */ defineNuxtPlugin({
   name: "nuxt:router",
   enforce: "pre",
@@ -1377,9 +1435,12 @@ function defineStore(idOrOptions, setup, setupOptions) {
   let id;
   let options;
   const isSetupStore = typeof setup === "function";
-  {
+  if (typeof idOrOptions === "string") {
     id = idOrOptions;
     options = isSetupStore ? setupOptions : setup;
+  } else {
+    options = idOrOptions;
+    id = idOrOptions.id;
   }
   function useStore(pinia, hot) {
     const hasContext = hasInjectionContext();
@@ -1587,8 +1648,8 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
     };
   }
 });
-const LazyIcon = defineAsyncComponent(() => import('./Icon-D7oPKiLh.mjs').then((r) => r["default"] || r.default || r));
-const LazyIconCSS = defineAsyncComponent(() => import('./IconCSS-BQYuap3Q.mjs').then((r) => r["default"] || r.default || r));
+const LazyIcon = defineAsyncComponent(() => import('./Icon-D5PWnCnx.mjs').then((r) => r["default"] || r.default || r));
+const LazyIconCSS = defineAsyncComponent(() => import('./IconCSS-BzW5Z3ER.mjs').then((r) => r["default"] || r.default || r));
 const lazyGlobalComponents = [
   ["Icon", LazyIcon],
   ["IconCSS", LazyIconCSS]
@@ -1719,7 +1780,7 @@ const localeCodes = [
 ];
 const localeLoaders = {
   "tr": [{ key: "../locales/tr.json", load: () => import(
-    './tr-BLkQtybA.mjs'
+    './tr-B-qoBa4b.mjs'
     /* webpackChunkName: "locale__Users_macbook_Desktop_bazarx_apps_frontend_locales_tr_json" */
   ), cache: true }]
 };
@@ -7196,8 +7257,8 @@ const plugins = [
   i18n_DoUFXWV6LnxRosC_SK_Bj2CtWyhMaRdzR8GWTtTaSGc
 ];
 const layouts = {
-  auth: defineAsyncComponent(() => import('./auth-BFSAGnvC.mjs').then((m) => m.default || m)),
-  default: defineAsyncComponent(() => import('./default-j9a_ndZ8.mjs').then((m) => m.default || m))
+  auth: defineAsyncComponent(() => import('./auth-DqKy1RAw.mjs').then((m) => m.default || m)),
+  default: defineAsyncComponent(() => import('./default-CcnFQNKj.mjs').then((m) => m.default || m))
 };
 const routeRulesMatcher = _routeRulesMatcher;
 const LayoutLoader = defineComponent({
@@ -7621,7 +7682,7 @@ const _sfc_main$1 = {
     const statusText = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import('./error-404-BlG6ybPU.mjs'));
+    const _Error404 = defineAsyncComponent(() => import('./error-404-Cl0Z21qf.mjs'));
     const _Error = defineAsyncComponent(() => import('./error-500-CXeDRz8j.mjs'));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
@@ -7703,5 +7764,5 @@ let entry;
 }
 const entry_default = ((ssrContext) => entry(ssrContext));
 
-export { _export_sfc as _, useRouter as a, useNuxtApp as b, useState as c, useRuntimeConfig as d, entry_default as default, defineStore as e, encodeRoutePath as f, withoutTrailingSlash as g, hasProtocol as h, nuxtLinkDefaults as i, joinURL as j, navigateTo as n, parseQuery as p, resolveRouteObject as r, storeToRefs as s, tryUseNuxtApp as t, useI18n as u, withTrailingSlash as w };
+export { _export_sfc as _, useI18n as a, useRouter as b, useNuxtApp as c, defineNuxtRouteMiddleware as d, entry_default as default, encodeRoutePath as e, withoutTrailingSlash as f, nuxtLinkDefaults as g, hasProtocol as h, useState as i, joinURL as j, defineStore as k, navigateTo as n, parseQuery as p, resolveRouteObject as r, storeToRefs as s, tryUseNuxtApp as t, useRuntimeConfig as u, withTrailingSlash as w };
 //# sourceMappingURL=server.mjs.map

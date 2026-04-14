@@ -13,7 +13,7 @@ class RegisterUserUseCase {
     }
     async execute(input) {
         console.log('[USE-CASE] Registering user with input:', input);
-        // 1. Email kontrolü (logic barterborsa'dan)
+        // 1. Email kontrolü
         const exists = await this.userRepository.exists(input.email);
         if (exists) {
             return (0, shared_core_1.Err)(new Error('Bu e-posta adresi zaten kullanımda.'));
@@ -26,8 +26,10 @@ class RegisterUserUseCase {
             passwordHash,
             firstName: input.firstName,
             lastName: input.lastName,
+            phoneNumber: input.phoneNumber,
+            platform: input.platform || 'BAZARX',
             role: 'USER',
-            status: 'INACTIVE',
+            status: 'ACTIVE', // Test aşamasında hızlı ilerlemek için ACTIVE yapalım
             isEmailVerified: false,
         };
         const userResult = user_entity_1.User.create(userProps);

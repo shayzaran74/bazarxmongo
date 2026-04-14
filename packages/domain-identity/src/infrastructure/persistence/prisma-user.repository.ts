@@ -1,30 +1,32 @@
 // packages/domain-identity/src/infrastructure/persistence/prisma-user.repository.ts
 
-import { PrismaService, BasePrismaRepository } from '@barterborsa/shared-persistence';
-import { User, UserProps } from '../../domain/entities/user.entity';
+import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
-import { User as PrismaUserModel } from '@prisma/client';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { Optional } from '@barterborsa/shared-core';
 
-export class PrismaUserRepository 
-  extends BasePrismaRepository<User, PrismaUserModel> 
-  implements IUserRepository 
-{
-  constructor(protected override readonly prisma: PrismaService) {
-    super(prisma, 'user');
-  }
+export class PrismaUserRepository implements IUserRepository {
+  constructor(private readonly prisma: PrismaService) {}
 
-  // BasePrismaRepository ile uyumlu dönüş tipi: User | null
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<Optional<User>> {
     const record = await (this.prisma as any).user.findUnique({
       where: { id },
+      include: { profile: true },
     });
     return record ? this.toDomain(record) : null;
+  }
+
+  async findAll(): Promise<User[]> {
+    const records = await (this.prisma as any).user.findMany({
+      include: { profile: true },
+    });
+    return records.map((record: any) => this.toDomain(record));
   }
 
   async findByEmail(email: string): Promise<Optional<User>> {
     const record = await (this.prisma as any).user.findUnique({
       where: { email },
+      include: { profile: true },
     });
     return record ? this.toDomain(record) : null;
   }
@@ -38,23 +40,47 @@ export class PrismaUserRepository
 
   async save(user: User): Promise<void> {
     const data = this.toPersistence(user);
-    console.log('[REPO] Saving user data:', data);
-    await (this.prisma as any).user.upsert({
-      where: { id: user.id },
-      update: data,
-      create: data,
+    const { firstName, lastName, ...userData } = data;
+
+    await (this.prisma as any).$transaction(async (tx: any) => {
+      // 1. Ana kullanıcı tablosunu güncelle/oluştur
+      await tx.user.upsert({
+        where: { id: user.id },
+        update: userData,
+        create: userData,
+      });
+
+      // 2. Profil tablosunu güncelle/oluştur
+      if (firstName || lastName) {
+        await tx.userProfile.upsert({
+          where: { userId: user.id },
+          update: { firstName, lastName },
+          create: { userId: user.id, firstName, lastName },
+        });
+      }
     });
   }
 
-  protected toDomain(record: PrismaUserModel): User {
+  async delete(id: string): Promise<void> {
+    await (this.prisma as any).user.delete({
+      where: { id },
+    });
+  }
+
+  protected toDomain(record: any): User {
     const userResult = User.create({
       email: record.email,
-      passwordHash: record.passwordHash,
-      firstName: (record as any).firstName || undefined,
-      lastName: (record as any).lastName || undefined,
+      phoneNumber: record.phoneNumber,
+      passwordHash: record.password, // DB'deki 'password' alanı entity'de 'passwordHash'
       role: record.role as any,
       status: record.status as any,
+      platform: record.platform as any,
       isEmailVerified: record.isEmailVerified,
+      googleId: record.googleId,
+      firstName: record.profile?.firstName,
+      lastName: record.profile?.lastName,
+      lastLoginAt: record.lastLoginAt,
+      lastSeenAt: record.lastSeenAt,
     }, record.id);
 
     if (!userResult.success) {
@@ -64,18 +90,21 @@ export class PrismaUserRepository
     return userResult.data;
   }
 
-  protected toPersistence(entity: User): any {
-    const props = (entity as any).props as UserProps;
+  protected toPersistence(user: User): any {
+    const props = (user as any).props;
     return {
-      id: entity.id,
-      email: props.email,
-      passwordHash: props.passwordHash,
-      firstName: props.firstName,
-      lastName: props.lastName,
-      role: props.role,
-      status: props.status,
+      id: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      password: props.passwordHash, // Şemada 'password' olarak tanımlı
+      role: user.role,
+      status: user.status,
+      platform: user.platform,
       isEmailVerified: props.isEmailVerified,
-      version: entity.version,
+      googleId: props.googleId,
+      lastLoginAt: props.lastLoginAt,
+      firstName: user.firstName, // Mapper tarafından UserProfile'a ayrıştırılacak
+      lastName: user.lastName,   // Mapper tarafından UserProfile'a ayrıştırılacak
     };
   }
 }

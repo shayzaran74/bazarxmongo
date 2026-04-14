@@ -10,13 +10,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegisterUserInput = void 0;
+exports.RegisterUserInput = exports.Platform = void 0;
 const class_validator_1 = require("class-validator");
+var Platform;
+(function (Platform) {
+    Platform["BAZARX"] = "BAZARX";
+    Platform["BARTERBORSA"] = "BARTERBORSA";
+})(Platform || (exports.Platform = Platform = {}));
 class RegisterUserInput {
     email;
     password;
     firstName;
     lastName;
+    phoneNumber;
+    platform;
 }
 exports.RegisterUserInput = RegisterUserInput;
 __decorate([
@@ -38,4 +45,14 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RegisterUserInput.prototype, "lastName", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RegisterUserInput.prototype, "phoneNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(Platform),
+    __metadata("design:type", String)
+], RegisterUserInput.prototype, "platform", void 0);
 //# sourceMappingURL=register-user.input.js.map

@@ -14,7 +14,8 @@ export class RegisterUserUseCase implements IUseCase<RegisterUserInput, Result<U
 
   async execute(input: RegisterUserInput): Promise<Result<User>> {
     console.log('[USE-CASE] Registering user with input:', input);
-    // 1. Email kontrolü (logic barterborsa'dan)
+    
+    // 1. Email kontrolü
     const exists = await this.userRepository.exists(input.email);
     if (exists) {
       return Err(new Error('Bu e-posta adresi zaten kullanımda.'));
@@ -29,8 +30,10 @@ export class RegisterUserUseCase implements IUseCase<RegisterUserInput, Result<U
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
+      phoneNumber: input.phoneNumber,
+      platform: (input as any).platform || 'BAZARX',
       role: 'USER',
-      status: 'INACTIVE',
+      status: 'ACTIVE', // Test aşamasında hızlı ilerlemek için ACTIVE yapalım
       isEmailVerified: false,
     };
 

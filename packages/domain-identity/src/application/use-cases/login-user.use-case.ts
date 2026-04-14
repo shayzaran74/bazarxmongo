@@ -19,14 +19,20 @@ export class LoginUserUseCase implements IUseCase<LoginUserInput, Result<User>> 
       return Err(new Error('E-posta veya şifre hatalı.'));
     }
 
-    // 2. Şifre doğrula (logic barterborsa'dan)
-    const isPasswordValid = await this.hashingService.compare(input.password, user['props'].passwordHash);
+    const props = (user as any).props;
+
+    // 2. Şifre doğrula
+    if (!props.passwordHash) {
+      return Err(new Error('Bu hesap için şifre tanımlanmamış. Lütfen sosyal medya ile giriş yapın.'));
+    }
+
+    const isPasswordValid = await this.hashingService.compare(input.password, props.passwordHash);
     if (!isPasswordValid) {
       return Err(new Error('E-posta veya şifre hatalı.'));
     }
 
     // 3. Durum kontrolü
-    if (user['props'].status === 'SUSPENDED') {
+    if (user.status === 'SUSPENDED') {
       return Err(new Error('Hesabınız askıya alınmıştır.'));
     }
 

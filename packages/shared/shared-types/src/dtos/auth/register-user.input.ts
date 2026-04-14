@@ -1,6 +1,11 @@
 // packages/shared/shared-types/src/dtos/auth/register-user.input.ts
 
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
+
+export enum Platform {
+  BAZARX = 'BAZARX',
+  BARTERBORSA = 'BARTERBORSA'
+}
 
 export class RegisterUserInput {
   @IsEmail({}, { message: 'Geçersiz e-posta adresi.' })
@@ -17,4 +22,12 @@ export class RegisterUserInput {
   @IsOptional()
   @IsString()
   lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @IsOptional()
+  @IsEnum(Platform)
+  platform?: Platform;
 }
