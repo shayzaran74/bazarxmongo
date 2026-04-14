@@ -1,16 +1,22 @@
 // apps/backend/src/modules/identity/auth.controller.ts
 
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, Get, UseGuards, Req } from '@nestjs/common';
 import { RegisterUserInput, LoginUserInput } from '@barterborsa/shared-types';
-import { RegisterUserUseCase, LoginUserUseCase } from '@barterborsa/domain-identity';
+import { RegisterUserUseCase } from '@barterborsa/domain-identity';
+import { AuthService } from './infrastructure/auth/auth.service';
+import { Public } from '@barterborsa/shared-security';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly registerUseCase: RegisterUserUseCase,
-    private readonly loginUseCase: LoginUserUseCase
+    private readonly authService: AuthService
   ) {}
 
+  /**
+   * Yeni kullanıcı kaydı.
+   */
+  @Public()
   @Post('register')
   async register(@Body() input: RegisterUserInput) {
     const result = await this.registerUseCase.execute(input);
@@ -26,30 +32,34 @@ export class AuthController {
         id: result.data.id,
         email: result.data.email,
         role: result.data.role,
-        firstName: result.data.firstName,
-        lastName: result.data.lastName,
       },
     };
   }
 
+  /**
+   * Standart giriş (E-posta + Şifre).
+   * Başarılı ise Access ve Refresh token döner.
+   */
+  @Public()
   @Post('login')
   async login(@Body() input: LoginUserInput) {
-    const result = await this.loginUseCase.execute(input);
-
-    if (!result.success) {
-      throw new HttpException(result.error.message, HttpStatus.UNAUTHORIZED);
-    }
+    const authData = await this.authService.login(input);
 
     return {
       success: true,
       message: 'Giriş başarılı.',
-      data: {
-        id: result.data.id,
-        email: result.data.email,
-        role: result.data.role,
-        firstName: result.data.firstName,
-        lastName: result.data.lastName,
-      },
+      data: authData,
+    };
+  }
+
+  /**
+   * Çıkış işlemi (Blacklist kontrolü vb. burada tetiklenebilir).
+   */
+  @Post('logout')
+  async logout() {
+    return {
+      success: true,
+      message: 'Çıkış yapıldı.',
     };
   }
 }

@@ -5,6 +5,7 @@ const core_1 = require("@nestjs/core");
 const platform_fastify_1 = require("@nestjs/platform-fastify");
 const common_1 = require("@nestjs/common");
 const app_module_1 = require("./app.module");
+const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 async function bootstrap() {
     const logger = new common_1.Logger('Bootstrap');
     const app = await core_1.NestFactory.create(app_module_1.AppModule, new platform_fastify_1.FastifyAdapter());
@@ -21,6 +22,8 @@ async function bootstrap() {
         transform: true,
         forbidNonWhitelisted: true,
     }));
+    // Global Exception Filter: Tüm 500 hatalarını detaylı loglamak için
+    app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
     const port = process.env.BACKEND_PORT || 3001;
     await app.listen(port, '0.0.0.0');
     logger.log(`Backend ${port} portunda çalışmaya başladı.`);

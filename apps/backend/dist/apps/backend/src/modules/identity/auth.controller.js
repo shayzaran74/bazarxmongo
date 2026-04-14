@@ -17,13 +17,18 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const shared_types_1 = require("@barterborsa/shared-types");
 const domain_identity_1 = require("@barterborsa/domain-identity");
+const auth_service_1 = require("./infrastructure/auth/auth.service");
+const shared_security_1 = require("@barterborsa/shared-security");
 let AuthController = class AuthController {
     registerUseCase;
-    loginUseCase;
-    constructor(registerUseCase, loginUseCase) {
+    authService;
+    constructor(registerUseCase, authService) {
         this.registerUseCase = registerUseCase;
-        this.loginUseCase = loginUseCase;
+        this.authService = authService;
     }
+    /**
+     * Yeni kullanıcı kaydı.
+     */
     async register(input) {
         const result = await this.registerUseCase.execute(input);
         if (!result.success) {
@@ -36,31 +41,34 @@ let AuthController = class AuthController {
                 id: result.data.id,
                 email: result.data.email,
                 role: result.data.role,
-                firstName: result.data.firstName,
-                lastName: result.data.lastName,
             },
         };
     }
+    /**
+     * Standart giriş (E-posta + Şifre).
+     * Başarılı ise Access ve Refresh token döner.
+     */
     async login(input) {
-        const result = await this.loginUseCase.execute(input);
-        if (!result.success) {
-            throw new common_1.HttpException(result.error.message, common_1.HttpStatus.UNAUTHORIZED);
-        }
+        const authData = await this.authService.login(input);
         return {
             success: true,
             message: 'Giriş başarılı.',
-            data: {
-                id: result.data.id,
-                email: result.data.email,
-                role: result.data.role,
-                firstName: result.data.firstName,
-                lastName: result.data.lastName,
-            },
+            data: authData,
+        };
+    }
+    /**
+     * Çıkış işlemi (Blacklist kontrolü vb. burada tetiklenebilir).
+     */
+    async logout() {
+        return {
+            success: true,
+            message: 'Çıkış yapıldı.',
         };
     }
 };
 exports.AuthController = AuthController;
 __decorate([
+    (0, shared_security_1.Public)(),
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -68,15 +76,22 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
+    (0, shared_security_1.Public)(),
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [shared_types_1.LoginUserInput]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [domain_identity_1.RegisterUserUseCase,
-        domain_identity_1.LoginUserUseCase])
+        auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

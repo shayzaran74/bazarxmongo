@@ -1,14 +1,17 @@
 // apps/frontend/middleware/auth.ts
 
+/**
+ * Giriş yapılmamışsa kullanıcıyı login sayfasına yönlendiren middleware.
+ * SSR-safe: Sunucu tarafında çerezleri kontrol eder.
+ */
 export default defineNuxtRouteMiddleware((to, from) => {
-  const { isAuthenticated } = useAuth();
-
-  /**
-   * Eğer kullanıcı giriş yapmamışsa ve korumalı bir sayfaya (auth middleware içeren)
-   * gitmeye çalışıyorsa, onu giriş sayfasına yönlendirir.
-   */
-  if (!isAuthenticated.value) {
-    // Giriş yapıldıktan sonra dönülecek sayfayı query parametresi olarak ekleyebiliriz
-    return navigateTo('/auth/login');
+  const authStore = useAuthStore();
+  
+  // Eğer kullanıcı giriş yapmamışsa
+  if (!authStore.isAuthenticated) {
+    // Özel durumlar ekleyebilirsiniz (örneğin ana sayfaya gitmek serbestse)
+    if (to.path !== '/auth/login' && to.path !== '/auth/register') {
+      return navigateTo('/auth/login');
+    }
   }
 });

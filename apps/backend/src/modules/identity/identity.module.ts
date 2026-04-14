@@ -2,7 +2,11 @@
 
 import { Module } from '@nestjs/common';
 import { PrismaModule, PrismaService } from '@barterborsa/shared-persistence';
-import { HashingService } from '@barterborsa/shared-security';
+import { 
+  SharedSecurityModule, 
+  HashingService, 
+  GoogleOAuthStrategy 
+} from '@barterborsa/shared-security';
 import { 
   PrismaUserRepository, 
   RegisterUserUseCase, 
@@ -10,12 +14,25 @@ import {
   IUserRepository
 } from '@barterborsa/domain-identity';
 import { AuthController } from './auth.controller';
+import { GoogleOAuthController } from './google-oauth.controller';
+import { AuthService } from './infrastructure/auth/auth.service';
+import { TokenService } from './infrastructure/auth/token.service';
+import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [AuthController],
+  imports: [
+    SharedSecurityModule,
+    PrismaModule,
+  ],
+  controllers: [
+    AuthController,
+    GoogleOAuthController,
+  ],
   providers: [
-    HashingService,
+    AuthService,
+    TokenService,
+    GoogleAuthGuard,
+    GoogleOAuthStrategy,
     {
       provide: 'IUserRepository',
       useFactory: (prisma: PrismaService) => new PrismaUserRepository(prisma),
@@ -32,6 +49,10 @@ import { AuthController } from './auth.controller';
       inject: ['IUserRepository', HashingService],
     },
   ],
-  exports: [RegisterUserUseCase, LoginUserUseCase],
+  exports: [AuthService, TokenService, RegisterUserUseCase],
 })
-export class IdentityModule {}
+export class IdentityModule {
+  constructor(private readonly googleStrategy: GoogleOAuthStrategy) {
+    // Strateji başlatıldı.
+  }
+}

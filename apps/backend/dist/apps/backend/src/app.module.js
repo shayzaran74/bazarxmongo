@@ -10,7 +10,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const core_1 = require("@nestjs/core");
 const identity_module_1 = require("./modules/identity/identity.module");
+const shared_security_1 = require("@barterborsa/shared-security");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -19,9 +21,16 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '.env',
+                envFilePath: '../../.env',
             }),
+            shared_security_1.SharedSecurityModule, // Global güvenlik altyapısı
             identity_module_1.IdentityModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: shared_security_1.JwtAuthGuard, // Tüm uygulamayı varsayılan olarak kilitle
+            },
         ],
     })
 ], AppModule);

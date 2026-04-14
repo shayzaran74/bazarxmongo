@@ -13,3 +13,5 @@ Bu değişikliklerin veritabanınıza yansıması için terminalinizde şu komut
 bash
 cd apps/backend
 npx prisma db push
+
+

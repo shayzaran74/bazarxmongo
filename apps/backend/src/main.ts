@@ -7,6 +7,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -30,6 +31,9 @@ async function bootstrap() {
     transform: true,
     forbidNonWhitelisted: true,
   }));
+
+  // Global Exception Filter: Tüm 500 hatalarını detaylı loglamak için
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   const port = process.env.BACKEND_PORT || 3001;
   await app.listen(port, '0.0.0.0');

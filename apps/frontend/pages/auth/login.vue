@@ -141,16 +141,16 @@ const handleLogin = async () => {
     if (success) {
       await router.push('/');
     }
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (err: unknown) {
+    // Hata durumunda store'daki error state'i UI'da gösterilecek
   } finally {
     loading.value = false;
   }
 };
 
 const handleGoogleLogin = () => {
-  // Config'den backend URL'i alıp redirect yapacak
   const config = useRuntimeConfig();
-  window.location.href = `${config.public.apiBase}/api/v1/auth/google`;
+  // Backend'deki Google Auth endpoint'ine yönlendir
+  window.location.href = `${config.public.apiBase}/auth/google`;
 };
 </script>

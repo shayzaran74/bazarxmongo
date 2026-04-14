@@ -1,5 +1,5 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { getCurrentInstance, toRef, isRef, toRaw, computed, isReactive, hasInjectionContext, inject, shallowRef, ref, reactive, effectScope, getCurrentScope, onScopeDispose, watch, nextTick, toRefs, markRaw, defineComponent, createElementBlock, provide, cloneVNode, h, defineAsyncComponent, unref, shallowReactive, Suspense, Fragment, createApp, createVNode, Text, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, mergeProps, withCtx, isReadonly, useSSRContext, isShallow } from 'vue';
-import { s as sanitizeStatusCode, i as getContext, $ as $fetch, k as defu, l as createHooks, c as createError$1, m as executeAsync, n as getRequestHeaders, o as klona, p as parse$1, q as getRequestHeader, r as destr, t as isEqual$1, v as setCookie, w as getCookie, x as deleteCookie } from '../nitro/nitro.mjs';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { getCurrentInstance, hasInjectionContext, inject, toRef, isRef, ref, toRaw, computed, isReactive, shallowRef, reactive, effectScope, getCurrentScope, onScopeDispose, watch, nextTick, toRefs, markRaw, defineComponent, createElementBlock, provide, cloneVNode, h, defineAsyncComponent, unref, shallowReactive, Suspense, Fragment, createApp, createVNode, Text, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, mergeProps, withCtx, isReadonly, useSSRContext, isShallow } from 'vue';
+import { k as klona, p as parse$1, i as getRequestHeader, l as destr, m as isEqual$1, s as sanitizeStatusCode, n as getContext, o as setCookie, q as getCookie, r as deleteCookie, $ as $fetch, t as defu, v as createHooks, c as createError$1, w as executeAsync, x as getRequestHeaders } from '../nitro/nitro.mjs';
 import { b as baseURL } from '../routes/renderer.mjs';
 import { useRoute as useRoute$1, RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
 import { ssrRenderSuspense, ssrRenderComponent, ssrRenderVNode, ssrRenderAttrs } from 'vue/server-renderer';
@@ -673,8 +673,11 @@ function getRouteRules(arg) {
     return {};
   }
 }
-const __nuxt_page_meta$1 = {
+const __nuxt_page_meta$2 = {
   layout: "auth"
+};
+const __nuxt_page_meta$1 = {
+  layout: false
 };
 const __nuxt_page_meta = {
   layout: "auth"
@@ -683,75 +686,81 @@ const _routes = [
   {
     name: "faq",
     path: "/faq",
-    component: () => import('./faq-DrEQ1hiS.mjs')
+    component: () => import('./faq-BW-kMwt4.mjs')
   },
   {
     name: "cart",
     path: "/cart",
-    component: () => import('./cart-B25Tb5me.mjs')
+    component: () => import('./cart-D-wOqQpV.mjs')
   },
   {
     name: "help",
     path: "/help",
-    component: () => import('./help-BgPlgAE-.mjs')
+    component: () => import('./help-BeC9trne.mjs')
   },
   {
     name: "index",
     path: "/",
-    component: () => import('./index-05Vif_mN.mjs')
+    component: () => import('./index-cKUDpFyE.mjs')
   },
   {
     name: "barter",
     path: "/barter",
-    component: () => import('./barter-ByY1sFKH.mjs')
+    component: () => import('./barter-WMGHdtCS.mjs')
   },
   {
     name: "contact",
     path: "/contact",
-    component: () => import('./contact-u72_OA3x.mjs')
+    component: () => import('./contact-L2Rq869j.mjs')
   },
   {
     name: "premium",
     path: "/premium",
-    component: () => import('./premium-mmzCnHbo.mjs')
+    component: () => import('./premium-CzmnYoM3.mjs')
   },
   {
     name: "profile",
     path: "/profile",
     meta: { "middleware": ["auth"] },
-    component: () => import('./profile-DwDlz649.mjs')
+    component: () => import('./profile-CipWm9pc.mjs')
   },
   {
     name: "auth-login",
     path: "/auth/login",
-    meta: __nuxt_page_meta$1 || {},
-    component: () => import('./login-BAwpZyaz.mjs')
+    meta: __nuxt_page_meta$2 || {},
+    component: () => import('./login-CvDQ6yY6.mjs')
   },
   {
     name: "legal-kvkk",
     path: "/legal/kvkk",
-    component: () => import('./kvkk-Do6mw6uI.mjs')
+    component: () => import('./kvkk-BxOQZK-o.mjs')
   },
   {
     name: "legal-terms",
     path: "/legal/terms",
-    component: () => import('./terms-C1kWGO1s.mjs')
+    component: () => import('./terms-CfWzuCJ_.mjs')
+  },
+  {
+    name: "auth-success",
+    path: "/auth/success",
+    meta: __nuxt_page_meta$1 || {},
+    component: () => import('./success-C3JYgcsS.mjs')
   },
   {
     name: "auth-register",
     path: "/auth/register",
     meta: __nuxt_page_meta || {},
-    component: () => import('./register-DWNvosMx.mjs')
+    component: () => import('./register-DBfXrnhk.mjs')
   },
   {
     name: "legal-privacy",
     path: "/legal/privacy",
-    component: () => import('./privacy-BBfdn5S8.mjs')
+    component: () => import('./privacy-BLpX5GI2.mjs')
   },
   {
     name: "products",
     path: "/products",
-    component: () => import('./index-DPFjtSa2.mjs')
+    component: () => import('./index-CnndH9Bd.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -897,7 +906,7 @@ const globalMiddleware = [
   manifest_45route_45rule
 ];
 const namedMiddleware = {
-  auth: () => import('./auth-Bk2-TZaO.mjs')
+  auth: () => import('./auth-DgHD9OF1.mjs')
 };
 const plugin$1 = /* @__PURE__ */ defineNuxtPlugin({
   name: "nuxt:router",
@@ -1648,8 +1657,8 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
     };
   }
 });
-const LazyIcon = defineAsyncComponent(() => import('./Icon-D5PWnCnx.mjs').then((r) => r["default"] || r.default || r));
-const LazyIconCSS = defineAsyncComponent(() => import('./IconCSS-BzW5Z3ER.mjs').then((r) => r["default"] || r.default || r));
+const LazyIcon = defineAsyncComponent(() => import('./Icon-3rf78mig.mjs').then((r) => r["default"] || r.default || r));
+const LazyIconCSS = defineAsyncComponent(() => import('./IconCSS-_mjv0ip-.mjs').then((r) => r["default"] || r.default || r));
 const lazyGlobalComponents = [
   ["Icon", LazyIcon],
   ["IconCSS", LazyIconCSS]
@@ -7257,8 +7266,8 @@ const plugins = [
   i18n_DoUFXWV6LnxRosC_SK_Bj2CtWyhMaRdzR8GWTtTaSGc
 ];
 const layouts = {
-  auth: defineAsyncComponent(() => import('./auth-ESQqosrl.mjs').then((m) => m.default || m)),
-  default: defineAsyncComponent(() => import('./default-B7MlT-qS.mjs').then((m) => m.default || m))
+  auth: defineAsyncComponent(() => import('./auth-dClVTFqy.mjs').then((m) => m.default || m)),
+  default: defineAsyncComponent(() => import('./default-iuPrpe9K.mjs').then((m) => m.default || m))
 };
 const routeRulesMatcher = _routeRulesMatcher;
 const LayoutLoader = defineComponent({
@@ -7682,7 +7691,7 @@ const _sfc_main$1 = {
     const statusText = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import('./error-404-Cl0Z21qf.mjs'));
+    const _Error404 = defineAsyncComponent(() => import('./error-404-BT0vQVqz.mjs'));
     const _Error = defineAsyncComponent(() => import('./error-500-CXeDRz8j.mjs'));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
@@ -7764,5 +7773,5 @@ let entry;
 }
 const entry_default = ((ssrContext) => entry(ssrContext));
 
-export { _export_sfc as _, useI18n as a, useRouter as b, useNuxtApp as c, defineNuxtRouteMiddleware as d, entry_default as default, encodeRoutePath as e, withoutTrailingSlash as f, nuxtLinkDefaults as g, hasProtocol as h, useState as i, joinURL as j, defineStore as k, navigateTo as n, parseQuery as p, resolveRouteObject as r, storeToRefs as s, tryUseNuxtApp as t, useRuntimeConfig as u, withTrailingSlash as w };
+export { _export_sfc as _, useI18n as a, useRouter as b, useRoute as c, defineNuxtRouteMiddleware as d, entry_default as default, encodeRoutePath as e, useNuxtApp as f, withoutTrailingSlash as g, hasProtocol as h, nuxtLinkDefaults as i, joinURL as j, useState as k, useCookie as l, defineStore as m, navigateTo as n, parseQuery as p, resolveRouteObject as r, storeToRefs as s, tryUseNuxtApp as t, useRuntimeConfig as u, withTrailingSlash as w };
 //# sourceMappingURL=server.mjs.map
