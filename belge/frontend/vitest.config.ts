@@ -1,0 +1,25 @@
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+export default defineConfig({
+  // @ts-expect-error - Vite version mismatch in vitest config
+  plugins: [vue()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html']
+    }
+  },
+  resolve: {
+    alias: {
+      '~': resolve(__dirname, '.'),
+      '@': resolve(__dirname, '.'),
+      '#app': resolve(__dirname, 'node_modules/nuxt/dist/app'),
+      '#imports': resolve(__dirname, 'node_modules/nuxt/dist/app')
+    }
+  }
+})

@@ -1,0 +1,5 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="40" fill="#4F46E5"/>
+  <path d="M100 40L125 90L180 95L140 135L150 190L100 165L50 190L60 135L20 95L75 90L100 40Z" fill="#FBBF24"/>
+  <text x="100" y="150" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="bold" font-size="24">PREMIUM</text>
+</svg>

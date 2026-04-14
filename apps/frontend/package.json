@@ -1,0 +1,36 @@
+{
+  "name": "@bazarx/frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
+    "@barterborsa/shared-types": "workspace:*",
+    "nuxt": "^3.13.0",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3",
+    "unhead": "1.9.15",
+    "@unhead/vue": "1.9.15",
+    "@unhead/dom": "1.9.15",
+    "@unhead/schema": "1.9.15"
+  },
+  "devDependencies": {
+    "@nuxtjs/i18n": "^8.5.1",
+    "@nuxtjs/tailwindcss": "^6.12.1",
+    "@heroicons/vue": "^2.1.5",
+    "nuxt-icon": "^0.6.10",
+    "tailwindcss": "^3.4.10",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "typescript": "^5.5.4",
+    "vue-tsc": "^2.0.29"
+  }
+}

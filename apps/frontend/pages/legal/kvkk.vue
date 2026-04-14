@@ -1,0 +1,57 @@
+<template>
+  <div class="max-w-4xl mx-auto py-12 px-4 space-y-12">
+    <!-- Header -->
+    <div class="space-y-4">
+      <div class="inline-block px-4 py-2 bg-gray-50 text-gray-400 rounded-lg text-[10px] font-black uppercase tracking-widest">
+        Hukuki Metinler
+      </div>
+      <h1 class="text-6xl font-display font-black text-dark-950 italic tracking-tighter leading-none">KVKK Aydınlatma Metni</h1>
+      <p class="text-gray-400 font-bold uppercase tracking-widest text-[11px]">Son Güncelleme: 14 Nisan 2026</p>
+    </div>
+
+    <!-- Content Card -->
+    <div class="bg-white rounded-[3rem] p-8 lg:p-20 border border-gray-100 shadow-sm relative overflow-hidden">
+      <div class="prose prose-gray max-w-none">
+        <h2 class="text-2xl font-display font-black text-dark-950 italic tracking-tighter mb-8 underline decoration-primary-500/30 underline-offset-8">1. Veri Sorumlusu</h2>
+        <p class="text-gray-500 font-medium leading-loose mb-12">
+          BazarX (bu metinde "Platform" olarak anılacaktır) bünyesinde işlenen verileriniz, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("Kanun") kapsamında güvenle saklanmaktadır. Bu aydınlatma metni, verilerinizin hangi amaçlarla işlendiğini ve haklarınızı açıklamaktadır.
+        </p>
+
+        <h2 class="text-2xl font-display font-black text-dark-950 italic tracking-tighter mb-8 underline decoration-primary-500/30 underline-offset-8">2. İşlenen Verileriniz</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <div v-for="cat in dataCategories" :key="cat.title" class="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+            <h3 class="text-xs font-black text-dark-950 uppercase tracking-widest mb-3">{{ cat.title }}</h3>
+            <p class="text-sm text-gray-400 font-medium">{{ cat.items }}</p>
+          </div>
+        </div>
+
+        <h2 class="text-2xl font-display font-black text-dark-950 italic tracking-tighter mb-8 underline decoration-primary-500/30 underline-offset-8">3. İşleme Amaçları</h2>
+        <ul class="list-none space-y-4 text-gray-500 font-medium mb-12">
+          <li v-for="i in 4" :key="i" class="flex items-start gap-4">
+            <div class="w-6 h-6 bg-primary-50 rounded-lg flex items-center justify-center shrink-0 mt-1">
+              <Icon name="heroicons:check" class="w-4 h-4 text-primary-600" />
+            </div>
+            <span>Hizmet kalitesinin artırılması ve kullanıcı deneyiminin kişiselleştirilmesi amacıyla veri analizi yapılması.</span>
+          </li>
+        </ul>
+
+        <div class="bg-primary-600 rounded-3xl p-8 lg:p-12 text-white relative overflow-hidden">
+          <Icon name="heroicons:shield-check" class="absolute -right-4 -bottom-4 w-48 h-48 text-white/10" />
+          <h3 class="text-xl font-display font-black italic tracking-tight mb-4 relative z-10">Gizliliğiniz Bizim İçin Önemli</h3>
+          <p class="text-white/80 font-medium text-sm leading-relaxed relative z-10">
+            Verileriniz üçüncü taraflarla ticaret amacıyla asla paylaşılmaz. Kişisel verilerinizin korunması için uçtan uca şifreleme ve bankacılık seviyesinde güvenlik altyapısı kullanıyoruz.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const dataCategories = [
+  { title: 'Kimlik Bilgileri', items: 'Ad, Soyad, T.C. Kimlik No (Doğrulama amaçlı)' },
+  { title: 'İletişim Bilgileri', items: 'E-posta adresi, Telefon numarası, Teslimat adresi' },
+  { title: 'İşlem Bilgileri', items: 'Sipariş geçmişi, Takas teklifleri, Ödeme kayıtları' },
+  { title: 'Teknik Veriler', items: 'IP adresi, Cihaz bilgileri, Çerez kayıtları' }
+];
+</script>
