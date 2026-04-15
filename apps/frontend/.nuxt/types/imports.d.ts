@@ -278,6 +278,7 @@ declare global {
   const useNow: typeof import('@vueuse/core').useNow
   const useNuxtApp: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.2_@emnapi+core@1.9.2_@emnapi+runtime@1.9.2_@parcel+watcher@2.5.6_@types+node@20.19._vprfopv77pl74cvuztsqqrmssq/node_modules/nuxt/dist/app/nuxt').useNuxtApp
   const useNuxtData: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.2_@emnapi+core@1.9.2_@emnapi+runtime@1.9.2_@parcel+watcher@2.5.6_@types+node@20.19._vprfopv77pl74cvuztsqqrmssq/node_modules/nuxt/dist/app/composables/asyncData').useNuxtData
+  const useNuxtDevTools: typeof import('../../../../node_modules/.pnpm/@nuxt+devtools@3.2.4_vite@7.3.2_@types+node@20.19.39_jiti@2.6.1_terser@5.46.1_yaml@2.8.3__vue@3.5.32_typescript@5.9.3_/node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools').useNuxtDevTools
   const useObjectUrl: typeof import('@vueuse/core').useObjectUrl
   const useOffsetPagination: typeof import('@vueuse/core').useOffsetPagination
   const useOnline: typeof import('@vueuse/core').useOnline
@@ -720,6 +721,7 @@ declare module 'vue' {
     readonly useNow: UnwrapRef<typeof import('@vueuse/core')['useNow']>
     readonly useNuxtApp: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.2_@emnapi+core@1.9.2_@emnapi+runtime@1.9.2_@parcel+watcher@2.5.6_@types+node@20.19._vprfopv77pl74cvuztsqqrmssq/node_modules/nuxt/dist/app/nuxt')['useNuxtApp']>
     readonly useNuxtData: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.2_@emnapi+core@1.9.2_@emnapi+runtime@1.9.2_@parcel+watcher@2.5.6_@types+node@20.19._vprfopv77pl74cvuztsqqrmssq/node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']>
+    readonly useNuxtDevTools: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+devtools@3.2.4_vite@7.3.2_@types+node@20.19.39_jiti@2.6.1_terser@5.46.1_yaml@2.8.3__vue@3.5.32_typescript@5.9.3_/node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']>
     readonly useObjectUrl: UnwrapRef<typeof import('@vueuse/core')['useObjectUrl']>
     readonly useOffsetPagination: UnwrapRef<typeof import('@vueuse/core')['useOffsetPagination']>
     readonly useOnline: UnwrapRef<typeof import('@vueuse/core')['useOnline']>

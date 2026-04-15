@@ -14,12 +14,13 @@ import { TrackingModule } from './modules/tracking/tracking.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', 'apps/delivery-service/.env'],
       load: [appConfig, mongodbConfig, grpcConfig, rabbitmqConfig],
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('uri'),
+        uri: config.get<string>('MONGODB_URI') || config.get<string>('uri'),
       }),
     }),
     RabbitMQModule,

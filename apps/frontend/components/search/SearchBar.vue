@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full group" v-click-outside="closeDropdown">
+  <div ref="searchContainer" class="relative w-full group">
     <!-- Input area -->
     <div class="relative">
       <input 
@@ -9,6 +9,7 @@
         :placeholder="$t('nav.searchPlaceholder')"
         @input="fetchSuggestions"
         @keydown.enter="submitSearch"
+        @focus="showDropdown = true"
       />
       <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
         <Icon name="heroicons:magnifying-glass" class="w-5 h-5 text-gray-400 group-focus-within:text-primary-600 transition-colors" />
@@ -56,8 +57,15 @@
 </template>
 
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
+
+const searchContainer = ref(null)
 const { query, suggestions, showDropdown, fetchSuggestions, submitSearch, closeDropdown } = useSearch()
 const { formatPrice } = useFormat()
+
+onClickOutside(searchContainer, () => {
+  if (showDropdown.value) closeDropdown()
+})
 </script>
 
 <style scoped>

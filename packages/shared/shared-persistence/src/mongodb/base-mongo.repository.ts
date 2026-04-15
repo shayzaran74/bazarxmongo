@@ -3,7 +3,7 @@ import { AggregateRoot, IRepository } from '@barterborsa/shared-core';
 
 export abstract class BaseMongoRepository<
   TDomain extends AggregateRoot<any>,
-  TPersistence extends Document
+  TPersistence
 > implements IRepository<TDomain> {
   constructor(
     protected readonly model: Model<TPersistence>,
@@ -31,10 +31,7 @@ export abstract class BaseMongoRepository<
     if (existing) {
       await this.model.findByIdAndUpdate(entity.id, persistence).exec();
     } else {
-      const created = new this.model({
-        _id: entity.id,
-        ...persistence,
-      });
+      const created = new this.model(persistence);
       await created.save();
     }
   }

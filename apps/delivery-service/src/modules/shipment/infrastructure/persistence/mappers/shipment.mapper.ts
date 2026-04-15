@@ -43,6 +43,7 @@ export class ShipmentMapper {
 
   public static toPersistence(domain: Shipment): any {
     return {
+      _id: domain.id,
       shipmentNumber: domain.shipmentNumber,
       type: domain.type,
       status: domain.status,

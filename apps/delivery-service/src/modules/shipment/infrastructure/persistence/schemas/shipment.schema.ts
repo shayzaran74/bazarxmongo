@@ -4,8 +4,11 @@ import { ShipmentStatus } from '../../../domain/enums/shipment-status.enum';
 import { ShipmentType } from '../../../domain/enums/shipment-type.enum';
 import { CarrierCode } from '../../../domain/enums/carrier-code.enum';
 
-@Schema({ collection: 'shipments', timestamps: true })
-export class ShipmentDocument extends Document {
+@Schema({ collection: 'shipments', timestamps: true, _id: false })
+export class ShipmentDocument {
+  @Prop({ type: String, required: true })
+  _id!: string;
+
   @Prop({ required: true, unique: true })
   shipmentNumber!: string;
 

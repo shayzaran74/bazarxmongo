@@ -16,6 +16,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./prisma/prisma.service"), exports);
+__exportStar(require("./mongodb/base-mongo.repository"), exports);
 __exportStar(require("./prisma/prisma.module"), exports);
 __exportStar(require("./prisma/base-prisma.repository"), exports);
 //# sourceMappingURL=index.js.map
