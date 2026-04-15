@@ -1,127 +1,117 @@
-// packages/domain-identity/src/infrastructure/persistence/prisma-user.repository.ts
-
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { UserMapper } from './mappers/user.mapper';
 import { Optional } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 
+@Injectable()
 export class PrismaUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: string): Promise<Optional<User>> {
-    const record = await this.prisma.user.findUnique({
-      where: { id },
-      include: { profile: true },
+  async findById(id: string): Promise<User | null> {
+    const record = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+      include: { profile: true }
     });
-    return record ? this.toDomain(record) : null;
+    return record ? UserMapper.toDomain(record) : null;
   }
 
-  async findAll(): Promise<User[]> {
-    const records = await this.prisma.user.findMany({
-      include: { profile: true },
+  async findByEmail(email: string): Promise<User | null> {
+    const record = await this.prisma.user.findFirst({
+      where: { email, deletedAt: null },
+      include: { profile: true }
     });
-    return records.map((record) => this.toDomain(record));
+    return record ? UserMapper.toDomain(record) : null;
   }
 
-  async findByEmail(email: string): Promise<Optional<User>> {
-    const record = await this.prisma.user.findUnique({
-      where: { email },
-      include: { profile: true },
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    const record = await this.prisma.user.findFirst({
+      where: { googleId, deletedAt: null },
+      include: { profile: true }
     });
-    return record ? this.toDomain(record) : null;
+    return record ? UserMapper.toDomain(record) : null;
+  }
+
+  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
+    const record = await this.prisma.user.findFirst({
+      where: { phoneNumber, deletedAt: null },
+      include: { profile: true }
+    });
+    return record ? UserMapper.toDomain(record) : null;
   }
 
   async exists(email: string): Promise<boolean> {
     const count = await this.prisma.user.count({
-      where: { email },
+      where: { email, deletedAt: null }
     });
     return count > 0;
   }
 
   async save(user: User): Promise<void> {
-    const data = this.toPersistence(user);
-    const { firstName, lastName, ...userData } = data;
+    const data = UserMapper.toPersistence(user);
+    const profileData = UserMapper.toProfilePersistence(user);
+    
+    await this.prisma.$transaction([
+      this.prisma.user.create({ data }),
+      this.prisma.userProfile.create({ data: profileData })
+    ]);
+  }
 
-    await this.prisma.$transaction(async (tx) => {
-      // 1. Ana kullanıcı tablosunu güncelle/oluştur
-      await tx.user.upsert({
-        where: { id: user.id },
-        update: userData,
-        create: userData,
-      });
-
-      // 2. Profil tablosunu güncelle/oluştur
-      if (firstName || lastName) {
-        await tx.userProfile.upsert({
-          where: { userId: user.id },
-          update: { firstName, lastName },
-          create: { userId: user.id, firstName, lastName },
-        });
-      }
+  async update(user: User): Promise<void> {
+    const data = UserMapper.toPersistence(user);
+    const { id, ...updateData } = data;
+    await this.prisma.user.update({
+      where: { id },
+      data: updateData
     });
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.user.delete({
+    await this.prisma.user.update({
       where: { id },
+      data: { deletedAt: new Date() }
     });
   }
 
-  protected toDomain(record: unknown): User {
-    // Record tipini açıkça tanımlayarak Prisma namespace hatalarını önlüyoruz
-    const userRecord = record as {
-      id: string;
-      email: string;
-      phoneNumber: string | null;
-      password: string | null;
-      role: User['role'];
-      status: User['status'];
-      platform: User['platform'];
-      isEmailVerified: boolean;
-      googleId: string | null;
-      lastLoginAt: Date | null;
-      lastSeenAt: Date | null;
-      profile?: { firstName: string | null; lastName: string | null } | null;
-    };
+  async findMany(pagination: any, filters?: any): Promise<User[]> {
+    const page = pagination.page || 1;
+    const limit = pagination.limit || 10;
     
-    const userResult = User.create({
-      email: userRecord.email,
-      phoneNumber: userRecord.phoneNumber || undefined,
-      passwordHash: userRecord.password || undefined, 
-      role: userRecord.role,
-      status: userRecord.status,
-      platform: userRecord.platform,
-      isEmailVerified: userRecord.isEmailVerified,
-      googleId: userRecord.googleId || undefined,
-      firstName: userRecord.profile?.firstName || undefined,
-      lastName: userRecord.profile?.lastName || undefined,
-      lastLoginAt: userRecord.lastLoginAt || undefined,
-      lastSeenAt: userRecord.lastSeenAt || undefined,
-    }, userRecord.id);
-
-    if (!userResult.success) {
-      throw userResult.error;
-    }
-
-    return userResult.data;
+    const records = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        ...(filters?.role && { role: filters.role }),
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.search && {
+          OR: [
+            { email: { contains: filters.search, mode: 'insensitive' } },
+            { phoneNumber: { contains: filters.search, mode: 'insensitive' } }
+          ]
+        })
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { profile: true }
+    });
+    
+    return records.map(r => UserMapper.toDomain(r));
   }
 
-  protected toPersistence(user: User): Prisma.UserCreateInput & { firstName?: string; lastName?: string } {
-    const props = (user as unknown as { props: Record<string, unknown> }).props;
-    return {
-      id: user.id,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      password: props.passwordHash as string | undefined,
-      role: user.role as Prisma.UserCreateInput['role'],
-      status: user.status as Prisma.UserCreateInput['status'],
-      platform: user.platform as Prisma.UserCreateInput['platform'],
-      isEmailVerified: props.isEmailVerified as boolean,
-      googleId: props.googleId as string | undefined,
-      lastLoginAt: props.lastLoginAt as Date | undefined,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    };
+  async count(filters?: any): Promise<number> {
+    return this.prisma.user.count({
+      where: {
+        deletedAt: null,
+        ...(filters?.role && { role: filters.role }),
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.search && {
+          OR: [
+            { email: { contains: filters.search, mode: 'insensitive' } },
+            { phoneNumber: { contains: filters.search, mode: 'insensitive' } }
+          ]
+        })
+      }
+    });
   }
 }

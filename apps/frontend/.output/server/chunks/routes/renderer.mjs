@@ -3,9 +3,9 @@ import { j as joinRelativeURL, u as useRuntimeConfig, g as getResponseStatusText
 import { renderToString } from 'vue/server-renderer';
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'unhead/server';
 import { stringify, uneval } from 'devalue';
+import { FlatMetaPlugin, DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'unhead/plugins';
 import { walkResolver } from 'unhead/utils';
 import { isRef, toValue, hasInjectionContext, inject, ref, watchEffect, getCurrentInstance, onBeforeUnmount, onDeactivated, onActivated } from 'vue';
-import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'unhead/plugins';
 
 const VueResolver = (_, value) => {
   return isRef(value) ? toValue(value) : value;
@@ -62,6 +62,16 @@ function clientUseHead(head, input, options = {}) {
     });
   }
   return entry;
+}
+function useSeoMeta(input = {}, options = {}) {
+  const head = options.head || /* @__PURE__ */ injectHead();
+  head.use(FlatMetaPlugin);
+  const { title, titleTemplate, ...meta } = input;
+  return useHead({
+    title,
+    titleTemplate,
+    _flatMeta: meta
+  }, options);
 }
 
 // @__NO_SIDE_EFFECTS__
@@ -482,5 +492,5 @@ const renderer = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   default: handler
 }, Symbol.toStringTag, { value: 'Module' }));
 
-export { baseURL as b, headSymbol as h, renderer as r, useHead as u };
+export { useSeoMeta as a, baseURL as b, headSymbol as h, renderer as r, useHead as u };
 //# sourceMappingURL=renderer.mjs.map

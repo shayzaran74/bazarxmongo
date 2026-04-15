@@ -1,12 +1,7 @@
-// apps/backend/src/modules/identity/infrastructure/auth/token.service.ts
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '@barterborsa/shared-security';
 
-/**
- * Token yönetimi ve rotasyonundan sorumlu servis.
- */
 @Injectable()
 export class TokenService {
   constructor(
@@ -14,9 +9,6 @@ export class TokenService {
     private readonly redisService: RedisService
   ) {}
 
-  /**
-   * 15 dakika ömürlü Access Token üretir.
-   */
   async generateAccessToken(user: { id: string; email: string; role: string; platform: string }): Promise<string> {
     const payload = {
       sub: user.id,
@@ -31,9 +23,6 @@ export class TokenService {
     });
   }
 
-  /**
-   * 7 gün ömürlü Refresh Token üretir.
-   */
   async generateRefreshToken(user: { id: string; email: string }): Promise<string> {
     const payload = {
       sub: user.id,
@@ -46,18 +35,31 @@ export class TokenService {
     });
   }
 
-  /**
-   * Token'ı Redis blacklist'e ekleyerek geçersiz kılar (Logout için).
-   */
+  async verifyRefreshToken(token: string): Promise<any> {
+    try {
+      const isBlacklisted = await this.isTokenBlacklisted(token);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Token geçersiz (Blacklist)');
+      }
+
+      return this.jwtService.verify(token, {
+        secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-123'
+      });
+    } catch (e) {
+      throw new UnauthorizedException('Geçersiz Refresh Token');
+    }
+  }
+
   async blacklistToken(token: string, expiresInSeconds: number): Promise<void> {
     await this.redisService.set(`blacklist:${token}`, '1', expiresInSeconds);
   }
 
-  /**
-   * Token'ın blacklist'te olup olmadığını kontrol eder.
-   */
   async isTokenBlacklisted(token: string): Promise<boolean> {
     const result = await this.redisService.get(`blacklist:${token}`);
     return result !== null;
+  }
+
+  async revokeRefreshToken(token: string): Promise<void> {
+    await this.blacklistToken(token, 7 * 24 * 60 * 60); // 7 days
   }
 }

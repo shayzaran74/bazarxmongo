@@ -11,6 +11,7 @@
             id="email"
             v-model="form.email"
             type="email"
+            autocomplete="email"
             required
             class="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:bg-white focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
             placeholder="merhaba@bazarx.com"
@@ -33,6 +34,7 @@
             id="password"
             v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
+            autocomplete="current-password"
             required
             class="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:bg-white focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none pr-12"
             placeholder="••••••••"
@@ -48,39 +50,63 @@
         </div>
       </div>
 
-      <!-- Accept Terms (Simple checkbox) -->
-       <div class="flex items-start px-1 py-1">
-         <input
-           id="acceptTerms"
-           v-model="form.acceptTerms"
-           type="checkbox"
-           required
-           class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
-         >
-         <label for="acceptTerms" class="ml-3 block text-[11px] font-bold text-gray-500 uppercase tracking-tight leading-relaxed cursor-pointer hover:text-gray-700 transition-colors">
-           {{ $t('auth.acceptTerms') }}
-         </label>
-       </div>
+      <!-- Terms Checkbox -->
+      <div class="flex items-start px-1 py-1">
+        <input
+          id="acceptTerms"
+          v-model="form.acceptTerms"
+          type="checkbox"
+          required
+          class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+        >
+        <label for="acceptTerms" class="ml-3 block text-[11px] font-bold text-gray-500 uppercase tracking-tight leading-relaxed cursor-pointer hover:text-gray-700 transition-colors">
+          <i18n-t keypath="auth.acceptTermsTemplate" scope="global">
+            <template #terms>
+              <NuxtLink to="/legal/kullanim-kosullari" target="_blank" class="text-primary-600 hover:underline">
+                {{ $t('auth.terms') }}
+              </NuxtLink>
+            </template>
+            <template #privacy>
+              <NuxtLink to="/legal/gizlilik-politikasi" target="_blank" class="text-primary-600 hover:underline">
+                {{ $t('auth.privacy') }}
+              </NuxtLink>
+            </template>
+          </i18n-t>
+        </label>
+      </div>
+
+      <!-- Error Message -->
+      <Transition name="fade">
+        <div
+          v-if="authStore.error"
+          class="bg-red-50 border-2 border-red-100 p-4 rounded-2xl flex items-start gap-3 animate-shake"
+        >
+          <Icon name="heroicons:exclamation-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div class="text-xs font-bold text-red-600 uppercase tracking-tight">
+            {{ authStore.error }}
+          </div>
+        </div>
+      </Transition>
 
       <!-- Submit Button -->
       <button
         type="submit"
-        :disabled="loading"
-        class="w-full h-15 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-2xl text-[13px] font-black uppercase tracking-[0.15em] shadow-[0_10px_25px_-5px_rgba(99,102,241,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(99,102,241,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-3 overflow-hidden group relative"
+        :disabled="authStore.loading"
+        class="w-full h-14 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-2xl text-[13px] font-black uppercase tracking-[0.15em] shadow-[0_10px_25px_-5px_rgba(99,102,241,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(99,102,241,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-3 overflow-hidden group relative"
       >
-        <div v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        <div v-if="authStore.loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         <span class="relative z-10 font-display">
-          {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
+          {{ authStore.loading ? $t('auth.loggingIn') : $t('auth.login') }}
         </span>
         <!-- Shine effect -->
         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
       </button>
     </form>
 
-    <!-- Google Dividor -->
+    <!-- Divider -->
     <div class="relative py-4">
       <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
-      <div class="relative flex justify-center text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] bg-transparent">
+      <div class="relative flex justify-center text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">
         <span class="bg-white/50 backdrop-blur px-4 py-1 rounded-full border border-gray-50">{{ $t('auth.or') }}</span>
       </div>
     </div>
@@ -115,42 +141,62 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'auth'
-});
+})
 
-const { login } = useAuth();
-const router = useRouter();
+const { t } = useI18n()
+const authStore = useAuthStore()
+const router = useRouter()
+const route = useRoute()
 
-const showPassword = ref(false);
-const loading = ref(false);
+useHead({
+  title: t('auth.login'),
+  meta: [
+    { name: 'description', content: t('auth.loginTitle') }
+  ]
+})
+
+const showPassword = ref(false)
 const form = reactive({
   email: '',
   password: '',
   acceptTerms: false
-});
+})
+
+onMounted(async () => {
+  // OAuth hata mesajlarını query'den yakala
+  if (route.query.error) {
+    const errorMap: Record<string, string> = {
+      oauth_failed: 'Google ile giriş yapılamadı.',
+      missing_token: 'Token bulunamadı. Lütfen tekrar deneyin.',
+      auth_failed: 'Giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.',
+      session_expired: 'Oturum süresi doldu.',
+      security_violation: 'Güvenlik ihlali tespit edildi. Lütfen tekrar giriş yapın.'
+    }
+    authStore.error = errorMap[route.query.error as string] || 'Bilinmeyen bir hata oluştu.'
+    router.replace({ query: {} })
+  }
+
+  if (authStore.isAuthenticated) {
+    await router.push('/')
+  }
+})
 
 const handleLogin = async () => {
-  if (loading.value) return;
-  
-  loading.value = true;
-  try {
-    const success = await login({
-      email: form.email,
-      password: form.password
-    });
-    
-    if (success) {
-      await router.push('/');
-    }
-  } catch (err: unknown) {
-    // Hata durumunda store'daki error state'i UI'da gösterilecek
-  } finally {
-    loading.value = false;
+  if (authStore.loading) return
+  authStore.error = null
+
+  const success = await authStore.login({
+    email: form.email,
+    password: form.password
+  })
+
+  if (success) {
+    await router.push('/')
   }
-};
+}
 
 const handleGoogleLogin = () => {
-  const config = useRuntimeConfig();
-  // Backend'deki Google Auth endpoint'ine yönlendir
-  window.location.href = `${config.public.apiBase}/auth/google`;
-};
+  const config = useRuntimeConfig()
+  window.location.href = `${config.public.apiBase}/auth/google`
+}
 </script>

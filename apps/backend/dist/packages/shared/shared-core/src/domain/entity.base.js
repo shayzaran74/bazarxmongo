@@ -19,6 +19,9 @@ class Entity {
     get id() {
         return this._id;
     }
+    getProps() {
+        return this.props;
+    }
     get createdAt() {
         return this._createdAt;
     }

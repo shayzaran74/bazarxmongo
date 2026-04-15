@@ -1,6 +1,6 @@
 // apps/frontend/composables/useApi.ts
 
-import type { ApiResponse } from '@barterborsa/shared-types';
+import type { ApiResponse } from '~/types/api';
 
 /**
  * Backend API istekleri için merkezi composable.
@@ -15,7 +15,10 @@ export const useApi = () => {
     options: Record<string, unknown> = {}
   ): Promise<ApiResponse<T>> => {
     
-    const apiBase = config.public.apiBase || 'http://localhost:3001/api';
+    const apiBase = config.public.apiBase;
+    if (!apiBase) {
+      throw new Error('API Base URL is not configured in runtimeConfig');
+    }
 
     // Header ayarları
     const headers: Record<string, string> = {

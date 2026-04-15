@@ -1,8 +1,8 @@
 "use strict";
-// packages/domain-identity/src/domain/entities/user.entity.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const shared_core_1 = require("@barterborsa/shared-core");
+const user_registered_event_1 = require("../events/user-registered.event");
 class User extends shared_core_1.AggregateRoot {
     constructor(props, id) {
         super(props, id);
@@ -18,6 +18,10 @@ class User extends shared_core_1.AggregateRoot {
             platform: props.platform || 'BAZARX',
             isEmailVerified: props.isEmailVerified ?? false,
         }, id);
+        // Yeni kullanıcı kaydı ise event ekle
+        if (!id) {
+            user.addDomainEvent(new user_registered_event_1.UserRegisteredEvent(user.id, user.email, user.role, user.platform));
+        }
         return (0, shared_core_1.Ok)(user);
     }
     // Domain Logic
@@ -40,6 +44,9 @@ class User extends shared_core_1.AggregateRoot {
     get status() { return this.props.status; }
     get platform() { return this.props.platform; }
     get passwordHash() { return this.props.passwordHash; }
+    get isEmailVerified() { return this.props.isEmailVerified; }
+    get lastLoginAt() { return this.props.lastLoginAt; }
+    get googleId() { return this.props.googleId; }
 }
 exports.User = User;
 //# sourceMappingURL=user.entity.js.map

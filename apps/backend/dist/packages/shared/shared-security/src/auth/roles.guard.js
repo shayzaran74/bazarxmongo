@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
+const roles_decorator_1 = require("./roles.decorator");
 /**
  * Rol tabanlı erişim kontrolü.
  * @Roles('ADMIN') gibi kullanımları denetler.
@@ -23,7 +24,7 @@ let RolesGuard = class RolesGuard {
         this.reflector = reflector;
     }
     canActivate(context) {
-        const requiredRoles = this.reflector.getAllAndOverride('roles', [
+        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);

@@ -1,7 +1,92 @@
 // packages/domain-identity/src/index.ts
 
+// Enums
+export * from './domain/enums/user-role.enum';
+export * from './domain/enums/user-status.enum';
+export * from './domain/enums/platform.enum';
+
+// Entities
 export * from './domain/entities/user.entity';
+export * from './domain/entities/user-profile.entity';
+export * from './domain/entities/user-address.entity';
+
+// Value Objects
+export * from './domain/value-objects/email.vo';
+export * from './domain/value-objects/phone-number.vo';
+export * from './domain/value-objects/password.vo';
+export * from './domain/value-objects/user-role.vo';
+
+// Domain Events
+export * from './domain/events/user-registered.event';
+export * from './domain/events/user-updated.event';
+export * from './domain/events/user-deleted.event';
+
+// Repository Interfaces
 export * from './domain/repositories/user.repository.interface';
-export * from './application/use-cases/register-user.use-case';
-export * from './application/use-cases/login-user.use-case';
+export * from './domain/repositories/user-profile.repository.interface';
+export * from './domain/repositories/user-address.repository.interface';
+export * from './domain/repositories/verification-token.repository.interface';
+
+// DTOs
+export * from './application/dtos/register-user.dto';
+export * from './application/dtos/update-profile.dto';
+export * from './application/dtos/change-password.dto';
+export * from './application/dtos/add-address.dto';
+export * from './application/dtos/update-address.dto';
+export * from './application/dtos/user-response.dto';
+export * from './application/dtos/profile-response.dto';
+export * from './application/dtos/address-response.dto';
+export * from './application/dtos/forgot-password.dto';
+export * from './application/dtos/reset-password.dto';
+
+// Commands
+export * from './application/commands/register-user.command';
+export * from './application/commands/register-user.handler';
+export * from './application/commands/login-user.command';
+export * from './application/commands/login-user.handler';
+export * from './application/commands/update-profile.command';
+export * from './application/commands/update-profile.handler';
+export * from './application/commands/change-password.command';
+export * from './application/commands/change-password.handler';
+export * from './application/commands/add-address.command';
+export * from './application/commands/add-address.handler';
+export * from './application/commands/update-address.command';
+export * from './application/commands/update-address.handler';
+export * from './application/commands/delete-address.command';
+export * from './application/commands/delete-address.handler';
+export * from './application/commands/set-transaction-pin.command';
+export * from './application/commands/set-transaction-pin.handler';
+export * from './application/commands/forgot-password.command';
+export * from './application/commands/forgot-password.handler';
+export * from './application/commands/reset-password.command';
+export * from './application/commands/reset-password.handler';
+
+// Queries
+export * from './application/queries/get-user.query';
+export * from './application/queries/get-user.handler';
+export * from './application/queries/get-profile.query';
+export * from './application/queries/get-profile.handler';
+export * from './application/queries/list-users.query';
+export * from './application/queries/list-users.handler';
+export * from './application/queries/get-addresses.query';
+export * from './application/queries/get-addresses.handler';
+export * from './application/queries/get-login-history.query';
+export * from './application/queries/get-login-history.handler';
+
+// Event Handlers
+export * from './application/event-handlers/user-registered.handler';
+export * from './application/event-handlers/user-updated.handler';
+
+// Persistence (Infrastructure)
 export * from './infrastructure/persistence/prisma-user.repository';
+export * from './infrastructure/persistence/prisma-user-profile.repository';
+export * from './infrastructure/persistence/prisma-user-address.repository';
+export * from './infrastructure/persistence/prisma-verification-token.repository';
+export * from './infrastructure/persistence/mappers/user.mapper';
+export * from './infrastructure/persistence/mappers/user-profile.mapper';
+export * from './infrastructure/persistence/mappers/user-address.mapper';
+
+// Auth & Events (Infrastructure)
+export * from './infrastructure/auth/local.strategy';
+export * from './infrastructure/auth/session.service';
+export * from './infrastructure/event-publishers/identity-event.publisher';

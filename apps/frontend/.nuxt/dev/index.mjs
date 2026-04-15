@@ -31,7 +31,7 @@ import { isVNode, isRef, toValue } from 'file:///Users/macbook/Desktop/bazarx/no
 import _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/@nuxt+vite-builder@3.21.2_@types+node@20.19.39_eslint@8.57.1_magicast@0.5.2_nuxt@3.21.2_@emna_cmprgoc57td6krwenkcdwrxmpm/node_modules/@nuxt/vite-builder/dist/fix-stacktrace.mjs';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/pathe@1.1.2/node_modules/pathe/dist/index.mjs';
+import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/unhead@2.1.13/node_modules/unhead/dist/server.mjs';
 import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/unhead@2.1.13/node_modules/unhead/dist/plugins.mjs';
 import { walkResolver } from 'file:///Users/macbook/Desktop/bazarx/node_modules/.pnpm/unhead@2.1.13/node_modules/unhead/dist/utils.mjs';
@@ -2430,7 +2430,22 @@ _BrXnglSf1mEgOYyPRu1K6enrZUj2BHVuMozAznC2Kc,
 _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw
 ];
 
-const assets = {};
+const assets = {
+  "/index.mjs": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"1c4aa-vRdHYCjF/cG1P5m9zxSDf27Sri8\"",
+    "mtime": "2026-04-15T14:13:36.490Z",
+    "size": 115882,
+    "path": "index.mjs"
+  },
+  "/index.mjs.map": {
+    "type": "application/json",
+    "etag": "\"73f81-UikBuSy9kUsxcbqtkT8tAREUQo0\"",
+    "mtime": "2026-04-15T14:13:36.490Z",
+    "size": 475009,
+    "path": "index.mjs.map"
+  }
+};
 
 function readAsset (id) {
   const serverDir = dirname$1(fileURLToPath(globalThis._importMeta_.url));

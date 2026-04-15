@@ -1,19 +1,22 @@
-// apps/backend/src/modules/identity/infrastructure/auth/auth.service.ts
-
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { LoginUserUseCase, IUserRepository } from '@barterborsa/domain-identity';
+import { Injectable, UnauthorizedException, Inject, Logger } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { 
+  LoginUserCommand, 
+  IUserRepository, 
+  User, 
+  UserResponseDto 
+} from '@barterborsa/domain-identity';
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { TokenService } from './token.service';
-import { HashingService } from '@barterborsa/shared-security';
-import { User } from '@barterborsa/domain-identity';
 import { PrismaService } from '@barterborsa/shared-persistence';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
-    private readonly loginUserUseCase: LoginUserUseCase,
+    private readonly commandBus: CommandBus,
     private readonly tokenService: TokenService,
-    private readonly hashingService: HashingService,
     private readonly prisma: PrismaService,
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
@@ -22,7 +25,7 @@ export class AuthService {
    * E-posta ve şifre ile giriş işlemi.
    */
   async login(input: LoginUserInput) {
-    const result = await this.loginUserUseCase.execute(input);
+    const result = await this.commandBus.execute(new LoginUserCommand(input));
     
     if (!result.success) {
       throw new UnauthorizedException(result.error.message);
@@ -35,7 +38,7 @@ export class AuthService {
     await this.createSession(user.id);
 
     return {
-      user: this.toResponseDto(user),
+      user: UserResponseDto.fromEntity(user),
       ...tokens,
     };
   }
@@ -47,7 +50,6 @@ export class AuthService {
     let user = await this.userRepository.findByEmail(googleProfile.email);
 
     if (!user) {
-      // Kullanıcı yoksa Google bilgileriyle oluştur (Şifresiz hesap)
       const userResult = User.create({
         email: googleProfile.email,
         googleId: googleProfile.googleId,
@@ -68,33 +70,60 @@ export class AuthService {
     }
 
     const tokens = await this.generateUserTokens(user);
-    
-    // Session kaydı oluştur
     await this.createSession(user.id);
 
     return {
-      user: this.toResponseDto(user),
+      user: UserResponseDto.fromEntity(user),
       ...tokens,
     };
   }
 
   /**
-   * Kullanıcı için Session oluşturur (PostgreSQL).
-   * Redis session mantığı TokenService/Blacklist üzerinden yürütülür.
+   * Refresh token ile yeni access token üretir.
    */
+  async refresh(refreshToken: string) {
+    try {
+      const payload = await this.tokenService.verifyRefreshToken(refreshToken);
+      const user = await this.userRepository.findById(payload.sub);
+      
+      if (!user || user.status !== 'ACTIVE') {
+        throw new UnauthorizedException('Kullanıcı bulunamadı veya pasif.');
+      }
+
+      // Old token'ı revoke et (rotation)
+      await this.tokenService.revokeRefreshToken(refreshToken);
+
+      const tokens = await this.generateUserTokens(user);
+      return tokens;
+    } catch (e: any) {
+      this.logger.error(`Refresh failed: ${e.message}`);
+      throw new UnauthorizedException('Refresh token geçersiz.');
+    }
+  }
+
+  /**
+   * Çıkış işlemi: Session silinir ve token blacklist'e eklenir.
+   */
+  async logout(userId: string, refreshToken?: string) {
+    // Session'ları sil
+    await this.prisma.session.deleteMany({ where: { userId } });
+    
+    // Refresh token'ı geçersiz kıl
+    if (refreshToken) {
+      await this.tokenService.revokeRefreshToken(refreshToken);
+    }
+  }
+
   private async createSession(userId: string): Promise<void> {
     await this.prisma.session.create({
       data: {
         userId,
-        userAgent: 'Backend-Node', // İleride request'ten alınabilir
-        ipAddress: '127.0.0.1',    // İleride request'ten alınabilir
+        userAgent: 'Backend-Node', 
+        ipAddress: '127.0.0.1',    
       },
     });
   }
 
-  /**
-   * Kullanıcı için yeni token seti üretir.
-   */
   private async generateUserTokens(user: User) {
     const accessToken = await this.tokenService.generateAccessToken({
       id: user.id,
@@ -109,18 +138,5 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  /**
-   * User entity'sini frontend'e dönecek güvenli bir nesneye çevirir.
-   */
-  private toResponseDto(user: User) {
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    };
   }
 }

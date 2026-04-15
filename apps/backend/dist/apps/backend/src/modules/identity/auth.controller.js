@@ -1,5 +1,4 @@
 "use strict";
-// apps/backend/src/modules/identity/auth.controller.ts
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -15,39 +14,28 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
-const shared_types_1 = require("@barterborsa/shared-types");
+const cqrs_1 = require("@nestjs/cqrs");
 const domain_identity_1 = require("@barterborsa/domain-identity");
 const auth_service_1 = require("./infrastructure/auth/auth.service");
 const shared_security_1 = require("@barterborsa/shared-security");
 let AuthController = class AuthController {
-    registerUseCase;
+    commandBus;
     authService;
-    constructor(registerUseCase, authService) {
-        this.registerUseCase = registerUseCase;
+    constructor(commandBus, authService) {
+        this.commandBus = commandBus;
         this.authService = authService;
     }
-    /**
-     * Yeni kullanıcı kaydı.
-     */
-    async register(input) {
-        const result = await this.registerUseCase.execute(input);
+    async register(dto) {
+        const result = await this.commandBus.execute(new domain_identity_1.RegisterUserCommand(dto));
         if (!result.success) {
             throw new common_1.HttpException(result.error.message, common_1.HttpStatus.BAD_REQUEST);
         }
         return {
             success: true,
             message: 'Kullanıcı başarıyla oluşturuldu.',
-            data: {
-                id: result.data.id,
-                email: result.data.email,
-                role: result.data.role,
-            },
+            data: result.data,
         };
     }
-    /**
-     * Standart giriş (E-posta + Şifre).
-     * Başarılı ise Access ve Refresh token döner.
-     */
     async login(input) {
         const authData = await this.authService.login(input);
         return {
@@ -56,13 +44,35 @@ let AuthController = class AuthController {
             data: authData,
         };
     }
-    /**
-     * Çıkış işlemi (Blacklist kontrolü vb. burada tetiklenebilir).
-     */
-    async logout() {
+    async refresh(refreshToken) {
+        const tokens = await this.authService.refresh(refreshToken);
+        return {
+            success: true,
+            data: tokens
+        };
+    }
+    async logout(req) {
+        await this.authService.logout(req.user.id);
         return {
             success: true,
             message: 'Çıkış yapıldı.',
+        };
+    }
+    async forgotPassword(dto) {
+        await this.commandBus.execute(new domain_identity_1.ForgotPasswordCommand(dto));
+        return {
+            success: true,
+            message: 'Eğer e-posta adresi kayıtlı ise bir bağlantı gönderilecektir.',
+        };
+    }
+    async resetPassword(dto) {
+        const result = await this.commandBus.execute(new domain_identity_1.ResetPasswordCommand(dto));
+        if (!result.success) {
+            throw new common_1.HttpException(result.error.message, common_1.HttpStatus.BAD_REQUEST);
+        }
+        return {
+            success: true,
+            message: 'Şifreniz başarıyla sıfırlandı.',
         };
     }
 };
@@ -72,7 +82,7 @@ __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [shared_types_1.RegisterUserInput]),
+    __metadata("design:paramtypes", [domain_identity_1.RegisterUserDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
@@ -80,18 +90,43 @@ __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [shared_types_1.LoginUserInput]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
-    (0, common_1.Post)('logout'),
+    (0, shared_security_1.Public)(),
+    (0, common_1.Post)('refresh'),
+    __param(0, (0, common_1.Body)('refreshToken')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "refresh", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
+__decorate([
+    (0, shared_security_1.Public)(),
+    (0, common_1.Post)('forgot-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, shared_security_1.Public)(),
+    (0, common_1.Post)('reset-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [domain_identity_1.RegisterUserUseCase,
+    __metadata("design:paramtypes", [cqrs_1.CommandBus,
         auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

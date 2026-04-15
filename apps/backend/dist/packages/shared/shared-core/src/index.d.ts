@@ -3,4 +3,7 @@ export * from './domain/aggregate-root.base';
 export * from './domain/value-object.base';
 export * from './domain/domain-event.base';
 export * from './application/use-case.interface';
+export * from './application/command-query.base';
+export * from './messaging/event-bus.interface';
 export * from './types/result.type';
+export * from './types/exceptions';

@@ -1,45 +1,40 @@
-import { RegisterUserInput, LoginUserInput } from '@barterborsa/shared-types';
-import { RegisterUserUseCase } from '@barterborsa/domain-identity';
+import { CommandBus } from '@nestjs/cqrs';
+import { RegisterUserDto } from '@barterborsa/domain-identity';
 import { AuthService } from './infrastructure/auth/auth.service';
 export declare class AuthController {
-    private readonly registerUseCase;
+    private readonly commandBus;
     private readonly authService;
-    constructor(registerUseCase: RegisterUserUseCase, authService: AuthService);
-    /**
-     * Yeni kullanıcı kaydı.
-     */
-    register(input: RegisterUserInput): Promise<{
+    constructor(commandBus: CommandBus, authService: AuthService);
+    register(dto: RegisterUserDto): Promise<{
         success: boolean;
         message: string;
-        data: {
-            id: string;
-            email: string;
-            role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
-        };
+        data: any;
     }>;
-    /**
-     * Standart giriş (E-posta + Şifre).
-     * Başarılı ise Access ve Refresh token döner.
-     */
-    login(input: LoginUserInput): Promise<{
+    login(input: any): Promise<{
         success: boolean;
         message: string;
         data: {
             accessToken: string;
             refreshToken: string;
-            user: {
-                id: string;
-                email: string;
-                role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
-                firstName: string | undefined;
-                lastName: string | undefined;
-            };
+            user: import("@barterborsa/domain-identity").UserResponseDto;
         };
     }>;
-    /**
-     * Çıkış işlemi (Blacklist kontrolü vb. burada tetiklenebilir).
-     */
-    logout(): Promise<{
+    refresh(refreshToken: string): Promise<{
+        success: boolean;
+        data: {
+            accessToken: string;
+            refreshToken: string;
+        };
+    }>;
+    logout(req: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    forgotPassword(dto: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    resetPassword(dto: any): Promise<{
         success: boolean;
         message: string;
     }>;

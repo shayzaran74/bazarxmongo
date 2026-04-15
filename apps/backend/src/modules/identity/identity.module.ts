@@ -1,6 +1,5 @@
-// apps/backend/src/modules/identity/identity.module.ts
-
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule, PrismaService } from '@barterborsa/shared-persistence';
 import { 
   SharedSecurityModule, 
@@ -9,50 +8,108 @@ import {
 } from '@barterborsa/shared-security';
 import { 
   PrismaUserRepository, 
-  RegisterUserUseCase, 
-  LoginUserUseCase,
-  IUserRepository
+  PrismaUserProfileRepository,
+  PrismaUserAddressRepository,
+  RegisterUserHandler,
+  LoginUserHandler,
+  UpdateProfileHandler,
+  ChangePasswordHandler,
+  AddAddressHandler,
+  UpdateAddressHandler,
+  DeleteAddressHandler,
+  SetTransactionPinHandler,
+  GetUserHandler,
+  GetProfileHandler,
+  ListUsersHandler,
+  GetAddressesHandler,
+  GetLoginHistoryHandler,
+  UserRegisteredHandler,
+  UserUpdatedHandler,
+  SessionService,
+  IdentityEventPublisher,
+  LocalStrategy,
+  ForgotPasswordHandler,
+  ResetPasswordHandler,
+  PrismaVerificationTokenRepository
 } from '@barterborsa/domain-identity';
 import { AuthController } from './auth.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
+import { ProfileController } from './profile.controller';
+import { AddressController } from './address.controller';
+import { UserController } from './user.controller';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { TokenService } from './infrastructure/auth/token.service';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
 
+const Handlers = [
+  RegisterUserHandler,
+  LoginUserHandler,
+  UpdateProfileHandler,
+  ChangePasswordHandler,
+  AddAddressHandler,
+  UpdateAddressHandler,
+  DeleteAddressHandler,
+  SetTransactionPinHandler,
+  GetUserHandler,
+  GetProfileHandler,
+  ListUsersHandler,
+  GetAddressesHandler,
+  GetLoginHistoryHandler,
+  UserRegisteredHandler,
+  UserUpdatedHandler,
+  ForgotPasswordHandler,
+  ResetPasswordHandler,
+];
+
 @Module({
   imports: [
+    CqrsModule,
     SharedSecurityModule,
     PrismaModule,
   ],
   controllers: [
     AuthController,
     GoogleOAuthController,
+    ProfileController,
+    AddressController,
+    UserController,
   ],
   providers: [
     AuthService,
     TokenService,
     GoogleAuthGuard,
     GoogleOAuthStrategy,
+    SessionService,
+    IdentityEventPublisher,
+    LocalStrategy,
+    ...Handlers,
     {
       provide: 'IUserRepository',
       useFactory: (prisma: PrismaService) => new PrismaUserRepository(prisma),
       inject: [PrismaService],
     },
     {
-      provide: RegisterUserUseCase,
-      useFactory: (repo: IUserRepository, hash: HashingService) => new RegisterUserUseCase(repo, hash),
-      inject: ['IUserRepository', HashingService],
+      provide: 'IUserProfileRepository',
+      useFactory: (prisma: PrismaService) => new PrismaUserProfileRepository(prisma),
+      inject: [PrismaService],
     },
     {
-      provide: LoginUserUseCase,
-      useFactory: (repo: IUserRepository, hash: HashingService) => new LoginUserUseCase(repo, hash),
-      inject: ['IUserRepository', HashingService],
+      provide: 'IUserAddressRepository',
+      useFactory: (prisma: PrismaService) => new PrismaUserAddressRepository(prisma),
+      inject: [PrismaService],
     },
+    {
+      provide: 'IVerificationTokenRepository',
+      useFactory: (prisma: PrismaService) => new PrismaVerificationTokenRepository(prisma),
+      inject: [PrismaService],
+    },
+    {
+      provide: 'IEventBus',
+      useValue: { publish: async (topic: string, data: any) => console.log(`[EventBus] ${topic}`, data) }, 
+    }
   ],
-  exports: [AuthService, TokenService, RegisterUserUseCase],
+  exports: [AuthService, TokenService],
 })
 export class IdentityModule {
-  constructor(private readonly googleStrategy: GoogleOAuthStrategy) {
-    // Strateji başlatıldı.
-  }
+  constructor(private readonly googleStrategy: GoogleOAuthStrategy) {}
 }

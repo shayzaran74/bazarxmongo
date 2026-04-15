@@ -1,5 +1,4 @@
 "use strict";
-// apps/backend/src/modules/identity/infrastructure/auth/auth.service.ts
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -12,24 +11,23 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var AuthService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
+const cqrs_1 = require("@nestjs/cqrs");
 const domain_identity_1 = require("@barterborsa/domain-identity");
 const token_service_1 = require("./token.service");
-const shared_security_1 = require("@barterborsa/shared-security");
-const domain_identity_2 = require("@barterborsa/domain-identity");
 const shared_persistence_1 = require("@barterborsa/shared-persistence");
-let AuthService = class AuthService {
-    loginUserUseCase;
+let AuthService = AuthService_1 = class AuthService {
+    commandBus;
     tokenService;
-    hashingService;
     prisma;
     userRepository;
-    constructor(loginUserUseCase, tokenService, hashingService, prisma, userRepository) {
-        this.loginUserUseCase = loginUserUseCase;
+    logger = new common_1.Logger(AuthService_1.name);
+    constructor(commandBus, tokenService, prisma, userRepository) {
+        this.commandBus = commandBus;
         this.tokenService = tokenService;
-        this.hashingService = hashingService;
         this.prisma = prisma;
         this.userRepository = userRepository;
     }
@@ -37,7 +35,7 @@ let AuthService = class AuthService {
      * E-posta ve şifre ile giriş işlemi.
      */
     async login(input) {
-        const result = await this.loginUserUseCase.execute(input);
+        const result = await this.commandBus.execute(new domain_identity_1.LoginUserCommand(input));
         if (!result.success) {
             throw new common_1.UnauthorizedException(result.error.message);
         }
@@ -46,7 +44,7 @@ let AuthService = class AuthService {
         // Session kaydı oluştur
         await this.createSession(user.id);
         return {
-            user: this.toResponseDto(user),
+            user: domain_identity_1.UserResponseDto.fromEntity(user),
             ...tokens,
         };
     }
@@ -56,8 +54,7 @@ let AuthService = class AuthService {
     async googleLogin(googleProfile) {
         let user = await this.userRepository.findByEmail(googleProfile.email);
         if (!user) {
-            // Kullanıcı yoksa Google bilgileriyle oluştur (Şifresiz hesap)
-            const userResult = domain_identity_2.User.create({
+            const userResult = domain_identity_1.User.create({
                 email: googleProfile.email,
                 googleId: googleProfile.googleId,
                 firstName: googleProfile.firstName,
@@ -74,29 +71,52 @@ let AuthService = class AuthService {
             await this.userRepository.save(user);
         }
         const tokens = await this.generateUserTokens(user);
-        // Session kaydı oluştur
         await this.createSession(user.id);
         return {
-            user: this.toResponseDto(user),
+            user: domain_identity_1.UserResponseDto.fromEntity(user),
             ...tokens,
         };
     }
     /**
-     * Kullanıcı için Session oluşturur (PostgreSQL).
-     * Redis session mantığı TokenService/Blacklist üzerinden yürütülür.
+     * Refresh token ile yeni access token üretir.
      */
+    async refresh(refreshToken) {
+        try {
+            const payload = await this.tokenService.verifyRefreshToken(refreshToken);
+            const user = await this.userRepository.findById(payload.sub);
+            if (!user || user.status !== 'ACTIVE') {
+                throw new common_1.UnauthorizedException('Kullanıcı bulunamadı veya pasif.');
+            }
+            // Old token'ı revoke et (rotation)
+            await this.tokenService.revokeRefreshToken(refreshToken);
+            const tokens = await this.generateUserTokens(user);
+            return tokens;
+        }
+        catch (e) {
+            this.logger.error(`Refresh failed: ${e.message}`);
+            throw new common_1.UnauthorizedException('Refresh token geçersiz.');
+        }
+    }
+    /**
+     * Çıkış işlemi: Session silinir ve token blacklist'e eklenir.
+     */
+    async logout(userId, refreshToken) {
+        // Session'ları sil
+        await this.prisma.session.deleteMany({ where: { userId } });
+        // Refresh token'ı geçersiz kıl
+        if (refreshToken) {
+            await this.tokenService.revokeRefreshToken(refreshToken);
+        }
+    }
     async createSession(userId) {
         await this.prisma.session.create({
             data: {
                 userId,
-                userAgent: 'Backend-Node', // İleride request'ten alınabilir
-                ipAddress: '127.0.0.1', // İleride request'ten alınabilir
+                userAgent: 'Backend-Node',
+                ipAddress: '127.0.0.1',
             },
         });
     }
-    /**
-     * Kullanıcı için yeni token seti üretir.
-     */
     async generateUserTokens(user) {
         const accessToken = await this.tokenService.generateAccessToken({
             id: user.id,
@@ -110,26 +130,13 @@ let AuthService = class AuthService {
         });
         return { accessToken, refreshToken };
     }
-    /**
-     * User entity'sini frontend'e dönecek güvenli bir nesneye çevirir.
-     */
-    toResponseDto(user) {
-        return {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        };
-    }
 };
 exports.AuthService = AuthService;
-exports.AuthService = AuthService = __decorate([
+exports.AuthService = AuthService = AuthService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __param(4, (0, common_1.Inject)('IUserRepository')),
-    __metadata("design:paramtypes", [domain_identity_1.LoginUserUseCase,
+    __param(3, (0, common_1.Inject)('IUserRepository')),
+    __metadata("design:paramtypes", [cqrs_1.CommandBus,
         token_service_1.TokenService,
-        shared_security_1.HashingService,
         shared_persistence_1.PrismaService, Object])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

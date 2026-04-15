@@ -35,7 +35,8 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/i18n',
-    'nuxt-icon'
+    'nuxt-icon',
+    '@vueuse/nuxt'
   ],
 
   i18n: {

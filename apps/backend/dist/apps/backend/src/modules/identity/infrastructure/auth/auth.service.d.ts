@@ -1,28 +1,22 @@
-import { LoginUserUseCase, IUserRepository } from '@barterborsa/domain-identity';
+import { CommandBus } from '@nestjs/cqrs';
+import { IUserRepository, UserResponseDto } from '@barterborsa/domain-identity';
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { TokenService } from './token.service';
-import { HashingService } from '@barterborsa/shared-security';
 import { PrismaService } from '@barterborsa/shared-persistence';
 export declare class AuthService {
-    private readonly loginUserUseCase;
+    private readonly commandBus;
     private readonly tokenService;
-    private readonly hashingService;
     private readonly prisma;
     private readonly userRepository;
-    constructor(loginUserUseCase: LoginUserUseCase, tokenService: TokenService, hashingService: HashingService, prisma: PrismaService, userRepository: IUserRepository);
+    private readonly logger;
+    constructor(commandBus: CommandBus, tokenService: TokenService, prisma: PrismaService, userRepository: IUserRepository);
     /**
      * E-posta ve şifre ile giriş işlemi.
      */
     login(input: LoginUserInput): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: string;
-            email: string;
-            role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
-            firstName: string | undefined;
-            lastName: string | undefined;
-        };
+        user: UserResponseDto;
     }>;
     /**
      * Google OAuth ile giriş veya otomatik kayıt işlemi.
@@ -35,25 +29,19 @@ export declare class AuthService {
     }): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: string;
-            email: string;
-            role: "USER" | "VENDOR" | "ADMIN" | "SUPER_ADMIN";
-            firstName: string | undefined;
-            lastName: string | undefined;
-        };
+        user: UserResponseDto;
     }>;
     /**
-     * Kullanıcı için Session oluşturur (PostgreSQL).
-     * Redis session mantığı TokenService/Blacklist üzerinden yürütülür.
+     * Refresh token ile yeni access token üretir.
      */
+    refresh(refreshToken: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+    }>;
+    /**
+     * Çıkış işlemi: Session silinir ve token blacklist'e eklenir.
+     */
+    logout(userId: string, refreshToken?: string): Promise<void>;
     private createSession;
-    /**
-     * Kullanıcı için yeni token seti üretir.
-     */
     private generateUserTokens;
-    /**
-     * User entity'sini frontend'e dönecek güvenli bir nesneye çevirir.
-     */
-    private toResponseDto;
 }

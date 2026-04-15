@@ -1,5 +1,4 @@
 "use strict";
-// packages/shared/shared-core/src/index.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -20,5 +19,8 @@ __exportStar(require("./domain/aggregate-root.base"), exports);
 __exportStar(require("./domain/value-object.base"), exports);
 __exportStar(require("./domain/domain-event.base"), exports);
 __exportStar(require("./application/use-case.interface"), exports);
+__exportStar(require("./application/command-query.base"), exports);
+__exportStar(require("./messaging/event-bus.interface"), exports);
 __exportStar(require("./types/result.type"), exports);
+__exportStar(require("./types/exceptions"), exports);
 //# sourceMappingURL=index.js.map

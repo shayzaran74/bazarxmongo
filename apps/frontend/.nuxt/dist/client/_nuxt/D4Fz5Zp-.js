@@ -1,1 +1,0 @@
-import{J as a,I as e}from"./E9sPtk9Q.js";import{u as o}from"./Bt3drdXX.js";const s=a((t,r)=>{if(!o().isAuthenticated&&t.path!=="/auth/login"&&t.path!=="/auth/register")return e("/auth/login")});export{s as default};

@@ -3,6 +3,7 @@ export * from './auth/jwt.strategy';
 export * from './auth/google-oauth.strategy';
 export * from './auth/jwt-auth.guard';
 export * from './auth/roles.guard';
+export * from './auth/roles.decorator';
 export * from './auth/public.decorator';
 export * from './encryption/hashing.service';
 export * from './encryption/encryption.service';

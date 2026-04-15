@@ -1,20 +1,17 @@
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { Optional } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 export declare class PrismaUserRepository implements IUserRepository {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    findById(id: string): Promise<Optional<User>>;
-    findAll(): Promise<User[]>;
-    findByEmail(email: string): Promise<Optional<User>>;
+    findById(id: string): Promise<User | null>;
+    findByEmail(email: string): Promise<User | null>;
+    findByGoogleId(googleId: string): Promise<User | null>;
+    findByPhoneNumber(phoneNumber: string): Promise<User | null>;
     exists(email: string): Promise<boolean>;
     save(user: User): Promise<void>;
+    update(user: User): Promise<void>;
     delete(id: string): Promise<void>;
-    protected toDomain(record: unknown): User;
-    protected toPersistence(user: User): Prisma.UserCreateInput & {
-        firstName?: string;
-        lastName?: string;
-    };
+    findMany(pagination: any, filters?: any): Promise<User[]>;
+    count(filters?: any): Promise<number>;
 }

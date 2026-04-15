@@ -31,13 +31,19 @@
 
     <!-- Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div v-for="stat in stats" :key="stat.label" class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm group hover:shadow-xl transition-all">
+      <component 
+        :is="stat.link ? 'NuxtLink' : 'div'"
+        v-for="stat in stats" 
+        :key="stat.label" 
+        :to="stat.link"
+        class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm group hover:shadow-xl transition-all block"
+      >
         <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary-600 group-hover:text-white transition-colors">
           <Icon :name="stat.icon" class="w-6 h-6" />
         </div>
         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{{ stat.label }}</p>
         <p class="text-2xl font-display font-black text-dark-950 italic">{{ stat.value }}</p>
-      </div>
+      </component>
     </div>
 
     <!-- Content Placeholder -->
@@ -55,17 +61,25 @@
 </template>
 
 <script setup lang="ts">
-const { user, fullName, avatarUrl, userRole, logout } = useAuth();
+const { user, fullName, userRole, logout } = useAuth();
+const { profile, loading, fetchProfile } = useIdentity();
+const { resolveImageUrl } = useAppImage();
+
+const avatarUrl = computed(() => resolveImageUrl(profile.value?.avatar, 'avatar'));
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(price);
 };
 
-const stats = [
+onMounted(() => {
+  fetchProfile();
+});
+
+const stats = computed(() => [
   { label: 'Cüzdan Bakiyesi', value: formatPrice(user.value?.Wallet?.balance || 0), icon: 'heroicons:wallet' },
   { label: 'Aktif Teklifler', value: '0', icon: 'heroicons:arrows-right-left' },
-  { label: 'Tamamlanan Takaslar', value: '0', icon: 'heroicons:check-badge' }
-];
+  { label: 'Kayıtlı Adresler', value: '...', icon: 'heroicons:map-pin', link: '/profile/addresses' }
+]);
 
 definePageMeta({
   middleware: ['auth']

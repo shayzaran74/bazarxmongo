@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import type { RegisterUserInput, LoginUserInput } from '@barterborsa/shared-types';
+import type { ForgotPasswordDto, ResetPasswordDto, AuthResponse } from '~/types/auth';
 
 interface UserState {
   id: string;
@@ -10,12 +11,6 @@ interface UserState {
   firstName?: string;
   lastName?: string;
   avatar?: string;
-}
-
-interface LoginResponse {
-  user: UserState;
-  accessToken: string;
-  refreshToken: string;
 }
 
 interface AuthState {
@@ -56,7 +51,7 @@ export const useAuthStore = defineStore('auth', {
       const userCookie = useCookie<UserState | null>('user', { maxAge: 60 * 60 * 24 * 7 });
 
       try {
-        const response = await $api<LoginResponse>('auth/login', {
+        const response = await $api<AuthResponse>('auth/login', {
           method: 'POST',
           body: input,
         });
@@ -107,6 +102,51 @@ export const useAuthStore = defineStore('auth', {
       } catch (err: unknown) {
         const error = err as { data?: { message?: string } };
         this.error = error.data?.message || 'Kayıt başarısız.';
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Şifre sıfırlama talebi gönder
+     */
+    async forgotPassword(email: string) {
+      this.loading = true;
+      this.error = null;
+      const { $api } = useApi();
+
+      try {
+        const response = await $api<void>('auth/forgot-password', {
+          method: 'POST',
+          body: { email }
+        });
+        return response.success;
+      } catch (err: unknown) {
+        this.error = 'Talep gönderilemedi.';
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Şifreyi yeni şifre ile sıfırla
+     */
+    async resetPassword(dto: ResetPasswordDto) {
+      this.loading = true;
+      this.error = null;
+      const { $api } = useApi();
+
+      try {
+        const response = await $api<void>('auth/reset-password', {
+          method: 'POST',
+          body: dto
+        });
+        return response.success;
+      } catch (err: unknown) {
+        const error = err as { data?: { message?: string } };
+        this.error = error.data?.message || 'Şifre sıfırlanamadı.';
         return false;
       } finally {
         this.loading = false;

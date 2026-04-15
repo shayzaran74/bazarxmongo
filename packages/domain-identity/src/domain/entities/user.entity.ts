@@ -1,6 +1,5 @@
-// packages/domain-identity/src/domain/entities/user.entity.ts
-
 import { AggregateRoot, Result, Ok, Err } from '@barterborsa/shared-core';
+import { UserRegisteredEvent } from '../events/user-registered.event';
 
 export interface UserProps {
   email: string;
@@ -18,6 +17,7 @@ export interface UserProps {
   lastLoginAt?: Date;
   lastSeenAt?: Date;
   deletedAt?: Date;
+  referredById?: string;
 }
 
 export class User extends AggregateRoot<UserProps> {
@@ -37,6 +37,16 @@ export class User extends AggregateRoot<UserProps> {
       platform: props.platform || 'BAZARX',
       isEmailVerified: props.isEmailVerified ?? false,
     }, id);
+
+    // Yeni kullanıcı kaydı ise event ekle
+    if (!id) {
+      user.addDomainEvent(new UserRegisteredEvent(
+        user.id,
+        user.email,
+        user.role,
+        user.platform
+      ));
+    }
 
     return Ok(user);
   }
@@ -64,4 +74,7 @@ export class User extends AggregateRoot<UserProps> {
   get status(): 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING_VERIFICATION' { return this.props.status; }
   get platform(): 'BAZARX' | 'BARTERBORSA' { return this.props.platform; }
   get passwordHash(): string | undefined { return this.props.passwordHash; }
+  get isEmailVerified(): boolean { return this.props.isEmailVerified; }
+  get lastLoginAt(): Date | undefined { return this.props.lastLoginAt; }
+  get googleId(): string | undefined { return this.props.googleId; }
 }

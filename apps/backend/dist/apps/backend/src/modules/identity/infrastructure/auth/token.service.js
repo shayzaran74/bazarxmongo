@@ -1,5 +1,4 @@
 "use strict";
-// apps/backend/src/modules/identity/infrastructure/auth/token.service.ts
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -14,9 +13,6 @@ exports.TokenService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const shared_security_1 = require("@barterborsa/shared-security");
-/**
- * Token yönetimi ve rotasyonundan sorumlu servis.
- */
 let TokenService = class TokenService {
     jwtService;
     redisService;
@@ -24,9 +20,6 @@ let TokenService = class TokenService {
         this.jwtService = jwtService;
         this.redisService = redisService;
     }
-    /**
-     * 15 dakika ömürlü Access Token üretir.
-     */
     async generateAccessToken(user) {
         const payload = {
             sub: user.id,
@@ -39,9 +32,6 @@ let TokenService = class TokenService {
             expiresIn: '15m'
         });
     }
-    /**
-     * 7 gün ömürlü Refresh Token üretir.
-     */
     async generateRefreshToken(user) {
         const payload = {
             sub: user.id,
@@ -52,18 +42,29 @@ let TokenService = class TokenService {
             expiresIn: '7d'
         });
     }
-    /**
-     * Token'ı Redis blacklist'e ekleyerek geçersiz kılar (Logout için).
-     */
+    async verifyRefreshToken(token) {
+        try {
+            const isBlacklisted = await this.isTokenBlacklisted(token);
+            if (isBlacklisted) {
+                throw new common_1.UnauthorizedException('Token geçersiz (Blacklist)');
+            }
+            return this.jwtService.verify(token, {
+                secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-123'
+            });
+        }
+        catch (e) {
+            throw new common_1.UnauthorizedException('Geçersiz Refresh Token');
+        }
+    }
     async blacklistToken(token, expiresInSeconds) {
         await this.redisService.set(`blacklist:${token}`, '1', expiresInSeconds);
     }
-    /**
-     * Token'ın blacklist'te olup olmadığını kontrol eder.
-     */
     async isTokenBlacklisted(token) {
         const result = await this.redisService.get(`blacklist:${token}`);
         return result !== null;
+    }
+    async revokeRefreshToken(token) {
+        await this.blacklistToken(token, 7 * 24 * 60 * 60); // 7 days
     }
 };
 exports.TokenService = TokenService;

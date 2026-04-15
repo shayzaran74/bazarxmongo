@@ -22,6 +22,7 @@ __exportStar(require("./auth/jwt.strategy"), exports);
 __exportStar(require("./auth/google-oauth.strategy"), exports);
 __exportStar(require("./auth/jwt-auth.guard"), exports);
 __exportStar(require("./auth/roles.guard"), exports);
+__exportStar(require("./auth/roles.decorator"), exports);
 __exportStar(require("./auth/public.decorator"), exports);
 // Services
 __exportStar(require("./encryption/hashing.service"), exports);

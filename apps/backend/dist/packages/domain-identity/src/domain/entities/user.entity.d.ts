@@ -15,6 +15,7 @@ export interface UserProps {
     lastLoginAt?: Date;
     lastSeenAt?: Date;
     deletedAt?: Date;
+    referredById?: string;
 }
 export declare class User extends AggregateRoot<UserProps> {
     private constructor();
@@ -30,4 +31,7 @@ export declare class User extends AggregateRoot<UserProps> {
     get status(): 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING_VERIFICATION';
     get platform(): 'BAZARX' | 'BARTERBORSA';
     get passwordHash(): string | undefined;
+    get isEmailVerified(): boolean;
+    get lastLoginAt(): Date | undefined;
+    get googleId(): string | undefined;
 }

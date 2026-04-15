@@ -27,7 +27,8 @@ export const useAuth = () => {
     if (!avatar) return null;
     if (avatar.startsWith('http')) return avatar;
     
-    const apiBase = config.public.apiBase || 'http://localhost:3001';
+    const apiBase = config.public.apiBase;
+    if (!apiBase) return avatar;
     return `${apiBase}/uploads/avatars/${avatar}`;
   });
 

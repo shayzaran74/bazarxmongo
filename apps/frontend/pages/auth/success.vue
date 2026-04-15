@@ -30,7 +30,7 @@ onMounted(async () => {
       // Token'ları çerezlere kaydet
       const accessCookie = useCookie('access_token', { maxAge: 60 * 15 });
       const refreshCookie = useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7 });
-      const userCookie = useCookie<any>('user', { maxAge: 60 * 60 * 24 * 7 });
+      const userCookie = useCookie<{ id: string; email: string; role: string }>('user', { maxAge: 60 * 60 * 24 * 7 });
       
       accessCookie.value = accessToken as string;
       refreshCookie.value = refreshToken as string;
