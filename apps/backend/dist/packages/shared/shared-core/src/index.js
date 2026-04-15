@@ -23,4 +23,5 @@ __exportStar(require("./application/command-query.base"), exports);
 __exportStar(require("./messaging/event-bus.interface"), exports);
 __exportStar(require("./types/result.type"), exports);
 __exportStar(require("./types/exceptions"), exports);
+__exportStar(require("./domain/repository.interface"), exports);
 //# sourceMappingURL=index.js.map

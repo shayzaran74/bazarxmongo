@@ -1,0 +1,170 @@
+// apps/backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String     @id @default(cuid())
+  email           String     @unique
+  phoneNumber     String?    @unique @map("phone_number")
+  password        String? // ← nullable yapıldı (Google OAuth kullanıcıları için)
+  transactionPin  String?    @map("transaction_pin")
+  role            UserRole   @default(USER)
+  status          UserStatus @default(ACTIVE)
+  platform        Platform   @default(BAZARX)
+  isEmailVerified Boolean    @default(false) @map("is_email_verified")
+  googleId        String?    @unique @map("google_id")
+  lockoutUntil    DateTime?  @map("lockout_until")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+  lastLoginAt     DateTime?  @map("last_login_at")
+  lastSeenAt      DateTime?  @map("last_seen_at")
+  referredById    String?    @map("referred_by_id")
+
+  // Identity modülüne ait relation'lar
+  profile            UserProfile?
+  addresses          UserAddress[]
+  refreshTokens      RefreshToken[]
+  sessions           Session[]
+  loginHistory       LoginHistory[]
+  verificationTokens VerificationToken[]
+  ssoTokens          SSOToken[]
+  referredBy         User?               @relation("Referrals", fields: [referredById], references: [id])
+  referrals          User[]              @relation("Referrals")
+
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model UserProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique @map("user_id")
+  firstName String?   @map("first_name")
+  lastName  String?   @map("last_name")
+  avatar    String?
+  bio       String?
+  birthday  DateTime?
+  gender    String?
+  city      String?
+  district  String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserAddress {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  title        String // Ev, İş vb.
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  email        String?
+  phone        String
+  addressLine1 String    @map("address_line1")
+  addressLine2 String?   @map("address_line2")
+  city         String
+  district     String
+  neighborhood String?
+  postalCode   String?   @map("postal_code")
+  isDefault    Boolean   @default(false) @map("is_default")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_addresses")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  status    String // SUCCESS, FAILED
+  reason    String? // Yanlış şifre vb.
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_history")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  type      String // EMAIL, PHONE, PASSWORD_RESET
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_tokens")
+}
+
+model SSOToken {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  provider     String // GOOGLE, APPLE vb.
+  providerId   String   @map("provider_id")
+  accessToken  String?  @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("sso_tokens")
+}
+
+enum UserRole {
+  USER
+  VENDOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum Platform {
+  BAZARX
+  BARTERBORSA
+}

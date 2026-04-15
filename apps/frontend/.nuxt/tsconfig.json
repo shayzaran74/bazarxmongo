@@ -137,7 +137,7 @@
         "../../../node_modules/.pnpm/@nuxtjs+i18n@8.5.6_magicast@0.5.2_rollup@4.60.1_vue@3.5.32_typescript@5.9.3_/node_modules/@nuxtjs/i18n/dist/runtime/composables/index"
       ],
       "#icon-collections": [
-        "./icon-collections"
+        "./icon-collections.mjs"
       ],
       "#vue-router": [
         "../../../node_modules/.pnpm/vue-router@4.6.4_vue@3.5.32_typescript@5.9.3_/node_modules/vue-router"
@@ -252,6 +252,6 @@
     "../../../node_modules/.pnpm/@nuxt+devtools@3.2.4_vite@7.3.2_@types+node@20.19.39_jiti@2.6.1_terser@5.46.1_yaml@2.8.3__vue@3.5.32_typescript@5.9.3_/node_modules/dist/runtime/server",
     "../../../node_modules/.pnpm/@nuxt+telemetry@2.8.0_@nuxt+kit@3.21.2_magicast@0.5.2_/node_modules/runtime/server",
     "../../../node_modules/.pnpm/@nuxt+telemetry@2.8.0_@nuxt+kit@3.21.2_magicast@0.5.2_/node_modules/dist/runtime/server",
-    "dev"
+    "../.output"
   ]
 }

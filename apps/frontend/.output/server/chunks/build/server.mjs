@@ -704,7 +704,7 @@ const _routes = [
     name: "index",
     path: "/",
     meta: __nuxt_page_meta$3 || {},
-    component: () => import('./index-C9ixsqNl.mjs')
+    component: () => import('./index-BkGVm-VZ.mjs')
   },
   {
     name: "barter",
@@ -725,13 +725,13 @@ const _routes = [
     name: "profile",
     path: "/profile",
     meta: { "middleware": ["auth"] },
-    component: () => import('./profile-CSaSJBqi.mjs'),
+    component: () => import('./profile-BIGDlHVb.mjs'),
     children: [
       {
         name: "profile-addresses",
         path: "addresses",
         meta: { "middleware": ["auth"] },
-        component: () => import('./addresses-CQO-942-.mjs')
+        component: () => import('./addresses-CG16onxM.mjs')
       }
     ]
   },
@@ -739,7 +739,7 @@ const _routes = [
     name: "auth-login",
     path: "/auth/login",
     meta: __nuxt_page_meta$2 || {},
-    component: () => import('./login-I2GuYXH7.mjs')
+    component: () => import('./login-CwGN_3lv.mjs')
   },
   {
     name: "legal-kvkk",
@@ -755,13 +755,13 @@ const _routes = [
     name: "auth-success",
     path: "/auth/success",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./success-BljhTEEY.mjs')
+    component: () => import('./success-DD6HjmHE.mjs')
   },
   {
     name: "auth-register",
     path: "/auth/register",
     meta: __nuxt_page_meta || {},
-    component: () => import('./register-Cv5Y7C2-.mjs')
+    component: () => import('./register-BbfwYPDQ.mjs')
   },
   {
     name: "legal-privacy",
@@ -771,12 +771,12 @@ const _routes = [
   {
     name: "products",
     path: "/products",
-    component: () => import('./index-CViGc-JF.mjs')
+    component: () => import('./index-B-mc_pzn.mjs')
   },
   {
     name: "products-slug",
     path: "/products/:slug()",
-    component: () => import('./_slug_-7O4MbDAJ.mjs')
+    component: () => import('./_slug_-CIhfxLTr.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -922,7 +922,7 @@ const globalMiddleware = [
   manifest_45route_45rule
 ];
 const namedMiddleware = {
-  auth: () => import('./auth-BdE70pzM.mjs')
+  auth: () => import('./auth-CMr2mqx1.mjs')
 };
 const plugin$1 = /* @__PURE__ */ defineNuxtPlugin({
   name: "nuxt:router",
@@ -7282,8 +7282,8 @@ const plugins = [
   i18n_DoUFXWV6LnxRosC_SK_Bj2CtWyhMaRdzR8GWTtTaSGc
 ];
 const layouts = {
-  auth: defineAsyncComponent(() => import('./auth-D9hOi8z8.mjs').then((m) => m.default || m)),
-  default: defineAsyncComponent(() => import('./default-Dprdm8WN.mjs').then((m) => m.default || m))
+  auth: defineAsyncComponent(() => import('./auth-DWw0BiML.mjs').then((m) => m.default || m)),
+  default: defineAsyncComponent(() => import('./default-CitKXmkd.mjs').then((m) => m.default || m))
 };
 const routeRulesMatcher = _routeRulesMatcher;
 const LayoutLoader = defineComponent({

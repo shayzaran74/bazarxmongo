@@ -1,0 +1,559 @@
+// apps/financial-service/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("FINANCIAL_DATABASE_URL")
+}
+
+// Wallet — ana cüzdan (XP, barter bakiye, TL bakiye)
+model Wallet {
+  id                  String               @id @default(cuid())
+  balanceTL           Decimal              @default(0) @map("balance_tl") @db.Decimal(18, 2)
+  barterBalance       Decimal              @default(0.00) @map("barter_balance") @db.Decimal(15, 2)
+  lastXpAdsEarnedDate DateTime?            @map("last_xp_ads_earned_date")
+  userId              String               @unique @map("user_id")
+  xpAdsBalance        Decimal              @default(0) @map("xp_ads_balance") @db.Decimal(18, 2)
+  xpCommissionBalance Decimal              @default(0) @map("xp_commission_balance") @db.Decimal(18, 2)
+  xpPoints            Int                  @default(0) @map("xp_points")
+  xpTradeBalance      Decimal              @default(0) @map("xp_trade_balance") @db.Decimal(18, 2)
+  transactions        TransactionHistory[]
+  @@map("wallets")
+}
+
+// Account — hesap sistemi (TRY, Barter, vs.)
+model Account {
+  id                 String                     @id @default(cuid())
+  type               AccountType
+  currency           WalletCurrency             @default(TRY)
+  balance            Decimal                    @default(0) @db.Decimal(18, 2)
+  status             AccountStatus              @default(ACTIVE)
+  availableBalance   Decimal                    @default(0) @map("available_balance") @db.Decimal(18, 2)
+  blockedBalance     Decimal                    @default(0) @map("blocked_balance") @db.Decimal(18, 2)
+  createdAt          DateTime                   @default(now()) @map("created_at")
+  creditLimit        Decimal                    @default(0) @map("credit_limit") @db.Decimal(18, 2)
+  isDirty            Boolean                    @default(true) @map("is_dirty")
+  lastReconciledAt   DateTime?                  @map("last_reconciled_at")
+  ownerType          AccountOwnerType           @default(CUSTOMER) @map("owner_type")
+  updatedAt          DateTime                   @updatedAt @map("updated_at")
+  userId             String                     @map("user_id")
+  vendorTier         VendorTier?                @map("vendor_tier")
+  holds              AccountHold[]
+  topUpRequests      AccountTopUpRequest[]
+  transactions       AccountTransaction[]
+  withdrawalRequests AccountWithdrawalRequest[]
+  @@unique([userId, type])
+  @@index([ownerType])
+  @@map("accounts")
+}
+
+// AccountTransaction — hesap hareketleri
+model AccountTransaction {
+  id             String               @id @default(cuid())
+  type           TransactionType
+  direction      TransactionDirection
+  amount         Decimal              @db.Decimal(18, 2)
+  description    String?
+  status         TransactionStatus    @default(COMPLETED)
+  metadata       Json?
+  accountId      String               @map("account_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  idempotencyKey String?              @unique @map("idempotency_key")
+  referenceId    String?              @map("reference_id")
+  referenceType  String?              @map("reference_type")
+  settledAt      DateTime?            @map("settled_at")
+  account        Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([accountId, createdAt(sort: Desc)])
+  @@index([referenceId, referenceType])
+  @@index([referenceId, type])
+  @@map("account_transactions")
+}
+
+// AccountHold — bloke edilmiş bakiye
+model AccountHold {
+  id                    String                @id @default(cuid())
+  amount                Decimal               @db.Decimal(18, 2)
+  reason                HoldReason
+  status                HoldStatus            @default(ACTIVE)
+  notes                 String?
+  accountId             String                @map("account_id")
+  createdAt             DateTime              @default(now()) @map("created_at")
+  createdBy             String?               @map("created_by")
+  expiresAt             DateTime?             @map("expires_at")
+  idempotencyKey        String?               @unique @map("idempotency_key")
+  referenceId           String?               @map("reference_id")
+  referenceType         String?               @map("reference_type")
+  releasedAt            DateTime?             @map("released_at")
+  releasedBy            String?               @map("released_by")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+  account               Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([accountId, status, expiresAt])
+  @@index([referenceType, referenceId])
+  @@map("account_holds")
+}
+
+// AccountTopUpRequest — para yükleme talepleri
+model AccountTopUpRequest {
+  id               String        @id @default(cuid())
+  amount           Decimal       @db.Decimal(18, 2)
+  notes            String?
+  accountId        String?       @map("account_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  paymentMethod    PaymentMethod @map("payment_method")
+  paymentReference String?       @map("payment_reference")
+  processedAt      DateTime?     @map("processed_at")
+  processedBy      String?       @map("processed_by")
+  rejectionReason  String?       @map("rejection_reason")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  userId           String        @map("user_id")
+  status           TopUpStatus   @default(PENDING)
+  account          Account?      @relation(fields: [accountId], references: [id])
+  @@index([userId])
+  @@index([accountId])
+  @@map("account_top_up_requests")
+}
+
+// AccountWithdrawalRequest — para çekme talepleri
+model AccountWithdrawalRequest {
+  id              String           @id @default(cuid())
+  amount          Decimal          @db.Decimal(18, 2)
+  iban            String
+  accountHolder   String           @map("account_holder")
+  accountId       String?          @map("account_id")
+  bankName        String           @map("bank_name")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  notes           String?
+  processedAt     DateTime?        @map("processed_at")
+  processedBy     String?          @map("processed_by")
+  rejectionReason String?          @map("rejection_reason")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  userId          String           @map("user_id")
+  status          WithdrawalStatus @default(PENDING)
+  account         Account?         @relation(fields: [accountId], references: [id])
+  @@index([userId])
+  @@index([accountId])
+  @@map("account_withdrawal_requests")
+}
+
+// GeneralLedger — genel muhasebe defteri (çift kayıt)
+model GeneralLedger {
+  id              String     @default(cuid())
+  type            LedgerType
+  payload         Json?
+  note            String?
+  actorId         String?    @map("actor_id")
+  amount          Decimal?   @db.Decimal(18, 2)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  creditAccountId String?    @map("credit_account_id")
+  debitAccountId  String?    @map("debit_account_id")
+  refType         String?    @map("ref_type")
+  referenceId     String?    @map("reference_id")
+  @@id([id, createdAt])
+  @@index([type, referenceId])
+  @@index([createdAt])
+  @@index([debitAccountId])
+  @@index([creditAccountId])
+  @@map("general_ledger")
+}
+
+// UserLedgerEntry — kullanıcı bazlı muhasebe
+model UserLedgerEntry {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  amount      Decimal         @db.Decimal(15, 2)
+  currency    WalletCurrency
+  description String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+  createdBy   String?         @map("created_by")
+  referenceId String?         @map("reference_id")
+  userId      String          @map("user_id")
+  @@map("user_ledger_entries")
+}
+
+// Payment — ödeme kayıtları
+model Payment {
+  id                   String              @id @default(cuid())
+  userId               String              @map("user_id")
+  orderId              String?             @map("order_id")
+  amount               Decimal             @db.Decimal(18, 2)
+  paymentType          String              @map("payment_type")
+  paymentMethod        PaymentMethod?      @map("payment_method")
+  status               PaymentStatus       @default(PENDING)
+  metadata             Json?
+  paidAt               DateTime?           @map("paid_at")
+  failedAt             DateTime?           @map("failed_at")
+  failureReason        String?             @map("failure_reason")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  accountTransactionId String?             @map("account_transaction_id")
+  @@index([userId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+// Escrow — emanet hesap
+model Escrow {
+  id             String       @id @default(cuid())
+  orderId        String       @unique @map("order_id")
+  buyerId        String       @map("buyer_id")
+  sellerId       String       @map("seller_id")
+  amount         Decimal      @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  releasedAt     DateTime?    @map("released_at")
+  payoutLog      Json?        @map("payout_log")
+  releasedAmount Decimal      @default(0) @map("released_amount") @db.Decimal(18, 2)
+  status         EscrowStatus @default(PENDING)
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("escrows")
+}
+
+// TransactionHistory — cüzdan işlem geçmişi
+model TransactionHistory {
+  id          String            @id @default(uuid())
+  walletId    String            @map("wallet_id")
+  amount      Decimal           @db.Decimal(15, 2)
+  xpAmount    Int               @default(0) @map("xp_amount")
+  type        String
+  status      TransactionStatus @default(PENDING)
+  referenceId String?           @map("reference_id")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  wallet      Wallet            @relation(fields: [walletId], references: [id])
+  @@index([walletId])
+  @@index([createdAt])
+  @@map("transaction_history")
+}
+
+// GiftCard — hediye kartı
+model GiftCard {
+  id           String                @id @default(cuid())
+  code         String                @unique
+  status       GiftCardStatus        @default(Active)
+  note         String?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  currentValue Decimal               @map("current_value") @db.Decimal(18, 2)
+  customerId   String?               @map("customer_id")
+  expiresAt    DateTime?             @map("expires_at")
+  initialValue Decimal               @map("initial_value") @db.Decimal(18, 2)
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+  transactions GiftCardTransaction[]
+  @@map("gift_cards")
+}
+
+// GiftCardTransaction
+model GiftCardTransaction {
+  id         String   @id @default(cuid())
+  amount     Decimal  @db.Decimal(18, 2)
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  giftCardId String   @map("gift_card_id")
+  orderId    String?  @map("order_id")
+  giftCard   GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  @@map("gift_card_transactions")
+}
+
+// WithdrawalVerification
+model WithdrawalVerification {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  createdAt    DateTime  @default(now()) @map("created_at")
+  expiresAt    DateTime  @map("expires_at")
+  isVerified   Boolean   @default(false) @map("is_verified")
+  userId       String    @unique @map("user_id")
+  verifiedAt   DateTime? @map("verified_at")
+  withdrawalId String    @unique @map("withdrawal_id")
+  @@index([userId])
+  @@index([token])
+  @@map("withdrawal_verifications")
+}
+
+// IdempotencyKey
+model IdempotencyKey {
+  key       String   @id
+  userId    String?  @map("user_id")
+  result    Json?
+  status    String   @default("COMPLETED")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+// DownPaymentPolicy
+model DownPaymentPolicy {
+  id             String   @id @default(uuid())
+  percentage     Decimal  @default(25.0) @db.Decimal(5, 2)
+  active         Boolean  @default(true)
+  categoryKey    String   @unique @map("category_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+  maxAmount      Decimal? @map("max_amount") @db.Decimal(19, 4)
+  minAmount      Decimal? @map("min_amount") @db.Decimal(19, 4)
+  refundDays     Int      @default(3) @map("refund_days")
+  requireBalance Boolean  @default(true) @map("require_balance")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  @@map("down_payment_policies")
+}
+
+// OutboxMessage
+model OutboxMessage {
+  id            String    @id @default(cuid())
+  aggregateId   String    @map("aggregate_id")
+  aggregateType String    @map("aggregate_type")
+  eventType     String    @map("event_type")
+  payload       Json
+  status        String    @default("PENDING")
+  retryCount    Int       @default(0) @map("retry_count")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+  @@index([status, createdAt])
+  @@map("outbox_messages")
+}
+
+// MembershipTier
+model MembershipTier {
+  id        String   @id @map("id")
+  name      String   @unique @map("name")
+  price     Decimal  @default(0) @map("price") @db.Decimal(18, 2)
+  minXP     Int      @map("min_xp")
+  benefits  Json     @map("benefits")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  @@map("membership_tiers")
+}
+
+// TierBenefit
+model TierBenefit {
+  id                   String   @id @default(cuid())
+  tier                 UserTier @unique
+  annualFee            Decimal  @map("annual_fee") @db.Decimal(18, 2)
+  apiRatePerMin        Int      @map("api_rate_per_min")
+  archiveAfterDays     Int      @map("archive_after_days")
+  burnRate             Decimal  @map("burn_rate") @db.Decimal(5, 2)
+  commissionBarter     Decimal  @map("commission_barter") @db.Decimal(5, 2)
+  commissionCash       Decimal  @map("commission_cash") @db.Decimal(5, 2)
+  createdAt            DateTime @default(now()) @map("created_at")
+  excelBatchLimit      Int      @map("excel_batch_limit")
+  imageCountPerListing Int      @map("image_count_per_listing")
+  listingLimit         Int      @map("listing_limit")
+  roiRate              Decimal  @map("roi_rate") @db.Decimal(5, 2)
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  xpMultiplier         Decimal  @map("xp_multiplier") @db.Decimal(5, 2)
+  @@map("tier_benefits")
+}
+
+// AuditLog — tüm finansal işlemlerin değiştirilemez kaydı
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String                    // TOPUP, WITHDRAW, TRANSFER, HOLD, RELEASE, REFUND, COMMISSION
+  entityType    String   @map("entity_type")    // Account, Wallet, Escrow
+  entityId      String   @map("entity_id")
+  actorId       String?  @map("actor_id")       // userId veya system
+  actorType     String   @default("USER") @map("actor_type") // USER, SYSTEM, ADMIN
+  payload       Json                             // işlem detayları
+  previousState Json?    @map("previous_state")  // önceki durum
+  newState      Json?    @map("new_state")       // sonraki durum
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  correlationId String?  @map("correlation_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+// CommissionRecord — komisyon hesaplama kayıtları
+model CommissionRecord {
+  id               String   @id @default(cuid())
+  orderId          String?  @map("order_id")
+  tradeOfferId     String?  @map("trade_offer_id")
+  vendorId         String   @map("vendor_id")
+  vendorTier       String   @map("vendor_tier")
+  baseAmount       Decimal  @map("base_amount") @db.Decimal(18, 2)
+  commissionRate   Decimal  @map("commission_rate") @db.Decimal(5, 2)
+  commissionAmount Decimal  @map("commission_amount") @db.Decimal(18, 2)
+  commissionType   String   @map("commission_type")   // CASH, BARTER
+  status           String   @default("CALCULATED")     // CALCULATED, COLLECTED, FAILED
+  collectedAt      DateTime? @map("collected_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  idempotencyKey   String?  @unique @map("idempotency_key")
+  @@index([vendorId])
+  @@index([orderId])
+  @@index([tradeOfferId])
+  @@index([status])
+  @@map("commission_records")
+}
+
+enum AccountType {
+  MAIN
+  ESCROW
+  COMMISSION
+  BARTER
+  AD_BUDGET
+  B2B_BARTER
+  BONUS
+  REFUND
+  XP_ADS
+  XP_COMMISSION
+  XP_TRADE
+}
+
+enum AccountStatus { 
+  ACTIVE 
+  FROZEN 
+  CLOSED 
+  SUSPENDED 
+}
+
+enum AccountOwnerType { 
+  CUSTOMER 
+  VENDOR 
+  PLATFORM 
+}
+
+enum WalletCurrency { 
+  TRY 
+  BARTER 
+  USD 
+  EUR 
+}
+
+enum TransactionType { 
+  DEPOSIT 
+  WITHDRAWAL 
+  TRANSFER 
+  COMMISSION 
+  REFUND 
+  HOLD 
+  RELEASE 
+  PAYMENT 
+  TOPUP 
+  AD_SPEND 
+  AD_EARNING 
+  GIFT_CARD 
+  BARTER_TRADE 
+  BONUS 
+  ADJUSTMENT 
+}
+
+enum TransactionDirection { 
+  CREDIT 
+  DEBIT 
+}
+
+enum TransactionStatus { 
+  PENDING 
+  COMPLETED 
+  FAILED 
+  CANCELLED 
+  REVERSED 
+}
+
+enum HoldReason { 
+  ESCROW 
+  AUCTION_BID 
+  BARTER_COLLATERAL 
+  ORDER_RESERVE 
+  DISPUTE 
+  ADMIN_HOLD 
+  DOWN_PAYMENT 
+}
+
+enum HoldStatus { 
+  ACTIVE 
+  RELEASED 
+  EXPIRED 
+  FORFEITED 
+  CANCELLED 
+}
+
+enum PaymentMethod { 
+  IYZICO 
+  BANK_TRANSFER 
+  WALLET 
+  BARTER 
+  GIFT_CARD 
+  MIXED 
+}
+
+enum PaymentStatus { 
+  PENDING 
+  COMPLETED 
+  FAILED 
+  REFUNDED 
+  CANCELLED 
+  PARTIALLY_REFUNDED 
+}
+
+enum TopUpStatus { 
+  PENDING 
+  APPROVED 
+  REJECTED 
+  COMPLETED 
+  CANCELLED 
+}
+
+enum WithdrawalStatus { 
+  PENDING 
+  APPROVED 
+  REJECTED 
+  COMPLETED 
+  CANCELLED 
+  VERIFICATION_REQUIRED 
+}
+
+enum EscrowStatus { 
+  PENDING 
+  FUNDED 
+  RELEASED 
+  REFUNDED 
+  DISPUTED 
+  PARTIALLY_RELEASED 
+  CANCELLED 
+}
+
+enum GiftCardStatus { 
+  Active 
+  Redeemed 
+  Expired 
+  Cancelled 
+}
+
+enum LedgerType { 
+  TRANSFER 
+  TRADE_SETTLEMENT 
+  COMMISSION 
+  REFUND 
+  DEPOSIT 
+  WITHDRAWAL 
+  ADMIN_ADJUSTMENT 
+  ESCROW_FUND 
+  ESCROW_RELEASE 
+  AD_SPEND 
+  AD_EARNING 
+  XP_CONVERSION 
+  DOWN_PAYMENT 
+  BONUS 
+}
+
+enum VendorTier { 
+  CORE 
+  PLUS 
+  PREMIUM 
+  ELITE 
+}
+
+enum UserTier { 
+  BRONZE 
+  SILVER 
+  GOLD 
+  PLATINUM 
+  DIAMOND 
+}

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package financial;
+
+service FinancialService {
+  rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse) {}
+  rpc HoldFunds (HoldFundsRequest) returns (HoldFundsResponse) {}
+  rpc ReleaseFunds (ReleaseFundsRequest) returns (ReleaseFundsResponse) {}
+  rpc RefundFunds (RefundFundsRequest) returns (RefundFundsResponse) {}
+}
+
+message GetBalanceRequest {
+  string userId = 1;
+  string accountType = 2;
+}
+
+message GetBalanceResponse {
+  string balance = 1;
+  string availableBalance = 2;
+  string blockedBalance = 3;
+}
+
+message HoldFundsRequest {
+  string userId = 1;
+  string amount = 2;
+  string reason = 3;
+  string referenceId = 4;
+  string referenceType = 5;
+  string idempotencyKey = 6;
+}
+
+message HoldFundsResponse {
+  bool success = 1;
+  string holdId = 2;
+  string error = 3;
+}
+
+message ReleaseFundsRequest {
+  string holdId = 4;
+  string idempotencyKey = 5;
+}
+
+message ReleaseFundsResponse {
+  bool success = 1;
+  string transactionId = 2;
+  string error = 3;
+}
+
+message RefundFundsRequest {
+  string holdId = 4;
+  string idempotencyKey = 5;
+}
+
+message RefundFundsResponse {
+  bool success = 1;
+  string transactionId = 2;
+  string error = 3;
+}

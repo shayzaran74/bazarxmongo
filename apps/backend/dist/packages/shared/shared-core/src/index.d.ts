@@ -7,3 +7,4 @@ export * from './application/command-query.base';
 export * from './messaging/event-bus.interface';
 export * from './types/result.type';
 export * from './types/exceptions';
+export * from './domain/repository.interface';
