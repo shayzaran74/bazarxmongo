@@ -3,7 +3,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { UpdateProfileDto, UpdateProfileCommand, GetProfileQuery, ChangePasswordDto, ChangePasswordCommand } from '@barterborsa/domain-identity';
 
-@Controller('profile')
+@Controller('identity/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
   constructor(

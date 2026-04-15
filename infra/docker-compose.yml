@@ -39,6 +39,26 @@ services:
     networks:
       - bazarx-network
 
+  # Mongo Express - MongoDB GUI (Prisma Studio benzeri)
+  mongo-express:
+    image: mongo-express
+    container_name: bazarx-mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-barterborsa}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-barterborsa123}
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: pass
+    depends_on:
+      - mongodb
+    networks:
+      - bazarx-network
+
   # Redis 7 - Cache, Session ve Rate Limiting için
   redis:
     image: redis:7-alpine

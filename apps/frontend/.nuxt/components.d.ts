@@ -22,6 +22,8 @@ export const CommonFavoriteButton: typeof import("../components/common/FavoriteB
 export const CommonLanguageSwitcher: typeof import("../components/common/LanguageSwitcher.vue")['default']
 export const CommonSidebarWidget: typeof import("../components/common/SidebarWidget.vue")['default']
 export const CommonToggleSwitch: typeof import("../components/common/ToggleSwitch.vue")['default']
+export const FormsWalletTopUpForm: typeof import("../components/forms/WalletTopUpForm.vue")['default']
+export const FormsWalletWithdrawForm: typeof import("../components/forms/WalletWithdrawForm.vue")['default']
 export const HomeAuctions: typeof import("../components/home/HomeAuctions.vue")['default']
 export const HomeBanner: typeof import("../components/home/HomeBanner.vue")['default']
 export const HomeBarterPool: typeof import("../components/home/HomeBarterPool.vue")['default']
@@ -87,6 +89,7 @@ export const ProductFormLogistics: typeof import("../components/product/form/Pro
 export const ProductFormMarketing: typeof import("../components/product/form/ProductFormMarketing.vue")['default']
 export const ProductFormMedia: typeof import("../components/product/form/ProductFormMedia.vue")['default']
 export const ProductFormNavigation: typeof import("../components/product/form/ProductFormNavigation.vue")['default']
+export const ProfileWalletCard: typeof import("../components/profile/ProfileWalletCard.vue")['default']
 export const SearchBar: typeof import("../components/search/SearchBar.vue")['default']
 export const UiButton: typeof import("../components/ui/UiButton.vue")['default']
 export const UiPagination: typeof import("../components/ui/UiPagination.vue")['default']
@@ -126,6 +129,8 @@ export const LazyCommonFavoriteButton: LazyComponent<typeof import("../component
 export const LazyCommonLanguageSwitcher: LazyComponent<typeof import("../components/common/LanguageSwitcher.vue")['default']>
 export const LazyCommonSidebarWidget: LazyComponent<typeof import("../components/common/SidebarWidget.vue")['default']>
 export const LazyCommonToggleSwitch: LazyComponent<typeof import("../components/common/ToggleSwitch.vue")['default']>
+export const LazyFormsWalletTopUpForm: LazyComponent<typeof import("../components/forms/WalletTopUpForm.vue")['default']>
+export const LazyFormsWalletWithdrawForm: LazyComponent<typeof import("../components/forms/WalletWithdrawForm.vue")['default']>
 export const LazyHomeAuctions: LazyComponent<typeof import("../components/home/HomeAuctions.vue")['default']>
 export const LazyHomeBanner: LazyComponent<typeof import("../components/home/HomeBanner.vue")['default']>
 export const LazyHomeBarterPool: LazyComponent<typeof import("../components/home/HomeBarterPool.vue")['default']>
@@ -191,6 +196,7 @@ export const LazyProductFormLogistics: LazyComponent<typeof import("../component
 export const LazyProductFormMarketing: LazyComponent<typeof import("../components/product/form/ProductFormMarketing.vue")['default']>
 export const LazyProductFormMedia: LazyComponent<typeof import("../components/product/form/ProductFormMedia.vue")['default']>
 export const LazyProductFormNavigation: LazyComponent<typeof import("../components/product/form/ProductFormNavigation.vue")['default']>
+export const LazyProfileWalletCard: LazyComponent<typeof import("../components/profile/ProfileWalletCard.vue")['default']>
 export const LazySearchBar: LazyComponent<typeof import("../components/search/SearchBar.vue")['default']>
 export const LazyUiButton: LazyComponent<typeof import("../components/ui/UiButton.vue")['default']>
 export const LazyUiPagination: LazyComponent<typeof import("../components/ui/UiPagination.vue")['default']>

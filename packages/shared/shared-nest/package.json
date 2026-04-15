@@ -1,12 +1,16 @@
 {
   "name": "@barterborsa/shared-nest",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "class-validator": "^0.14.1",
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.1"
+  },
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
   }
 }

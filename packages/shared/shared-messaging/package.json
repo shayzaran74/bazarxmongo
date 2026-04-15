@@ -1,12 +1,16 @@
 {
   "name": "@barterborsa/shared-messaging",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "amqplib": "^0.10.3",
     "@golevelup/nestjs-rabbitmq": "^5.1.0",
     "rxjs": "^7.8.1"
+  },
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
   }
 }

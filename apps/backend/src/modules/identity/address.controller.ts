@@ -10,7 +10,7 @@ import {
   GetAddressesQuery 
 } from '@barterborsa/domain-identity';
 
-@Controller('addresses')
+@Controller('identity/addresses')
 @UseGuards(JwtAuthGuard)
 export class AddressController {
   constructor(

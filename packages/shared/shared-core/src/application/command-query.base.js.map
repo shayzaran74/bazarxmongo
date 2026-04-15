@@ -1,0 +1,1 @@
+{"version":3,"file":"command-query.base.js","sourceRoot":"","sources":["command-query.base.ts"],"names":[],"mappings":";;;AAAA,MAAsB,OAAO;IACX,SAAS,CAAO;IAChC;QACE,IAAI,CAAC,SAAS,GAAG,IAAI,IAAI,EAAE,CAAC;IAC9B,CAAC;CACF;AALD,0BAKC;AAED,MAAsB,KAAK;IACT,SAAS,CAAO;IAChC;QACE,IAAI,CAAC,SAAS,GAAG,IAAI,IAAI,EAAE,CAAC;IAC9B,CAAC;CACF;AALD,sBAKC"}

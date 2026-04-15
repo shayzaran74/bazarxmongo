@@ -46,6 +46,7 @@ export { useProductBadges } from '../composables/useProductBadges';
 export { useProducts, ProductFilters } from '../composables/useProducts';
 export { useSearch } from '../composables/useSearch';
 export { useTimer } from '../composables/useTimer';
+export { useWallet } from '../composables/useWallet';
 export { useAuthStore } from '../stores/auth';
 export { useCartStore } from '../stores/cart';
 export { useSiteSettingsStore } from '../stores/siteSettings';

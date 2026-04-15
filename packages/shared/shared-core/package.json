@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "reflect-metadata": "^0.2.1",
     "uuid": "^9.0.1",
@@ -13,5 +13,8 @@
   "devDependencies": {
     "@types/uuid": "^9.0.8",
     "@types/lodash": "^4.14.202"
+  },
+  "scripts": {
+    "build": "tsc"
   }
 }

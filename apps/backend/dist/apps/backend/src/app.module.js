@@ -13,6 +13,9 @@ const config_1 = require("@nestjs/config");
 const core_1 = require("@nestjs/core");
 const identity_module_1 = require("./modules/identity/identity.module");
 const shared_security_1 = require("@barterborsa/shared-security");
+const catalog_module_1 = require("./modules/catalog/catalog.module");
+const marketing_module_1 = require("./modules/marketing/marketing.module");
+const financial_gateway_module_1 = require("./modules/financial-gateway/financial-gateway.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -25,6 +28,9 @@ exports.AppModule = AppModule = __decorate([
             }),
             shared_security_1.SharedSecurityModule, // Global güvenlik altyapısı
             identity_module_1.IdentityModule,
+            catalog_module_1.CatalogModule,
+            marketing_module_1.MarketingModule,
+            financial_gateway_module_1.FinancialGatewayModule,
         ],
         providers: [
             {

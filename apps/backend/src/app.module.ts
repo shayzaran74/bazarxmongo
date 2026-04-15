@@ -5,6 +5,9 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { IdentityModule } from './modules/identity/identity.module';
 import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
+import { FinancialGatewayModule } from './modules/financial-gateway/financial-gateway.module';
 
 @Module({
   imports: [
@@ -14,6 +17,9 @@ import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security
     }),
     SharedSecurityModule, // Global güvenlik altyapısı
     IdentityModule,
+    CatalogModule,
+    MarketingModule,
+    FinancialGatewayModule,
   ],
   providers: [
     {

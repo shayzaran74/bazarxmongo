@@ -6,6 +6,7 @@ export declare abstract class Entity<T> {
     protected _version: number;
     constructor(props: T, id?: string);
     get id(): string;
+    getProps(): T;
     get createdAt(): Date;
     get updatedAt(): Date;
     get version(): number;

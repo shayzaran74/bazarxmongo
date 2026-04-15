@@ -82,7 +82,7 @@
                      <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cüzdan</p>
                      <p class="text-sm font-black text-dark-950 leading-none">{{ walletBalance }}</p>
                    </div>
-                   <NuxtLink to="/profile/wallet" class="p-2 bg-white rounded-xl text-primary-600 hover:bg-primary-600 hover:text-white transition-all shadow-sm">
+                   <NuxtLink to="/wallet" class="p-2 bg-white rounded-xl text-primary-600 hover:bg-primary-600 hover:text-white transition-all shadow-sm">
                      <Icon name="heroicons:plus" class="w-4 h-4" />
                    </NuxtLink>
                </div>

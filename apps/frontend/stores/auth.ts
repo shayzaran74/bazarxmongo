@@ -37,6 +37,11 @@ export const useAuthStore = defineStore('auth', {
     };
   },
 
+  getters: {
+    isLoggedIn: (state) => state.isAuthenticated,
+    isVendor: (state) => state.user?.role === 'VENDOR' || state.user?.role === 'ADMIN',
+  },
+
   actions: {
     /** 
      * Kullanıcı girişi (E-posta + Şifre) 
@@ -150,6 +155,23 @@ export const useAuthStore = defineStore('auth', {
         return false;
       } finally {
         this.loading = false;
+      }
+    },
+
+    /**
+     * Kullanıcı bilgilerini güncel tut
+     */
+    async fetchUser() {
+      const { $api } = useApi();
+      try {
+        const response = await $api<{ data: UserState }>('identity/profile');
+        if (response.success) {
+          this.user = response.data.data;
+          useCookie('user').value = this.user;
+        }
+      } catch (err: unknown) {
+        const error = err as { data?: { message?: string } };
+        console.error('Fetch user error:', error.data?.message || err);
       }
     },
 

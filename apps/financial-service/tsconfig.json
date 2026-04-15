@@ -1,12 +1,22 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/apps/financial-service",
+    "rootDirs": ["./src", "../../packages/shared/..."],
+    "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@barterborsa/*": ["../../packages/*/src"]
+      "@barterborsa/shared-messaging": ["../../packages/shared/shared-messaging/src/index.ts"],
+      "@barterborsa/shared-observability": ["../../packages/shared/shared-observability/src/index.ts"],
+      "@barterborsa/shared-core": ["../../packages/shared/shared-core/src/index.ts"],
+      "@barterborsa/shared-nest": ["../../packages/shared/shared-nest/src/index.ts"],
+      "@barterborsa/shared-persistence": ["../../packages/shared/shared-persistence/src/index.ts"],
+      "@barterborsa/shared-security": ["../../packages/shared/shared-security/src/index.ts"],
+      "@barterborsa/shared-types": ["../../packages/shared/shared-types/src/index.ts"],
+      "@barterborsa/domain-identity": ["../../packages/domain-identity/src/index.ts"],
+      "@prisma/client": ["./src/generated/client"],
+      ".prisma/client": ["./src/generated/client"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }

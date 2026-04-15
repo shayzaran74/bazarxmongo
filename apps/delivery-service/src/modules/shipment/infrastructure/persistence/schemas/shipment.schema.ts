@@ -99,4 +99,4 @@ ShipmentSchema.index({ senderId: 1 });
 ShipmentSchema.index({ receiverId: 1 });
 ShipmentSchema.index({ vendorId: 1 });
 ShipmentSchema.index({ status: 1, createdAt: -1 });
-ShipmentSchema.index({ shipmentNumber: 1 }, { unique: true });
+
