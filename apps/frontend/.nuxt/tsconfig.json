@@ -137,7 +137,7 @@
         "../../../node_modules/.pnpm/@nuxtjs+i18n@8.5.6_magicast@0.5.2_rollup@4.60.1_vue@3.5.32_typescript@5.9.3_/node_modules/@nuxtjs/i18n/dist/runtime/composables/index"
       ],
       "#icon-collections": [
-        "./icon-collections.mjs"
+        "./icon-collections"
       ],
       "#vue-router": [
         "../../../node_modules/.pnpm/vue-router@4.6.4_vue@3.5.32_typescript@5.9.3_/node_modules/vue-router"
