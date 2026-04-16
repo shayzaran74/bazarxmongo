@@ -18,3 +18,10 @@ export class UnauthorizedException extends DomainException {
     this.name = 'UnauthorizedException';
   }
 }
+
+export class ConflictException extends DomainException {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictException';
+  }
+}

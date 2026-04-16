@@ -16,6 +16,8 @@ import { RabbitMQService } from './rabbitmq.service';
           { name: 'commerce.events', type: 'topic' },
           { name: 'financial.events', type: 'topic' },
           { name: 'delivery.events', type: 'topic' },
+          { name: 'barter.events', type: 'topic' },
+          { name: 'auction.events', type: 'topic' },
         ],
         connectionInitOptions: { wait: true },
       }),

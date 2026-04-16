@@ -8,6 +8,10 @@ import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { FinancialGatewayModule } from './modules/financial-gateway/financial-gateway.module';
+import { VendorModule } from './modules/vendor/vendor.module';
+import { CommerceModule } from './modules/commerce/commerce.module';
+import { BarterModule } from './modules/barter/barter.module';
+import { AuctionModule } from './modules/auction/auction.module';
 
 @Module({
   imports: [
@@ -20,6 +24,10 @@ import { FinancialGatewayModule } from './modules/financial-gateway/financial-ga
     CatalogModule,
     MarketingModule,
     FinancialGatewayModule,
+    VendorModule,
+    CommerceModule,
+    BarterModule,
+    AuctionModule,
   ],
   providers: [
     {

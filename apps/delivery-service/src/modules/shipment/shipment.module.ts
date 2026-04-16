@@ -10,8 +10,16 @@ import { ShipmentNumberService } from './application/services/shipment-number.se
 import { EstimatedDeliveryService } from './application/services/estimated-delivery.service';
 
 import { OrderCreatedHandler } from './application/event-handlers/order-created.handler';
+import { BarterAcceptedHandler } from './application/event-handlers/barter-accepted.handler';
+import { CreateBarterShipmentsHandler } from './application/commands/create-barter-shipments.handler';
 
-const Handlers = [CreateShipmentHandler, GetShipmentHandler, OrderCreatedHandler];
+const Handlers = [
+  CreateShipmentHandler, 
+  CreateBarterShipmentsHandler,
+  GetShipmentHandler, 
+  OrderCreatedHandler,
+  BarterAcceptedHandler
+];
 const Services = [ShipmentNumberService, EstimatedDeliveryService];
 
 @Module({

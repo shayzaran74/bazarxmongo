@@ -9,9 +9,11 @@ import { EscrowConsumer } from './infrastructure/messaging/escrow.consumer';
 
 import { WalletModule } from '../wallet/wallet.module';
 import { LedgerModule } from '../ledger/ledger.module';
+import { EscrowGrpcController } from './presentation/escrow.grpc.controller';
 
 @Module({
   imports: [CqrsModule, WalletModule, LedgerModule],
+  controllers: [EscrowGrpcController],
   providers: [
     CreateEscrowHandler,
     EscrowConsumer,

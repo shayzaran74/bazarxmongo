@@ -1,8 +1,36 @@
+// apps/backend/src/modules/catalog/catalog.module.ts
+
 import { Module } from '@nestjs/common';
-import { CatalogProductController } from './presentation/catalog-product.controller';
-import { CategoryController } from './presentation/category.controller';
+import { CqrsModule } from '@nestjs/cqrs';
+import { ListingController } from './presentation/listing.controller';
+import { CreateCategoryHandler } from './application/commands/create-category.handler';
+import { CreateListingHandler } from './application/commands/create-listing.handler';
+import { PrismaCategoryRepository } from './infrastructure/persistence/prisma-category.repository';
+import { PrismaBrandRepository } from './infrastructure/persistence/prisma-brand.repository';
+import { PrismaListingRepository } from './infrastructure/persistence/prisma-listing.repository';
+import { PrismaCatalogProductRepository } from './infrastructure/persistence/prisma-catalog-product.repository';
+
+const CommandHandlers = [CreateCategoryHandler, CreateListingHandler];
+const QueryHandlers: any[] = [];
+const Repositories = [
+  { provide: 'ICategoryRepository', useClass: PrismaCategoryRepository },
+  { provide: 'IBrandRepository', useClass: PrismaBrandRepository },
+  { provide: 'IListingRepository', useClass: PrismaListingRepository },
+  { provide: 'ICatalogProductRepository', useClass: PrismaCatalogProductRepository },
+];
 
 @Module({
-  controllers: [CatalogProductController, CategoryController],
+  imports: [CqrsModule],
+  controllers: [ListingController],
+  providers: [
+    ...CommandHandlers,
+    ...QueryHandlers,
+    ...Repositories,
+    PrismaCategoryRepository,
+    PrismaBrandRepository,
+    PrismaListingRepository,
+    PrismaCatalogProductRepository,
+  ],
+  exports: [...Repositories],
 })
 export class CatalogModule {}

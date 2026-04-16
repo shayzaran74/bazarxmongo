@@ -16,6 +16,10 @@ const shared_security_1 = require("@barterborsa/shared-security");
 const catalog_module_1 = require("./modules/catalog/catalog.module");
 const marketing_module_1 = require("./modules/marketing/marketing.module");
 const financial_gateway_module_1 = require("./modules/financial-gateway/financial-gateway.module");
+const vendor_module_1 = require("./modules/vendor/vendor.module");
+const commerce_module_1 = require("./modules/commerce/commerce.module");
+const barter_module_1 = require("./modules/barter/barter.module");
+const auction_module_1 = require("./modules/auction/auction.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,6 +35,10 @@ exports.AppModule = AppModule = __decorate([
             catalog_module_1.CatalogModule,
             marketing_module_1.MarketingModule,
             financial_gateway_module_1.FinancialGatewayModule,
+            vendor_module_1.VendorModule,
+            commerce_module_1.CommerceModule,
+            barter_module_1.BarterModule,
+            auction_module_1.AuctionModule,
         ],
         providers: [
             {
