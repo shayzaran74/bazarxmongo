@@ -298,6 +298,7 @@ model Vendor {
   // Commerce relation'ları
   orders            Order[]
   disputes          Dispute[]
+  adCampaigns       AdCampaign[]
 
   @@index([status])
   @@index([tier])
@@ -810,6 +811,7 @@ model Listing {
   campaigns            Campaign[]            @relation("CampaignListings")
   auctions             Auction[]
   lotteries            Lottery[]
+  adCampaigns          AdCampaignProduct[]
 
   @@index([vendorId])
   @@index([catalogProductId])
@@ -1815,4 +1817,451 @@ model LotteryTicket {
   @@index([lotteryId])
   @@index([userId])
   @@map("lottery_tickets")
+}
+
+// === CONTENT ENUMS ===
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// === ADVERTISING ENUMS ===
+
+enum AdType {
+  BANNER
+  SPONSORED_PRODUCT
+  SEARCH_AD
+  SIDE_AD
+  VIDEO
+  REWARD_DISTRIBUTION
+}
+
+enum AdSlotType {
+  HOMEPAGE_BANNER
+  HOMEPAGE_SIDEBAR
+  SEARCH_TOP
+  SEARCH_SIDEBAR
+  CATEGORY_TOP
+  CATEGORY_SIDEBAR
+  PRODUCT_DETAIL
+  CART_SIDEBAR
+  CHECKOUT_BANNER
+}
+
+enum BillingModel {
+  PREPAID
+  POSTPAID
+}
+
+enum PricingModel {
+  CPC
+  CPM
+  CPA
+  FIXED
+}
+
+enum TargetRole {
+  ALL
+  CUSTOMER
+  VENDOR
+  B2B
+}
+
+// === CONTENT TABLES ===
+
+model HomeBanner {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  order       Int          @default(0)
+  buttonText  String?      @map("button_text")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  image       String
+  isActive    Boolean      @default(true) @map("is_active")
+  link        String?
+  platform    Platform     @default(BAZARX)
+  subtitle    String?
+  tag         String?
+  startDate   DateTime?    @map("start_date")
+  endDate     DateTime?    @map("end_date")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  locations   AdLocation[] @relation("HomeBannerLocations")
+
+  @@index([platform, order])
+  @@map("home_banners")
+}
+
+model HomeQuadCard {
+  id        String             @id @default(cuid())
+  title     String
+  order     Int                @default(0)
+  createdAt DateTime           @default(now()) @map("created_at")
+  isActive  Boolean            @default(true) @map("is_active")
+  platform  Platform           @default(BAZARX)
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  items     HomeQuadCardItem[]
+
+  @@index([platform, order])
+  @@map("home_quad_cards")
+}
+
+model HomeQuadCardItem {
+  id         String       @id @default(cuid())
+  order      Int          @default(0)
+  image      String
+  link       String?
+  productId  String?      @map("product_id")
+  quadCardId String       @map("quad_card_id")
+  title      String
+  quadCard   HomeQuadCard @relation(fields: [quadCardId], references: [id], onDelete: Cascade)
+
+  @@index([quadCardId, order])
+  @@map("home_quad_card_items")
+}
+
+model HelpCategory {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  description String?
+  icon        String?
+  order       Int            @default(0)
+  language    String         @default("tr")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  isActive    Boolean        @default(true) @map("is_active")
+  parentId    String?        @map("parent_id")
+  platform    Platform       @default(BAZARX)
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  articles    HelpArticle[]
+  parent      HelpCategory?  @relation("HelpCategoryHierarchy", fields: [parentId], references: [id])
+  children    HelpCategory[] @relation("HelpCategoryHierarchy")
+
+  @@index([platform, order])
+  @@map("help_categories")
+}
+
+model HelpArticle {
+  id           String        @id @default(cuid())
+  title        String
+  slug         String        @unique
+  content      String
+  excerpt      String?
+  status       ArticleStatus @default(DRAFT)
+  upvotes      Int           @default(0)
+  downvotes    Int           @default(0)
+  order        Int           @default(0)
+  language     String        @default("tr")
+  category     String?
+  categoryId   String?       @map("category_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  isActive     Boolean       @default(true) @map("is_active")
+  isPopular    Boolean       @default(false) @map("is_popular")
+  platform     Platform      @default(BAZARX)
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  viewCount    Int           @default(0) @map("view_count")
+  helpCategory HelpCategory? @relation(fields: [categoryId], references: [id])
+
+  @@index([platform, categoryId, status])
+  @@map("help_articles")
+}
+
+model Announcement {
+  id         String    @id @default(cuid())
+  title      String
+  content    String
+  type       String    @default("info")
+  priority   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  endDate    DateTime? @map("end_date")
+  imageUrl   String?   @map("image_url")
+  isActive   Boolean   @default(true) @map("is_active")
+  linkText   String?   @map("link_text")
+  linkUrl    String?   @map("link_url")
+  startDate  DateTime  @default(now()) @map("start_date")
+  targetPage String?   @map("target_page")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@map("announcements")
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  type      String
+  version   String   @default("1.0")
+  createdAt DateTime @default(now()) @map("created_at")
+  isActive  Boolean  @default(true) @map("is_active")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("policies")
+}
+
+model DynamicContent {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  content     String
+  category    String?
+  contentType String   @default("text") @map("content_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+  isActive    Boolean  @default(true) @map("is_active")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("dynamic_contents")
+}
+
+model SeoMetadata {
+  id          String   @id @default(cuid())
+  path        String   @unique
+  title       String?
+  description String?
+  keywords    String[]
+  ogImage     String?  @map("og_image")
+  platform    Platform @default(BAZARX)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([platform, path])
+  @@map("seo_metadata")
+}
+
+// === ADVERTISING TABLES ===
+
+model AdCampaign {
+  id               String               @id @default(uuid())
+  name             String
+  platform         Platform             @default(BAZARX)
+  budget           Decimal              @db.Decimal(18, 2)
+  adStatus         AdStatus             @default(PENDING) @map("ad_status")
+  adType           AdType               @map("ad_type")
+  bidAmount        Decimal              @map("bid_amount") @db.Decimal(18, 2)
+  billingModel     BillingModel         @default(PREPAID) @map("billing_model")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  creatorId        String?              @map("creator_id")
+  endDate          DateTime             @map("end_date")
+  imageUrl         String?              @map("image_url")
+  linkUrl          String?              @map("link_url")
+  metadata         Json?
+  pricingModel     PricingModel         @map("pricing_model")
+  remainingBudget  Decimal              @map("remaining_budget") @db.Decimal(18, 2)
+  startDate        DateTime             @map("start_date")
+  targetCategories String[]             @map("target_categories")
+  targetKeywords   String[]             @map("target_keywords")
+  targetRole       TargetRole           @default(ALL) @map("target_role")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  vendorId         String?              @map("vendor_id")
+  rejectionReason  String?              @map("rejection_reason")
+  targetCities     String[]             @default([]) @map("target_cities")
+  targetDistricts  String[]             @default([]) @map("target_districts")
+  targetSlots      String[]             @default([]) @map("target_slots")
+  targetUrl        String?              @map("target_url")
+  qualityScore     Decimal?             @default(1.0) @map("quality_score") @db.Decimal(5, 2)
+  historicCTR      Decimal?             @default(0.01) @map("historic_ctr") @db.Decimal(8, 6)
+  maxBidPerClick   Decimal?             @default(0.5) @map("max_bid_per_click") @db.Decimal(18, 2)
+  maxBidPerMille   Decimal?             @default(5.0) @map("max_bid_per_mille") @db.Decimal(18, 2)
+  mediaUrl         String?              @map("media_url")
+  negativeKeywords String[]             @default([]) @map("negative_keywords")
+  metrics          AdCampaignMetric[]
+  products         AdCampaignProduct[]
+  vendor           Vendor?              @relation(fields: [vendorId], references: [id])
+  locations        AdLocation[]         @relation("AdCampaignLocations")
+  adSlots          AdSlotToAdCampaign[]
+
+  @@index([adStatus])
+  @@index([adType])
+  @@index([platform])
+  @@map("ad_campaigns")
+}
+
+model AdSlot {
+  id          String               @id @default(uuid())
+  slotType    AdSlotType           @map("slot_type")
+  platform    Platform             @default(BAZARX)
+  description String?
+  isActive    Boolean              @default(true) @map("is_active")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  adCampaigns AdSlotToAdCampaign[]
+
+  @@unique([slotType, platform])
+  @@map("ad_slots")
+}
+
+model AdSlotToAdCampaign {
+  adSlotId     String     @map("ad_slot_id")
+  adCampaignId String     @map("ad_campaign_id")
+  adCampaign   AdCampaign @relation(fields: [adCampaignId], references: [id], onDelete: Cascade)
+  adSlot       AdSlot     @relation(fields: [adSlotId], references: [id], onDelete: Cascade)
+
+  @@id([adSlotId, adCampaignId])
+  @@map("ad_slot_to_campaign")
+}
+
+model AdCampaignProduct {
+  id           String     @id @default(uuid())
+  adCampaignId String     @map("ad_campaign_id")
+  listingId    String     @map("listing_id")
+  adCampaign   AdCampaign @relation(fields: [adCampaignId], references: [id], onDelete: Cascade)
+  listing      Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([adCampaignId, listingId])
+  @@map("ad_campaign_products")
+}
+
+model AdCampaignMetric {
+  id           String     @id @default(cuid())
+  adCampaignId String     @map("ad_campaign_id")
+  date         DateTime   @default(now())
+  impressions  Int        @default(0)
+  clicks       Int        @default(0)
+  ctr          Decimal    @default(0) @db.Decimal(8, 6)
+  spend        Decimal    @default(0) @db.Decimal(18, 2)
+  sales        Int        @default(0)
+  adCampaign   AdCampaign @relation(fields: [adCampaignId], references: [id], onDelete: Cascade)
+
+  @@unique([adCampaignId, date], name: "adCampaignId_date")
+  @@index([date])
+  @@map("ad_campaign_metrics")
+}
+
+model AdLocation {
+  id           String      @id @default(cuid())
+  tag          String
+  adCampaignId String?     @map("ad_campaign_id")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  homeBannerId String?     @map("home_banner_id")
+  sideAdId     String?     @map("side_ad_id")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  adCampaign   AdCampaign? @relation("AdCampaignLocations", fields: [adCampaignId], references: [id], onDelete: Cascade)
+  homeBanner   HomeBanner? @relation("HomeBannerLocations", fields: [homeBannerId], references: [id], onDelete: Cascade)
+  sideAd       SideAd?     @relation("SideAdLocations", fields: [sideAdId], references: [id], onDelete: Cascade)
+
+  @@unique([homeBannerId, tag])
+  @@unique([sideAdId, tag])
+  @@unique([adCampaignId, tag])
+  @@index([tag])
+  @@map("ad_locations")
+}
+
+model SideAd {
+  id         String       @id @default(cuid())
+  side       String
+  title      String
+  subtitle   String?
+  image      String?
+  emoji      String?
+  link       String?
+  order      Int          @default(0)
+  ecosystems String[]     @default(["GLOBAL"])
+  category   String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+  isActive   Boolean      @default(true) @map("is_active")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  locations  AdLocation[] @relation("SideAdLocations")
+
+  @@index([isActive, order, side])
+  @@map("side_ads")
+}
+
+// === COMMUNICATION ENUMS ===
+
+enum ChatRoomStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+  FILE
+}
+
+enum ComplaintStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+// === COMMUNICATION TABLES ===
+
+model ChatRoom {
+  id             String         @id @default(cuid())
+  orderId        String?        @unique @map("order_id")
+  tradeOfferId   String?        @unique @map("trade_offer_id")
+  status         ChatRoomStatus @default(ACTIVE)
+  archivePreview Json?          @map("archive_preview")
+  archiveUrl     String?        @map("archive_url")
+  archivedAt     DateTime?      @map("archived_at")
+  isArchived     Boolean        @default(false) @map("is_archived")
+  storageTier    String         @default("STANDARD") @map("storage_tier")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  // Katılımcılar — userId dizisi olarak tutulacak (User relation yok)
+  participantIds String[]       @map("participant_ids")
+  messages       ChatMessage[]
+
+  @@index([isArchived])
+  @@index([updatedAt])
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id        String          @id @default(cuid())
+  roomId    String          @map("room_id")
+  senderId  String?         @map("sender_id") // null = SYSTEM mesajı
+  content   String
+  type      ChatMessageType @default(TEXT)
+  isRead    Boolean         @default(false) @map("is_read")
+  readAt    DateTime?       @map("read_at")
+  readById  String?         @map("read_by_id")
+  metadata  Json?
+  createdAt DateTime        @default(now()) @map("created_at")
+  room      ChatRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([senderId])
+  @@index([roomId, createdAt])
+  @@map("chat_messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String // ORDER_STATUS, BARTER_OFFER, AUCTION_BID, CAMPAIGN, SYSTEM, CHAT_MESSAGE
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model UserComplaint {
+  id          String          @id @default(cuid())
+  reporterId  String          @map("reporter_id")
+  subjectId   String          @map("subject_id")
+  reason      String
+  description String?
+  status      ComplaintStatus @default(PENDING)
+  adminNote   String?         @map("admin_note")
+  resolvedAt  DateTime?       @map("resolved_at")
+  resolvedBy  String?         @map("resolved_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([reporterId])
+  @@index([subjectId])
+  @@index([status])
+  @@map("user_complaints")
 }

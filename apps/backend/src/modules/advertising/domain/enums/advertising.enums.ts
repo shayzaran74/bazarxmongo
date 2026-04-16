@@ -1,0 +1,50 @@
+// apps/backend/src/modules/advertising/domain/enums/advertising.enums.ts
+
+export enum AdType {
+  BANNER = 'BANNER',
+  SPONSORED_PRODUCT = 'SPONSORED_PRODUCT',
+  SEARCH_AD = 'SEARCH_AD',
+  SIDE_AD = 'SIDE_AD',
+  VIDEO = 'VIDEO',
+  REWARD_DISTRIBUTION = 'REWARD_DISTRIBUTION',
+}
+
+export enum AdSlotType {
+  HOMEPAGE_BANNER = 'HOMEPAGE_BANNER',
+  HOMEPAGE_SIDEBAR = 'HOMEPAGE_SIDEBAR',
+  SEARCH_TOP = 'SEARCH_TOP',
+  SEARCH_SIDEBAR = 'SEARCH_SIDEBAR',
+  CATEGORY_TOP = 'CATEGORY_TOP',
+  CATEGORY_SIDEBAR = 'CATEGORY_SIDEBAR',
+  PRODUCT_DETAIL = 'PRODUCT_DETAIL',
+  CART_SIDEBAR = 'CART_SIDEBAR',
+  CHECKOUT_BANNER = 'CHECKOUT_BANNER',
+}
+
+export enum BillingModel {
+  PREPAID = 'PREPAID',
+  POSTPAID = 'POSTPAID',
+}
+
+export enum PricingModel {
+  CPC = 'CPC',
+  CPM = 'CPM',
+  CPA = 'CPA',
+  FIXED = 'FIXED',
+}
+
+export enum TargetRole {
+  ALL = 'ALL',
+  CUSTOMER = 'CUSTOMER',
+  VENDOR = 'VENDOR',
+  B2B = 'B2B',
+}
+
+export enum AdStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+  COMPLETED = 'COMPLETED',
+}

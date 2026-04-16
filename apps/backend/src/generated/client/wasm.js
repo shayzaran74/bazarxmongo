@@ -1202,6 +1202,280 @@ exports.Prisma.LotteryTicketScalarFieldEnum = {
   numbers: 'numbers'
 };
 
+exports.Prisma.HomeBannerScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  order: 'order',
+  buttonText: 'buttonText',
+  createdAt: 'createdAt',
+  image: 'image',
+  isActive: 'isActive',
+  link: 'link',
+  platform: 'platform',
+  subtitle: 'subtitle',
+  tag: 'tag',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HomeQuadCardScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  order: 'order',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  platform: 'platform',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HomeQuadCardItemScalarFieldEnum = {
+  id: 'id',
+  order: 'order',
+  image: 'image',
+  link: 'link',
+  productId: 'productId',
+  quadCardId: 'quadCardId',
+  title: 'title'
+};
+
+exports.Prisma.HelpCategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  slug: 'slug',
+  description: 'description',
+  icon: 'icon',
+  order: 'order',
+  language: 'language',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  parentId: 'parentId',
+  platform: 'platform',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HelpArticleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  content: 'content',
+  excerpt: 'excerpt',
+  status: 'status',
+  upvotes: 'upvotes',
+  downvotes: 'downvotes',
+  order: 'order',
+  language: 'language',
+  category: 'category',
+  categoryId: 'categoryId',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  isPopular: 'isPopular',
+  platform: 'platform',
+  updatedAt: 'updatedAt',
+  viewCount: 'viewCount'
+};
+
+exports.Prisma.AnnouncementScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  content: 'content',
+  type: 'type',
+  priority: 'priority',
+  createdAt: 'createdAt',
+  endDate: 'endDate',
+  imageUrl: 'imageUrl',
+  isActive: 'isActive',
+  linkText: 'linkText',
+  linkUrl: 'linkUrl',
+  startDate: 'startDate',
+  targetPage: 'targetPage',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PolicyScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  content: 'content',
+  type: 'type',
+  version: 'version',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DynamicContentScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  title: 'title',
+  content: 'content',
+  category: 'category',
+  contentType: 'contentType',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SeoMetadataScalarFieldEnum = {
+  id: 'id',
+  path: 'path',
+  title: 'title',
+  description: 'description',
+  keywords: 'keywords',
+  ogImage: 'ogImage',
+  platform: 'platform',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AdCampaignScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  platform: 'platform',
+  budget: 'budget',
+  adStatus: 'adStatus',
+  adType: 'adType',
+  bidAmount: 'bidAmount',
+  billingModel: 'billingModel',
+  createdAt: 'createdAt',
+  creatorId: 'creatorId',
+  endDate: 'endDate',
+  imageUrl: 'imageUrl',
+  linkUrl: 'linkUrl',
+  metadata: 'metadata',
+  pricingModel: 'pricingModel',
+  remainingBudget: 'remainingBudget',
+  startDate: 'startDate',
+  targetCategories: 'targetCategories',
+  targetKeywords: 'targetKeywords',
+  targetRole: 'targetRole',
+  updatedAt: 'updatedAt',
+  vendorId: 'vendorId',
+  rejectionReason: 'rejectionReason',
+  targetCities: 'targetCities',
+  targetDistricts: 'targetDistricts',
+  targetSlots: 'targetSlots',
+  targetUrl: 'targetUrl',
+  qualityScore: 'qualityScore',
+  historicCTR: 'historicCTR',
+  maxBidPerClick: 'maxBidPerClick',
+  maxBidPerMille: 'maxBidPerMille',
+  mediaUrl: 'mediaUrl',
+  negativeKeywords: 'negativeKeywords'
+};
+
+exports.Prisma.AdSlotScalarFieldEnum = {
+  id: 'id',
+  slotType: 'slotType',
+  platform: 'platform',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AdSlotToAdCampaignScalarFieldEnum = {
+  adSlotId: 'adSlotId',
+  adCampaignId: 'adCampaignId'
+};
+
+exports.Prisma.AdCampaignProductScalarFieldEnum = {
+  id: 'id',
+  adCampaignId: 'adCampaignId',
+  listingId: 'listingId'
+};
+
+exports.Prisma.AdCampaignMetricScalarFieldEnum = {
+  id: 'id',
+  adCampaignId: 'adCampaignId',
+  date: 'date',
+  impressions: 'impressions',
+  clicks: 'clicks',
+  ctr: 'ctr',
+  spend: 'spend',
+  sales: 'sales'
+};
+
+exports.Prisma.AdLocationScalarFieldEnum = {
+  id: 'id',
+  tag: 'tag',
+  adCampaignId: 'adCampaignId',
+  createdAt: 'createdAt',
+  homeBannerId: 'homeBannerId',
+  sideAdId: 'sideAdId',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SideAdScalarFieldEnum = {
+  id: 'id',
+  side: 'side',
+  title: 'title',
+  subtitle: 'subtitle',
+  image: 'image',
+  emoji: 'emoji',
+  link: 'link',
+  order: 'order',
+  ecosystems: 'ecosystems',
+  category: 'category',
+  createdAt: 'createdAt',
+  isActive: 'isActive',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChatRoomScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  tradeOfferId: 'tradeOfferId',
+  status: 'status',
+  archivePreview: 'archivePreview',
+  archiveUrl: 'archiveUrl',
+  archivedAt: 'archivedAt',
+  isArchived: 'isArchived',
+  storageTier: 'storageTier',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  participantIds: 'participantIds'
+};
+
+exports.Prisma.ChatMessageScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  senderId: 'senderId',
+  content: 'content',
+  type: 'type',
+  isRead: 'isRead',
+  readAt: 'readAt',
+  readById: 'readById',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  link: 'link',
+  isRead: 'isRead',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.UserComplaintScalarFieldEnum = {
+  id: 'id',
+  reporterId: 'reporterId',
+  subjectId: 'subjectId',
+  reason: 'reason',
+  description: 'description',
+  status: 'status',
+  adminNote: 'adminNote',
+  resolvedAt: 'resolvedAt',
+  resolvedBy: 'resolvedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1498,6 +1772,72 @@ exports.LotteryStatus = exports.$Enums.LotteryStatus = {
   CANCELLED: 'CANCELLED'
 };
 
+exports.ArticleStatus = exports.$Enums.ArticleStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.AdType = exports.$Enums.AdType = {
+  BANNER: 'BANNER',
+  SPONSORED_PRODUCT: 'SPONSORED_PRODUCT',
+  SEARCH_AD: 'SEARCH_AD',
+  SIDE_AD: 'SIDE_AD',
+  VIDEO: 'VIDEO',
+  REWARD_DISTRIBUTION: 'REWARD_DISTRIBUTION'
+};
+
+exports.BillingModel = exports.$Enums.BillingModel = {
+  PREPAID: 'PREPAID',
+  POSTPAID: 'POSTPAID'
+};
+
+exports.PricingModel = exports.$Enums.PricingModel = {
+  CPC: 'CPC',
+  CPM: 'CPM',
+  CPA: 'CPA',
+  FIXED: 'FIXED'
+};
+
+exports.TargetRole = exports.$Enums.TargetRole = {
+  ALL: 'ALL',
+  CUSTOMER: 'CUSTOMER',
+  VENDOR: 'VENDOR',
+  B2B: 'B2B'
+};
+
+exports.AdSlotType = exports.$Enums.AdSlotType = {
+  HOMEPAGE_BANNER: 'HOMEPAGE_BANNER',
+  HOMEPAGE_SIDEBAR: 'HOMEPAGE_SIDEBAR',
+  SEARCH_TOP: 'SEARCH_TOP',
+  SEARCH_SIDEBAR: 'SEARCH_SIDEBAR',
+  CATEGORY_TOP: 'CATEGORY_TOP',
+  CATEGORY_SIDEBAR: 'CATEGORY_SIDEBAR',
+  PRODUCT_DETAIL: 'PRODUCT_DETAIL',
+  CART_SIDEBAR: 'CART_SIDEBAR',
+  CHECKOUT_BANNER: 'CHECKOUT_BANNER'
+};
+
+exports.ChatRoomStatus = exports.$Enums.ChatRoomStatus = {
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED',
+  CLOSED: 'CLOSED'
+};
+
+exports.ChatMessageType = exports.$Enums.ChatMessageType = {
+  TEXT: 'TEXT',
+  IMAGE: 'IMAGE',
+  SYSTEM: 'SYSTEM',
+  FILE: 'FILE'
+};
+
+exports.ComplaintStatus = exports.$Enums.ComplaintStatus = {
+  PENDING: 'PENDING',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  RESOLVED: 'RESOLVED',
+  REJECTED: 'REJECTED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProfile: 'UserProfile',
@@ -1575,7 +1915,27 @@ exports.Prisma.ModelName = {
   AuctionParticipation: 'AuctionParticipation',
   AuctionBid: 'AuctionBid',
   Lottery: 'Lottery',
-  LotteryTicket: 'LotteryTicket'
+  LotteryTicket: 'LotteryTicket',
+  HomeBanner: 'HomeBanner',
+  HomeQuadCard: 'HomeQuadCard',
+  HomeQuadCardItem: 'HomeQuadCardItem',
+  HelpCategory: 'HelpCategory',
+  HelpArticle: 'HelpArticle',
+  Announcement: 'Announcement',
+  Policy: 'Policy',
+  DynamicContent: 'DynamicContent',
+  SeoMetadata: 'SeoMetadata',
+  AdCampaign: 'AdCampaign',
+  AdSlot: 'AdSlot',
+  AdSlotToAdCampaign: 'AdSlotToAdCampaign',
+  AdCampaignProduct: 'AdCampaignProduct',
+  AdCampaignMetric: 'AdCampaignMetric',
+  AdLocation: 'AdLocation',
+  SideAd: 'SideAd',
+  ChatRoom: 'ChatRoom',
+  ChatMessage: 'ChatMessage',
+  Notification: 'Notification',
+  UserComplaint: 'UserComplaint'
 };
 
 /**

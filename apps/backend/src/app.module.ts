@@ -12,6 +12,9 @@ import { VendorModule } from './modules/vendor/vendor.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { BarterModule } from './modules/barter/barter.module';
 import { AuctionModule } from './modules/auction/auction.module';
+import { CommunicationModule } from './modules/communication/communication.module';
+import { ContentModule } from './modules/content/content.module';
+import { AdvertisingModule } from './modules/advertising/advertising.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { AuctionModule } from './modules/auction/auction.module';
     CommerceModule,
     BarterModule,
     AuctionModule,
+    CommunicationModule,
+    ContentModule,
+    AdvertisingModule,
   ],
   providers: [
     {
