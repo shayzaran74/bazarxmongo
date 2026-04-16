@@ -21,3 +21,11 @@ export class GetProductAnalyticsQuery extends Query {
 export class GetRevenueReportQuery extends Query {
   constructor(public readonly startDate: Date, public readonly endDate: Date) { super(); }
 }
+
+export class GetAdminStatsQuery extends Query {
+  constructor() { super(); }
+}
+
+export class GetVendorStatsQuery extends Query {
+  constructor(public readonly vendorId: string) { super(); }
+}

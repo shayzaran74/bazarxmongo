@@ -20,7 +20,107 @@ export class PrismaAnalyticsRepository {
 
   async getDashboardStats(startDate: Date): Promise<any> {
     const count = await this.prisma.analyticsEvent.count({ where: { timestamp: { gte: startDate } } });
-    // Detailed stats aggregation can be complex, providing a basic summary for now
     return { totalEvents: count };
+  }
+
+  async getAdminStats(): Promise<any> {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      activeUsers,
+      newUsers24h,
+      totalVendors,
+      pendingVendors,
+      totalProducts,
+      totalCategories,
+      totalOrders,
+      revenueResult,
+      pendingOrders,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { createdAt: { gte: last24h } } }),
+      this.prisma.vendor.count(),
+      this.prisma.vendor.count({ where: { status: 'PENDING' } }),
+      this.prisma.catalogProduct.count(),
+      this.prisma.category.count(),
+      this.prisma.order.count(),
+      this.prisma.order.aggregate({ _sum: { totalAmount: true } }),
+      this.prisma.order.count({ where: { status: 'PENDING' } }),
+    ]);
+
+    return {
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        newLast24h: newUsers24h,
+      },
+      vendors: {
+        total: totalVendors,
+        pending: pendingVendors,
+        active: totalVendors - pendingVendors, // Basit mantık
+      },
+      catalog: {
+        totalProducts,
+        totalCategories,
+        totalListings: await this.prisma.listing.count(),
+      },
+      sales: {
+        totalOrders,
+        totalRevenue: Number(revenueResult._sum.totalAmount || 0),
+        pendingOrders,
+      },
+    };
+  }
+
+  async getVendorStats(vendorId: string): Promise<any> {
+    const [
+      totalListings,
+      activeListings,
+      outOfStockListings,
+      totalOrders,
+      revenueResult,
+      pendingOrders,
+      shippedOrders,
+      followerCount,
+      vendorData,
+    ] = await Promise.all([
+      this.prisma.listing.count({ where: { vendorId } }),
+      this.prisma.listing.count({ where: { vendorId, status: 'ACTIVE' } }),
+      this.prisma.listing.count({ where: { vendorId, status: 'OUT_OF_STOCK' } }),
+      this.prisma.order.count({ where: { vendorId } }),
+      this.prisma.order.aggregate({
+        where: { vendorId, paymentStatus: 'COMPLETED' }, // 'PAID' yerine 'COMPLETED' (PaymentStatus enum)
+        _sum: { totalAmount: true },
+      }),
+      this.prisma.order.count({ where: { vendorId, status: 'PENDING' } }),
+      this.prisma.order.count({ where: { vendorId, status: 'SHIPPED' } }),
+      this.prisma.vendorFollower.count({ where: { vendorId } }),
+      this.prisma.vendorStats.findUnique({ where: { vendorId } }),
+    ]);
+
+    return {
+      products: {
+        total: totalListings,
+        active: activeListings,
+        outOfStock: outOfStockListings,
+      },
+      sales: {
+        totalOrders,
+        totalRevenue: Number(revenueResult._sum?.totalAmount || 0),
+        pendingOrders,
+        shippedOrders,
+      },
+      customers: {
+        totalFollowers: followerCount,
+        reviewCount: vendorData?.reviewCount || 0,
+        averageRating: Number(vendorData?.rating || 0),
+      },
+      performance: {
+        returnRate: 0, // İleride hesaplanabilir
+        cancellationRate: 0, // İleride hesaplanabilir
+      },
+    };
   }
 }

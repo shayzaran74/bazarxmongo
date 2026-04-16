@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, ForbiddenException } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -8,10 +8,15 @@ import {
   ApiQuery, 
   ApiBody 
 } from '@nestjs/swagger';
-import { Roles } from '@barterborsa/shared-nest';
+import { Roles, CurrentUser } from '@barterborsa/shared-nest';
 import { Public } from '@barterborsa/shared-security';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { TrackEventCommand, GetDashboardStatsQuery } from '../application/commands-queries/analytics.bus';
+import { 
+  TrackEventCommand, 
+  GetDashboardStatsQuery, 
+  GetAdminStatsQuery,
+  GetVendorStatsQuery 
+} from '../application/commands-queries/analytics.bus';
 
 @ApiTags('Analytics')
 @Controller('analytics')
@@ -49,4 +54,28 @@ export class AnalyticsAdminController {
   @ApiResponse({ status: 403, description: 'Sadece admin yetkisi ile erişilebilir.' })
   @Get('dashboard')
   async getDashboard(@Query('period') period: any) { return this.queryBus.execute(new GetDashboardStatsQuery(period)); }
+
+  @ApiOperation({ summary: 'Get general admin statistics', description: 'Kullanıcı, ürün, vendor ve satış sayılarını kapsayan genel admin istatistiklerini döner.' })
+  @ApiResponse({ status: 200, description: 'Genel istatistik verileri.' })
+  @Get('stats')
+  async getStats() { return this.queryBus.execute(new GetAdminStatsQuery()); }
+}
+
+@ApiTags('Analytics Vendor')
+@ApiBearerAuth()
+@Roles('VENDOR')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('vendor/analytics')
+export class VendorAnalyticsController {
+  constructor(private readonly queryBus: QueryBus) {}
+
+  @ApiOperation({ summary: 'Get general vendor statistics', description: 'Satıcının kendi ürün, satış ve müşteri verilerini döner.' })
+  @ApiResponse({ status: 200, description: 'Satıcı istatistik verileri.' })
+  @Get('stats')
+  async getStats(@CurrentUser() user: any) {
+    if (!user.vendorId) {
+      throw new ForbiddenException('Bu işlem için bir satıcı profiline ihtiyacınız var.');
+    }
+    return this.queryBus.execute(new GetVendorStatsQuery(user.vendorId));
+  }
 }
