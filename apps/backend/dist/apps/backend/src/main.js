@@ -24,6 +24,16 @@ async function bootstrap() {
     }));
     // Global Exception Filter: Tüm 500 hatalarını detaylı loglamak için
     app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
+    // Swagger Setup
+    const { SwaggerModule, DocumentBuilder } = require('@nestjs/swagger');
+    const config = new DocumentBuilder()
+        .setTitle('BazarX API')
+        .setDescription('BarterBorsa - BazarX V2 Backend API Dokümantasyonu')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
     const port = process.env.BACKEND_PORT || 3001;
     await app.listen(port, '0.0.0.0');
     logger.log(`Backend ${port} portunda çalışmaya başladı.`);
