@@ -2166,6 +2166,244 @@ model SideAd {
   @@map("side_ads")
 }
 
+// === LOYALTY ENUMS ===
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+model MembershipTier {
+  id               String      @id @default(cuid())
+  name             LoyaltyTier @unique
+  minXp            Int         @map("min_xp")
+  description      String?
+  rewardMultiplier Decimal     @default(1.0) @map("reward_multiplier") @db.Decimal(5, 2)
+  benefitMetadata  Json?       @map("benefit_metadata")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  userLevels       UserLevel[]
+
+  @@map("membership_tiers")
+}
+
+// === LOYALTY TABLES ===
+
+model UserLevel {
+  id               String          @id @default(cuid())
+  userId           String          @unique @map("user_id")
+  currentXp        Int             @default(0) @map("current_xp")
+  lifetimeXp       Int             @default(0) @map("lifetime_xp")
+  level            Int             @default(1) @map("level")
+  tierId           String?         @map("tier_id")
+  lastLoginBonusAt DateTime?       @map("last_login_bonus_at")
+  isFirstOrder     Boolean         @default(true) @map("is_first_order")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  membershipTier   MembershipTier? @relation(fields: [tierId], references: [id])
+
+  @@index([userId])
+  @@map("user_levels")
+}
+
+model XpTransaction {
+  id            String   @default(cuid())
+  userId        String   @map("user_id")
+  amount        Int
+  type          String   @map("type")
+  description   String?
+  referenceId   String?  @map("reference_id")
+  referenceType String?  @map("reference_type")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@id([id, createdAt])
+  @@index([userId])
+  @@map("xp_transactions")
+}
+
+model XpBatch {
+  id             String   @id @default(uuid())
+  accountId      String   @map("account_id")
+  originalAmount Decimal  @map("original_amount") @db.Decimal(18, 4)
+  currentBalance Decimal  @map("current_balance") @db.Decimal(18, 4)
+  sourceType     String   @map("source_type")
+  sourceRefId    String?  @map("source_ref_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  expiresAt      DateTime @map("expires_at")
+  isBurned       Boolean  @default(false) @map("is_burned")
+
+  @@index([accountId])
+  @@index([expiresAt])
+  @@map("xp_batches")
+}
+
+model Mission {
+  id           String        @id @default(cuid())
+  key          String        @unique @map("key")
+  title        String
+  description  String?
+  xpReward     Int           @default(0) @map("xp_reward")
+  rewardType   String?       @default("XP") @map("reward_type")
+  isActive     Boolean       @default(true) @map("is_active")
+  metadata     Json?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  userMissions UserMission[]
+
+  @@map("missions")
+}
+
+model UserMission {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  missionId   String    @map("mission_id")
+  status      String    @default("IN_PROGRESS") @map("status")
+  progress    Json?     @map("progress")
+  completedAt DateTime? @map("completed_at")
+  claimedAt   DateTime? @map("claimed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  mission     Mission   @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
+  @@index([userId, status])
+  @@map("user_missions")
+}
+
+model MilestoneTracker {
+  id                 String    @id @default(cuid())
+  userId             String    @unique @map("user_id")
+  weeklyOrderCount   Int       @default(0) @map("weekly_order_count")
+  weeklyPeriodStart  DateTime? @map("weekly_period_start")
+  weeklyBonusGiven   Boolean   @default(false) @map("weekly_bonus_given")
+  monthlySpendTotal  Decimal   @default(0) @map("monthly_spend_total") @db.Decimal(18, 2)
+  monthlyPeriodStart DateTime? @map("monthly_period_start")
+  monthlyBonusGiven  Boolean   @default(false) @map("monthly_bonus_given")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("milestone_trackers")
+}
+
+model LoyaltyTierHistory {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  fromTier    String?  @map("from_tier")
+  toTier      String   @map("to_tier")
+  reason      String?
+  triggeredBy String?  @map("triggered_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("loyalty_tier_history")
+}
+
+model XpDistributionRule {
+  id               String      @id @default(cuid())
+  city             String?
+  vendorTier       VendorTier? @map("vendor_tier")
+  commissionRate   Decimal?    @map("commission_rate") @db.Decimal(5, 2)
+  adSpendRate      Decimal?    @map("ad_spend_rate") @db.Decimal(5, 2)
+  serviceRate      Decimal?    @map("service_rate") @db.Decimal(5, 2)
+  priority         Int         @default(0)
+  isActive         Boolean     @default(true) @map("is_active")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  distributionType String?     @map("distribution_type")
+  name             String?
+
+  @@index([city])
+  @@index([vendorTier])
+  @@map("xp_distribution_rules")
+}
+
+model XpSpendingLimitRule {
+  id                 String       @id @default(cuid())
+  vendorTier         VendorTier?  @map("vendor_tier")
+  maxSpendPerTx      Decimal?     @map("max_spend_per_tx") @db.Decimal(18, 2)
+  monthlyVolumeLimit Decimal?     @map("monthly_volume_limit") @db.Decimal(18, 2)
+  priority           Int          @default(0)
+  isActive           Boolean      @default(true) @map("is_active")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  dailyLimit         Decimal?     @map("daily_limit") @db.Decimal(18, 2)
+  loyaltyTier        LoyaltyTier? @map("loyalty_tier")
+  maxSpendPercentage Decimal?     @map("max_spend_percentage") @db.Decimal(5, 2)
+  minCartAmount      Decimal?     @map("min_cart_amount") @db.Decimal(18, 2)
+  monthlyLimit       Decimal?     @map("monthly_limit") @db.Decimal(18, 2)
+  weeklyLimit        Decimal?     @map("weekly_limit") @db.Decimal(18, 2)
+  weeklyVolumeLimit  Decimal?     @map("weekly_volume_limit") @db.Decimal(18, 2)
+  xpToTlRate         Decimal?     @map("xp_to_tl_rate") @db.Decimal(18, 2)
+
+  @@index([vendorTier])
+  @@map("xp_spending_limit_rules")
+}
+
+model PlatinumMissionLog {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  missionId   String    @map("mission_id")
+  vendorId    String?   @map("vendor_id")
+  totalAmount Decimal?  @map("total_amount") @db.Decimal(18, 2)
+  orderCount  Int?      @map("order_count")
+  xpEarned    Int?      @map("xp_earned")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, vendorId])
+  @@map("platinum_mission_logs")
+}
+
+// === ANALYTICS TABLES ===
+
+model AnalyticsEvent {
+  id               String   @id @default(cuid())
+  referrer         String?
+  source           String?
+  medium           String?
+  campaign         String?
+  metadata         Json?
+  catalogProductId String?  @map("catalog_product_id")
+  categoryId       String?  @map("category_id")
+  eventSource      String?  @map("event_source")
+  eventType        String   @map("event_type")
+  intent           String?
+  ipAddress        String?  @map("ip_address")
+  listingId        String?  @map("listing_id")
+  path             String?
+  sessionId        String?  @map("session_id")
+  timestamp        DateTime @default(now())
+  userAgent        String?  @map("user_agent")
+  userId           String?  @map("user_id")
+  vendorId         String?  @map("vendor_id")
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([sessionId])
+  @@index([timestamp])
+  @@map("analytics_events")
+}
+
+model ProductActivity {
+  id               String   @id @default(cuid())
+  type             String
+  catalogProductId String?  @map("catalog_product_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  listingId        String?  @map("listing_id")
+  metadata         Json?
+  userId           String?  @map("user_id")
+
+  @@index([listingId])
+  @@index([catalogProductId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("product_activities")
+}
+
 // === COMMUNICATION ENUMS ===
 
 enum ChatRoomStatus {

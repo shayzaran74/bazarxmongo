@@ -1422,6 +1422,180 @@ exports.Prisma.SideAdScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.MembershipTierScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  minXp: 'minXp',
+  description: 'description',
+  rewardMultiplier: 'rewardMultiplier',
+  benefitMetadata: 'benefitMetadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserLevelScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  currentXp: 'currentXp',
+  lifetimeXp: 'lifetimeXp',
+  level: 'level',
+  tierId: 'tierId',
+  lastLoginBonusAt: 'lastLoginBonusAt',
+  isFirstOrder: 'isFirstOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.XpTransactionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  amount: 'amount',
+  type: 'type',
+  description: 'description',
+  referenceId: 'referenceId',
+  referenceType: 'referenceType',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.XpBatchScalarFieldEnum = {
+  id: 'id',
+  accountId: 'accountId',
+  originalAmount: 'originalAmount',
+  currentBalance: 'currentBalance',
+  sourceType: 'sourceType',
+  sourceRefId: 'sourceRefId',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  isBurned: 'isBurned'
+};
+
+exports.Prisma.MissionScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  title: 'title',
+  description: 'description',
+  xpReward: 'xpReward',
+  rewardType: 'rewardType',
+  isActive: 'isActive',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserMissionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  missionId: 'missionId',
+  status: 'status',
+  progress: 'progress',
+  completedAt: 'completedAt',
+  claimedAt: 'claimedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MilestoneTrackerScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  weeklyOrderCount: 'weeklyOrderCount',
+  weeklyPeriodStart: 'weeklyPeriodStart',
+  weeklyBonusGiven: 'weeklyBonusGiven',
+  monthlySpendTotal: 'monthlySpendTotal',
+  monthlyPeriodStart: 'monthlyPeriodStart',
+  monthlyBonusGiven: 'monthlyBonusGiven',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LoyaltyTierHistoryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  fromTier: 'fromTier',
+  toTier: 'toTier',
+  reason: 'reason',
+  triggeredBy: 'triggeredBy',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.XpDistributionRuleScalarFieldEnum = {
+  id: 'id',
+  city: 'city',
+  vendorTier: 'vendorTier',
+  commissionRate: 'commissionRate',
+  adSpendRate: 'adSpendRate',
+  serviceRate: 'serviceRate',
+  priority: 'priority',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  distributionType: 'distributionType',
+  name: 'name'
+};
+
+exports.Prisma.XpSpendingLimitRuleScalarFieldEnum = {
+  id: 'id',
+  vendorTier: 'vendorTier',
+  maxSpendPerTx: 'maxSpendPerTx',
+  monthlyVolumeLimit: 'monthlyVolumeLimit',
+  priority: 'priority',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  dailyLimit: 'dailyLimit',
+  loyaltyTier: 'loyaltyTier',
+  maxSpendPercentage: 'maxSpendPercentage',
+  minCartAmount: 'minCartAmount',
+  monthlyLimit: 'monthlyLimit',
+  weeklyLimit: 'weeklyLimit',
+  weeklyVolumeLimit: 'weeklyVolumeLimit',
+  xpToTlRate: 'xpToTlRate'
+};
+
+exports.Prisma.PlatinumMissionLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  missionId: 'missionId',
+  vendorId: 'vendorId',
+  totalAmount: 'totalAmount',
+  orderCount: 'orderCount',
+  xpEarned: 'xpEarned',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AnalyticsEventScalarFieldEnum = {
+  id: 'id',
+  referrer: 'referrer',
+  source: 'source',
+  medium: 'medium',
+  campaign: 'campaign',
+  metadata: 'metadata',
+  catalogProductId: 'catalogProductId',
+  categoryId: 'categoryId',
+  eventSource: 'eventSource',
+  eventType: 'eventType',
+  intent: 'intent',
+  ipAddress: 'ipAddress',
+  listingId: 'listingId',
+  path: 'path',
+  sessionId: 'sessionId',
+  timestamp: 'timestamp',
+  userAgent: 'userAgent',
+  userId: 'userId',
+  vendorId: 'vendorId'
+};
+
+exports.Prisma.ProductActivityScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  catalogProductId: 'catalogProductId',
+  createdAt: 'createdAt',
+  listingId: 'listingId',
+  metadata: 'metadata',
+  userId: 'userId'
+};
+
 exports.Prisma.ChatRoomScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -1818,6 +1992,14 @@ exports.AdSlotType = exports.$Enums.AdSlotType = {
   CHECKOUT_BANNER: 'CHECKOUT_BANNER'
 };
 
+exports.LoyaltyTier = exports.$Enums.LoyaltyTier = {
+  BRONZE: 'BRONZE',
+  SILVER: 'SILVER',
+  GOLD: 'GOLD',
+  PLATINUM: 'PLATINUM',
+  DIAMOND: 'DIAMOND'
+};
+
 exports.ChatRoomStatus = exports.$Enums.ChatRoomStatus = {
   ACTIVE: 'ACTIVE',
   ARCHIVED: 'ARCHIVED',
@@ -1932,6 +2114,19 @@ exports.Prisma.ModelName = {
   AdCampaignMetric: 'AdCampaignMetric',
   AdLocation: 'AdLocation',
   SideAd: 'SideAd',
+  MembershipTier: 'MembershipTier',
+  UserLevel: 'UserLevel',
+  XpTransaction: 'XpTransaction',
+  XpBatch: 'XpBatch',
+  Mission: 'Mission',
+  UserMission: 'UserMission',
+  MilestoneTracker: 'MilestoneTracker',
+  LoyaltyTierHistory: 'LoyaltyTierHistory',
+  XpDistributionRule: 'XpDistributionRule',
+  XpSpendingLimitRule: 'XpSpendingLimitRule',
+  PlatinumMissionLog: 'PlatinumMissionLog',
+  AnalyticsEvent: 'AnalyticsEvent',
+  ProductActivity: 'ProductActivity',
   ChatRoom: 'ChatRoom',
   ChatMessage: 'ChatMessage',
   Notification: 'Notification',
