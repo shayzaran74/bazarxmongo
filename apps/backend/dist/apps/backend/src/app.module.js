@@ -20,11 +20,11 @@ const vendor_module_1 = require("./modules/vendor/vendor.module");
 const commerce_module_1 = require("./modules/commerce/commerce.module");
 const barter_module_1 = require("./modules/barter/barter.module");
 const auction_module_1 = require("./modules/auction/auction.module");
-const communication_module_1 = require("./modules/communication/communication.module");
 const content_module_1 = require("./modules/content/content.module");
 const advertising_module_1 = require("./modules/advertising/advertising.module");
 const loyalty_module_1 = require("./modules/loyalty/loyalty.module");
 const analytics_module_1 = require("./modules/analytics/analytics.module");
+const media_module_1 = require("./modules/media/media.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,11 +45,12 @@ exports.AppModule = AppModule = __decorate([
             barter_module_1.BarterModule,
             auction_module_1.AuctionModule,
             // SUPPORT MODULES
-            communication_module_1.CommunicationModule,
+            // CommunicationModule, 
             content_module_1.ContentModule,
             advertising_module_1.AdvertisingModule,
             loyalty_module_1.LoyaltyModule,
             analytics_module_1.AnalyticsModule,
+            media_module_1.MediaModule,
         ],
         providers: [
             {

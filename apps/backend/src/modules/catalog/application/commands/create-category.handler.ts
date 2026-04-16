@@ -19,7 +19,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     const { dto } = command;
 
     const slugResult = Slug.create(dto.slug);
-    if (isErr(slugResult)) {
+    if (!slugResult.success) {
       throw slugResult.error;
     }
 

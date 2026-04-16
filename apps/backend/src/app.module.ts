@@ -17,6 +17,7 @@ import { ContentModule } from './modules/content/content.module';
 import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -34,11 +35,12 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     BarterModule,
     AuctionModule,
     // SUPPORT MODULES
-    CommunicationModule,
+    // CommunicationModule, 
     ContentModule,
     AdvertisingModule,
     LoyaltyModule,
     AnalyticsModule,
+    MediaModule,
   ],
   providers: [
     {

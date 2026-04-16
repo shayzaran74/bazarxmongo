@@ -2131,7 +2131,7 @@ const config = {
   },
   "relativeEnvPaths": {
     "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "schemaEnvPath": "../../../../../.env"
   },
   "relativePath": "../../../prisma",
   "clientVersion": "5.22.0",
@@ -2140,7 +2140,6 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -2159,8 +2158,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "src/generated/client",
-    "generated/client",
+    "apps/backend/src/generated/client",
+    "backend/src/generated/client",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -2189,7 +2188,7 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "src/generated/client/libquery_engine-darwin-arm64.dylib.node")
+path.join(process.cwd(), "apps/backend/src/generated/client/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "src/generated/client/schema.prisma")
+path.join(process.cwd(), "apps/backend/src/generated/client/schema.prisma")

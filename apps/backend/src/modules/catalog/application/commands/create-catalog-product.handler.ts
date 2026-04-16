@@ -5,7 +5,7 @@ import { ICatalogProductRepository } from '../../domain/repositories/catalog-pro
 import { CatalogProduct } from '../../domain/entities/catalog-product.entity';
 import { Slug } from '../../domain/value-objects/slug.vo';
 import { GTIN } from '../../domain/value-objects/gtin.vo';
-import { ConflictException, isErr } from '@barterborsa/shared-core';
+import { ConflictException } from '@barterborsa/shared-core';
 
 @CommandHandler(CreateCatalogProductCommand)
 export class CreateCatalogProductHandler implements ICommandHandler<CreateCatalogProductCommand> {
@@ -21,7 +21,7 @@ export class CreateCatalogProductHandler implements ICommandHandler<CreateCatalo
     // Check GTIN if provided
     if (dto.gtin) {
       const gtinResult = GTIN.create(dto.gtin);
-      if (isErr(gtinResult)) throw gtinResult.error;
+      if (!gtinResult.success) throw gtinResult.error;
       gtin = gtinResult.data;
       
       if (gtin) {
@@ -33,12 +33,11 @@ export class CreateCatalogProductHandler implements ICommandHandler<CreateCatalo
     }
 
     // Slug creation (for URL)
-    const slugResult = Slug.create(dto.name);
-    if (isErr(slugResult)) throw slugResult.error;
+    const slug = Slug.fromText(dto.name);
 
     const product = CatalogProduct.create({
       name: dto.name,
-      slug: slugResult.data,
+      slug: slug,
       gtin: gtin,
       brand: dto.brand,
       description: dto.description,

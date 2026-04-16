@@ -43,7 +43,7 @@ export class CatalogProductController {
   @ApiResponse({ status: 201, description: 'Ürün kataloğa eklendi.' })
   @ApiResponse({ status: 403, description: 'Sadece yetkili kullanıcılar ürün ekleyebilir.' })
   @Post()
-  @Roles('ADMIN', 'VENDOR')
+  @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@Body() dto: CreateCatalogProductDto) {
     return this.commandBus.execute(new CreateCatalogProductCommand(dto));

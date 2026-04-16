@@ -6,6 +6,7 @@ const platform_fastify_1 = require("@nestjs/platform-fastify");
 const common_1 = require("@nestjs/common");
 const app_module_1 = require("./app.module");
 const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
+const path_1 = require("path");
 async function bootstrap() {
     const logger = new common_1.Logger('Bootstrap');
     const app = await core_1.NestFactory.create(app_module_1.AppModule, new platform_fastify_1.FastifyAdapter());
@@ -16,6 +17,11 @@ async function bootstrap() {
     });
     // Global prefix: /api/v1
     app.setGlobalPrefix('api/v1');
+    // Statik dosyalar (Uploads)
+    app.useStaticAssets({
+        root: (0, path_1.join)(process.cwd(), 'public/uploads'),
+        prefix: '/uploads/',
+    });
     // Global validation: whitelist, transform aktif
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,

@@ -8,6 +8,7 @@ import {
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -24,6 +25,12 @@ async function bootstrap() {
 
   // Global prefix: /api/v1
   app.setGlobalPrefix('api/v1');
+  
+  // Statik dosyalar (Uploads)
+  app.useStaticAssets({
+    root: join(process.cwd(), 'public/uploads'),
+    prefix: '/uploads/',
+  });
 
   // Global validation: whitelist, transform aktif
   app.useGlobalPipes(new ValidationPipe({

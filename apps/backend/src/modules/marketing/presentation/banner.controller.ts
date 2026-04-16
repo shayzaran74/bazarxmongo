@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { Public } from '@barterborsa/shared-security';
 
-@Controller('banners')
+@Controller('marketing/banners')
 export class BannerController {
   @Public()
   @Get()

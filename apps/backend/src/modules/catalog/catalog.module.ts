@@ -12,19 +12,43 @@ import { PrismaCatalogProductRepository } from './infrastructure/persistence/pri
 import { CreateCatalogProductHandler } from './application/commands/create-catalog-product.handler';
 import { CategoryController } from './presentation/category.controller';
 import { CatalogProductController } from './presentation/catalog-product.controller';
+import { CatalogController } from './presentation/catalog.controller';
 
-const CommandHandlers = [CreateCategoryHandler, CreateListingHandler, CreateCatalogProductHandler];
-const QueryHandlers: any[] = [];
+// Queries
+import { GetProductDetailsHandler } from './application/queries/get-product-details/get-product-details.handler';
+import { GetListingsHandler } from './application/queries/get-listings/get-listings.handler';
+import { GetProductBySlugHandler } from './application/queries/get-product-by-slug/get-product-by-slug.handler';
+import { PRODUCT_REPO } from './domain/repositories/product.repository.interface';
+import { PrismaProductRepository } from './infrastructure/persistence/prisma-product.repository';
+
+const CommandHandlers = [
+  CreateCategoryHandler, 
+  CreateListingHandler, 
+  CreateCatalogProductHandler
+];
+
+const QueryHandlers = [
+  GetProductDetailsHandler,
+  GetListingsHandler,
+  GetProductBySlugHandler
+];
+
 const Repositories = [
   { provide: 'ICategoryRepository', useClass: PrismaCategoryRepository },
   { provide: 'IBrandRepository', useClass: PrismaBrandRepository },
   { provide: 'IListingRepository', useClass: PrismaListingRepository },
   { provide: 'ICatalogProductRepository', useClass: PrismaCatalogProductRepository },
+  { provide: PRODUCT_REPO, useClass: PrismaProductRepository },
 ];
 
 @Module({
   imports: [CqrsModule],
-  controllers: [ListingController, CategoryController, CatalogProductController],
+  controllers: [
+    ListingController, 
+    CategoryController, 
+    CatalogProductController,
+    CatalogController
+  ],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
