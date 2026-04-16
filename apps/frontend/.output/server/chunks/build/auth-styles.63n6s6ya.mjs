@@ -1,8 +1,0 @@
-const auth_vue_vue_type_style_index_0_scoped_a72da476_lang = ".shadow-soft[data-v-a72da476]{box-shadow:0 10px 30px -10px #0000000d}@keyframes slideUp-a72da476{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.animate-slide-up[data-v-a72da476]{animation:slideUp-a72da476 .6s cubic-bezier(.16,1,.3,1)}";
-
-const authStyles_63n6s6ya = [
-  auth_vue_vue_type_style_index_0_scoped_a72da476_lang
-];
-
-export { authStyles_63n6s6ya as default };
-//# sourceMappingURL=auth-styles.63n6s6ya.mjs.map
