@@ -37,6 +37,8 @@ export class PrismaAnalyticsRepository {
       totalOrders,
       revenueResult,
       pendingOrders,
+      totalAuctions,
+      totalLotteries,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { status: 'ACTIVE' } }),
@@ -48,6 +50,8 @@ export class PrismaAnalyticsRepository {
       this.prisma.order.count(),
       this.prisma.order.aggregate({ _sum: { totalAmount: true } }),
       this.prisma.order.count({ where: { status: 'PENDING' } }),
+      this.prisma.auction.count(),
+      this.prisma.lottery.count(),
     ]);
 
     return {
@@ -65,6 +69,8 @@ export class PrismaAnalyticsRepository {
         totalProducts,
         totalCategories,
         totalListings: await this.prisma.listing.count(),
+        totalAuctions,
+        totalLotteries,
       },
       sales: {
         totalOrders,
@@ -85,19 +91,24 @@ export class PrismaAnalyticsRepository {
       shippedOrders,
       followerCount,
       vendorData,
+      totalUsers,
     ] = await Promise.all([
       this.prisma.listing.count({ where: { vendorId } }),
       this.prisma.listing.count({ where: { vendorId, status: 'ACTIVE' } }),
       this.prisma.listing.count({ where: { vendorId, status: 'OUT_OF_STOCK' } }),
       this.prisma.order.count({ where: { vendorId } }),
       this.prisma.order.aggregate({
-        where: { vendorId, paymentStatus: 'COMPLETED' }, // 'PAID' yerine 'COMPLETED' (PaymentStatus enum)
+        where: { vendorId, paymentStatus: 'COMPLETED' },
         _sum: { totalAmount: true },
       }),
       this.prisma.order.count({ where: { vendorId, status: 'PENDING' } }),
       this.prisma.order.count({ where: { vendorId, status: 'SHIPPED' } }),
       this.prisma.vendorFollower.count({ where: { vendorId } }),
       this.prisma.vendorStats.findUnique({ where: { vendorId } }),
+      this.prisma.order.groupBy({
+        by: ['userId'],
+        where: { vendorId },
+      }).then(res => res.length),
     ]);
 
     return {
@@ -114,6 +125,7 @@ export class PrismaAnalyticsRepository {
       },
       customers: {
         totalFollowers: followerCount,
+        totalUsers,
         reviewCount: vendorData?.reviewCount || 0,
         averageRating: Number(vendorData?.rating || 0),
       },

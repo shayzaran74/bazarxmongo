@@ -15,6 +15,8 @@ export class AdminStatsDto {
     totalProducts: number;
     totalCategories: number;
     totalListings: number;
+    totalAuctions: number;
+    totalLotteries: number;
   };
   sales!: {
     totalOrders: number;
