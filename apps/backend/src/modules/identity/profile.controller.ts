@@ -1,8 +1,23 @@
 import { Controller, Get, Post, Body, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBearerAuth, 
+  ApiBody 
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
-import { UpdateProfileDto, UpdateProfileCommand, GetProfileQuery, ChangePasswordDto, ChangePasswordCommand } from '@barterborsa/domain-identity';
+import { 
+  UpdateProfileDto, 
+  UpdateProfileCommand, 
+  GetProfileQuery, 
+  ChangePasswordDto, 
+  ChangePasswordCommand 
+} from '@barterborsa/domain-identity';
 
+@ApiTags('Profile')
+@ApiBearerAuth()
 @Controller('identity/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
@@ -11,18 +26,27 @@ export class ProfileController {
     private readonly queryBus: QueryBus
   ) {}
 
+  @ApiOperation({ summary: 'Get user profile', description: 'Kullanıcının detaylı profil bilgilerini döner.' })
+  @ApiResponse({ status: 200, description: 'Profil bilgileri.' })
   @Get()
   async getProfile(@Req() req: any) {
     const userId = req.user.id;
     return this.queryBus.execute(new GetProfileQuery(userId));
   }
 
+  @ApiOperation({ summary: 'Update user profile', description: 'Kullanıcının profil bilgilerini günceller.' })
+  @ApiBody({ type: UpdateProfileDto })
+  @ApiResponse({ status: 200, description: 'Profil başarıyla güncellendi.' })
   @Post()
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const userId = req.user.id;
     return this.commandBus.execute(new UpdateProfileCommand(userId, dto));
   }
 
+  @ApiOperation({ summary: 'Change password', description: 'Kullanıcının mevcut şifresini yenisiyle değiştirir.' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: 'Şifre başarıyla değiştirildi.' })
+  @ApiResponse({ status: 400, description: 'Mevcut şifre hatalı veya yeni şifre kriterlere uymuyor.' })
   @Post('change-password')
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
     const userId = req.user.id;

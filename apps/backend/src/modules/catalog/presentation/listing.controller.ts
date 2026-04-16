@@ -1,12 +1,19 @@
-// apps/backend/src/modules/catalog/presentation/listing.controller.ts
-
 import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBearerAuth, 
+  ApiParam, 
+  ApiBody 
+} from '@nestjs/swagger';
 import { CreateListingCommand } from '../application/commands/create-listing.command';
 import { CreateListingDto } from '../application/dtos/create-listing.dto';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard, Roles, Public } from '@barterborsa/shared-security';
 
+@ApiTags('Listings')
 @Controller('listings')
 export class ListingController {
   constructor(
@@ -14,6 +21,11 @@ export class ListingController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new product listing', description: 'Satıcı için yeni bir ürün ilanı oluşturur.' })
+  @ApiBody({ type: CreateListingDto })
+  @ApiResponse({ status: 201, description: 'İlan başarıyla oluşturuldu.' })
+  @ApiResponse({ status: 403, description: 'Sadece satıcılar ilan oluşturabilir.' })
   @Post()
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,6 +36,10 @@ export class ListingController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Get listing by slug', description: 'URL slug bilgisi verilen ilanın detaylarını döner.' })
+  @ApiParam({ name: 'slug', description: 'İlan slug (örn: iphone-15-pro-max)' })
+  @ApiResponse({ status: 200, description: 'İlan detayları.' })
+  @ApiResponse({ status: 404, description: 'İlan bulunamadı.' })
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
     // Query implementation would follow

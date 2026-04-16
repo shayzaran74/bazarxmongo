@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoogleOAuthController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const google_auth_guard_1 = require("./infrastructure/auth/google-auth.guard");
 const auth_service_1 = require("./infrastructure/auth/auth.service");
 const shared_security_1 = require("@barterborsa/shared-security");
@@ -22,15 +23,9 @@ let GoogleOAuthController = class GoogleOAuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    /**
-     * Google girişini başlatır.
-     */
     async googleAuth() {
         // GoogleAuthGuard bizi otomatik yönlendirir.
     }
-    /**
-     * Google callback endpoint'i.
-     */
     async googleAuthRedirect(req, res) {
         const user = req.user;
         const result = await this.authService.googleLogin(user);
@@ -49,6 +44,8 @@ let GoogleOAuthController = class GoogleOAuthController {
 exports.GoogleOAuthController = GoogleOAuthController;
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Initiate Google OAuth login', description: 'Kullanıcıyı Google giriş sayfasına yönlendirir.' }),
+    (0, swagger_1.ApiResponse)({ status: 302, description: 'Google giriş sayfasına yönlendirme.' }),
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(google_auth_guard_1.GoogleAuthGuard),
     __metadata("design:type", Function),
@@ -57,6 +54,8 @@ __decorate([
 ], GoogleOAuthController.prototype, "googleAuth", null);
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Google OAuth callback', description: 'Google giriş işlemi tamamlandıktan sonra dönülen endpoint. Başarılı girişte frontend\'e yönlendirir.' }),
+    (0, swagger_1.ApiResponse)({ status: 302, description: 'Başarılı girişte frontend success sayfasına, hatada login sayfasına yönlendirir.' }),
     (0, common_1.Get)('callback'),
     (0, common_1.UseGuards)(google_auth_guard_1.GoogleAuthGuard),
     __param(0, (0, common_1.Req)()),
@@ -66,6 +65,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GoogleOAuthController.prototype, "googleAuthRedirect", null);
 exports.GoogleOAuthController = GoogleOAuthController = __decorate([
+    (0, swagger_1.ApiTags)('Auth'),
     (0, common_1.Controller)('auth/google'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], GoogleOAuthController);

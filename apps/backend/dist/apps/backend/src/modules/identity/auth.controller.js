@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const cqrs_1 = require("@nestjs/cqrs");
+const swagger_1 = require("@nestjs/swagger");
 const domain_identity_1 = require("@barterborsa/domain-identity");
 const auth_service_1 = require("./infrastructure/auth/auth.service");
 const shared_security_1 = require("@barterborsa/shared-security");
@@ -79,6 +80,10 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur.' }),
+    (0, swagger_1.ApiBody)({ type: domain_identity_1.RegisterUserDto }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Kullanıcı başarıyla oluşturuldu.' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Geçersiz veri veya e-posta zaten kullanımda.' }),
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -87,6 +92,19 @@ __decorate([
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Login user', description: 'Kullanıcı girişi yapar ve JWT token döner.' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', example: 'user@example.com' },
+                password: { type: 'string', example: 'Password123!' }
+            },
+            required: ['email', 'password']
+        }
+    }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Giriş başarılı.' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Hatalı e-posta veya şifre.' }),
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -95,6 +113,18 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Refresh access token', description: 'Refresh token kullanarak yeni bir access token alır.' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                refreshToken: { type: 'string' }
+            },
+            required: ['refreshToken']
+        }
+    }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Token yenileme başarılı.' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' }),
     (0, common_1.Post)('refresh'),
     __param(0, (0, common_1.Body)('refreshToken')),
     __metadata("design:type", Function),
@@ -102,6 +132,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "refresh", null);
 __decorate([
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Logout user', description: 'Kullanıcı oturumunu sonlandırır ve refresh token\'ı geçersiz kılar.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Çıkış yapıldı.' }),
     (0, common_1.Post)('logout'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -110,6 +143,9 @@ __decorate([
 ], AuthController.prototype, "logout", null);
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Request password reset link', description: 'Şifre sıfırlama bağlantısı talep eder.' }),
+    (0, swagger_1.ApiBody)({ type: domain_identity_1.ForgotPasswordDto }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Bağlantı başarıyla gönderildi.' }),
     (0, common_1.Post)('forgot-password'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -118,6 +154,10 @@ __decorate([
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
     (0, shared_security_1.Public)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Reset password', description: 'Şifre sıfırlama işlemini tamamlar.' }),
+    (0, swagger_1.ApiBody)({ type: domain_identity_1.ResetPasswordDto }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Şifre başarıyla sıfırlandı.' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Geçersiz veya süresi dolmuş token.' }),
     (0, common_1.Post)('reset-password'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -125,6 +165,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
+    (0, swagger_1.ApiTags)('Auth'),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
         auth_service_1.AuthService])

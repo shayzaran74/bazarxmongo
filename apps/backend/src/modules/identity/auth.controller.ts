@@ -1,9 +1,24 @@
 import { Controller, Post, Body, HttpException, HttpStatus, Req, Res } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { RegisterUserDto, RegisterUserCommand, ForgotPasswordCommand, ResetPasswordCommand } from '@barterborsa/domain-identity';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBody, 
+  ApiBearerAuth 
+} from '@nestjs/swagger';
+import { 
+  RegisterUserDto, 
+  RegisterUserCommand, 
+  ForgotPasswordCommand, 
+  ResetPasswordCommand,
+  ForgotPasswordDto,
+  ResetPasswordDto
+} from '@barterborsa/domain-identity';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -12,6 +27,10 @@ export class AuthController {
   ) {}
 
   @Public()
+  @ApiOperation({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur.' })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiResponse({ status: 201, description: 'Kullanıcı başarıyla oluşturuldu.' })
+  @ApiResponse({ status: 400, description: 'Geçersiz veri veya e-posta zaten kullanımda.' })
   @Post('register')
   async register(@Body() dto: RegisterUserDto) {
     const result = await this.commandBus.execute(new RegisterUserCommand(dto));
@@ -28,6 +47,19 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Login user', description: 'Kullanıcı girişi yapar ve JWT token döner.' })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+        password: { type: 'string', example: 'Password123!' }
+      },
+      required: ['email', 'password']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Giriş başarılı.' })
+  @ApiResponse({ status: 401, description: 'Hatalı e-posta veya şifre.' })
   @Post('login')
   async login(@Body() input: any) {
     const authData = await this.authService.login(input);
@@ -40,6 +72,18 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Refresh access token', description: 'Refresh token kullanarak yeni bir access token alır.' })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: { type: 'string' }
+      },
+      required: ['refreshToken']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Token yenileme başarılı.' })
+  @ApiResponse({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' })
   @Post('refresh')
   async refresh(@Body('refreshToken') refreshToken: string) {
     const tokens = await this.authService.refresh(refreshToken);
@@ -49,6 +93,9 @@ export class AuthController {
     };
   }
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout user', description: 'Kullanıcı oturumunu sonlandırır ve refresh token\'ı geçersiz kılar.' })
+  @ApiResponse({ status: 200, description: 'Çıkış yapıldı.' })
   @Post('logout')
   async logout(@Req() req: any) {
     await this.authService.logout(req.user.id);
@@ -59,6 +106,9 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Request password reset link', description: 'Şifre sıfırlama bağlantısı talep eder.' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({ status: 200, description: 'Bağlantı başarıyla gönderildi.' })
   @Post('forgot-password')
   async forgotPassword(@Body() dto: any) {
     await this.commandBus.execute(new ForgotPasswordCommand(dto));
@@ -69,6 +119,10 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Reset password', description: 'Şifre sıfırlama işlemini tamamlar.' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({ status: 200, description: 'Şifre başarıyla sıfırlandı.' })
+  @ApiResponse({ status: 400, description: 'Geçersiz veya süresi dolmuş token.' })
   @Post('reset-password')
   async resetPassword(@Body() dto: any) {
     const result = await this.commandBus.execute(new ResetPasswordCommand(dto));

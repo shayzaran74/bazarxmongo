@@ -1,26 +1,26 @@
 import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
 
+@ApiTags('Auth')
 @Controller('auth/google')
 export class GoogleOAuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * Google girişini başlatır.
-   */
   @Public()
+  @ApiOperation({ summary: 'Initiate Google OAuth login', description: 'Kullanıcıyı Google giriş sayfasına yönlendirir.' })
+  @ApiResponse({ status: 302, description: 'Google giriş sayfasına yönlendirme.' })
   @Get()
   @UseGuards(GoogleAuthGuard)
   async googleAuth(): Promise<void> {
     // GoogleAuthGuard bizi otomatik yönlendirir.
   }
 
-  /**
-   * Google callback endpoint'i.
-   */
   @Public()
+  @ApiOperation({ summary: 'Google OAuth callback', description: 'Google giriş işlemi tamamlandıktan sonra dönülen endpoint. Başarılı girişte frontend\'e yönlendirir.' })
+  @ApiResponse({ status: 302, description: 'Başarılı girişte frontend success sayfasına, hatada login sayfasına yönlendirir.' })
   @Get('callback')
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Req() req: any, @Res() res: any) {

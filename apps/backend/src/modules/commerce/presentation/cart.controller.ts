@@ -1,11 +1,18 @@
-// apps/backend/src/modules/commerce/presentation/cart.controller.ts
-
 import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBearerAuth, 
+  ApiBody 
+} from '@nestjs/swagger';
 import { AddToCartDto } from '../application/dtos/add-to-cart.dto';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 
+@ApiTags('Cart')
+@ApiBearerAuth()
 @Controller('cart')
 export class CartController {
   constructor(
@@ -13,6 +20,10 @@ export class CartController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @ApiOperation({ summary: 'Add product to cart', description: 'Sepete yeni bir ürün ekler veya mevcut ürünün adedini artırır.' })
+  @ApiBody({ type: AddToCartDto })
+  @ApiResponse({ status: 201, description: 'Ürün sepete eklendi.' })
+  @ApiResponse({ status: 401, description: 'Yetkilendirme gerekli.' })
   @Post('add')
   @UseGuards(JwtAuthGuard)
   async addToCart(@CurrentUser() user: any, @Body() dto: AddToCartDto) {
@@ -20,6 +31,8 @@ export class CartController {
     return { success: true, message: 'Added to cart stub' };
   }
 
+  @ApiOperation({ summary: 'Get current cart', description: 'Kullanıcının aktif sepetindeki ürünleri ve toplam tutarı döner.' })
+  @ApiResponse({ status: 200, description: 'Sepet detayları.' })
   @Get()
   @UseGuards(JwtAuthGuard)
   async getCart(@CurrentUser() user: any) {
