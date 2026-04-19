@@ -37,6 +37,7 @@ import { GoogleOAuthController } from './google-oauth.controller';
 import { ProfileController } from './profile.controller';
 import { AddressController } from './address.controller';
 import { UserController } from './user.controller';
+import { AdminUserController } from './admin-user.controller';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { TokenService } from './infrastructure/auth/token.service';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
@@ -73,6 +74,7 @@ const Handlers = [
     ProfileController,
     AddressController,
     UserController,
+    AdminUserController,
   ],
   providers: [
     AuthService,

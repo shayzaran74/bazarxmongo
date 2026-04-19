@@ -16,8 +16,12 @@ export interface UserProps {
   lockoutUntil?: Date;
   lastLoginAt?: Date;
   lastSeenAt?: Date;
-  deletedAt?: Date;
   referredById?: string;
+  deletedAt?: Date;
+  vendor?: {
+    status: string;
+    slug?: string;
+  };
 }
 
 export class User extends AggregateRoot<UserProps> {
@@ -77,4 +81,5 @@ export class User extends AggregateRoot<UserProps> {
   get isEmailVerified(): boolean { return this.props.isEmailVerified; }
   get lastLoginAt(): Date | undefined { return this.props.lastLoginAt; }
   get googleId(): string | undefined { return this.props.googleId; }
+  get vendor(): { status: string; slug?: string } | undefined { return this.props.vendor; }
 }

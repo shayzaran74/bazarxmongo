@@ -12,6 +12,10 @@ export class UserResponseDto {
   lastName?: string;
   lastLoginAt?: Date;
   createdAt!: Date;
+  vendor?: {
+    status: string;
+    slug?: string;
+  };
 
   static fromEntity(user: User): UserResponseDto {
     const dto = new UserResponseDto();
@@ -26,6 +30,7 @@ export class UserResponseDto {
     dto.lastName = user.lastName;
     dto.lastLoginAt = user.lastLoginAt;
     dto.createdAt = user.createdAt;
+    dto.vendor = user.vendor;
     return dto;
   }
 }

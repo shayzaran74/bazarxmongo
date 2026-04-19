@@ -24,6 +24,10 @@ export class UserMapper {
       lastSeenAt: record.lastSeenAt || undefined,
       deletedAt: record.deletedAt || undefined,
       referredById: record.referredById || undefined,
+      vendor: record.vendor ? {
+        status: record.vendor.status,
+        slug: record.vendor.slug
+      } : undefined,
     }, record.id);
 
     if (!userResult.success) {

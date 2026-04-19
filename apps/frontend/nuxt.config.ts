@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
+       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
       minioBase: process.env.NUXT_PUBLIC_MINIO_BASE || 'http://localhost:9000/bazarx-public'
     }
   },
@@ -27,7 +27,7 @@ export default defineNuxtConfig({
     '/register': { redirect: '/auth/register' },
     '/forgot-password': { redirect: '/auth/forgot-password' },
     '/reset-password': { redirect: '/auth/reset-password' },
-    '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/v1/**` },
+    '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/**` },
     '/socket.io': { proxy: 'http://localhost:3001/socket.io' }
   },
 

@@ -334,6 +334,7 @@ const wishlistStore = useWishlistStore()
 const siteSettingsStore = useSiteSettingsStore()
 const config = useRuntimeConfig()
 const route = useRoute()
+const { $api } = useApi()
 const { resolveImageUrl } = useAppImage()
 
 const categories = ref<Category[]>([])
@@ -407,11 +408,11 @@ const legalDocuments = ref<LegalDocument[]>([])
 const fetchHelpAndLegal = async () => {
   try {
     const [helpRes, legalRes] = await Promise.all([
-      $fetch<ApiResponse<any>>('/api/help/categories', { baseURL: config.public.apiBase }),
-      $fetch<ApiResponse<any>>('/api/legal', { baseURL: config.public.apiBase })
+      $api<HelpCategory[]>('/api/help/categories'),
+      $api<LegalDocument[]>('/api/legal')
     ])
-    if (helpRes.success) helpCategories.value = helpRes.data
-    if (legalRes.success) legalDocuments.value = legalRes.data
+    if (helpRes.success) helpCategories.value = helpRes.data as any
+    if (legalRes.success) legalDocuments.value = legalRes.data as any
   } catch (err) {
     console.warn('Fetch help/legal error:', err)
   }
@@ -421,8 +422,7 @@ const fetchCategories = async () => {
   categoriesLoading.value = true
   try {
     // Fetch standard product categories (Category table)
-    const data = await $fetch<ApiResponse<any>>('/api/categories', {
-      baseURL: useRuntimeConfig().public.apiBase,
+    const data = await $api<any>('/api/categories', {
       query: { all: true, includeChildren: true }
     })
     if (data.success) {
@@ -502,14 +502,14 @@ const fetchSideAds = async (city = '') => {
   try {
     const eco = currentEcosystem.value === 'ticaritakas' ? 'TICARITAKAS' :
       currentEcosystem.value === 'barterborsa' ? 'BARTER_BORSA' : 'BAZARX'
-    const response = await $fetch('/api/settings/side-ads', {
+    const response = await $api<SideAd[]>('/api/settings/side-ads', {
       query: {
         city: city && city !== 'Tüm Türkiye' ? city : undefined,
         ecosystem: eco
       }
     })
-    if (response && typeof response === 'object' && 'success' in (response as any) && 'data' in (response as any) && (response as any).success) {
-      sideAds.value = ((response as any).data as unknown) as SideAd[]
+    if (response.success) {
+      sideAds.value = response.data as any
     }
   } catch (error) {
     console.error('Fetch side ads error:', error)

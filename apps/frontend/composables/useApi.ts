@@ -6,7 +6,14 @@ export const useApi = () => {
   const apiBase = config.public.apiBase
 
   const customFetch = async <T>(path: string, options: any = {}): Promise<ApiResponse<T>> => {
-    const normalizedPath = path.startsWith('/') ? path.slice(1) : path
+    let normalizedPath = path.startsWith('/') ? path.slice(1) : path
+    
+    // Backend 'api/v1' prefix kullandığı için, 'api/' ile başlayan yolların
+    // arasına 'v1' ekliyoruz (eğer zaten yoksa).
+    if (normalizedPath.startsWith('api/') && !normalizedPath.startsWith('api/v1/')) {
+      normalizedPath = normalizedPath.replace('api/', 'api/v1/')
+    }
+    
     const headers: Record<string, string> = { ...(options.headers || {}) }
 
     if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`
@@ -15,6 +22,12 @@ export const useApi = () => {
     }
 
     try {
+      console.log('--- API FETCH ---', { 
+        path, 
+        normalizedPath, 
+        baseURL: apiBase, 
+        full: `${apiBase}/${normalizedPath}` 
+      })
       return await $fetch<ApiResponse<T>>(normalizedPath, { baseURL: apiBase, ...options, headers })
     } catch (error: any) {
       if ((error.status === 419 || error.status === 401) && authStore.isLoggedIn) {

@@ -34,6 +34,7 @@ model User {
   referredBy         User?               @relation("Referrals", fields: [referredById], references: [id])
   referrals          User[]              @relation("Referrals")
   verificationTokens VerificationToken[]
+  vendor             Vendor?
 
   @@index([email])
   @@index([phoneNumber])
@@ -146,7 +147,7 @@ model SSOToken {
 
 model Company {
   id                  String        @id @default(cuid())
-  taxNumber           String        @unique @map("tax_number")
+  taxNumber           String?       @unique @map("tax_number")
   name                String
   address             String?
   phone               String?
@@ -226,6 +227,7 @@ model Vendor {
   settings          VendorSettings?
   stats             VendorStats?
   company           Company             @relation(fields: [companyId], references: [id])
+  user              User                @relation(fields: [userId], references: [id])
   memberOfEcosystem BrandEcosystem?     @relation("EcosystemMembers", fields: [ecosystemId], references: [id])
   warehouses        Warehouse[]
 
@@ -244,7 +246,7 @@ model VendorProfile {
   supportEmail  String?    @map("support_email")
   isFeatured    Boolean    @default(false) @map("is_featured")
   featuredUntil DateTime?  @map("featured_until")
-  city          PilotCity? @map("city")
+  city          String?    @map("city")
   district      String?    @map("district")
   vendor        Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
@@ -1148,7 +1150,7 @@ model SurplusItem {
   technicalSpecs    Json?         @map("technical_specs")
   images            Json?
   location          String?
-  city              PilotCity?    @map("city")
+  city              String?       @map("city")
   status            SurplusStatus @default(PENDING_APPROVAL)
   reactivationCount Int           @default(0) @map("reactivation_count")
   lastReactivatedAt DateTime?     @map("last_reactivated_at")

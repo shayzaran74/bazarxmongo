@@ -69,7 +69,11 @@ export class GetAnnouncementsHandler implements IQueryHandler<qry.GetAnnouncemen
 export class GetPoliciesHandler implements IQueryHandler<qry.GetPoliciesQuery> {
   constructor(@Inject('IPolicyRepository') private readonly repository: IPolicyRepository) {}
   async execute() {
-    return this.repository.findAllActive();
+    const policies = await this.repository.findAllActive();
+    return policies.map(p => ({
+      id: p.id.toString(),
+      ...p.getProps()
+    }));
   }
 }
 
@@ -77,7 +81,12 @@ export class GetPoliciesHandler implements IQueryHandler<qry.GetPoliciesQuery> {
 export class GetPolicyBySlugHandler implements IQueryHandler<qry.GetPolicyBySlugQuery> {
   constructor(@Inject('IPolicyRepository') private readonly repository: IPolicyRepository) {}
   async execute(query: qry.GetPolicyBySlugQuery) {
-    return this.repository.findBySlug(query.slug);
+    const policy = await this.repository.findBySlug(query.slug);
+    if (!policy) return null;
+    return {
+      id: policy.id.toString(),
+      ...policy.getProps()
+    };
   }
 }
 
