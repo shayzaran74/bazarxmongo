@@ -16,9 +16,10 @@ export class BarterAdminController {
   async getAllOffers() {
     const data = await this.prisma.tradeOffer.findMany({
       include: {
-        sender: { include: { company: true } },
-        receiver: { include: { company: true } },
-        items: true
+        fromCompany: true,
+        toCompany: true,
+        offeredItems: true,
+        requestedItems: true
       },
       orderBy: { createdAt: 'desc' }
     });
