@@ -22,14 +22,18 @@ export class VendorAdminController {
     
     const [items, total] = await Promise.all([
       this.prisma.vendor.findMany({
-        where: search ? { companyName: { contains: search, mode: 'insensitive' } } : {},
-        include: { user: { select: { email: true } } },
+        where: search ? { company: { name: { contains: search, mode: 'insensitive' } } } : {},
+        include: { 
+          company: { 
+            select: { name: true, email: true } 
+          } 
+        },
         skip,
         take: Number(limit),
         orderBy: { createdAt: 'desc' }
       }),
       this.prisma.vendor.count({
-        where: search ? { companyName: { contains: search, mode: 'insensitive' } } : {}
+        where: search ? { company: { name: { contains: search, mode: 'insensitive' } } } : {}
       })
     ]);
 

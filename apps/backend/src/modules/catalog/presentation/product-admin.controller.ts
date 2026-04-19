@@ -24,7 +24,7 @@ export class ProductAdminController {
     const [items, total] = await Promise.all([
       this.prisma.catalogProduct.findMany({
         where: search ? { name: { contains: search, mode: 'insensitive' } } : {},
-        include: { category: true, Brand: true },
+        include: { category: true, brands: true },
         skip,
         take: Number(limit),
         orderBy: { createdAt: 'desc' }
