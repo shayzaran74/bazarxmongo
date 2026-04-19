@@ -1,4 +1,4 @@
-import type { Category } from '~/types/catalog'
+import type { Category } from '@barterborsa/shared-types'
 
 export const useAppImage = () => {
     const config = useRuntimeConfig()
@@ -17,7 +17,7 @@ export const useAppImage = () => {
             ad: 'https://placehold.co/400x600/f1f5f9/64748b?text=Kampanya'
         }
 
-        // Eğer bir image nesnesi geçilmişse kontrol et
+        // Check if an image object was passed
         let sourceUrl = url
         if (url && typeof url === 'object' && url.url) {
             sourceUrl = url.url
@@ -25,7 +25,7 @@ export const useAppImage = () => {
 
         if (!sourceUrl) return fallbacks[fallbackType] || fallbacks.product
 
-        // DB'de saklanan eski IP'leri yakala ve güncelle
+        // Intercept old IPs stored in DB
         if (typeof sourceUrl === 'string') {
             sourceUrl = sourceUrl
                 .replace(/192\.168\.1\.19(\.nip\.io)?/g, '172.20.10.8.nip.io')
@@ -38,13 +38,13 @@ export const useAppImage = () => {
                 .replace(/192\.168\.1\.101(\.nip\.io)?/g, '172.20.10.8.nip.io')
         }
 
-        // Eğer zaten tam bir URL veya data URI ise olduğu gibi döndür
+        // If it's already a full URL or data URI, return as is
         if (typeof sourceUrl === 'string' && (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://') || sourceUrl.startsWith('data:'))) {
             return sourceUrl
         }
 
-        // Çift slash oluşmaması için path birleştirmeyi dikkatli yap
-        const apiBase = config.public.apiBase;
+        // Handle path prepending carefully to avoid double slashes
+        const apiBase = config.public.apiBase || 'http://localhost:3001'
         const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase
         const cleanPath = String(sourceUrl).startsWith('/') ? sourceUrl : `/${sourceUrl}`
 
@@ -63,7 +63,7 @@ export const useAppImage = () => {
             return resolveImageUrl(category.image, 'category')
         }
 
-        // Keyword tabanlı servise geri dön (fallback)
+        // Fallback to keyword-based service
         const keyword = encodeURIComponent(category.name?.toLowerCase() || 'shopping')
         return `https://loremflickr.com/400/400/${keyword},shopping/all`
     }

@@ -1,5 +1,5 @@
-import { Controller, Post, Body, HttpException, HttpStatus, Req, Res } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -13,7 +13,8 @@ import {
   ForgotPasswordCommand, 
   ResetPasswordCommand,
   ForgotPasswordDto,
-  ResetPasswordDto
+  ResetPasswordDto,
+  GetUserQuery
 } from '@barterborsa/domain-identity';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
@@ -23,8 +24,17 @@ import { Public } from '@barterborsa/shared-security';
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
     private readonly authService: AuthService
   ) {}
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
+  @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
+  @Get('me')
+  async me(@Req() req: any) {
+    return this.queryBus.execute(new GetUserQuery(req.user.id));
+  }
 
   @Public()
   @ApiOperation({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur.' })

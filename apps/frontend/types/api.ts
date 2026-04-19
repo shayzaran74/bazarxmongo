@@ -1,17 +1,16 @@
-export interface ApiResponse<T> {
+export interface ApiResponse<T = void> {
   success: boolean;
-  message?: string;
   data: T;
-  meta?: PaginationMeta;
+  message?: string;
+  error?: string;
+  url?: string;
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  meta: PaginationMeta;
-}
-
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+export interface PaginatedResponse<T = void> extends ApiResponse<T[]> {
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

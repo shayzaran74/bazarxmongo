@@ -23,7 +23,7 @@ import { MediaModule } from './modules/media/media.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
     SharedSecurityModule, // Global güvenlik altyapısı
     IdentityModule,
@@ -35,7 +35,7 @@ import { MediaModule } from './modules/media/media.module';
     BarterModule,
     AuctionModule,
     // SUPPORT MODULES
-    // CommunicationModule, 
+    CommunicationModule, 
     ContentModule,
     AdvertisingModule,
     LoyaltyModule,

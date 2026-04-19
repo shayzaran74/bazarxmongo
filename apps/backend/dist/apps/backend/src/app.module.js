@@ -20,6 +20,7 @@ const vendor_module_1 = require("./modules/vendor/vendor.module");
 const commerce_module_1 = require("./modules/commerce/commerce.module");
 const barter_module_1 = require("./modules/barter/barter.module");
 const auction_module_1 = require("./modules/auction/auction.module");
+const communication_module_1 = require("./modules/communication/communication.module");
 const content_module_1 = require("./modules/content/content.module");
 const advertising_module_1 = require("./modules/advertising/advertising.module");
 const loyalty_module_1 = require("./modules/loyalty/loyalty.module");
@@ -33,7 +34,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '../../.env',
+                envFilePath: ['.env', '../../.env', '../../../.env'],
             }),
             shared_security_1.SharedSecurityModule, // Global güvenlik altyapısı
             identity_module_1.IdentityModule,
@@ -45,7 +46,7 @@ exports.AppModule = AppModule = __decorate([
             barter_module_1.BarterModule,
             auction_module_1.AuctionModule,
             // SUPPORT MODULES
-            // CommunicationModule, 
+            communication_module_1.CommunicationModule,
             content_module_1.ContentModule,
             advertising_module_1.AdvertisingModule,
             loyalty_module_1.LoyaltyModule,

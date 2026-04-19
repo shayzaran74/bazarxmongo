@@ -1,46 +1,34 @@
-// apps/frontend/composables/useApi.ts
+import type { ApiResponse } from '@barterborsa/shared-types'
 
-import type { ApiResponse } from '~/types/api';
-
-/**
- * Backend API istekleri için merkezi composable.
- * SSR-safe, hata yönetimi ve runtimeConfig destekli.
- */
 export const useApi = () => {
-  const config = useRuntimeConfig();
-  const accessToken = useCookie('access_token'); // SSR uyumlu token okuma
+  const config = useRuntimeConfig()
+  const authStore = useAuthStore()
+  const apiBase = config.public.apiBase
 
-  const $api = async <T>(
-    path: string, 
-    options: Record<string, unknown> = {}
-  ): Promise<ApiResponse<T>> => {
-    
-    const apiBase = config.public.apiBase;
-    if (!apiBase) {
-      throw new Error('API Base URL is not configured in runtimeConfig');
-    }
+  const customFetch = async <T>(path: string, options: any = {}): Promise<ApiResponse<T>> => {
+    const normalizedPath = path.startsWith('/') ? path.slice(1) : path
+    const headers: Record<string, string> = { ...(options.headers || {}) }
 
-    // Header ayarları
-    const headers: Record<string, string> = {
-      ...(options.headers as Record<string, string> || {}),
-    };
-
-    // Eğer token varsa Authorization header ekle
-    if (accessToken.value) {
-      headers['Authorization'] = `Bearer ${accessToken.value}`;
+    if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`
+    if (authStore.csrfToken && options.method && options.method !== 'GET') {
+      headers['X-CSRF-Token'] = authStore.csrfToken
     }
 
     try {
-      return await $fetch<ApiResponse<T>>(path, {
-        baseURL: apiBase,
-        ...options,
-        headers,
-      });
-    } catch (err: unknown) {
-      // Hata durumunda (ör: 401 Unauthorized), Token Refresh mantığı burada tetiklenebilir.
-      throw err;
+      return await $fetch<ApiResponse<T>>(normalizedPath, { baseURL: apiBase, ...options, headers })
+    } catch (error: any) {
+      if ((error.status === 419 || error.status === 401) && authStore.isLoggedIn) {
+        if (error.status === 419) {
+          const refreshed = await authStore.tryRefresh()
+          if (refreshed) {
+            headers['Authorization'] = `Bearer ${authStore.token}`
+            return await $fetch<ApiResponse<T>>(normalizedPath, { baseURL: apiBase, ...options, headers })
+          }
+        }
+        authStore.logout()
+      }
+      throw error
     }
-  };
-
-  return { $api };
-};
+  }
+  return { $api: customFetch }
+}

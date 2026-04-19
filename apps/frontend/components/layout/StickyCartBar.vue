@@ -9,7 +9,7 @@
           <!-- Product Info (compact) -->
           <div class="flex items-center gap-2 flex-shrink-0 max-w-[35%]">
             <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-              <img
+              <NuxtImg
                 v-if="product.image"
                 :src="resolveImageUrl(product.image)"
                 :alt="product.name"

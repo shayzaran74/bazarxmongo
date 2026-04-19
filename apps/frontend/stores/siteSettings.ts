@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-// useApi, useRuntimeConfig ve computed Nuxt tarafından otomatik import edilir
+import { useApi } from '~/services/api'
 
 interface SiteSettings {
   siteName: string
@@ -18,10 +18,10 @@ interface SiteSettings {
 
 export const useSiteSettingsStore = defineStore('siteSettings', {
   state: (): SiteSettings => ({
-    siteName: 'BazarX',
+    siteName: 'TicariTakas',
     siteLogo: '',
     siteLogoUrl: null,
-    siteTitle: 'BazarX - Akıllı Takas ve Alışveriş Platformu',
+    siteTitle: 'BarterBorsa - Akıllı Takas ve Alışveriş Platformu',
     siteDescription: 'Türkiye\'nin en kapsamlı barter ve alışveriş ekosistemi.',
     settings: {},
     homepageSettings: {
@@ -41,11 +41,11 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
       showBrands: 'true',
       showNewsletter: 'true'
     },
-    ecosystemName: 'BazarX',
+    ecosystemName: 'TicariTakas',
     ecosystemLogo: '',
     ecosystemLogoUrl: null,
     ecosystemSubtitle: 'Ticari Takas Platformu',
-    currentEcosystem: 'bazarx'
+    currentEcosystem: 'ticaritakas'
   }),
 
   actions: {
@@ -60,14 +60,14 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
           this.siteName = (s.siteName as string) || this.siteName
           this.siteTitle = (s.siteTitle as string) || this.siteTitle
           this.siteDescription = (s.siteDescription as string) || this.siteDescription
-
+          
           // Map visibility settings
           const visibilityKeys = [
-            'showGroupBuy', 'showFlashSales', 'showSpecialOffers',
-            'showAuctions', 'showLotteries', 'showVendors',
+            'showGroupBuy', 'showFlashSales', 'showSpecialOffers', 
+            'showAuctions', 'showLotteries', 'showVendors', 
             'showBrands', 'showNewsletter'
           ]
-
+          
           visibilityKeys.forEach(key => {
             if (s[key] !== undefined) {
               this.homepageSettings[key] = String(s[key])
@@ -89,42 +89,42 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
       }
     },
 
-    setEcosystem(ecosystem: string) {
-      this.currentEcosystem = ecosystem
-      const config = useRuntimeConfig()
-      const prefix = ecosystem === 'ticaritakas' ? 'ticaritakas_' :
-        ecosystem === 'bazarx' ? 'bazarx_' :
-          ecosystem === 'barterborsa' ? 'barterborsa_' : ''
+        setEcosystem(ecosystem: string) {
+            this.currentEcosystem = ecosystem
+            const config = useRuntimeConfig()
+            const prefix = ecosystem === 'ticaritakas' ? 'ticaritakas_' :
+                ecosystem === 'bazarx' ? 'bazarx_' :
+                    ecosystem === 'barterborsa' ? 'barterborsa_' : ''
 
-      const defaultNames: Record<string, string> = {
-        ticaritakas: 'TicariTakas',
-        bazarx: 'BazarX',
-        barterborsa: 'BarterBorsa'
-      }
+            const defaultNames: Record<string, string> = {
+                ticaritakas: 'TicariTakas',
+                bazarx: 'BazarX',
+                barterborsa: 'BarterBorsa'
+            }
 
-      const defaultSubtitles: Record<string, string> = {
-        ticaritakas: 'Ticari Takas Platformu',
-        bazarx: 'Online Alışveriş Platformu',
-        barterborsa: 'Barter Borsa Platformu'
-      }
+            const defaultSubtitles: Record<string, string> = {
+                ticaritakas: 'Ticari Takas Platformu',
+                bazarx: 'Online Alışveriş Platformu',
+                barterborsa: 'Barter Borsa Platformu'
+            }
 
-      const ecoName = this.settings[`${prefix}siteName`] as string
-      this.ecosystemName = ecoName || defaultNames[ecosystem] || this.siteName
+            const ecoName = this.settings[`${prefix}siteName`] as string
+            this.ecosystemName = ecoName || defaultNames[ecosystem] || this.siteName
 
-      const ecoLogo = this.settings[`${prefix}siteLogo`] as string
-      if (ecoLogo) {
-        this.ecosystemLogo = ecoLogo
-        if (ecoLogo.startsWith('http')) {
-          this.ecosystemLogoUrl = ecoLogo
-        } else {
-          this.ecosystemLogoUrl = `${config.public.apiBase}${ecoLogo}`
+            const ecoLogo = this.settings[`${prefix}siteLogo`] as string
+            if (ecoLogo) {
+                this.ecosystemLogo = ecoLogo
+                if (ecoLogo.startsWith('http')) {
+                    this.ecosystemLogoUrl = ecoLogo
+                } else {
+                    this.ecosystemLogoUrl = `${config.public.apiBase}${ecoLogo}`
+                }
+            } else {
+                this.ecosystemLogo = ''
+                this.ecosystemLogoUrl = null
+            }
+
+            this.ecosystemSubtitle = defaultSubtitles[ecosystem] || 'Ticari Takas Platformu'
         }
-      } else {
-        this.ecosystemLogo = ''
-        this.ecosystemLogoUrl = null
-      }
-
-      this.ecosystemSubtitle = defaultSubtitles[ecosystem] || 'Ticari Takas Platformu'
     }
-  }
 })

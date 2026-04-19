@@ -1,3 +1,4 @@
+import { useApi } from '~/services/api'
 import type { ApiResponse, Wallet, WalletTransaction, LedgerEntry } from '@barterborsa/shared-types'
 
 export interface WalletTransactionParams {
@@ -13,36 +14,36 @@ export const useWalletService = () => {
 
   return {
     async getWallet(): Promise<ApiResponse<Wallet>> {
-      return await $api<ApiResponse<Wallet>>('wallet')
+      return await $api<Wallet>('/api/wallet')
     },
 
     async topUpPrice(amount: number, paymentMethod: string = 'bank_transfer'): Promise<ApiResponse<{ message: string, transactionId?: string }>> {
-      return await $api<ApiResponse<{ message: string, transactionId?: string }>>('wallet/topup', {
+      return await $api<{ message: string, transactionId?: string }>('/api/wallet/topup', {
         method: 'POST',
         body: { amount, paymentMethod }
       })
     },
 
     async getTransactions(params: WalletTransactionParams = {}): Promise<ApiResponse<WalletTransaction[]>> {
-      return await $api<ApiResponse<WalletTransaction[]>>('wallet/transactions', {
+      return await $api<WalletTransaction[]>('/api/wallet/transactions', {
         params
       })
     },
 
     async getAccountTransactions(accountId: number | string, params: WalletTransactionParams = {}): Promise<ApiResponse<WalletTransaction[]>> {
-      return await $api<ApiResponse<WalletTransaction[]>>(`wallet/accounts/${accountId}/transactions`, {
+      return await $api<WalletTransaction[]>(`/api/wallet/accounts/${accountId}/transactions`, {
         params
       })
     },
 
     async getLedger(params: Record<string, unknown> = {}): Promise<ApiResponse<LedgerEntry[]>> {
-      return await $api<ApiResponse<LedgerEntry[]>>('wallet/ledger', {
+      return await $api<LedgerEntry[]>('/api/wallet/ledger', {
         params
       })
     },
 
     async withdraw(data: { amount: number, iban: string, accountHolder: string, bankName: string }): Promise<ApiResponse<{ message: string, id: string }>> {
-      return await $api<ApiResponse<{ message: string, id: string }>>('wallet/withdraw', {
+      return await $api<{ message: string, id: string }>('/api/wallet/withdraw', {
         method: 'POST',
         body: data
       })

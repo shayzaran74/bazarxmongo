@@ -10,7 +10,7 @@ import { RabbitMQService } from './rabbitmq.service';
   imports: [
     gM.forRootAsync({
       useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672',
+        uri: config.get<string>('RABBITMQ_URL') || config.get<string>('RABBITMQ_URI') || 'amqp://localhost:5672',
         exchanges: [
           { name: 'identity.events', type: 'topic' },
           { name: 'commerce.events', type: 'topic' },
@@ -18,6 +18,8 @@ import { RabbitMQService } from './rabbitmq.service';
           { name: 'delivery.events', type: 'topic' },
           { name: 'barter.events', type: 'topic' },
           { name: 'auction.events', type: 'topic' },
+          { name: 'order.events', type: 'topic' },
+          { name: 'inventory.events', type: 'topic' },
         ],
         connectionInitOptions: { wait: true },
       }),

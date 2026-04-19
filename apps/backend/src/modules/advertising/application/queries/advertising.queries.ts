@@ -18,3 +18,7 @@ export class GetVendorCampaignsQuery extends Query {
 export class GetAdsAdminQuery extends Query {
   constructor() { super(); }
 }
+
+export class GetSideAdsQuery extends Query {
+  constructor(public readonly ecosystem: string = 'BAZARX') { super(); }
+}

@@ -28,7 +28,7 @@ const handleImageError = (event: Event) => {
     <!-- Main Image Display -->
     <div class="relative aspect-square rounded-2xl bg-slate-100 overflow-hidden group border border-slate-200 shadow-sm">
       <img
-        :src="selectedImage || product?.image"
+        :src="selectedImage || (typeof product?.image === 'string' ? product.image : product?.image?.url)"
         :alt="product?.name"
         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         @error="handleImageError"

@@ -11,7 +11,7 @@
     <div class="relative aspect-[4/5] overflow-hidden bg-slate-50 dark:bg-gray-950">
       <!-- Main Product Image with Parallax-like scale -->
       <ProductImage
-        :src="product.images?.[0] || product.image || undefined"
+        :src="product.images?.[0] || product.image"
         :alt="product.name"
         image-class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
       />
@@ -30,7 +30,7 @@
             v-if="displayBadges?.topLeft"
             key="pos-top-left"
             :class="[displayBadges.topLeft.class || 'bg-primary-600 text-white', 'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg flex items-center gap-1.5 border border-white/20']"
-            :style="displayBadges.topLeft.style"
+            :style="displayBadges.topLeft.style as any"
           >
             <img
               v-if="displayBadges.topLeft.iconUrl"
@@ -70,7 +70,7 @@
           v-if="displayBadges?.topRight"
           key="pos-top-right"
           :class="[displayBadges.topRight.class || 'bg-amber-500 text-white', 'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg flex items-center gap-1.5 border border-white/20']"
-          :style="displayBadges.topRight.style"
+          :style="displayBadges.topRight.style as any"
         >
           {{ displayBadges.topRight.text }}
         </div>
@@ -96,7 +96,7 @@
           v-if="displayBadges?.bottomLeft"
           key="pos-bottom-left"
           :class="[displayBadges.bottomLeft.class || 'bg-sky-500 text-white', 'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg flex items-center gap-1.5 border border-white/20']"
-          :style="displayBadges.bottomLeft.style"
+          :style="displayBadges.bottomLeft.style as any"
         >
           {{ displayBadges.bottomLeft.text }}
         </div>
@@ -110,7 +110,7 @@
           v-if="displayBadges?.bottomRight"
           key="pos-bottom-right"
           :class="[displayBadges.bottomRight.class || 'bg-rose-600 text-white', 'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg flex items-center gap-1.5 border border-white/20']"
-          :style="displayBadges.bottomRight.style"
+          :style="displayBadges.bottomRight.style as any"
         >
           {{ displayBadges.bottomRight.text }}
         </div>
@@ -227,7 +227,7 @@ import SparklesIcon from '@heroicons/vue/24/outline/SparklesIcon'
 import StarIcon from '@heroicons/vue/24/outline/StarIcon'
 import MapPinIcon from '@heroicons/vue/24/outline/MapPinIcon'
 
-import type { Product, Review, DynamicBadges } from '~/types/catalog'
+import type { Product, Review, DynamicBadges } from '@barterborsa/shared-types'
 
 const props = defineProps<{
     product: Product

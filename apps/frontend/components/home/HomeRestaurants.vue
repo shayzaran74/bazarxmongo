@@ -71,12 +71,13 @@
             <div
               class="w-full h-32 rounded-[1.5rem] overflow-hidden bg-rose-50 border border-slate-100 flex items-center justify-center relative z-10"
             >
-              <img
+              <NuxtImg
                 v-if="vendor.coverImageUrl || vendor.logoUrl"
                 :src="resolveImageUrl(vendor.coverImageUrl || vendor.logoUrl, 'avatar')"
                 :alt="vendor.businessName"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 loading="lazy"
+                placeholder
               />
               <span
                 v-else
@@ -89,17 +90,16 @@
             <div
               class="absolute -bottom-4 left-4 w-12 h-12 bg-white rounded-xl shadow-lg border border-slate-100 flex items-center justify-center overflow-hidden z-20"
             >
-              <img
+              <NuxtImg
                 v-if="vendor.logoUrl"
                 :src="resolveImageUrl(vendor.logoUrl, 'avatar')"
                 :alt="vendor.businessName"
                 class="w-full h-full object-cover p-1"
-                loading="lazy"
               />
               <span
                 v-else
                 class="text-lg font-black text-slate-300"
-              >{{ vendor.businessName.charAt(0).toUpperCase()
+              >{{ (vendor.businessName || 'R').charAt(0).toUpperCase()
               }}</span>
             </div>
           </div>

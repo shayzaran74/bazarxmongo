@@ -205,7 +205,7 @@ import {
   EyeIcon,
   HeartIcon
 } from '@heroicons/vue/24/outline'
-import type { Product, ApiResponse } from '@barterborsa/shared-types'
+import type { Product, ApiResponse, HomePerformanceShowcaseData } from '@barterborsa/shared-types'
 
 defineProps<{
   show?: string
@@ -223,13 +223,7 @@ const mostRated = ref<Product[]>([])
 const fetchPerformanceData = async () => {
   try {
     const { $api } = useApi()
-    const data = await $api<ApiResponse<{
-      bestSellers?: Product[]
-      mostRepurchased?: Product[]
-      mostVisited?: Product[]
-      mostFavorited?: Product[]
-      mostRated?: Product[]
-    }>>('/api/products/homepage-bulk')
+    const data = await $api<HomePerformanceShowcaseData>('/api/products/homepage-bulk')
     if (data.success && data.data) {
       bestSellers.value = data.data.bestSellers || []
       mostRepurchased.value = data.data.mostRepurchased || []

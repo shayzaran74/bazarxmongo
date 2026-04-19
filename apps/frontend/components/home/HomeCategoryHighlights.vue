@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-import type { Product, Category, ApiResponse } from '@barterborsa/shared-types'
+import type { Product, Category, ApiResponse, HomeCategoryHighlightsData } from '@barterborsa/shared-types'
 
 const bestSellersByCategory = ref<Record<string, Product[]>>({})
 const categories = ref<Category[]>([])
@@ -28,13 +28,13 @@ const fetchHighlights = async () => {
     const { $api } = useApi()
     
     // Fetch bulk data for category highlights
-    const bulkData = await $api<ApiResponse<{ bestSellersByCategory: Record<string, Product[]> }>>('/api/products/homepage-bulk')
+    const bulkData = await $api<HomeCategoryHighlightsData>('/api/products/homepage-bulk')
     if (bulkData.success && bulkData.data) {
       bestSellersByCategory.value = bulkData.data.bestSellersByCategory || {}
     }
 
     // Fetch categories for naming
-    const catData = await $api<ApiResponse<Category[]>>('/api/categories', { query: { all: true } })
+    const catData = await $api<Category[]>('/api/categories', { query: { all: true } })
     if (catData.success && catData.data) {
       categories.value = catData.data
     }

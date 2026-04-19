@@ -63,17 +63,16 @@
           <div
             class="w-24 h-24 mb-6 bg-slate-800 rounded-3xl flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-indigo-500/30 transition-all z-10 shadow-2xl relative"
           >
-            <img
+            <NuxtImg
               v-if="vendor.logoUrl"
               :src="resolveImageUrl(vendor.logoUrl, 'avatar')"
               :alt="vendor.businessName"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              loading="lazy"
             />
             <span
               v-else
               class="text-4xl font-black text-slate-600 uppercase"
-            >{{ vendor.businessName.charAt(0) }}</span>
+            >{{ (vendor.businessName || 'V').charAt(0) }}</span>
 
             <!-- Official Badge -->
             <div

@@ -3,6 +3,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ListingController } from './presentation/listing.controller';
+import { SurplusController } from './presentation/surplus.controller';
 import { CreateCategoryHandler } from './application/commands/create-category.handler';
 import { CreateListingHandler } from './application/commands/create-listing.handler';
 import { PrismaCategoryRepository } from './infrastructure/persistence/prisma-category.repository';
@@ -45,6 +46,7 @@ const Repositories = [
   imports: [CqrsModule],
   controllers: [
     ListingController, 
+    SurplusController,
     CategoryController, 
     CatalogProductController,
     CatalogController

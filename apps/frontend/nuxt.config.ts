@@ -1,87 +1,75 @@
-// apps/frontend/nuxt.config.ts
-import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'url'
 
 export default defineNuxtConfig({
-  ssr: true,
-
   alias: {
     '@barterborsa/shared-types': fileURLToPath(new URL('../../packages/shared/shared-types/src/index.ts', import.meta.url))
   },
-
-  devtools: { enabled: true },
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
+      minioBase: process.env.NUXT_PUBLIC_MINIO_BASE || 'http://localhost:9000/bazarx-public'
+    }
+  },
+  compatibilityDate: '2026-04-18',
+  devtools: { enabled: false },
   
-  devServer: {
-    host: '0.0.0.0',
-    port: 3000
+  modules: [
+    '@nuxtjs/tailwindcss',
+    '@pinia/nuxt',
+    '@nuxtjs/i18n',
+    '@nuxtjs/google-fonts',
+    '@nuxt/image',
+    '@vite-pwa/nuxt'
+  ],
+
+  routeRules: {
+    '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/v1/**` }
   },
 
-  app: {
-    head: {
-      title: 'BazarX - Modern Ticaret Platformu',
-      meta: [
-        { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      ],
-      link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+  i18n: {
+    locales: [
+      { code: 'tr', language: 'tr-TR', name: 'Türkçe' },
+      { code: 'en', language: 'en-US', name: 'English' },
+    ],
+    defaultLocale: 'tr',
+    strategy: 'prefix_except_default',
+    bundle: {
+      optimizeTranslationDirective: false
+    },
+    vueI18n: fileURLToPath(new URL('./i18n.config.ts', import.meta.url))
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'TicariTakas',
+      short_name: 'TicariTakas',
+      theme_color: '#4f46e5',
+      icons: [
+        { src: 'icon-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: 'icon-512x512.png', sizes: '512x512', type: 'image/png' }
       ]
     }
   },
 
-  css: ['~/assets/css/main.css'],
-
-  modules: [
-    '@pinia/nuxt',
-    '@nuxtjs/tailwindcss',
-    '@nuxtjs/i18n',
-    'nuxt-icon',
-    '@vueuse/nuxt'
-  ],
-
-  i18n: {
-    locales: [
-      { code: 'tr', iso: 'tr-TR', file: 'tr.json' }
-    ],
-    lazy: true,
-    langDir: 'locales',
-    defaultLocale: 'tr',
-    strategy: 'no_prefix'
-  },
-
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001/api/v1'
+  googleFonts: {
+    families: {
+      Inter: [300, 400, 500, 600, 700]
     }
   },
 
-  // BFF Proxy: /api/v1 -> backend
-  routeRules: {
-    '/api/v1/**': {
-      proxy: process.env.NUXT_API_PROXY_URL || 'http://localhost:3001/api/v1/**'
-    }
+  image: {
+    domains: ['localhost', '127.0.0.1', 'loremflickr.com', 'images.unsplash.com', 'placehold.co'],
   },
 
-  postcss: {
-    plugins: {
-      tailwindcss: {},
-      autoprefixer: {},
-    },
+  typescript: {
+    typeCheck: false
   },
+  
+  ssr: true,
 
-  build: {
-    transpile: ['@barterborsa/shared-types']
-  },
-
-  vite: {
-    ssr: {
-      noExternal: ['@barterborsa/shared-types']
-    }
-  },
-
-  experimental: {
-    appManifest: false
-  },
-
-  compatibilityDate: '2024-04-03'
+  devServer: {
+    port: 3002,
+    host: '0.0.0.0'
+  }
 })

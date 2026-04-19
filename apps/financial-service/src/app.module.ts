@@ -16,7 +16,7 @@ import { EscrowModule } from './modules/escrow/escrow.module';
     // Core Infrastructure
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
     RabbitMQModule,
     LoggerModule,

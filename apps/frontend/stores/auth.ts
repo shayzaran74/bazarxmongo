@@ -1,193 +1,211 @@
 // apps/frontend/stores/auth.ts
-
-import { defineStore } from 'pinia';
-import type { RegisterUserInput, LoginUserInput } from '@barterborsa/shared-types';
-import type { ForgotPasswordDto, ResetPasswordDto, AuthResponse } from '~/types/auth';
-
-interface UserState {
-  id: string;
-  email: string;
-  role: string;
-  firstName?: string;
-  lastName?: string;
-  avatar?: string;
-}
+import { defineStore } from 'pinia'
+import type { UserDTO } from '@barterborsa/shared-types'
 
 interface AuthState {
-  user: UserState | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error: string | null;
+  user: UserDTO | null
+  token: string | null
+  csrfToken: string | null
+  isAuthenticated: boolean
+  loading: boolean
+  error: string | null
+  refreshPromise: Promise<boolean> | null
 }
 
-/**
- * Kimlik doğrulama işlemlerini merkezi olarak yöneten Store.
- */
 export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => {
-    // SSR uyumlu cookie okuma
-    const userCookie = useCookie<UserState | null>('user');
-    const hasToken = !!useCookie('access_token').value;
-
-    return {
-      user: userCookie.value || null,
-      isAuthenticated: hasToken,
-      loading: false,
-      error: null,
-    };
-  },
+  state: (): AuthState => ({
+    user: null,
+    token: null,
+    csrfToken: null,
+    isAuthenticated: false,
+    loading: false,
+    error: null,
+    refreshPromise: null,
+  }),
 
   getters: {
     isLoggedIn: (state) => state.isAuthenticated,
+    isAdmin: (state) => state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
+    isSuperAdmin: (state) => state.user?.role === 'SUPER_ADMIN',
     isVendor: (state) => state.user?.role === 'VENDOR' || state.user?.role === 'ADMIN',
+    isPremium: (state) => !!state.user?.isPremium,
+    fullName: (state) => state.user ? `${state.user.firstName} ${state.user.lastName}` : '',
+    avatarUrl: (state) => state.user?.avatar || '',
+    currentXP: (state) => state.user?.loyalty?.xp || 0,
+    currentLevel: (state) => state.user?.loyalty?.level || 1,
+    balance: (state) => state.user?.wallet?.balance || 0,
+    barterBalance: (state) => state.user?.wallet?.barterBalance || 0,
+    vendorStatus: (state) => state.user?.vendor?.status || 'NONE',
   },
 
   actions: {
-    /** 
-     * Kullanıcı girişi (E-posta + Şifre) 
-     */
-    async login(input: LoginUserInput) {
-      this.loading = true;
-      this.error = null;
-      const { $api } = useApi();
-      
-      const accessToken = useCookie('access_token', { maxAge: 60 * 15 }); // 15 dakika
-      const refreshToken = useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7 }); // 7 gün
-      const userCookie = useCookie<UserState | null>('user', { maxAge: 60 * 60 * 24 * 7 });
-
-      try {
-        const response = await $api<AuthResponse>('auth/login', {
-          method: 'POST',
-          body: input,
-        });
-
-        if (response.success) {
-          const { user, accessToken: access, refreshToken: refresh } = response.data;
-          
-          // State güncelleme
-          this.user = user;
-          this.isAuthenticated = true;
-          
-          // Cookie set etme
-          accessToken.value = access;
-          refreshToken.value = refresh;
-          userCookie.value = user;
-
-          return true;
-        }
-        return false;
-      } catch (err: unknown) {
-        const error = err as { data?: { message?: string } };
-        this.error = error.data?.message || 'Giriş yapılamadı.';
-        return false;
-      } finally {
-        this.loading = false;
+    async init() {
+      if (this.isAuthenticated) return
+      const token = useCookie('access_token').value
+      const csrf = useCookie('csrf_token').value
+      if (token) {
+        this.token = token
+        this.csrfToken = csrf || null
+        this.isAuthenticated = true
+        await this.fetchUser(true)
+      } else {
+        await this.fetchCsrf()
       }
     },
-
-    /** 
-     * Yeni kullanıcı kaydı 
-     */
-    async register(input: RegisterUserInput) {
-      this.loading = true;
-      this.error = null;
-      const { $api } = useApi();
-
+    async fetchCsrf() {
+      const { $api } = useApi()
       try {
-        const response = await $api<{ id: string }>('auth/register', {
-          method: 'POST',
-          body: input,
-        });
-        
-        if (response.success) {
-          // Kayıt sonrası otomatik login yaptırılabilir veya login sayfasına yönlendirilebilir.
-          return true;
+        const res = await $api<{ csrfToken: string }>('/api/auth/csrf')
+        if (res.csrfToken) {
+          this.csrfToken = res.csrfToken
+          useCookie('csrf_token').value = res.csrfToken
         }
-        return false;
-      } catch (err: unknown) {
-        const error = err as { data?: { message?: string } };
-        this.error = error.data?.message || 'Kayıt başarısız.';
-        return false;
-      } finally {
-        this.loading = false;
+      } catch (e) {
+        console.warn('CSRF token could not be fetched', e)
       }
     },
+    async login(credentials: any) {
+      this.loading = true
+      this.error = null
+      const { $api } = useApi()
+      try {
+        const res = await $api<any>('/api/auth/login', { method: 'POST', body: credentials })
+        if (res.success && res.data) {
+          this.token = res.data.accessToken
+          this.user = res.data.user
+          this.isAuthenticated = true
+          useCookie('access_token', { maxAge: 60 * 15, path: '/' }).value = this.token
+          if (res.data.refreshToken) {
+            useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value = res.data.refreshToken
+          }
+          useCookie('user').value = JSON.stringify(this.user)
+          return true
+        }
+        return false
+      } catch (err: any) {
+        this.error = err.data?.message || 'Giriş başarısız'
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+    async register(data: any) {
+      this.loading = true
+      this.error = null
+      const { $api } = useApi()
+      try {
+        // Backend firstName ve lastName bekliyor, frontend name'i bölebiliriz
+        const names = (data.name || '').trim().split(' ')
+        const firstName = names[0] || ''
+        const lastName = names.slice(1).join(' ') || ''
 
-    /**
-     * Şifre sıfırlama talebi gönder
-     */
+        const res = await $api<any>('/api/auth/register', {
+          method: 'POST',
+          body: {
+            email: data.email,
+            password: data.password,
+            firstName,
+            lastName,
+            phoneNumber: data.phone,
+          }
+        })
+
+        if (res.success && res.data) {
+          this.token = res.data.accessToken
+          this.user = res.data.user
+          this.isAuthenticated = true
+          useCookie('access_token', { maxAge: 60 * 15, path: '/' }).value = this.token
+          if (res.data.refreshToken) {
+            useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value = res.data.refreshToken
+          }
+          useCookie('user').value = JSON.stringify(this.user)
+          return true
+        }
+        return false
+      } catch (err: any) {
+        this.error = err.data?.message || 'Kayıt başarısız'
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+    async logout() {
+      const { $api } = useApi()
+      try { await $api('/api/auth/logout', { method: 'POST' }) } catch (e) { }
+      this.reset()
+      useCookie('access_token').value = null
+      useCookie('refresh_token').value = null
+      useCookie('user').value = null
+      navigateTo('/auth/login')
+    },
+    async fetchUser(silent = false) {
+      const { $api } = useApi()
+      try {
+        const res = await $api<any>('/api/auth/me')
+        if (res.success && res.data) {
+          this.user = res.data
+          this.isAuthenticated = true
+          useCookie('user').value = JSON.stringify(this.user)
+          return res.data
+        }
+      } catch (err) {
+        if (!silent) throw err
+        this.reset()
+      }
+    },
+    async tryRefresh(): Promise<boolean> {
+      if (this.refreshPromise) return this.refreshPromise
+      this.refreshPromise = (async () => {
+        try {
+          const refreshToken = useCookie('refresh_token').value
+          if (!refreshToken) return false
+          const { $api } = useApi()
+          const res = await $api<any>('/api/auth/refresh', { method: 'POST', body: { refreshToken } })
+          if (res.success && res.data) {
+            this.token = res.data.accessToken
+            useCookie('access_token').value = this.token
+            return true
+          }
+          return false
+        } catch { return false } finally { this.refreshPromise = null }
+      })()
+      return this.refreshPromise
+    },
     async forgotPassword(email: string) {
-      this.loading = true;
-      this.error = null;
-      const { $api } = useApi();
-
+      const { $api } = useApi()
       try {
-        const response = await $api<void>('auth/forgot-password', {
-          method: 'POST',
-          body: { email }
-        });
-        return response.success;
-      } catch (err: unknown) {
-        this.error = 'Talep gönderilemedi.';
-        return false;
-      } finally {
-        this.loading = false;
+        const res = await $api<any>('/api/auth/forgot-password', { method: 'POST', body: { email } })
+        return res.success
+      } catch (err: any) {
+        this.error = err.data?.message || 'Şifre sıfırlama talebi başarısız'
+        return false
       }
     },
-
-    /**
-     * Şifreyi yeni şifre ile sıfırla
-     */
-    async resetPassword(dto: ResetPasswordDto) {
-      this.loading = true;
-      this.error = null;
-      const { $api } = useApi();
-
+    async resetPassword(data: any) {
+      const { $api } = useApi()
       try {
-        const response = await $api<void>('auth/reset-password', {
-          method: 'POST',
-          body: dto
-        });
-        return response.success;
-      } catch (err: unknown) {
-        const error = err as { data?: { message?: string } };
-        this.error = error.data?.message || 'Şifre sıfırlanamadı.';
-        return false;
-      } finally {
-        this.loading = false;
+        const res = await $api<any>('/api/auth/reset-password', { method: 'POST', body: data })
+        return res.success
+      } catch (err: any) {
+        this.error = err.data?.message || 'Şifre sıfırlama başarısız'
+        return false
       }
     },
-
-    /**
-     * Kullanıcı bilgilerini güncel tut
-     */
-    async fetchUser() {
-      const { $api } = useApi();
-      try {
-        const response = await $api<{ data: UserState }>('identity/profile');
-        if (response.success) {
-          this.user = response.data.data;
-          useCookie('user').value = this.user;
-        }
-      } catch (err: unknown) {
-        const error = err as { data?: { message?: string } };
-        console.error('Fetch user error:', error.data?.message || err);
+    updateLocation(location: { city: string, district?: string, regionName?: string }) {
+      if (this.user) {
+        this.user.city = location.city
+        this.user.district = location.district
+        this.user.regionName = location.regionName
       }
     },
-
-    /** 
-     * Çıkış işlemi ve temizlik 
-     */
-    logout() {
-      this.user = null;
-      this.isAuthenticated = false;
-      
-      // Çerezleri temizle
-      useCookie('access_token').value = null;
-      useCookie('refresh_token').value = null;
-      useCookie('user').value = null;
-
-      navigateTo('/auth/login');
+    reset() {
+      this.user = null
+      this.token = null
+      this.isAuthenticated = false
+      this.error = null
+    },
+    clearError() {
+      this.error = null
     }
   }
-});
+})

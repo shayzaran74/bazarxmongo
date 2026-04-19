@@ -116,7 +116,7 @@ const fetchFlashSales = async () => {
   flashSaleLoading.value = true
   try {
     const { $api } = useApi()
-    const data = await $api<ApiResponse<Product[]>>('/api/products', {
+    const data = await $api<Product[]>('/api/products', {
       query: { isFlashSale: true, limit: 6 }
     })
     if (data.success && data.data) {

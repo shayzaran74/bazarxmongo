@@ -9,9 +9,11 @@ import { PrismaAuctionRepository } from './infrastructure/persistence/prisma-auc
 import { AuctionMapper } from './infrastructure/persistence/mappers/auction.mapper';
 import { PrismaLotteryRepository } from './infrastructure/persistence/prisma-lottery.repository';
 import { LotteryMapper } from './infrastructure/persistence/mappers/lottery.mapper';
+import { AuctionController } from './auction.controller';
 
 @Module({
   imports: [CqrsModule],
+  controllers: [AuctionController],
   providers: [
     PlaceBidHandler,
     DrawLotteryHandler,

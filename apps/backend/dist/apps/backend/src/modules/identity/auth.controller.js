@@ -21,10 +21,15 @@ const auth_service_1 = require("./infrastructure/auth/auth.service");
 const shared_security_1 = require("@barterborsa/shared-security");
 let AuthController = class AuthController {
     commandBus;
+    queryBus;
     authService;
-    constructor(commandBus, authService) {
+    constructor(commandBus, queryBus, authService) {
         this.commandBus = commandBus;
+        this.queryBus = queryBus;
         this.authService = authService;
+    }
+    async me(req) {
+        return this.queryBus.execute(new domain_identity_1.GetUserQuery(req.user.id));
     }
     async register(dto) {
         const result = await this.commandBus.execute(new domain_identity_1.RegisterUserCommand(dto));
@@ -78,6 +83,16 @@ let AuthController = class AuthController {
     }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Kullanıcı bilgileri.' }),
+    (0, common_1.Get)('me'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "me", null);
 __decorate([
     (0, shared_security_1.Public)(),
     (0, swagger_1.ApiOperation)({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur.' }),
@@ -168,6 +183,7 @@ exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('Auth'),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
+        cqrs_1.QueryBus,
         auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

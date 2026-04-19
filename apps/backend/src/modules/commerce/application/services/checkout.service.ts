@@ -2,6 +2,7 @@
 
 import { Injectable, Inject } from '@nestjs/common';
 import { DomainException } from '@barterborsa/shared-core';
+import { RabbitMQService } from '@barterborsa/shared-messaging';
 import { ICartRepository } from '../../domain/repositories/cart.repository.interface';
 import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
@@ -22,6 +23,7 @@ export class CheckoutService {
     private readonly financialGateway: FinancialGatewayService,
     private readonly pricingService: PricingService,
     private readonly prisma: PrismaService,
+    private readonly rabbitMQ: RabbitMQService,
   ) {}
 
   async checkout(userId: string, shippingAddress: ShippingAddress, billingAddress: ShippingAddress, paymentMethod: string) {
@@ -132,6 +134,28 @@ export class CheckoutService {
       }
       await (tx as any).cartItem.deleteMany({ where: { cart: { userId } } });
     });
+    
+    // Publish Events
+    for (const order of createdOrders) {
+      await this.rabbitMQ.publish('commerce.events', 'order.created', {
+        orderId: order.id,
+        id: order.id,
+        orderNumber: order.getProps().orderNumber.value,
+        userId: userId,
+        buyerId: userId,
+        sellerId: order.getProps().vendorId,
+        vendorId: order.getProps().vendorId,
+        totalAmount: order.getProps().totalAmount.toString(),
+        shippingAddress: order.getProps().shippingAddress.toJson(),
+        billingAddress: order.getProps().billingAddress.toJson(),
+        items: order.getProps().items?.map(item => ({
+          listingId: item.getProps().listingId,
+          quantity: item.getProps().quantity,
+          price: item.getProps().price.toString(),
+        })),
+        createdAt: new Date(),
+      });
+    }
 
     return createdOrders;
   }

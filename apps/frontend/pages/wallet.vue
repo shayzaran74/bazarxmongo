@@ -70,7 +70,7 @@
                         formatPrice(mainAccount?.availableBalance || 0) }}
                     </p>
                     <p
-                      v-if="mainAccount?.blockedBalance && mainAccount.blockedBalance > 0"
+                      v-if="mainAccount?.blockedBalance > 0"
                       class="text-red-300 text-sm font-bold mt-2"
                     >
                       🔒 {{ formatPrice(mainAccount.blockedBalance) }} bloke
@@ -113,7 +113,7 @@
                   {{ formatPrice(mainAccount?.availableBalance || 0) }}
                 </div>
                 <div
-                  v-if="mainAccount?.blockedBalance && mainAccount.blockedBalance > 0"
+                  v-if="mainAccount?.blockedBalance > 0"
                   class="mt-1 text-xs font-bold text-red-500"
                 >
                   🔒 {{ formatPrice(mainAccount.blockedBalance) }} bloke edildi
@@ -439,6 +439,231 @@
           <WalletTopUpForm @success="handleTopUpSuccess" />
         </div>
 
+        <!-- Gift Cards Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-gray-900">
+              🎁 Hediye Kartlarım
+            </h2>
+            <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              Müşteriye Tanımlı
+            </div>
+          </div>
+
+          <div
+            v-if="wallet.giftCards && wallet.giftCards.length > 0"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <div
+              v-for="card in wallet.giftCards"
+              :key="card.id"
+              class="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg group transition-all hover:shadow-xl"
+            >
+              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                <GiftIcon class="h-24 w-24" />
+              </div>
+
+              <div class="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-start mb-4">
+                    <span
+                      class="text-[10px] font-black uppercase tracking-widest opacity-80 bg-white/10 px-2 py-0.5 rounded"
+                    >TicariTakas
+                      Gift Card</span>
+                    <span
+                      class="bg-green-400/20 text-green-100 px-2 py-0.5 rounded text-[10px] font-bold border border-green-400/30"
+                    >AKTİF</span>
+                  </div>
+                  <div class="text-xl font-mono font-bold tracking-widest mb-1">
+                    {{ card.code }}
+                  </div>
+                  <div class="text-[10px] font-medium opacity-70 mb-4">
+                    <span v-if="card.expiresAt">GEÇERLİLİK: {{ new Date(card.expiresAt).toLocaleDateString() }}</span>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-end">
+                  <div class="flex-shrink-0">
+                    <p class="text-[10px] font-bold opacity-80 uppercase tracking-tighter">
+                      Değer
+                    </p>
+                    <p class="text-2xl font-black leading-tight">
+                      {{ formatPrice(card.currentValue) }}
+                    </p>
+                  </div>
+
+                  <button
+                    class="ml-4 bg-white text-indigo-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-tight hover:bg-indigo-50 transition-all transform active:scale-95 shadow-md flex items-center gap-1"
+                    @click="redeemGiftCard(card.code)"
+                  >
+                    <span>Cüzdana Aktar</span>
+                    <span class="text-sm">💸</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="text-center py-10 border-2 border-dashed border-gray-100 rounded-xl"
+          >
+            <div class="text-gray-300 text-5xl mb-4">
+              🎁
+            </div>
+            <p class="text-gray-400 font-medium">
+              Henüz size tanımlı bir hediye kartı bulunmuyor.
+            </p>
+          </div>
+        </div>
+
+        <!-- My Lottery Cards Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">
+            🎫 Çekiliş Kartlarım
+          </h2>
+          <div
+            v-if="wallet.cards && wallet.cards.length > 0"
+            class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar"
+          >
+            <div
+              v-for="(card, index) in wallet.cards"
+              :key="index"
+              class="bg-gray-50 rounded-lg p-4 border border-gray-200"
+            >
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="mb-2 md:mb-0">
+                  <h3 class="font-semibold text-blue-700 text-sm tracking-tight">
+                    {{ card.giveawayTitle }}
+                  </h3>
+                  <p class="text-gray-500 text-[10px] font-medium uppercase tracking-widest">
+                    {{ card.purchasedAt ? new Date(card.purchasedAt).toLocaleString('tr-TR') : '' }}
+                  </p>
+                </div>
+                <div class="flex gap-2 flex-wrap items-center">
+                  <div class="flex gap-2 flex-wrap">
+                    <span
+                      v-for="(num, i) in card.numbers"
+                      :key="i"
+                      class="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-mono font-black text-sm tracking-widest border border-blue-200 shadow-sm"
+                    >
+                      {{ num }}
+                    </span>
+                  </div>
+
+                  <div v-if="isCardWinner(card) !== null">
+                    <span
+                      v-if="isCardWinner(card)"
+                      class="ml-2 px-3 py-1 rounded-full bg-green-200 text-green-800 font-black text-[10px] uppercase tracking-widest shadow-sm"
+                    >
+                      🎉 Kazandınız
+                    </span>
+                    <span
+                      v-else
+                      class="ml-2 px-3 py-1 rounded-full bg-red-100 text-red-500 font-black text-[10px] uppercase tracking-widest"
+                    >
+                      ❌ Kazanamadınız
+                    </span>
+                  </div>
+                  <span
+                    v-else
+                    class="ml-2 px-3 py-1 rounded-full bg-blue-50 text-blue-500 font-black text-[10px] uppercase tracking-widest italic"
+                  >
+                    ⏳ Bekleniyor
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="text-center py-8"
+          >
+            <div class="text-gray-400 text-4xl mb-4">
+              🎫
+            </div>
+            <p class="text-gray-500 text-sm">
+              Henüz çekiliş kartınız yok.
+            </p>
+            <NuxtLink
+              to="/lotteries"
+              class="mt-4 inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-[1.5rem] hover:bg-primary-700 transition-all font-black uppercase text-[10px] tracking-widest shadow-lg"
+            >
+              Çekilişlere Katıl
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- My Auction Bids Section (Vendor Only) -->
+        <div
+          v-if="authStore.isVendor"
+          class="bg-white rounded-lg shadow-md p-6"
+        >
+          <h2 class="text-xl font-bold text-gray-900 mb-4">
+            🎯 Açık Artırma Tekliflerim
+          </h2>
+          <div
+            v-if="wallet.auctions && wallet.auctions.length > 0"
+            class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar"
+          >
+            <div
+              v-for="auc in wallet.auctions"
+              :key="auc.id"
+              class="bg-gray-50 rounded-lg p-4 border border-gray-200"
+            >
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="mb-2 md:mb-0">
+                  <h3 class="font-semibold text-primary-700 text-sm tracking-tight">
+                    {{ auc.auctionTitle }}
+                  </h3>
+                  <p class="text-gray-500 text-[10px] font-medium uppercase tracking-widest">
+                    {{ auc.createdAt ? new Date(auc.createdAt).toLocaleString('tr-TR') : '' }}
+                  </p>
+                </div>
+                <div class="flex gap-4 items-center">
+                  <div class="text-right">
+                    <span class="block text-lg font-black text-gray-900 tracking-tight">{{ formatPrice(auc.amount)
+                    }}</span>
+                    <span
+                      v-if="auc.isHighest"
+                      class="text-[8px] font-black text-green-600 uppercase tracking-widest bg-green-100 px-2 py-0.5 rounded shadow-sm border border-green-200"
+                    >En
+                      Yüksek</span>
+                    <span
+                      v-else
+                      class="text-[8px] font-black text-red-500 uppercase tracking-widest bg-red-100 px-2 py-0.5 rounded border border-red-200"
+                    >Geçildi</span>
+                  </div>
+
+                  <NuxtLink
+                    :to="`/auctions/${auc.auctionId}`"
+                    class="bg-white border border-gray-200 text-gray-700 p-3 rounded-2xl hover:bg-gray-100 transition-all shadow-sm active:scale-95"
+                  >
+                    <ArrowRightIcon class="w-5 h-5" />
+                  </NuxtLink>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="text-center py-8 text-gray-400"
+          >
+            <div class="text-4xl mb-2">
+              🎯
+            </div>
+            <p class="text-sm font-medium">
+              Henüz bir açık artırmaya teklif vermediniz.
+            </p>
+            <NuxtLink
+              to="/auctions"
+              class="mt-4 inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-[1.5rem] hover:bg-primary-700 transition-all font-black uppercase text-[10px] tracking-widest shadow-lg"
+            >
+              Keşfet
+            </NuxtLink>
+          </div>
+        </div>
+
         <!-- Wallet Transactions History -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -572,39 +797,123 @@
             </p>
           </div>
         </div>
+
+        <!-- Top Up Requests -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">
+            📋 Yükleme Taleplerim
+          </h2>
+          <div
+            v-if="wallet.requests && wallet.requests.length > 0"
+            class="space-y-4"
+          >
+            <div
+              v-for="request in wallet.requests"
+              :key="request.id"
+              class="flex items-center justify-between border-b border-gray-50 py-4 last:border-b-0"
+            >
+              <div>
+                <p class="text-lg font-black text-gray-900 tracking-tight">
+                  {{ formatPrice(request.amount) }}
+                </p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  {{ new Date(request.createdAt).toLocaleString('tr-TR') }}
+                </p>
+              </div>
+              <div>
+                <span
+                  class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm"
+                  :class="{
+                    'bg-green-100 text-green-700 border border-green-200': request.status === 'approved',
+                    'bg-amber-100 text-amber-700 border border-amber-200': request.status === 'pending',
+                    'bg-red-100 text-red-700 border border-red-200': request.status === 'rejected'
+                  }"
+                >
+                  {{ getStatusText(request.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="text-center py-8"
+          >
+            <div class="text-gray-400 text-4xl mb-4 text-gray-200">
+              📋
+            </div>
+            <p class="text-gray-500 text-sm font-medium">
+              Henüz yükleme talebiniz yok.
+            </p>
+          </div>
+        </div>
+
+        <!-- Withdrawal Requests -->
+        <div
+          v-if="authStore.isVendor"
+          class="bg-white rounded-lg shadow-md p-6 mt-6"
+        >
+          <h2 class="text-xl font-bold text-gray-900 mb-4">
+            💸 Para Çekme Taleplerim
+          </h2>
+          <div
+            v-if="wallet.withdrawalRequests && wallet.withdrawalRequests.length > 0"
+            class="space-y-4"
+          >
+            <div
+              v-for="request in wallet.withdrawalRequests"
+              :key="request.id"
+              class="flex items-center justify-between border-b border-gray-50 py-4 last:border-b-0"
+            >
+              <div>
+                <p class="text-lg font-black text-gray-900 tracking-tight">
+                  {{ formatPrice(request.amount) }}
+                </p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold">{{ new
+                    Date(request.createdAt).toLocaleDateString('tr-TR') }}</span>
+                  <span
+                    v-if="request.bankName"
+                    class="text-[9px] text-indigo-400 font-black uppercase"
+                  >{{
+                    request.bankName }}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span
+                  class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
+                  :class="{
+                    'bg-amber-100 text-amber-700 border-amber-200 shadow-sm': request.status === 'pending' || request.status === 'pending_verification',
+                    'bg-green-100 text-green-700 border-green-200 shadow-sm': request.status === 'approved' || request.status === 'COMPLETED',
+                    'bg-red-100 text-red-700 border-red-200 shadow-sm': request.status === 'rejected' || request.status === 'FAILED'
+                  }"
+                >
+                  {{ request.status === 'pending_verification' ? 'Onaylanmadı (Posta)' : request.status === 'pending' ? 'Bekliyor' : getStatusText(request.status)
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="text-center py-8"
+          >
+            <div class="text-gray-200 text-4xl mb-4">
+              💸
+            </div>
+            <p class="text-gray-500 text-sm font-medium">
+              Henüz bir para çekme talebi oluşturmadınız.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+<script setup>
+import { ExclamationTriangleIcon, GiftIcon, ArrowRightIcon } from '@heroicons/vue/24/outline'
 import WalletTopUpForm from '~/components/forms/WalletTopUpForm.vue'
 import WalletWithdrawForm from '~/components/forms/WalletWithdrawForm.vue'
-
-// Tabi ki tip güvenliği (kural.md 1. madde)
-interface Account {
-  id: string;
-  type: string;
-  availableBalance: number;
-  blockedBalance: number;
-  creditLimit?: number;
-}
-
-interface Transaction {
-  id: string;
-  type: string;
-  amount: number;
-  status: string;
-  createdAt: string | Date;
-  description: string;
-  direction: 'CREDIT' | 'DEBIT';
-  account?: { type: string };
-}
-
-interface WalletData {
-  accounts: Account[];
-}
 
 // Layout
 definePageMeta({
@@ -614,7 +923,7 @@ definePageMeta({
 
 // Page meta
 useHead({
-  title: 'Cüzdanım - BazarX',
+  title: 'Cüzdanım - TicariTakas',
   meta: [
     {
       name: 'description',
@@ -624,19 +933,21 @@ useHead({
 })
 
 // Composables
+// Composables
 const {
   wallet,
   loading: walletLoading,
   error: walletError,
   formatPrice,
+  isCardWinner,
   fetchWallet,
   fetchTransactions,
   fetchAccountTransactions
-} = useWallet();
-const authStore = useAuthStore();
+} = useWallet()
+const authStore = useAuthStore()
 
 // Tier config mapping
-const TIER_CONFIG: Record<string, { label: string, icon: string, color: string, commission: number, roi: number }> = {
+const TIER_CONFIG = {
   CORE: { label: 'Çekirdek', icon: '🌱', color: 'bg-green-100 text-green-700 border-green-200', commission: 10, roi: 65 },
   PRIME: { label: 'Asil', icon: '⭐', color: 'bg-blue-100 text-blue-700 border-blue-200', commission: 8, roi: 75 },
   ELITE: { label: 'Elit', icon: '🏢', color: 'bg-orange-100 text-orange-700 border-orange-200', commission: 6, roi: 85 },
@@ -644,7 +955,7 @@ const TIER_CONFIG: Record<string, { label: string, icon: string, color: string, 
 }
 
 // Computed tier info
-const userTier = computed(() => (authStore.user as any)?.currentTier || 'CORE')
+const userTier = computed(() => authStore.user?.currentTier || authStore.user?.vendor?.vendorTier || 'CORE')
 const userTierConfig = computed(() => TIER_CONFIG[userTier.value] || TIER_CONFIG.CORE)
 const userTierLabel = computed(() => userTierConfig.value.label)
 const tierIcon = computed(() => userTierConfig.value.icon)
@@ -653,7 +964,7 @@ const tierCommissionRate = computed(() => userTierConfig.value.commission)
 const tierROIRate = computed(() => userTierConfig.value.roi)
 
 // Accounts mapping
-const accounts = computed(() => (wallet.value as unknown as WalletData).accounts || [])
+const accounts = computed(() => wallet.value.accounts || [])
 const mainAccount = computed(() => accounts.value.find(a => a.type === 'MAIN'))
 const barterAccount = computed(() => accounts.value.find(a => a.type === 'BARTER'))
 const commissionAccount = computed(() => accounts.value.find(a => a.type === 'XP_COMMISSION'))
@@ -661,40 +972,56 @@ const adAccount = computed(() => accounts.value.find(a => a.type === 'XP_AD'))
 const serviceAccount = computed(() => accounts.value.find(a => a.type === 'XP_SERVICE'))
 
 // State
-const transactions = ref<Transaction[]>([])
+const transactions = ref([])
 const txLoading = ref(false)
-const selectedAccountId = ref<string | number>('all')
+const selectedAccountId = ref('all') // 'all' or specific accountId
 const showBarterTopup = ref(false)
 const showBarterWithdraw = ref(false)
 const barterTopupAmount = ref(0)
 const barterWithdrawAmount = ref(0)
 const loading = ref(false)
-const activeActionTab = ref<'topup' | 'withdraw'>('topup')
+const activeActionTab = ref('topup') // 'topup' or 'withdraw'
 
 // Methods
 const loadTransactions = async () => {
   txLoading.value = true
   try {
-    let res: { success: boolean, data: Transaction[] };
+    let res
     if (selectedAccountId.value === 'all') {
-      res = await fetchTransactions({ limit: 15 }) as any
+      res = await fetchTransactions({ limit: 15 })
     } else {
-      res = await fetchAccountTransactions(selectedAccountId.value, { limit: 15 }) as any
+      res = await fetchAccountTransactions(selectedAccountId.value, { limit: 15 })
     }
 
     if (res.success) {
       transactions.value = res.data
     }
-  } catch (err: unknown) {
-    console.error('Transactions load error:', err)
+  } catch (err) {
+    console.error('Load transactions error:', err)
   } finally {
     txLoading.value = false
   }
 }
 
-const handleAccountSwitch = async (accountId: string | number) => {
+const handleAccountSwitch = async (accountId) => {
   selectedAccountId.value = accountId
   await loadTransactions()
+}
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 'approved':
+    case 'COMPLETED':
+      return 'Tamamlandı'
+    case 'pending':
+    case 'PENDING':
+      return 'Bekliyor'
+    case 'rejected':
+    case 'FAILED':
+      return 'Reddedildi'
+    default:
+      return status
+  }
 }
 
 const handleTopUpSuccess = async () => {
@@ -709,25 +1036,27 @@ const topUpBarter = async () => {
   try {
     loading.value = true
     const { $api } = useApi()
-    const response = await $api<{ success: boolean }>('barter/topup', {
+    const response = await $api('/api/barter/topup', {
       method: 'POST',
       body: { amount: barterTopupAmount.value }
     })
 
     if (response.success) {
-      const nuxt = useNuxtApp()
-      const toast = (nuxt as any).$toast
-      if (toast) toast.success('Havuza aktarım başarılı!')
-      
+      const toast = useNuxtApp().$toast
+      toast.success('Havuza aktarım başarılı!')
       showBarterTopup.value = false
       barterTopupAmount.value = 0
 
+      // Refresh data
       await fetchWallet()
       await authStore.fetchUser()
       await loadTransactions()
     }
-  } catch (error: unknown) {
+  } catch (error) {
+    const toast = useNuxtApp().$toast
+    toast.error(error.data?.error || 'Aktarım sırasında bir hata oluştu')
     console.error('Barter topup error:', error)
+    if (error.data) console.error('Barter topup error response:', error.data)
   } finally {
     loading.value = false
   }
@@ -736,19 +1065,19 @@ const topUpBarter = async () => {
 const registerForBarter = async () => {
   try {
     const { $api } = useApi()
-    const response = await $api<{ success: boolean, message?: string }>('barter/register', {
+    const response = await $api('/api/barter/register', {
       method: 'POST'
     })
 
     if (response.success) {
-      const nuxt = useNuxtApp()
-      const toast = (nuxt as any).$toast
-      if (toast) toast.success(response.message || 'Barter havuzuna kayıt başarılı!')
+      const toast = useNuxtApp().$toast
+      toast.success(response.message || 'Barter havuzuna başarıyla kayıt oldunuz!')
       await fetchWallet()
       await authStore.fetchUser()
     }
-  } catch (error: unknown) {
-    console.error('Barter register error:', error)
+  } catch (error) {
+    const toast = useNuxtApp().$toast
+    toast.error(error.data?.error || 'Kayıt sırasında bir hata oluştu.')
   }
 }
 
@@ -758,38 +1087,67 @@ const withdrawBarter = async () => {
   try {
     loading.value = true
     const { $api } = useApi()
-    const response = await $api<{ success: boolean }>('barter/withdraw', {
+    const response = await $api('/api/barter/withdraw', {
       method: 'POST',
       body: { amount: barterWithdrawAmount.value }
     })
 
     if (response.success) {
-      const nuxt = useNuxtApp()
-      const toast = (nuxt as any).$toast
-      if (toast) toast.success('Havuzdan para çekme başarılı!')
+      const toast = useNuxtApp().$toast
+      toast.success('Havuzdan para çekme başarılı!')
       showBarterWithdraw.value = false
       barterWithdrawAmount.value = 0
 
+      // Refresh data
       await fetchWallet()
       await authStore.fetchUser()
       await loadTransactions()
     }
-  } catch (error: unknown) {
+  } catch (error) {
+    const toast = useNuxtApp().$toast
+    toast.error(error.data?.error || 'Para çekme sırasında bir hata oluştu')
     console.error('Barter withdraw error:', error)
+    if (error.data) console.error('Barter withdraw error response:', error.data)
   } finally {
     loading.value = false
   }
 }
 
+const redeemGiftCard = async (code) => {
+  try {
+    const { $api } = useApi()
+    const response = await $api('/api/wallet/redeem-gift-card', {
+      method: 'POST',
+      body: { code }
+    })
+
+    if (response.success) {
+      const toast = useNuxtApp().$toast
+      toast.success('Hediye kartı yüklendi!')
+
+      // Refresh statistics
+      await fetchWallet()
+      await authStore.fetchUser()
+      await loadTransactions()
+    }
+  } catch (error) {
+    console.error('Redeem error:', error)
+    const toast = useNuxtApp().$toast
+    toast.error(error.data?.error || 'Hediye kartı yüklenirken bir hata oluştu')
+  }
+}
+
 // Initialize
 onMounted(async () => {
+  await authStore.init()
   if (!authStore.isLoggedIn) {
-    await navigateTo('/auth/login')
+    await navigateTo('/login')
     return
   }
 
   await fetchWallet()
 
+  // For non-vendors, default to MAIN account instead of 'all'
   if (!authStore.isVendor && mainAccount.value) {
     selectedAccountId.value = mainAccount.value.id
   }
@@ -802,7 +1160,7 @@ onMounted(async () => {
 .spinner {
   border-width: 4px;
   border-color: #e5e7eb;
-  border-top-color: #7c3aed;
+  border-top-color: var(--color-primary-600, #7c3aed);
   border-radius: 9999px;
   animation: spin 1s linear infinite;
 }

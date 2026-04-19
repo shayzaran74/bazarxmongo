@@ -75,8 +75,8 @@
           <!-- Content Wrapper -->
           <div class="relative z-10 p-10 flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
-              <div :class="['px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest', getLotteryStatusBadgeClass(lottery.status)]">
-                {{ getLotteryStatusText(lottery.status) }}
+              <div :class="['px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest', getLotteryStatusBadgeClass(lottery.status || 'Active')]">
+                {{ getLotteryStatusText(lottery.status || 'Active') }}
               </div>
               <div class="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl flex flex-col items-center">
                 <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.participants || 0) }}</span>

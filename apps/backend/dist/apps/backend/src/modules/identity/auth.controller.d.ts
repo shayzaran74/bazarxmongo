@@ -1,10 +1,12 @@
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { RegisterUserDto } from '@barterborsa/domain-identity';
 import { AuthService } from './infrastructure/auth/auth.service';
 export declare class AuthController {
     private readonly commandBus;
+    private readonly queryBus;
     private readonly authService;
-    constructor(commandBus: CommandBus, authService: AuthService);
+    constructor(commandBus: CommandBus, queryBus: QueryBus, authService: AuthService);
+    me(req: any): Promise<any>;
     register(dto: RegisterUserDto): Promise<{
         success: boolean;
         message: string;

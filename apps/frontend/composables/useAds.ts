@@ -1,5 +1,5 @@
 import { useApi } from '~/composables/useApi'
-import type { ApiResponse } from '~/types/api'
+import type { ApiResponse } from '@barterborsa/shared-types'
 
 export const useAds = () => {
     const { $api } = useApi()

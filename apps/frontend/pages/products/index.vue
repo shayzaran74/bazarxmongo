@@ -1,137 +1,150 @@
 <template>
-  <div class="products-page min-h-screen py-8 lg:py-12">
-    <div class="container mx-auto px-4">
-      <!-- Breadcrumb & Title -->
-      <div class="mb-8 lg:mb-12">
-        <div class="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] mb-2">
-          {{ categoryName || 'Tüm Ürünler' }}
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-[1400px] mx-auto px-4 py-6">
+      <!-- Breadcrumb -->
+      <nav class="text-sm mb-4 flex items-center gap-2 text-gray-600">
+        <NuxtLink to="/" class="hover:text-primary-600">{{ $t('products.home') }}</NuxtLink>
+        <span>/</span>
+        <span class="text-gray-900 font-medium">{{ currentCategoryName }}</span>
+      </nav>
+
+      <!-- Category Banner -->
+      <div
+        v-if="currentCategory"
+        :class="['mb-6 rounded-2xl overflow-hidden relative shadow-sm', (currentCategory.colorFrom || currentCategory.colorTo) && !currentCategory.image ? `bg-gradient-to-r ${currentCategory.colorFrom || 'from-blue-400'} ${currentCategory.colorTo || 'to-amber-500'}` : 'bg-white']"
+      >
+        <div v-if="currentCategory.image" class="absolute inset-0">
+          <img :src="currentCategory.image" :alt="currentCategory.name" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/50" />
         </div>
-        <h1 class="text-4xl lg:text-6xl font-display font-black text-slate-800 italic tracking-tighter leading-none">
-          Koleksiyonu Keşfet
-        </h1>
+        <div class="relative p-8 md:p-12" :class="[currentCategory.image || (currentCategory.colorFrom || currentCategory.colorTo) ? 'text-white' : 'text-gray-900']">
+          <div class="flex items-center gap-4 mb-2">
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight drop-shadow-md">{{ currentCategory.name }}</h1>
+          </div>
+          <p v-if="currentCategory.description" class="text-lg opacity-90 drop-shadow-md font-medium max-w-2xl mt-4">{{ currentCategory.description }}</p>
+        </div>
       </div>
 
-      <div class="flex flex-col lg:flex-row gap-12">
+      <div class="flex flex-col lg:flex-row gap-6">
         <!-- Sidebar Filters -->
-        <aside class="w-full lg:w-64 flex-shrink-0 hidden lg:block">
-          <div class="sticky top-24">
-            <ProductFilters
-              :categories="categories"
-              :brands="brands"
-              :current-filters="activeFilters"
-              @update:filters="handleFilterChange"
-              @clear:filters="clearFilters"
-            />
-          </div>
+        <aside class="w-full lg:w-64 flex-shrink-0">
+          <ProductFilters
+            :categories="categories"
+            :current-filters="currentFilters"
+            @update:filters="handleFilterUpdate"
+            @clear:filters="clearFilters"
+          />
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-grow">
-          <!-- Toolbar -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div class="text-xs font-bold text-slate-400">
-              <span class="text-slate-800">{{ meta.total }}</span> ürün listeleniyor
-            </div>
-            
-            <div class="flex items-center gap-4">
-              <ProductSort 
-                v-model="activeFilters.sort" 
-                @update:model-value="handleFilterChange(activeFilters)"
-              />
-              
-              <!-- Mobile Filter Trigger -->
-              <UiButton
-                variant="secondary"
-                class="lg:hidden"
-                @click="showMobileFilters = true"
-              >
-                <Icon name="heroicons:adjustments-horizontal" class="w-4 h-4 mr-2" />
-                Filtrele
-              </UiButton>
-            </div>
+        <!-- Main Product Grid -->
+        <main class="flex-1">
+          <div v-if="pending" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+          
+          <div v-else-if="error" class="bg-red-50 p-4 rounded-xl text-red-600 text-center">
+            {{ $t('products.errorLoading') }}
           </div>
 
-          <!-- Grid -->
-          <ProductGrid
-            :products="products"
-            :loading="loading"
-            @product-click="goToProduct"
-          />
+          <div v-else>
+            <div v-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <ProductCard
+                v-for="product in products"
+                :key="product.id"
+                :product="product"
+                @click="navigateTo(getProductUrl(product))"
+              />
+            </div>
 
-          <!-- Pagination -->
-          <div v-if="meta.totalPages > 1" class="mt-12 flex justify-center">
-            <UiPagination
-              :total="meta.total"
-              :page="meta.page"
-              :limit="meta.limit"
-              @change="goToPage"
-            />
+            <div v-else class="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div class="text-gray-400 mb-4">
+                <HeroIcons.CommandLineIcon class="w-16 h-16 mx-auto opacity-20" />
+              </div>
+              <h3 class="text-lg font-bold text-gray-900">{{ $t('products.noProductFound') }}</h3>
+              <p class="text-gray-500 mb-6">{{ $t('products.noProductFoundDesc') }}</p>
+              <button @click="clearFilters" class="px-6 py-2 bg-primary-600 text-white rounded-xl font-bold">{{ $t('products.clearFilters') }}</button>
+            </div>
+
+            <!-- Simple Pagination -->
+            <div v-if="pagination.totalPages > 1" class="mt-12 flex justify-center gap-2">
+              <button 
+                :disabled="pagination.page === 1"
+                class="px-4 py-2 border rounded-xl disabled:opacity-30"
+                @click="goToPage(pagination.page - 1)"
+              >‹</button>
+              <span class="flex items-center px-4 font-bold text-sm">{{ pagination.page }} / {{ pagination.totalPages }}</span>
+              <button 
+                :disabled="pagination.page === pagination.totalPages"
+                class="px-4 py-2 border rounded-xl disabled:opacity-30"
+                @click="goToPage(pagination.page + 1)"
+              >›</button>
+            </div>
           </div>
         </main>
       </div>
     </div>
-
-    <!-- Mobile Filters Slide-over -->
-    <UiSlideOver
-      v-model="showMobileFilters"
-      title="Filtrele"
-    >
-      <ProductFilters
-        :categories="categories"
-        :brands="brands"
-        :current-filters="activeFilters"
-        @update:filters="handleFilterChange"
-        @clear:filters="clearFilters"
-      />
-    </UiSlideOver>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Category, Brand, Product } from '~/types/catalog'
-import type { ApiResponse } from '~/types/api'
-import type { ProductFilters } from '~/composables/useProducts'
+import * as HeroIcons from '@heroicons/vue/24/outline'
+import type { Product, Category } from '@barterborsa/shared-types'
+import { getProductUrl } from '~/utils/product-url'
+import { useProductService } from '~/services/api/ProductService'
+import { useCategoryService } from '~/services/api/CategoryService'
 
-const { products, loading, meta, filtersFromQuery, updateQuery, fetchProducts, goToPage, clearFilters } = useProducts()
-const { $api } = useApi()
 const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
+const productService = useProductService()
+const categoryService = useCategoryService()
 
-const showMobileFilters = ref(false)
-const activeFilters = ref(filtersFromQuery())
+// Reactive Filter State from Query
+const currentFilters = computed(() => ({
+  categorySlug: route.query.categorySlug as string || undefined,
+  page: Number(route.query.page) || 1,
+  sort: route.query.sort as string || undefined
+}))
 
-// Fetch reference data (categories/brands)
-const { data: categories } = useAsyncData('filter-categories', async () => {
-  const res = await $api<ApiResponse<Category[]>>('categories', { query: { all: true } })
-  return res.data || []
-}, { default: () => [] })
+// SSR Data Fetch
+const { data: categoriesData } = await useAsyncData('categories', () => categoryService.getCategories())
+const categories = computed(() => categoriesData.value?.data || [])
 
-const { data: brands } = useAsyncData('filter-brands', async () => {
-  const res = await $api<ApiResponse<Brand[]>>('brands')
-  return res.data || []
-}, { default: () => [] })
+const { data: productsData, pending, error, refresh } = await useAsyncData(
+  `products-${JSON.stringify(currentFilters.value)}`,
+  () => productService.getProducts({
+    ...currentFilters.value,
+    limit: 20
+  }),
+  { watch: [() => route.query] }
+)
 
-const categoryName = computed(() => {
-  if (!activeFilters.value.categorySlug) return ''
-  return categories.value?.find(c => c.slug === activeFilters.value.categorySlug)?.name || ''
+const products = computed(() => productsData.value?.data || [])
+const pagination = computed(() => ({
+  page: productsData.value?.meta?.page || 1,
+  total: productsData.value?.meta?.total || 0,
+  totalPages: Math.ceil((productsData.value?.meta?.total || 0) / 20)
+}))
+
+const currentCategory = computed(() => {
+  return categories.value.find(c => c.slug === currentFilters.value.categorySlug)
 })
+const currentCategoryName = computed(() => currentCategory.value?.name || t('products.allProducts'))
 
-function handleFilterChange(newFilters: Partial<ProductFilters>) {
-  activeFilters.value = { ...activeFilters.value, ...newFilters, page: 1 }
-  updateQuery(activeFilters.value)
+// Methods
+const handleFilterUpdate = (filters: any) => {
+  router.push({ query: { ...route.query, ...filters, page: 1 } })
 }
 
-function goToProduct(product: Product) {
-  navigateTo(`/products/${product.slug}`)
+const clearFilters = () => {
+  router.push({ query: {} })
 }
 
-// Watch query for fetching
-watch(() => route.query, () => {
-  activeFilters.value = filtersFromQuery()
-  fetchProducts(activeFilters.value)
-}, { immediate: true })
+const goToPage = (page: number) => {
+  router.push({ query: { ...route.query, page } })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
-useAppSeo({
-  title: categoryName.value || 'Ürünler',
-  description: 'BarterBorsa ürün kataloğunu keşfedin, takas fırsatlarını yakalayın.'
-})
+definePageMeta({ layout: 'default' })
+useHead({ title: computed(() => `${currentCategoryName.value} | BarterBorsa`) })
 </script>

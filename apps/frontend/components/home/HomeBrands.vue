@@ -56,11 +56,11 @@
           <div
             class="w-24 h-24 mb-4 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-primary-100 transition-all z-10 p-2 bg-gradient-to-br from-white to-gray-50"
           >
-            <img
+            <NuxtImg
               v-if="brand.image"
               :src="resolveImageUrl(brand.image, 'category')"
               class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
-              loading="lazy"
+              placeholder
             />
             <span
               v-else

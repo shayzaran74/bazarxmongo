@@ -3,19 +3,22 @@ import { useWalletService, type WalletTransactionParams } from '~/services/api/W
 import { useAuthStore } from '~/stores/auth'
 import type { Wallet } from '@barterborsa/shared-types'
 
-/**
- * Cüzdan işlemlerini yöneten merkezi composable.
- */
+
+
 export const useWallet = () => {
   const walletService = useWalletService()
+
   const authStore = useAuthStore()
 
   const wallet = ref<Wallet>({
+    id: '',
+    userId: '',
+    currency: 'TRY',
+    barterBalance: 0,
     balance: 0,
     blockedBalance: 0,
     cards: [],
-    requests: [],
-    accounts: []
+    requests: []
   })
 
   const loading = ref(false)
@@ -29,12 +32,14 @@ export const useWallet = () => {
     }).format(Number(price || 0))
   }
 
+
   // Fetch wallet data
   const fetchWallet = async () => {
     loading.value = true
     error.value = null
 
     try {
+      // Check if user is authenticated
       if (!authStore.isLoggedIn) {
         throw new Error('Giriş yapmanız gerekiyor')
       }
@@ -50,29 +55,35 @@ export const useWallet = () => {
       const errorMsg = (err as Error).message || 'Cüzdan verileri yüklenirken bir hata oluştu'
       error.value = errorMsg
       console.error('Fetch wallet error:', err)
+
+      // If authentication error
+      const fetchError = err as { status?: number }
+      if (fetchError.status === 401) {
+        error.value = 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'
+      }
     } finally {
       loading.value = false
     }
   }
 
   // Top up wallet
-  const topUp = async (params: { amount: number, paymentMethod: string }) => {
+  const topUpWallet = async (amount: number) => {
     loading.value = true
     error.value = null
 
     try {
-      const res = await walletService.topUpPrice(params.amount, params.paymentMethod)
+      const res = await walletService.topUpPrice(amount)
 
       if (res.success) {
-        await fetchWallet()
-        return true
+        await fetchWallet() // Refresh wallet data
+        return { success: true, message: 'Talebiniz alındı, admin onayından sonra bakiyenize yansıyacaktır.' }
       } else {
         throw new Error(res.error || 'Talep oluşturulamadı.')
       }
     } catch (err: unknown) {
       const errorMsg = (err as Error).message || 'Bir hata oluştu.'
       error.value = errorMsg
-      return false
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
@@ -98,6 +109,16 @@ export const useWallet = () => {
     }
   }
 
+  // Fetch ledger history
+  const fetchLedger = async (params: Record<string, unknown> = {}) => {
+    try {
+      return await walletService.getLedger(params)
+    } catch (err: unknown) {
+      console.error('Fetch ledger error:', err)
+      return { success: false, error: (err as Error).message }
+    }
+  }
+
   // Withdraw money
   const withdrawWallet = async (data: { amount: number, iban: string, accountHolder: string, bankName: string }) => {
     loading.value = true
@@ -105,9 +126,10 @@ export const useWallet = () => {
 
     try {
       const res = await walletService.withdraw(data)
+
       if (res.success) {
         await fetchWallet()
-        return { success: true, message: res.message || 'Çekme talebiniz oluşturuldu.' }
+        return { success: true, message: res.message || 'Çekme talebiniz oluşturuldu. Lütfen e-postanızı kontrol edin.' }
       } else {
         throw new Error(res.error || 'Talep oluşturulamadı.')
       }
@@ -120,21 +142,16 @@ export const useWallet = () => {
     }
   }
 
-  // Helper for lottery winner
-  const isCardWinner = (card: { isWinner?: boolean }) => {
-    return card.isWinner || false
-  }
-
   return {
     wallet: readonly(wallet),
     loading: readonly(loading),
     error: readonly(error),
     formatPrice,
-    isCardWinner,
     fetchWallet,
-    topUp,
+    topUpWallet,
     withdrawWallet,
     fetchTransactions,
-    fetchAccountTransactions
+    fetchAccountTransactions,
+    fetchLedger
   }
 }

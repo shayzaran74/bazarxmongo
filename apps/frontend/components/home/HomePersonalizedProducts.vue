@@ -164,13 +164,13 @@ const fetchProducts = async () => {
   error.value = null
   try {
     const { $api } = useApi()
-    const data = await $api<ApiResponse<Product[]>>('/api/products', {
+    const data = await $api<Product[]>('/api/products', {
       query: { isFeatured: true, limit: 7, sort: sortBy.value }
     })
     if (data.success && data.data) {
       products.value = data.data
     } else {
-      error.value = (data as ApiResponse<Product[]>).message || 'Failed to fetch products'
+      error.value = data.message || 'Failed to fetch products'
     }
   } catch (err: unknown) {
     error.value = (err as Error).message || 'An error occurred'

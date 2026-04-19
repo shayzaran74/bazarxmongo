@@ -19,7 +19,7 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      url: `0.0.0.0:${config.get('port') + 50000}`, // örn: 50052
+      url: `0.0.0.0:${config.get('grpcPort')}`,
       package: 'barterborsa.delivery',
       protoPath: config.get('protoPath'),
     },
@@ -30,12 +30,13 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = config.get('port');
+  const grpcPort = config.get('grpcPort');
   
   await app.startAllMicroservices();
   await app.listen(port, '0.0.0.0');
   
   logger.log(`Delivery Service is running on: http://localhost:${port}`);
-  logger.log(`gRPC Microservice is running on: 0.0.0.0:${port + 50000}`);
+  logger.log(`gRPC Microservice is running on: 0.0.0.0:${grpcPort}`);
 }
 
 bootstrap();

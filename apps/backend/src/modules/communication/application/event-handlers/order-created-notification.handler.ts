@@ -17,7 +17,7 @@ export class OrderCreatedNotificationHandler {
   ) {}
 
   @RabbitSubscribe({
-    exchange: 'order.events',
+    exchange: 'commerce.events',
     routingKey: 'order.created',
     queue: 'communication.order-created',
   })

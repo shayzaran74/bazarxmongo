@@ -171,17 +171,15 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, reactive } from '#imports'
 import { useNuxtApp } from '#imports'
 import { useWallet } from '~/composables/useWallet'
-import { 
-  ArrowDownCircleIcon, 
-  CheckCircleIcon, 
-  ExclamationTriangleIcon, 
-  InformationCircleIcon, 
-  ArrowUpRightIcon 
-} from '@heroicons/vue/24/outline'
+import ArrowDownCircleIcon from '@heroicons/vue/24/outline/ArrowDownCircleIcon'
+import CheckCircleIcon from '@heroicons/vue/24/outline/CheckCircleIcon'
+import ExclamationTriangleIcon from '@heroicons/vue/24/outline/ExclamationTriangleIcon'
+import InformationCircleIcon from '@heroicons/vue/24/outline/InformationCircleIcon'
+import ArrowUpRightIcon from '@heroicons/vue/24/outline/ArrowUpRightIcon'
 
 const props = defineProps({
   availableBalance: {
@@ -193,14 +191,13 @@ const props = defineProps({
 const emit = defineEmits(['success'])
 
 const { withdrawWallet, formatPrice } = useWallet()
-const nuxtApp = useNuxtApp()
-const toast = (nuxtApp as any).$toast // useNuxtApp types can be tricky, cast to any only if necessary for its properties
+const toast = useNuxtApp().$toast
 
 const loading = ref(false)
 const success = ref(false)
 const successMessage = ref('')
-const error = ref<string | null>(null)
-const requiresPin = ref(true)
+const error = ref(null)
+const requiresPin = ref(true) // Backend usually requires it for security
 
 const form = reactive({
   amount: 0,
@@ -235,10 +232,11 @@ const handleSubmit = async () => {
 
     if (res.success) {
       success.value = true
-      successMessage.value = res.message || 'İşlem başarılı'
-      if (toast) toast.success(successMessage.value)
+      successMessage.value = res.message
+      toast.success(res.message)
       emit('success')
       
+      // Reset form
       form.amount = 0
       form.iban = ''
       form.accountHolder = ''
@@ -250,14 +248,15 @@ const handleSubmit = async () => {
       }, 5000)
     } else {
       error.value = res.error || 'İşlem başarısız.'
+      
+      // Check if it's a PIN error to highlight
       if (error.value.toLowerCase().includes('pin')) {
         requiresPin.value = true
       }
     }
-  } catch (err: unknown) {
-    const errorMsg = (err as Error).message || 'Bir hata oluştu.'
-    error.value = errorMsg
-    if (toast) toast.error(errorMsg)
+  } catch (err) {
+    error.value = err.message || 'Bir hata oluştu.'
+    toast.error(error.value)
   } finally {
     loading.value = false
   }

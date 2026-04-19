@@ -1,0 +1,197 @@
+
+> ecommerce-frontend@1.0.0 type-check
+> nuxt typecheck
+
+[nuxt:tailwindcss] ℹ Using default Tailwind CSS file
+components/admin/AdminChatWindow.vue(95,48): error TS2339: Property 'metadata' does not exist on type 'AdminMessage'.
+components/admin/AdminChatWindow.vue(101,37): error TS2339: Property 'userAId' does not exist on type 'AdminChatRoom'.
+components/admin/AdminChatWindow.vue(108,13): error TS2551: Property 'sender' does not exist on type 'AdminMessage'. Did you mean 'senderId'?
+components/admin/AdminChatWindow.vue(108,38): error TS2551: Property 'sender' does not exist on type 'AdminMessage'. Did you mean 'senderId'?
+components/admin/AdminChatWindow.vue(109,37): error TS2339: Property 'userAId' does not exist on type 'AdminChatRoom'.
+components/admin/AdminChatWindow.vue(109,71): error TS2339: Property 'fromCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(109,113): error TS2339: Property 'fromCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(110,37): error TS2339: Property 'userBId' does not exist on type 'AdminChatRoom'.
+components/admin/AdminChatWindow.vue(110,71): error TS2339: Property 'toCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(110,111): error TS2339: Property 'toCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(172,31): error TS2339: Property 'loadMoreMessages' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+components/admin/AdminChatWindow.vue(300,35): error TS2339: Property 'fromCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(302,35): error TS2339: Property 'toCompany' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(344,33): error TS2339: Property 'offeredItem' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(347,33): error TS2339: Property 'offeredItem' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(350,33): error TS2339: Property 'requestedItem' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(353,33): error TS2339: Property 'requestedItem' does not exist on type 'Offer'.
+components/admin/AdminChatWindow.vue(358,47): error TS2367: This comparison appears to be unintentional because the types '"pending" | "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED" | "DISPUTED" | "disputed"' and '"accepted"' have no overlap.
+components/admin/AdminChatWindow.vue(475,43): error TS2339: Property 'userBId' does not exist on type 'AdminChatRoom'.
+components/admin/AdminChatWindow.vue(480,45): error TS2339: Property 'userAId' does not exist on type 'AdminChatRoom'.
+components/admin/AdminChatWindow.vue(489,47): error TS2339: Property 'userAId' does not exist on type 'AdminChatRoom'.
+components/admin/MatchingDiffView.vue(174,15): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'WantedItem'.
+components/admin/MatchingDiffView.vue(174,27): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'SurplusItem'.
+components/admin/MatchingDiffView.vue(194,41): error TS7006: Parameter 'k' implicitly has an 'any' type.
+components/admin/MatchingDiffView.vue(195,34): error TS7006: Parameter 'k' implicitly has an 'any' type.
+components/admin/product/AdminProductTable.vue(79,26): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/admin/product/AdminProductTable.vue(105,31): error TS2339: Property 'status' does not exist on type 'Product'.
+components/admin/product/AdminProductTable.vue(105,71): error TS2339: Property 'status' does not exist on type 'Product'.
+components/admin/product/AdminProductTable.vue(106,150): error TS2339: Property 'status' does not exist on type 'Product'.
+components/admin/product/AdminProductTable.vue(108,50): error TS2339: Property 'status' does not exist on type 'Product'.
+components/admin/product/AdminProductTable.vue(111,31): error TS2339: Property 'status' does not exist on type 'Product'.
+components/cart/CartBestSellers.vue(72,80): error TS2339: Property 'reviewCount' does not exist on type 'Product'.
+components/cart/CartBestSellers.vue(80,56): error TS2339: Property 'soldCount' does not exist on type 'Product'.
+components/cart/CartSummary.vue(18,26): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/cart/CartSummary.vue(35,28): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/cart/CartSummary.vue(41,40): error TS18048: '__VLS_ctx.summary.totalPrice' is possibly 'undefined'.
+components/cart/CartSummary.vue(41,82): error TS2339: Property 'rewardValue' does not exist on type 'EscrowCoupon'.
+components/cart/CartSummary.vue(50,15): error TS18048: '__VLS_ctx.summary.totalPrice' is possibly 'undefined'.
+components/cart/CartSummary.vue(83,33): error TS2339: Property 'listing' does not exist on type 'EscrowCoupon'.
+components/cart/CartSummary.vue(105,96): error TS2339: Property 'rewardValue' does not exist on type 'EscrowCoupon'.
+components/chat/MessageBubble.vue(61,24): error TS2367: This comparison appears to be unintentional because the types '"sent" | "error" | "warning" | undefined' and '"delivered"' have no overlap.
+components/chat/MessageBubble.vue(68,42): error TS2367: This comparison appears to be unintentional because the types '"sent" | "error" | "warning" | undefined' and '"read"' have no overlap.
+components/chat/MessageBubble.vue(90,24): error TS2367: This comparison appears to be unintentional because the types '"sent" | "warning" | undefined' and '"moderated"' have no overlap.
+components/chat/MessageBubble.vue(108,15): error TS2367: This comparison appears to be unintentional because the types 'MessageStatus | undefined' and '"moderated"' have no overlap.
+components/checkout/CheckoutAddressForm.vue(144,41): error TS2538: Type 'undefined' cannot be used as an index type.
+components/checkout/CheckoutAddressForm.vue(173,15): error TS2724: '"@barterborsa/shared-types"' has no exported member named 'CheckoutAddress'. Did you mean 'CheckoutNewAddress'?
+components/home/HomeAuctions.vue(135,15): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'HomeAuction'.
+components/home/HomeCategoryHighlights.vue(33,51): error TS2339: Property 'bestSellersByCategory' does not exist on type 'ApiResponse<{ bestSellersByCategory: Record<string, Product[]>; }>'.
+components/home/HomeCategoryHighlights.vue(39,7): error TS2322: Type 'ApiResponse<Category[]>' is not assignable to type 'Category[] | { id: string; name: string; slug: string; description?: string | undefined; parentId?: string | undefined; children?: ...[] | undefined; isActive?: boolean | undefined; image?: string | undefined; icon?: string | undefined; colorFrom?: string | undefined; colorTo?: string | undefined; }[]'.
+components/home/HomeFlashSales.vue(84,37): error TS2353: Object literal may only specify known properties, and 'isFlashSale' does not exist in type 'Product'.
+components/home/HomeFlashSales.vue(85,53): error TS2353: Object literal may only specify known properties, and 'isFlashSale' does not exist in type 'Product'.
+components/home/HomeFlashSales.vue(87,101): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomeFlashSales.vue(123,7): error TS2322: Type 'ApiResponse<Product[]>' is not assignable to type 'Product[] | { id: string; name: string; slug: string; description?: string | undefined; sku: string; price: number; salePrice?: number | undefined; stock: number; isActive: boolean; ... 23 more ...; dynamicBadges?: any; }[]'.
+components/home/HomeGroupBuy.vue(127,15): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'GroupBuyDTO'.
+components/home/HomeGroupBuy.vue(127,41): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'GroupBuyTier'.
+components/home/HomeLotteries.vue(131,15): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'HomeLottery'.
+components/home/HomePerformanceShowcase.vue(52,107): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomePerformanceShowcase.vue(123,107): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomePerformanceShowcase.vue(154,107): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomePerformanceShowcase.vue(187,107): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomePerformanceShowcase.vue(234,37): error TS2339: Property 'bestSellers' does not exist on type 'ApiResponse<{ bestSellers?: Product[] | undefined; mostRepurchased?: Product[] | undefined; mostVisited?: Product[] | undefined; mostFavorited?: Product[] | undefined; mostRated?: Product[] | undefined; }>'.
+components/home/HomePerformanceShowcase.vue(235,41): error TS2339: Property 'mostRepurchased' does not exist on type 'ApiResponse<{ bestSellers?: Product[] | undefined; mostRepurchased?: Product[] | undefined; mostVisited?: Product[] | undefined; mostFavorited?: Product[] | undefined; mostRated?: Product[] | undefined; }>'.
+components/home/HomePerformanceShowcase.vue(236,37): error TS2339: Property 'mostVisited' does not exist on type 'ApiResponse<{ bestSellers?: Product[] | undefined; mostRepurchased?: Product[] | undefined; mostVisited?: Product[] | undefined; mostFavorited?: Product[] | undefined; mostRated?: Product[] | undefined; }>'.
+components/home/HomePerformanceShowcase.vue(237,39): error TS2339: Property 'mostFavorited' does not exist on type 'ApiResponse<{ bestSellers?: Product[] | undefined; mostRepurchased?: Product[] | undefined; mostVisited?: Product[] | undefined; mostFavorited?: Product[] | undefined; mostRated?: Product[] | undefined; }>'.
+components/home/HomePerformanceShowcase.vue(238,35): error TS2339: Property 'mostRated' does not exist on type 'ApiResponse<{ bestSellers?: Product[] | undefined; mostRepurchased?: Product[] | undefined; mostVisited?: Product[] | undefined; mostFavorited?: Product[] | undefined; mostRated?: Product[] | undefined; }>'.
+components/home/HomePersonalizedProducts.vue(108,99): error TS2554: Expected 1-3 arguments, but got 4.
+components/home/HomePersonalizedProducts.vue(171,7): error TS2322: Type 'ApiResponse<Product[]>' is not assignable to type 'Product[] | { id: string; name: string; slug: string; description?: string | undefined; sku: string; price: number; salePrice?: number | undefined; stock: number; isActive: boolean; ... 23 more ...; dynamicBadges?: any; }[]'.
+components/home/HomePersonalizedProducts.vue(173,22): error TS2352: Conversion of type 'ApiResponse<ApiResponse<Product[]>>' to type 'ApiResponse<Product[]>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'ApiResponse<Product[]>' is missing the following properties from type 'Product[]': length, pop, push, concat, and 35 more.
+components/home/HomeQuadCards.vue(22,15): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'HomeQuadCard'.
+components/home/HomeQuadCards.vue(22,42): error TS2305: Module '"@barterborsa/shared-types"' has no exported member 'HomeQuadCardItem'.
+components/home/HomeRestaurants.vue(102,19): error TS18048: 'vendor.businessName' is possibly 'undefined'.
+components/home/HomeVendors.vue(75,17): error TS18048: 'vendor.businessName' is possibly 'undefined'.
+components/layout/Header.vue(140,34): error TS2339: Property 'itemCount' does not exist on type 'Store<"cart", { items: CartItem[]; summary: CartSummary | null; loading: boolean; availableEscrowCoupons: any[]; appliedEscrowCoupon: any; error: string | null; }, { ...; }, { ...; }>'.
+components/layout/Header.vue(143,30): error TS2339: Property 'itemCount' does not exist on type 'Store<"cart", { items: CartItem[]; summary: CartSummary | null; loading: boolean; availableEscrowCoupons: any[]; appliedEscrowCoupon: any; error: string | null; }, { ...; }, { ...; }>'.
+components/product/detail/ProductDescription.vue(29,27): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(34,27): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(34,51): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(34,91): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(34,108): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(34,129): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/detail/ProductDescription.vue(38,27): error TS2339: Property 'weight' does not exist on type 'Product'.
+components/product/detail/ProductDescription.vue(42,82): error TS2339: Property 'weight' does not exist on type 'Product'.
+components/product/detail/ProductGallery.vue(31,10): error TS2322: Type 'string | { url: string; } | undefined' is not assignable to type 'string | undefined'.
+  Type '{ url: string; }' is not assignable to type 'string'.
+components/product/detail/ProductReviewItem.vue(25,23): error TS2339: Property 'User' does not exist on type 'Review'.
+components/product/detail/ProductReviewItem.vue(43,20): error TS2339: Property 'isVerified' does not exist on type 'Review'.
+components/product/detail/ProductSpecifications.vue(17,25): error TS2339: Property 'technicalSpecifications' does not exist on type 'Product'.
+components/product/detail/ProductSpecifications.vue(20,22): error TS2339: Property 'technicalSpecifications' does not exist on type 'Product'.
+components/product/ProductCard.vue(29,12): error TS2345: Argument of type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to parameter of type 'HTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to type 'HTMLAttributes'.
+    Types of property 'style' are incompatible.
+      Type 'BadgeStyle | undefined' is not assignable to type 'StyleValue'.
+        Type 'BadgeStyle' is not assignable to type 'StyleValue'.
+          Type 'BadgeStyle' is not assignable to type 'CSSProperties'.
+            Index signature for type '`--${string}`' is missing in type 'BadgeStyle'.
+components/product/ProductCard.vue(48,27): error TS2339: Property 'isSponsored' does not exist on type 'Product'.
+components/product/ProductCard.vue(57,27): error TS2339: Property 'distance' does not exist on type 'Product'.
+components/product/ProductCard.vue(57,61): error TS2339: Property 'distance' does not exist on type 'Product'.
+components/product/ProductCard.vue(62,24): error TS2339: Property 'distance' does not exist on type 'Product'.
+components/product/ProductCard.vue(62,48): error TS2339: Property 'distance' does not exist on type 'Product'.
+components/product/ProductCard.vue(63,23): error TS2339: Property 'distance' does not exist on type 'Product'.
+components/product/ProductCard.vue(69,10): error TS2345: Argument of type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to parameter of type 'HTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to type 'HTMLAttributes'.
+    Types of property 'style' are incompatible.
+      Type 'BadgeStyle | undefined' is not assignable to type 'StyleValue'.
+        Type 'BadgeStyle' is not assignable to type 'StyleValue'.
+          Type 'BadgeStyle' is not assignable to type 'CSSProperties'.
+            Index signature for type '`--${string}`' is missing in type 'BadgeStyle'.
+components/product/ProductCard.vue(78,32): error TS2339: Property 'catalogProductId' does not exist on type 'Product'.
+components/product/ProductCard.vue(95,10): error TS2345: Argument of type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to parameter of type 'HTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to type 'HTMLAttributes'.
+    Types of property 'style' are incompatible.
+      Type 'BadgeStyle | undefined' is not assignable to type 'StyleValue'.
+        Type 'BadgeStyle' is not assignable to type 'StyleValue'.
+          Type 'BadgeStyle' is not assignable to type 'CSSProperties'.
+            Index signature for type '`--${string}`' is missing in type 'BadgeStyle'.
+components/product/ProductCard.vue(109,10): error TS2345: Argument of type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to parameter of type 'HTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ style: BadgeStyle | undefined; class: string[]; key: string; }' is not assignable to type 'HTMLAttributes'.
+    Types of property 'style' are incompatible.
+      Type 'BadgeStyle | undefined' is not assignable to type 'StyleValue'.
+        Type 'BadgeStyle' is not assignable to type 'StyleValue'.
+          Type 'BadgeStyle' is not assignable to type 'CSSProperties'.
+            Index signature for type '`--${string}`' is missing in type 'BadgeStyle'.
+components/product/ProductCard.vue(147,44): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/ProductCard.vue(159,25): error TS2551: Property 'reviews' does not exist on type 'Product'. Did you mean 'Review'?
+components/product/ProductCard.vue(193,31): error TS2339: Property 'sellerCount' does not exist on type 'Product'.
+components/product/ProductCard.vue(193,54): error TS2339: Property 'sellerCount' does not exist on type 'Product'.
+components/product/ProductCard.vue(204,29): error TS2339: Property 'sellerCount' does not exist on type 'Product'.
+components/product/ProductCard.vue(204,52): error TS2339: Property 'sellerCount' does not exist on type 'Product'.
+components/product/ProductCard.vue(295,27): error TS2339: Property 'isSponsored' does not exist on type 'Product'.
+components/product/ProductCard.vue(308,78): error TS2554: Expected 1-3 arguments, but got 4.
+components/product/ProductCard.vue(320,23): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/ProductCard.vue(320,57): error TS2551: Property 'Brand' does not exist on type 'Product'. Did you mean 'brand'?
+components/product/ProductCard.vue(329,24): error TS2551: Property 'reviews' does not exist on type 'Product'. Did you mean 'Review'?
+components/product/ProductCard.vue(330,31): error TS2551: Property 'reviews' does not exist on type 'Product'. Did you mean 'Review'?
+components/product/ProductCard.vue(331,33): error TS2551: Property 'reviews' does not exist on type 'Product'. Did you mean 'Review'?
+components/product/ProductItem.vue(29,23): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(43,24): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(59,32): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(88,52): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(95,27): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(98,54): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+components/product/ProductItem.vue(171,46): error TS2551: Property 'Product' does not exist on type 'CartItem'. Did you mean 'product'?
+composables/useAdminChat.ts(23,9): error TS2339: Property 'roomsLoading' does not exist on type '{ loading: Ref<boolean, boolean>; isConnected: Ref<boolean, boolean>; isFrozen: Ref<boolean, boolean>; searchQuery: Ref<string, string>; pagination: Ref<{ page: number; limit: number; total: number; totalPages: number; }, { ...; }>; ... 7 more ...; typingUsers: Ref<...>; } & ToRefs<...> & _ToComputedRefs<...>'.
+composables/useAdminChat.ts(28,9): error TS2339: Property 'messagesLoading' does not exist on type '{ loading: Ref<boolean, boolean>; isConnected: Ref<boolean, boolean>; isFrozen: Ref<boolean, boolean>; searchQuery: Ref<string, string>; pagination: Ref<{ page: number; limit: number; total: number; totalPages: number; }, { ...; }>; ... 7 more ...; typingUsers: Ref<...>; } & ToRefs<...> & _ToComputedRefs<...>'.
+composables/useAdminChat.ts(31,9): error TS2339: Property 'filterRisky' does not exist on type '{ loading: Ref<boolean, boolean>; isConnected: Ref<boolean, boolean>; isFrozen: Ref<boolean, boolean>; searchQuery: Ref<string, string>; pagination: Ref<{ page: number; limit: number; total: number; totalPages: number; }, { ...; }>; ... 7 more ...; typingUsers: Ref<...>; } & ToRefs<...> & _ToComputedRefs<...>'.
+composables/useAdminChat.ts(32,9): error TS2339: Property 'sortByRisk' does not exist on type '{ loading: Ref<boolean, boolean>; isConnected: Ref<boolean, boolean>; isFrozen: Ref<boolean, boolean>; searchQuery: Ref<string, string>; pagination: Ref<{ page: number; limit: number; total: number; totalPages: number; }, { ...; }>; ... 7 more ...; typingUsers: Ref<...>; } & ToRefs<...> & _ToComputedRefs<...>'.
+composables/useAdminChat.ts(34,9): error TS2339: Property 'filteredRooms' does not exist on type '{ loading: Ref<boolean, boolean>; isConnected: Ref<boolean, boolean>; isFrozen: Ref<boolean, boolean>; searchQuery: Ref<string, string>; pagination: Ref<{ page: number; limit: number; total: number; totalPages: number; }, { ...; }>; ... 7 more ...; typingUsers: Ref<...>; } & ToRefs<...> & _ToComputedRefs<...>'.
+composables/useAdminChat.ts(44,15): error TS2339: Property 'connectSocket' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(48,15): error TS2339: Property 'leaveGhostRoom' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(49,15): error TS2339: Property 'disconnectSocket' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(57,25): error TS2339: Property 'joinGhostRoom' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(63,35): error TS2339: Property 'leaveGhostRoom' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(72,15): error TS2339: Property 'filterRisky' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(72,36): error TS2339: Property 'filterRisky' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(77,15): error TS2339: Property 'sortByRisk' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(77,35): error TS2339: Property 'sortByRisk' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(88,25): error TS2339: Property 'sendSystemMessage' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(100,25): error TS2339: Property 'sendWarning' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(112,25): error TS2339: Property 'freezeRoom' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminChat.ts(124,25): error TS2339: Property 'unfreezeRoom' does not exist on type 'Store<"adminChat", { rooms: AdminChatRoom[]; messages: AdminMessage[]; activeRoomId: string | null; isConnected: boolean; socket: Socket<DefaultEventsMap, DefaultEventsMap> | null; ... 7 more ...; typingUsers: Record<...>; }, { ...; }, { ...; }>'.
+composables/useAdminDashboard.ts(49,111): error TS2352: Conversion of type '{ success: boolean; pagination: { total: number; }; }' to type 'PaginatedResponse<unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ success: boolean; pagination: { total: number; }; }' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(52,65): error TS2339: Property 'success' does not exist on type 'PaginatedResponse<unknown>'.
+composables/useAdminDashboard.ts(52,80): error TS2339: Property 'pagination' does not exist on type 'PaginatedResponse<unknown>'.
+composables/useAdminDashboard.ts(56,28): error TS2345: Argument of type 'ApiResponse<PaginatedResponse<unknown>>' is not assignable to parameter of type 'PaginatedResponse<unknown>'.
+  Type 'ApiResponse<PaginatedResponse<unknown>>' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(57,30): error TS2345: Argument of type 'ApiResponse<PaginatedResponse<unknown>>' is not assignable to parameter of type 'PaginatedResponse<unknown>'.
+  Type 'ApiResponse<PaginatedResponse<unknown>>' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(58,28): error TS2345: Argument of type 'ApiResponse<PaginatedResponse<unknown>>' is not assignable to parameter of type 'PaginatedResponse<unknown>'.
+  Type 'ApiResponse<PaginatedResponse<unknown>>' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(59,29): error TS2345: Argument of type 'ApiResponse<PaginatedResponse<unknown>>' is not assignable to parameter of type 'PaginatedResponse<unknown>'.
+  Type 'ApiResponse<PaginatedResponse<unknown>>' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(60,35): error TS2345: Argument of type 'PaginatedResponse<unknown> | ApiResponse<PaginatedResponse<unknown>>' is not assignable to parameter of type 'PaginatedResponse<unknown>'.
+  Type 'ApiResponse<PaginatedResponse<unknown>>' is missing the following properties from type 'PaginatedResponse<unknown>': items, total, page, limit, totalPages
+composables/useAdminDashboard.ts(61,72): error TS2339: Property 'totalVendorProducts' does not exist on type '{ total: number; page: number; limit: number; totalPages: number; }'.
+composables/useAdminDashboard.ts(61,117): error TS2339: Property 'totalVendorProducts' does not exist on type '{ total: number; page: number; limit: number; totalPages: number; }'.
+composables/useAdminDashboard.ts(69,28): error TS2339: Property 'reason' does not exist on type 'AdminAuditLog'.
+
+ ERROR  Process exited with non-zero status (2)
+
+    at G._waitForOutput (/Users/macbook/Desktop/bazarx/node_modules/.pnpm/nuxi@3.34.0/node_modules/nuxi/dist/main-Dx6xQYR8.mjs:573:92)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Object.run (/Users/macbook/Desktop/bazarx/node_modules/.pnpm/nuxi@3.34.0/node_modules/nuxi/dist/typecheck-Bs75hta6.mjs:36:52)
+    at async runCommand (/Users/macbook/Desktop/bazarx/node_modules/.pnpm/nuxi@3.34.0/node_modules/nuxi/dist/dist-DCppsyw9.mjs:256:47)
+    at async runCommand (/Users/macbook/Desktop/bazarx/node_modules/.pnpm/nuxi@3.34.0/node_modules/nuxi/dist/dist-DCppsyw9.mjs:253:21)
+    at async runMain (/Users/macbook/Desktop/bazarx/node_modules/.pnpm/nuxi@3.34.0/node_modules/nuxi/dist/dist-DCppsyw9.mjs:353:10) 
+
+

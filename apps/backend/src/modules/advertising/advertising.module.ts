@@ -7,11 +7,12 @@ import { PrismaModule } from '@barterborsa/shared-persistence';
 import { AdCampaignController } from './presentation/ad-campaign.controller';
 import { AdCampaignVendorController } from './presentation/ad-campaign-vendor.controller';
 import { AdvertisingAdminController } from './presentation/advertising-admin.controller';
+import { SettingsController } from './presentation/settings.controller';
 
 import { CreateAdCampaignHandler } from './application/commands/create-ad-campaign.handler';
 import { ApproveAdCampaignHandler, RecordImpressionHandler, RecordClickHandler } from './application/commands/ad-lifecycle.handlers';
 
-import { GetAdsForSlotHandler, GetVendorCampaignsHandler, GetAdsAdminHandler } from './application/queries/advertising-query.handlers';
+import { GetAdsForSlotHandler, GetVendorCampaignsHandler, GetAdsAdminHandler, GetSideAdsHandler } from './application/queries/advertising-query.handlers';
 
 import { AdAuctionService } from './application/services/ad-auction.service';
 import { BudgetManagerService } from './application/services/budget-manager.service';
@@ -30,6 +31,7 @@ const QueryHandlers = [
   GetAdsForSlotHandler,
   GetVendorCampaignsHandler,
   GetAdsAdminHandler,
+  GetSideAdsHandler,
 ];
 
 const Repositories = [
@@ -41,7 +43,7 @@ const Repositories = [
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController],
+  controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,

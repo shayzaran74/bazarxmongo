@@ -13,7 +13,7 @@
     />
 
     <!-- Main Image -->
-    <img
+    <NuxtImg
       v-if="imageSrc"
       :src="imageSrc"
       :alt="alt"
@@ -50,25 +50,36 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+<script setup>
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { decode } from 'blurhash'
 
-interface ImageObject {
-  url: string
-  blurhash?: string
-}
-
-const props = defineProps<{
-  src?: string | ImageObject | null
-  alt?: string
-  loading?: 'lazy' | 'eager'
-  containerClass?: string
-  imageClass?: string
-}>()
+const props = defineProps({
+  src: {
+    type: [String, Object], // Can be URL string or Object { url, blurhash }
+    default: null
+  },
+  alt: {
+    type: String,
+    default: 'Ürün Görseli'
+  },
+  loading: {
+    type: String,
+    default: 'lazy'
+  },
+  containerClass: {
+    type: String,
+    default: ''
+  },
+  imageClass: {
+    type: String,
+    default: ''
+  }
+})
 
 const { resolveImageUrl } = useAppImage()
 const isLoaded = ref(false)
-const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasRef = ref(null)
 
 const imageSrc = computed(() => {
   if (!props.src) return null
@@ -77,11 +88,27 @@ const imageSrc = computed(() => {
 })
 
 const blurhash = computed(() => {
-  if (typeof props.src === 'object' && props.src && 'blurhash' in props.src) {
+  if (typeof props.src === 'object' && props.src?.blurhash) {
     return props.src.blurhash
   }
   return null
 })
+
+const drawBlurhash = () => {
+  if (!blurhash.value || !canvasRef.value) return
+
+  try {
+    const pixels = decode(blurhash.value, 32, 32)
+    const ctx = canvasRef.value.getContext('2d')
+    if (!ctx) return
+    
+    const imageData = ctx.createImageData(32, 32)
+    imageData.data.set(pixels)
+    ctx.putImageData(imageData, 0, 0)
+  } catch (e) {
+    console.warn('Blurhash decode error:', e)
+  }
+}
 
 const onLoad = () => {
   isLoaded.value = true
@@ -92,10 +119,17 @@ const onError = () => {
 }
 
 watch(() => blurhash.value, () => {
-  // blurhash logic removed to avoid dependency issue
+  if (blurhash.value) {
+    nextTick(() => {
+        // Ensure canvas is in DOM
+        drawBlurhash()
+    })
+  }
 }, { immediate: true })
 
 onMounted(() => {
-    // blurhash logic removed
+    if (blurhash.value) {
+        drawBlurhash()
+    }
 })
 </script>

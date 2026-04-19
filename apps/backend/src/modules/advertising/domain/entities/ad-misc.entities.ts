@@ -43,6 +43,8 @@ export interface SideAdProps {
   emoji?: string;
   link?: string;
   order: number;
+  ecosystems: string[];
+  category?: string;
   isActive: boolean;
   createdAt: Date;
 }

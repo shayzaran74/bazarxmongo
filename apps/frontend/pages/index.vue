@@ -1,49 +1,72 @@
 <template>
-  <div class="space-y-12 lg:space-y-24 pb-20">
-    <!-- Main Banner Slider -->
-    <HomeBanner :banners="banners" />
+  <div class="min-h-screen bg-gray-50 relative overflow-x-hidden">
+    <CommonAnnouncementBar page="homepage" />
 
-    <div class="container mx-auto px-4 space-y-24">
-      <!-- Popular Categories -->
-      <HomeCategories :categories="categories" />
+    <div class="py-2 md:py-3" />
 
-      <!-- Featured Selection -->
-      <HomeFeaturedProducts :products="featuredProducts" />
+    <!-- Hero Banner -->
+    <LayoutHomeBanner
+      v-if="settingsStore.homepageSettings.showHomeSlider === 'true'"
+      ecosystem="BAZARX"
+    />
 
-      <!-- Active Campaigns -->
-      <HomeCampaigns :campaigns="campaigns" />
+    <!-- Quick Access Menu -->
+    <HomeQuickMenu :items="quickAccessMenuItems" />
+
+    <!-- Personalized Feed & Quad Cards -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 space-y-4">
+      <LayoutPersonalizedFeed v-if="settingsStore.homepageSettings.showPersonalized === 'true'" />
+      <HomeQuadCards :show="settingsStore.homepageSettings.showQuadCards" />
+    </div>
+
+    <!-- Main Sections -->
+    <div class="space-y-0">
+      <HomeGroupBuy :show="settingsStore.homepageSettings.showGroupBuy" />
+      <HomeSpecialOffers :show="settingsStore.homepageSettings.showSpecialOffers" />
+      <HomeFlashSales :show="settingsStore.homepageSettings.showFlashSales" />
+
+      <!-- Best Sellers Sections (Dynamic Category Highlights) -->
+      <HomeCategoryHighlights />
+
+      <HomeBarterPool :show="settingsStore.homepageSettings.showBarterPool" />
+      <HomePersonalizedProducts :show="settingsStore.homepageSettings.showPersonalizedProducts" />
+      
+      <!-- Middle Banner Slider -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <LayoutMiddleBanner ecosystem="BAZARX" />
+      </div>
+
+      <HomePerformanceShowcase :show="settingsStore.homepageSettings.showPerformance" />
+
+      <HomeAuctions :show="settingsStore.homepageSettings.showAuctions" />
+      <HomeLotteries :show="settingsStore.homepageSettings.showLotteries" />
+      <HomeVendors :show="settingsStore.homepageSettings.showVendors" />
+      <HomeRestaurants :show="settingsStore.homepageSettings.showRestaurants" />
+      <HomeBrands :show="settingsStore.homepageSettings.showBrands" />
+      <HomeNewsletter :show="settingsStore.homepageSettings.showNewsletter" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Banner, Product, Category, Campaign } from '~/types/catalog'
-import type { ApiResponse, PaginatedResponse } from '~/types/api'
+import { useSiteSettingsStore } from '~/stores/siteSettings'
+import { useHomeMenuItems } from '~/composables/useHomeMenu'
 
-definePageMeta({ layout: 'default' })
+const settingsStore = useSiteSettingsStore()
+const quickAccessMenuItems = useHomeMenuItems()
 
-const { $api } = useApi()
+onMounted(async () => {
+  await settingsStore.fetchSettings()
+})
 
-// Parallel data fetching for SSR performance
-const { data: banners } = await useAsyncData('home-banners', async () => {
-  const res = await $api<ApiResponse<Banner[]>>('banners', { query: { ecosystem: 'BAZARX' } })
-  return res.success ? res.data : []
-}, { default: () => [] })
+definePageMeta({
+  layout: 'default'
+})
 
-const { data: featuredProducts } = await useAsyncData('home-featured', async () => {
-  const res = await $api<PaginatedResponse<Product>>('products', { query: { isFeatured: true, limit: 8 } })
-  return res.success ? res.data : []
-}, { default: () => [] })
-
-const { data: campaigns } = await useAsyncData('home-campaigns', async () => {
-  const res = await $api<ApiResponse<Campaign[]>>('campaigns', { query: { status: 'ACTIVE' } })
-  return res.success ? res.data : []
-}, { default: () => [] })
-
-const { data: categories } = await useCategoryTree()
-
-useAppSeo({
-  title: 'Anasayfa',
-  description: 'BarterBorsa — Ticari sektörde fazla malzeme ve stokların takası için modern platform',
+useHead({
+  title: computed(() => settingsStore.siteTitle),
+  meta: [
+    { name: 'description', content: computed(() => settingsStore.siteDescription) }
+  ]
 })
 </script>

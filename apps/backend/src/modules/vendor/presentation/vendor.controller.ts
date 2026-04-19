@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -14,7 +14,7 @@ import { RegisterVendorDto } from '../application/dtos/register-vendor.dto';
 import { ListVendorsQuery } from '../application/queries/list-vendors.query';
 import { GetVendorBySlugQuery } from '../application/queries/get-vendor-by-slug.query';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { Public } from '@barterborsa/shared-security';
+import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 
 @ApiTags('Vendors')
 @Controller('vendors')
@@ -23,6 +23,16 @@ export class VendorController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor orders', description: 'Satıcının kendi siparişlerini listeler.' })
+  @Get('orders')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getVendorOrders(@CurrentUser() user: any, @Query() query: any) {
+    // TODO: vendor scope'unda order query implementasyon
+    return { success: true, data: [], total: 0 }
+  }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Apply for vendor status', description: 'Kullanıcıyı sistemde satıcı (vendor) olarak kaydeder.' })

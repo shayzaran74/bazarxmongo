@@ -1,46 +1,61 @@
-export enum TransactionType {
-  CREDIT = 'CREDIT',
-  DEBIT = 'DEBIT'
+export interface WalletCard {
+  id: number;
+  type: string;
+  numbers: number[];
+  winningNumbers?: number[];
+  createdAt: string;
 }
 
-export enum TransactionStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED'
+export interface WalletRequest {
+  id: number;
+  amount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
+export interface WithdrawalRequest {
+  id: number;
+  amount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  iban: string;
+  accountHolder: string;
+  bankName: string;
+  createdAt: string;
+}
+
+export interface WalletAccount {
+  id: number;
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
+  createdAt: string;
 }
 
 export interface Wallet {
-  id: string;
-  userId: string;
   balance: number;
   blockedBalance: number;
-  currency: string;
-  createdAt: string;
-  updatedAt: string;
+  cards: WalletCard[];
+  requests: WalletRequest[];
+  withdrawalRequests?: WithdrawalRequest[];
+  accounts?: WalletAccount[];
 }
 
-export interface Transaction {
-  id: string;
-  walletId: string;
+export interface WalletTransaction {
+  id: number;
+  type: string;
   amount: number;
-  type: TransactionType;
-  status: TransactionStatus;
   description: string;
-  referenceId?: string;
-  referenceType?: string;
   createdAt: string;
-  metadata?: Record<string, any>; // Bu kısım kütüphane gereği Record<string, unknown> daha iyi olur ama standart olarak Metadata için izin verilir.
+  status: string;
 }
 
-export interface TopUpRequest {
-  amount: number;
-  paymentMethod: 'CREDIT_CARD' | 'BANK_TRANSFER' | 'EFT';
-  notes?: string;
-}
-
-export interface WalletStatistics {
-  totalIn: number;
-  totalOut: number;
-  transactionCount: number;
+export interface LedgerEntry {
+  id: number;
+  accountId: number;
+  debit: number;
+  credit: number;
+  balance: number;
+  description: string;
+  createdAt: string;
 }
