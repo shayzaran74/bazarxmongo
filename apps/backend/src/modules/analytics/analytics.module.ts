@@ -5,6 +5,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@barterborsa/shared-persistence';
 
 import { TrackingController, AnalyticsAdminController, VendorAnalyticsController } from './presentation/analytics.controllers';
+import { AdminDashboardController } from './admin-dashboard.controller';
 
 import { TrackEventHandler } from './application/handlers/track-event.handler';
 import { 
@@ -17,7 +18,12 @@ import { PrismaAnalyticsRepository } from './infrastructure/persistence/prisma-a
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [TrackingController, AnalyticsAdminController, VendorAnalyticsController],
+  controllers: [
+    TrackingController, 
+    AnalyticsAdminController, 
+    VendorAnalyticsController,
+    AdminDashboardController
+  ],
   providers: [
     TrackEventHandler,
     GetDashboardStatsHandler,

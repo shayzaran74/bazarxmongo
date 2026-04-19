@@ -7,6 +7,9 @@ import { PrismaModule } from '@barterborsa/shared-persistence';
 import { HomeBannerController } from './presentation/home-banner.controller';
 import { HelpController } from './presentation/help.controller';
 import { ContentAdminController } from './presentation/content-admin.controller';
+import { HomeQuadCardsController } from './presentation/home-quad-cards.controller';
+import { DynamicContentController } from './presentation/dynamic-content.controller';
+import { LegalController } from './presentation/legal.controller';
 
 import { CreateHomeBannerHandler } from './application/commands/create-home-banner.handler';
 import { CreateQuadCardHandler } from './application/commands/create-quad-card.handler';
@@ -78,7 +81,14 @@ const Repositories = [
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [HomeBannerController, HelpController, ContentAdminController],
+  controllers: [
+    HomeBannerController, 
+    HelpController, 
+    ContentAdminController,
+    HomeQuadCardsController,
+    DynamicContentController,
+    LegalController
+  ],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,

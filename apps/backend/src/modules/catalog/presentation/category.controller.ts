@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -10,11 +10,15 @@ import {
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CreateCategoryDto } from '../application/dtos/create-category.dto';
 import { CreateCategoryCommand } from '../application/commands/create-category.command';
+import { GetCategoryTreeQuery } from '../application/queries/get-category-tree/get-category-tree.query';
 
 @ApiTags('Listings')
 @Controller('categories')
 export class CategoryController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Public()
   @ApiOperation({ summary: 'List all categories', description: 'Sistemdeki tüm ürün kategorilerini hiyerarşik veya liste olarak döner.' })
@@ -29,14 +33,19 @@ export class CategoryController {
   @ApiResponse({ status: 200, description: 'Kategori ağacı.' })
   @Get('tree')
   async getCategoryTree() {
+    const data = await this.queryBus.execute(new GetCategoryTreeQuery());
     return {
       success: true,
-      data: [
-        { id: '1', name: 'Elektronik', slug: 'elektronik', icon: 'heroicons:cpu-chip' },
-        { id: '2', name: 'Ofis Malzemeleri', slug: 'ofis', icon: 'heroicons:briefcase' },
-        { id: '3', name: 'Endüstriyel', slug: 'endustriyel', icon: 'heroicons:building-factory' }
-      ]
+      data
     };
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Get mega menu categories', description: 'Mega menu için optimize edilmiş kategori ağacını döner.' })
+  @ApiResponse({ status: 200, description: 'Mega menu kategorileri.' })
+  @Get('mega-menu')
+  async getMegaMenu() {
+    return this.getCategoryTree();
   }
 
   @ApiBearerAuth()

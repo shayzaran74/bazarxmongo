@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { AddToCartDto } from '../application/dtos/add-to-cart.dto';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, Public } from '@barterborsa/shared-security';
 
 @ApiTags('Cart')
 @ApiBearerAuth()
@@ -38,5 +38,12 @@ export class CartController {
   async getCart(@CurrentUser() user: any) {
     // Query implementation would go here
     return { items: [], total: 0 };
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Get available escrow coupons', description: 'Kullanılabilir emanet kuponlarını listeler.' })
+  @Get('escrow-coupons')
+  async getEscrowCoupons() {
+    return { success: true, data: [] };
   }
 }

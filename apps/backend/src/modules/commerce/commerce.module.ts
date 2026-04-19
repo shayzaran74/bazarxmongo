@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CartController } from './presentation/cart.controller';
 import { CheckoutController } from './presentation/checkout.controller';
+import { PaymentController } from './presentation/payment.controller';
 import { PricingService } from './application/services/pricing.service';
 import { CheckoutService } from './application/services/checkout.service';
 import { CheckoutHandler } from './application/commands/checkout.handler';
@@ -24,7 +25,7 @@ const Repositories = [
     FinancialGatewayModule,
     CatalogModule,
   ],
-  controllers: [CartController, CheckoutController],
+  controllers: [CartController, CheckoutController, PaymentController],
   providers: [
     PricingService,
     CheckoutService,

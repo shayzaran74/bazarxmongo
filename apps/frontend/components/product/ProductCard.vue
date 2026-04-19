@@ -74,7 +74,7 @@
         >
           {{ displayBadges.topRight.text }}
         </div>
-        <FavoriteButton
+        <CommonFavoriteButton
           :product-id="product.catalogProductId || product.id"
           class="!bg-white/90 dark:!bg-gray-900/90 !backdrop-blur-xl !shadow-lg hover:!scale-110 transition-transform"
           @click.stop

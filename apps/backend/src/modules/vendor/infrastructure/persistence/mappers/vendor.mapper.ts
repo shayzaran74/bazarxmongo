@@ -4,13 +4,12 @@ import { Vendor, VendorProps } from '../../../domain/entities/vendor.entity';
 import { VendorSlug } from '../../../domain/value-objects/vendor-slug.vo';
 import { VendorStatus } from '../../../domain/enums/vendor-status.enum';
 import { VendorTier } from '../../../domain/enums/vendor-tier.enum';
-import { isErr } from '@barterborsa/shared-core';
 
 export class VendorMapper {
   public static toDomain(record: any): Vendor {
     const slugResult = VendorSlug.create(record.slug);
-    if (isErr(slugResult)) {
-      throw slugResult.error;
+    if (!slugResult.success) {
+      throw (slugResult as any).error;
     }
 
     const slug = slugResult.data;

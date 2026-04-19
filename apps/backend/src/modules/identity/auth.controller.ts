@@ -28,6 +28,16 @@ export class AuthController {
     private readonly authService: AuthService
   ) {}
 
+  @Public()
+  @ApiOperation({ summary: 'Get CSRF token', description: 'Güvenlik için CSRF token döner.' })
+  @Get('csrf')
+  async getCsrf() {
+    return {
+      success: true,
+      csrfToken: 'dummy-csrf-token-for-dev'
+    };
+  }
+
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })

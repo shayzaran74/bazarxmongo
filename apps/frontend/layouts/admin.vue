@@ -321,8 +321,9 @@ const pageTitle = computed(() => {
 onMounted(async () => {
   await authStore.init()
   if (!authStore.isAuthenticated) {
-    router.push('/login')
-  } else if (!authStore.user?.isAdmin) {
+    router.push('/auth/login')
+  } else if (!authStore.isAdmin) {
+    console.warn('🚫 Admin Layout: Access denied, redirecting to home...', { role: authStore.user?.role })
     router.push('/')
   }
 })

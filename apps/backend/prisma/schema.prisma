@@ -1,8 +1,5 @@
-// apps/backend/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -11,34 +8,32 @@ datasource db {
 }
 
 model User {
-  id                        String                     @id @default(cuid())
-  email                     String                     @unique
-  phoneNumber               String?                    @unique @map("phone_number")
-  password                  String?                    // ← nullable yapıldı (Google OAuth kullanıcıları için)
-  transactionPin            String?                    @map("transaction_pin")
-  role                      UserRole                   @default(USER)
-  status                    UserStatus                 @default(ACTIVE)
-  platform                  Platform                   @default(BAZARX)
-  isEmailVerified           Boolean                    @default(false) @map("is_email_verified")
-  googleId                  String?                    @unique @map("google_id")
-  lockoutUntil              DateTime?                  @map("lockout_until")
-  createdAt                 DateTime                   @default(now()) @map("created_at")
-  updatedAt                 DateTime                   @updatedAt @map("updated_at")
-  deletedAt                 DateTime?                  @map("deleted_at")
-  lastLoginAt               DateTime?                  @map("last_login_at")
-  lastSeenAt                DateTime?                  @map("last_seen_at")
-  referredById              String?                    @map("referred_by_id")
-  
-  // Identity modülüne ait relation'lar
-  profile                   UserProfile?
-  addresses                 UserAddress[]
-  refreshTokens             RefreshToken[]
-  sessions                  Session[]
-  loginHistory              LoginHistory[]
-  verificationTokens        VerificationToken[]
-  ssoTokens                 SSOToken[]
-  referredBy                User?                      @relation("Referrals", fields: [referredById], references: [id])
-  referrals                 User[]                     @relation("Referrals")
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  phoneNumber        String?             @unique @map("phone_number")
+  password           String?
+  transactionPin     String?             @map("transaction_pin")
+  role               UserRole            @default(USER)
+  status             UserStatus          @default(ACTIVE)
+  platform           Platform            @default(BAZARX)
+  isEmailVerified    Boolean             @default(false) @map("is_email_verified")
+  googleId           String?             @unique @map("google_id")
+  lockoutUntil       DateTime?           @map("lockout_until")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  lastLoginAt        DateTime?           @map("last_login_at")
+  lastSeenAt         DateTime?           @map("last_seen_at")
+  referredById       String?             @map("referred_by_id")
+  loginHistory       LoginHistory[]
+  refreshTokens      RefreshToken[]
+  sessions           Session[]
+  ssoTokens          SSOToken[]
+  addresses          UserAddress[]
+  profile            UserProfile?
+  referredBy         User?               @relation("Referrals", fields: [referredById], references: [id])
+  referrals          User[]              @relation("Referrals")
+  verificationTokens VerificationToken[]
 
   @@index([email])
   @@index([phoneNumber])
@@ -48,64 +43,64 @@ model User {
 }
 
 model UserProfile {
-  id          String    @id @default(cuid())
-  userId      String    @unique @map("user_id")
-  firstName   String?   @map("first_name")
-  lastName    String?   @map("last_name")
-  avatar      String?
-  bio         String?
-  birthday    DateTime?
-  gender      String?
-  city        String?
-  district    String?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userId    String    @unique @map("user_id")
+  firstName String?   @map("first_name")
+  lastName  String?   @map("last_name")
+  avatar    String?
+  bio       String?
+  birthday  DateTime?
+  gender    String?
+  city      String?
+  district  String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
 
 model UserAddress {
-  id             String    @id @default(cuid())
-  userId         String    @map("user_id")
-  title          String    // Ev, İş vb.
-  firstName      String    @map("first_name")
-  lastName       String    @map("last_name")
-  email          String?
-  phone          String
-  addressLine1   String    @map("address_line1")
-  addressLine2   String?   @map("address_line2")
-  city           String
-  district       String
-  neighborhood   String?
-  postalCode     String?   @map("postal_code")
-  isDefault      Boolean   @default(false) @map("is_default")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  title        String
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  email        String?
+  phone        String
+  addressLine1 String    @map("address_line1")
+  addressLine2 String?   @map("address_line2")
+  city         String
+  district     String
+  neighborhood String?
+  postalCode   String?   @map("postal_code")
+  isDefault    Boolean   @default(false) @map("is_default")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_addresses")
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
   revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
 
 model Session {
-  id           String    @id @default(cuid())
-  userId       String    @map("user_id")
-  userAgent    String?   @map("user_agent")
-  ipAddress    String?   @map("ip_address")
-  lastActiveAt DateTime  @default(now()) @map("last_active_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -115,8 +110,8 @@ model LoginHistory {
   userId    String   @map("user_id")
   ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")
-  status    String   // SUCCESS, FAILED
-  reason    String?  // Yanlış şifre vb.
+  status    String
+  reason    String?
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -127,7 +122,7 @@ model VerificationToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   token     String   @unique
-  type      String   // EMAIL, PHONE, PASSWORD_RESET
+  type      String
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -138,7 +133,7 @@ model VerificationToken {
 model SSOToken {
   id           String   @id @default(cuid())
   userId       String   @map("user_id")
-  provider     String   // GOOGLE, APPLE vb.
+  provider     String
   providerId   String   @map("provider_id")
   accessToken  String?  @map("access_token")
   refreshToken String?  @map("refresh_token")
@@ -148,66 +143,6 @@ model SSOToken {
   @@unique([provider, providerId])
   @@map("sso_tokens")
 }
-
-enum UserRole {
-  USER
-  VENDOR
-  ADMIN
-  SUPER_ADMIN
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-  BANNED
-  PENDING_VERIFICATION
-}
-
-enum Platform {
-  BAZARX
-  BARTERBORSA
-}
-
-// === VENDOR ENUMS ===
-
-enum VendorStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
-enum VendorTier {
-  CORE
-  PLUS
-  PREMIUM
-  ELITE
-}
-
-enum B2BTier {
-  NONE
-  STARTER
-  GROWTH
-  ENTERPRISE
-}
-
-enum AdStatus {
-  PENDING
-  ACTIVE
-  PAUSED
-  REJECTED
-  EXPIRED
-}
-
-enum PilotCity {
-  ISTANBUL
-  ANKARA
-  IZMIR
-  HATAY
-}
-
-// === COMPANY ===
 
 model Company {
   id                  String        @id @default(cuid())
@@ -234,10 +169,10 @@ model Company {
   deletedAt           DateTime?     @map("deleted_at")
   companyUsers        CompanyUser[]
   subscription        Subscription?
-  vendor              Vendor?
   surplusItems        SurplusItem[]
   givenOffers         TradeOffer[]  @relation("GivenOffers")
   receivedOffers      TradeOffer[]  @relation("ReceivedOffers")
+  vendor              Vendor?
   wantedItems         WantedItem[]
 
   @@index([taxNumber])
@@ -255,50 +190,44 @@ model CompanyUser {
   @@map("company_users")
 }
 
-// === VENDOR ===
-
 model Vendor {
-  id               String          @id @default(cuid())
-  status           VendorStatus    @default(PENDING)
-  companyId        String          @unique @map("company_id")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  ecosystemId      String?         @map("ecosystem_id")
-  isVerified       Boolean         @default(false) @map("is_verified")
-  lastAuditAt      DateTime?       @map("last_audit_at")
-  membershipTierId String?         @map("membership_tier_id")
-  rejectionReason  String?         @map("rejection_reason")
-  slug             String          @unique
-  suspensionReason String?         @map("suspension_reason")
-  tier             VendorTier      @default(CORE)
-  updatedAt        DateTime        @updatedAt @map("updated_at")
-  userId           String          @unique @map("user_id")
-  verifiedAt       DateTime?       @map("verified_at")
-  // Vendor modülü içi relation'lar
-  categories       VendorCategory[]
-  bankAccounts     VendorBankAccount[]
-  banners          VendorBanner[]
-  company          Company         @relation(fields: [companyId], references: [id])
-  b2bData          VendorB2BData?
-  financials       VendorFinancials?
-  followers        VendorFollower[]
-  metrics          VendorMetrics?
-  profile          VendorProfile?
-  settings         VendorSettings?
-  stats            VendorStats?
-  // Ecosystem relation'ları
-  brandEcosystem   BrandEcosystem? @relation("EcosystemOwner")
-  memberOfEcosystem BrandEcosystem? @relation("EcosystemMembers", fields: [ecosystemId], references: [id])
-  // Catalog & Inventory relation'ları
-  listings         Listing[]
-  inventoryLogs    InventoryLog[]
-  purchaseOrders   PurchaseOrder[]
-  transfers        Transfer[]
-  warehouses       Warehouse[]
-  brands           Brand[]
-  // Commerce relation'ları
-  orders            Order[]
-  disputes          Dispute[]
+  id                String              @id @default(cuid())
+  status            VendorStatus        @default(PENDING)
+  companyId         String              @unique @map("company_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  ecosystemId       String?             @map("ecosystem_id")
+  isVerified        Boolean             @default(false) @map("is_verified")
+  lastAuditAt       DateTime?           @map("last_audit_at")
+  membershipTierId  String?             @map("membership_tier_id")
+  rejectionReason   String?             @map("rejection_reason")
+  slug              String              @unique
+  suspensionReason  String?             @map("suspension_reason")
+  tier              VendorTier          @default(CORE)
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  userId            String              @unique @map("user_id")
+  verifiedAt        DateTime?           @map("verified_at")
   adCampaigns       AdCampaign[]
+  brandEcosystem    BrandEcosystem?     @relation("EcosystemOwner")
+  brands            Brand[]
+  disputes          Dispute[]
+  inventoryLogs     InventoryLog[]
+  listings          Listing[]
+  orders            Order[]
+  purchaseOrders    PurchaseOrder[]
+  transfers         Transfer[]
+  b2bData           VendorB2BData?
+  bankAccounts      VendorBankAccount[]
+  banners           VendorBanner[]
+  categories        VendorCategory[]
+  financials        VendorFinancials?
+  followers         VendorFollower[]
+  metrics           VendorMetrics?
+  profile           VendorProfile?
+  settings          VendorSettings?
+  stats             VendorStats?
+  company           Company             @relation(fields: [companyId], references: [id])
+  memberOfEcosystem BrandEcosystem?     @relation("EcosystemMembers", fields: [ecosystemId], references: [id])
+  warehouses        Warehouse[]
 
   @@index([status])
   @@index([tier])
@@ -452,29 +381,29 @@ model VendorCategory {
   categoryId String   @map("category_id")
   createdAt  DateTime @default(now()) @map("created_at")
   vendorId   String   @map("vendor_id")
-  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   category   Category @relation(fields: [categoryId], references: [id])
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@id([vendorId, categoryId])
   @@map("vendor_categories")
 }
 
 model BrandEcosystem {
-  id               String    @id @default(cuid())
-  name             String    @unique
-  slug             String    @unique
+  id               String              @id @default(cuid())
+  name             String              @unique
+  slug             String              @unique
   description      String?
-  status           String    @default("ACTIVE")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  internalCommRate Decimal   @default(4.0) @map("internal_comm_rate") @db.Decimal(5, 2)
-  isBlindPool      Boolean   @default(true) @map("is_blind_pool")
-  logoUrl          String?   @map("logo_url")
-  ownerId          String    @unique @map("owner_id")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  owner            Vendor    @relation("EcosystemOwner", fields: [ownerId], references: [id])
+  status           String              @default("ACTIVE")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  internalCommRate Decimal             @default(4.0) @map("internal_comm_rate") @db.Decimal(5, 2)
+  isBlindPool      Boolean             @default(true) @map("is_blind_pool")
+  logoUrl          String?             @map("logo_url")
+  ownerId          String              @unique @map("owner_id")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  owner            Vendor              @relation("EcosystemOwner", fields: [ownerId], references: [id])
   auditLogs        EcosystemAuditLog[]
-  members          Vendor[]  @relation("EcosystemMembers")
   listings         Listing[]
+  members          Vendor[]            @relation("EcosystemMembers")
 
   @@map("brand_ecosystems")
 }
@@ -514,73 +443,6 @@ model Subscription {
 
   @@map("subscriptions")
 }
-// === CATALOG ENUMS ===
-
-enum ListingStatus {
-  DRAFT
-  ACTIVE
-  INACTIVE
-  OUT_OF_STOCK
-  SUSPENDED
-  REJECTED
-  ARCHIVED
-}
-
-enum ListingVisibility {
-  PUBLIC
-  PRIVATE
-  ECOSYSTEM_ONLY
-  B2B_ONLY
-}
-
-enum ProductCondition {
-  NEW
-  LIKE_NEW
-  GOOD
-  FAIR
-  REFURBISHED
-}
-
-enum BrandStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
-enum CategoryType {
-  GENERAL
-  BARTER
-  RESTAURANT
-  SERVICE
-}
-
-enum CampaignType {
-  PERCENTAGE
-  FIXED_AMOUNT
-  FREE_SHIPPING
-  BUY_X_GET_Y
-}
-
-// === INVENTORY ENUMS ===
-
-enum PurchaseOrderStatus {
-  Draft
-  Ordered
-  PartiallyReceived
-  Received
-  Cancelled
-}
-
-enum TransferStatus {
-  Pending
-  InTransit
-  PartiallyReceived
-  Completed
-  Cancelled
-}
-
-// === CATALOG TABLES ===
 
 model CatalogModel {
   id          String           @id @default(uuid())
@@ -602,35 +464,35 @@ model CatalogModel {
 }
 
 model CatalogProduct {
-  id             String           @id @default(uuid())
-  gtin           String?          @unique
+  id             String         @id @default(uuid())
+  gtin           String?        @unique
   name           String
-  slug           String           @unique
+  slug           String         @unique
   brand          String
   description    String
   specs          Json?
-  categoryId     String?          @map("category_id")
-  productTypeId  String?          @map("product_type_id")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  rating         Decimal          @default(0) @db.Decimal(3, 2)
-  isFeatured     Boolean          @default(false) @map("is_featured")
-  modelId        String?          @map("model_id")
+  categoryId     String?        @map("category_id")
+  productTypeId  String?        @map("product_type_id")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  rating         Decimal        @default(0) @db.Decimal(3, 2)
+  isFeatured     Boolean        @default(false) @map("is_featured")
+  modelId        String?        @map("model_id")
   attributes     Json?
   metadata       Json?
-  sourceUrl      String?          @map("source_url")
-  scrapedAt      DateTime?        @map("scraped_at")
-  isFlashSale    Boolean          @default(false) @map("is_flash_sale")
-  status         String           @default("ACTIVE")
-  isSpecialOffer Boolean          @default(false) @map("is_special_offer")
-  category       Category?        @relation(fields: [categoryId], references: [id])
-  catalogModel   CatalogModel?    @relation(fields: [modelId], references: [id])
-  productType    ProductType?     @relation(fields: [productTypeId], references: [id])
+  sourceUrl      String?        @map("source_url")
+  scrapedAt      DateTime?      @map("scraped_at")
+  isFlashSale    Boolean        @default(false) @map("is_flash_sale")
+  status         String         @default("ACTIVE")
+  isSpecialOffer Boolean        @default(false) @map("is_special_offer")
+  category       Category?      @relation(fields: [categoryId], references: [id])
+  catalogModel   CatalogModel?  @relation(fields: [modelId], references: [id])
+  productType    ProductType?   @relation(fields: [productTypeId], references: [id])
   favorites      Favorite[]
   listings       Listing[]
   media          ProductMedia[]
   reviews        Review[]
-  brands         Brand[]          @relation("BrandToCatalogProduct")
+  brands         Brand[]        @relation("BrandToCatalogProduct")
 
   @@map("catalog_products")
 }
@@ -674,32 +536,32 @@ model Category {
 }
 
 model Brand {
-  id                        String           @id @default(cuid())
-  name                      String           @unique
-  slug                      String           @unique
-  icon                      String?
-  image                     String?
-  order                     Int              @default(0)
-  aliases                   String[]         @default([])
-  description               String?
-  status                    BrandStatus      @default(PENDING)
-  isOfficial                Boolean          @default(false) @map("is_official")
-  isPopular                 Boolean          @default(false) @map("is_popular")
-  popularityScore           Int              @default(0) @map("popularity_score")
-  productCount              Int              @default(0) @map("product_count")
-  violationCount            Int              @default(0) @map("violation_count")
-  approvedAt                DateTime?        @map("approved_at")
-  rejectedAt                DateTime?        @map("rejected_at")
-  rejectionReason           String?          @map("rejection_reason")
-  reviewedBy                String?          @map("reviewed_by")
-  submittedAt               DateTime?        @map("submitted_at")
-  createdAt                 DateTime         @default(now()) @map("created_at")
-  updatedAt                 DateTime         @updatedAt @map("updated_at")
-  vendorId                  String?          @map("vendor_id")
-  blurhash                  String?
-  violations                BrandViolation[]
-  vendor                    Vendor?          @relation(fields: [vendorId], references: [id])
-  catalog_products          CatalogProduct[] @relation("BrandToCatalogProduct")
+  id               String           @id @default(cuid())
+  name             String           @unique
+  slug             String           @unique
+  icon             String?
+  image            String?
+  order            Int              @default(0)
+  aliases          String[]         @default([])
+  description      String?
+  status           BrandStatus      @default(PENDING)
+  isOfficial       Boolean          @default(false) @map("is_official")
+  isPopular        Boolean          @default(false) @map("is_popular")
+  popularityScore  Int              @default(0) @map("popularity_score")
+  productCount     Int              @default(0) @map("product_count")
+  violationCount   Int              @default(0) @map("violation_count")
+  approvedAt       DateTime?        @map("approved_at")
+  rejectedAt       DateTime?        @map("rejected_at")
+  rejectionReason  String?          @map("rejection_reason")
+  reviewedBy       String?          @map("reviewed_by")
+  submittedAt      DateTime?        @map("submitted_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  vendorId         String?          @map("vendor_id")
+  blurhash         String?
+  violations       BrandViolation[]
+  vendor           Vendor?          @relation(fields: [vendorId], references: [id])
+  catalog_products CatalogProduct[] @relation("BrandToCatalogProduct")
 
   @@map("brands")
 }
@@ -743,74 +605,73 @@ model ProductType {
 }
 
 model Listing {
-  id                   String              @id @default(cuid())
-  vendorId             String              @map("vendor_id")
-  catalogProductId     String              @map("catalog_product_id")
+  id                   String                @id @default(cuid())
+  vendorId             String                @map("vendor_id")
+  catalogProductId     String                @map("catalog_product_id")
   title                String
   description          String?
-  price                Decimal             @db.Decimal(18, 2)
-  stock                Int                 @default(0)
-  status               ListingStatus       @default(ACTIVE)
-  visibility           ListingVisibility   @default(PUBLIC)
-  isPromoted           Boolean             @default(false) @map("is_promoted")
-  promotedPrice        Decimal?            @map("promoted_price") @db.Decimal(18, 2)
-  createdAt            DateTime            @default(now()) @map("created_at")
-  updatedAt            DateTime            @updatedAt @map("updated_at")
-  originalPrice        Decimal?            @map("original_price") @db.Decimal(18, 2)
-  condition            ProductCondition    @default(NEW)
-  wholesalePrice       Decimal?            @map("wholesale_price") @db.Decimal(18, 2)
-  minWholesaleQty      Int?                @map("min_wholesale_qty")
+  price                Decimal               @db.Decimal(18, 2)
+  stock                Int                   @default(0)
+  status               ListingStatus         @default(ACTIVE)
+  visibility           ListingVisibility     @default(PUBLIC)
+  isPromoted           Boolean               @default(false) @map("is_promoted")
+  promotedPrice        Decimal?              @map("promoted_price") @db.Decimal(18, 2)
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  originalPrice        Decimal?              @map("original_price") @db.Decimal(18, 2)
+  condition            ProductCondition      @default(NEW)
+  wholesalePrice       Decimal?              @map("wholesale_price") @db.Decimal(18, 2)
+  minWholesaleQty      Int?                  @map("min_wholesale_qty")
   sku                  String?
-  isDigital            Boolean             @default(false) @map("is_digital")
-  isB2BOnly            Boolean             @default(false) @map("is_b2b_only")
-  b2bDiscount          Decimal?            @map("b2b_discount") @db.Decimal(5, 2)
-  shippingTemplateId   String?             @map("shipping_template_id")
-  tags                 String[]            @default([])
-  isFeatured           Boolean             @default(false) @map("is_featured")
-  featuredUntil        DateTime?           @map("featured_until")
-  slug                 String?             @unique
-  listingType          String              @default("SELL") @map("listing_type")
-  isAuctionEnabled     Boolean             @default(false) @map("is_auction_enabled")
-  isLotteryEnabled     Boolean             @default(false) @map("is_lottery_enabled")
-  lastStatusChangedAt  DateTime?           @map("last_status_changed_at")
-  rejectionReason      String?             @map("rejection_reason")
-  isSpecialOffer       Boolean             @default(false) @map("is_special_offer")
-  isFlashSale          Boolean             @default(false) @map("is_flash_sale")
-  minMarketPrice       Decimal?            @map("min_market_price") @db.Decimal(18, 2)
-  maxPurchasePerMember Int                 @default(100) @map("max_purchase_per_member")
-  ecosystemId          String?             @map("ecosystem_id")
-  variantOptions       Json?               @map("variant_options")
-  integrationCode      String?             @map("integration_code")
-  isActive             Boolean             @default(true) @map("is_active")
-  commissionRate       Decimal?            @map("commission_rate") @db.Decimal(5, 2)
+  isDigital            Boolean               @default(false) @map("is_digital")
+  isB2BOnly            Boolean               @default(false) @map("is_b2b_only")
+  b2bDiscount          Decimal?              @map("b2b_discount") @db.Decimal(5, 2)
+  shippingTemplateId   String?               @map("shipping_template_id")
+  tags                 String[]              @default([])
+  isFeatured           Boolean               @default(false) @map("is_featured")
+  featuredUntil        DateTime?             @map("featured_until")
+  slug                 String?               @unique
+  listingType          String                @default("SELL") @map("listing_type")
+  isAuctionEnabled     Boolean               @default(false) @map("is_auction_enabled")
+  isLotteryEnabled     Boolean               @default(false) @map("is_lottery_enabled")
+  lastStatusChangedAt  DateTime?             @map("last_status_changed_at")
+  rejectionReason      String?               @map("rejection_reason")
+  isSpecialOffer       Boolean               @default(false) @map("is_special_offer")
+  isFlashSale          Boolean               @default(false) @map("is_flash_sale")
+  minMarketPrice       Decimal?              @map("min_market_price") @db.Decimal(18, 2)
+  maxPurchasePerMember Int                   @default(100) @map("max_purchase_per_member")
+  ecosystemId          String?               @map("ecosystem_id")
+  variantOptions       Json?                 @map("variant_options")
+  integrationCode      String?               @map("integration_code")
+  isActive             Boolean               @default(true) @map("is_active")
+  commissionRate       Decimal?              @map("commission_rate") @db.Decimal(5, 2)
   metadata             Json?
-  weight               Decimal             @default(0) @db.Decimal(10, 3)
-  volume               Decimal             @default(0) @db.Decimal(10, 3)
+  weight               Decimal               @default(0) @db.Decimal(10, 3)
+  volume               Decimal               @default(0) @db.Decimal(10, 3)
   variants             Json?
-  availableQuantity    Int                 @default(0) @map("available_quantity")
-  reservedQuantity     Int                 @default(0) @map("reserved_quantity")
-  isSponsored          Boolean             @default(false) @map("is_sponsored")
-  lowStockThreshold    Int                 @default(5) @map("low_stock_threshold")
-  sponsorBudget        Decimal?            @default(0) @map("sponsor_budget") @db.Decimal(18, 2)
-  // Relations
-  catalogProduct       CatalogProduct      @relation(fields: [catalogProductId], references: [id])
-  ecosystem            BrandEcosystem?     @relation(fields: [ecosystemId], references: [id])
-  vendor               Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  availableQuantity    Int                   @default(0) @map("available_quantity")
+  reservedQuantity     Int                   @default(0) @map("reserved_quantity")
+  isSponsored          Boolean               @default(false) @map("is_sponsored")
+  lowStockThreshold    Int                   @default(5) @map("low_stock_threshold")
+  sponsorBudget        Decimal?              @default(0) @map("sponsor_budget") @db.Decimal(18, 2)
+  adCampaigns          AdCampaignProduct[]
+  auctions             Auction[]
+  cartItems            CartItem[]
+  collectionProducts   CollectionProduct[]
+  inventoryLogs        InventoryLog[]
+  analytics            ListingAnalytic[]
   images               ListingImage[]
   priceHistory         ListingPriceHistory[]
   stats                ListingStats?
-  inventoryLogs        InventoryLog[]
-  stocks               Stock[]
-  purchaseOrderItems   PurchaseOrderItem[]
-  transferItems        TransferItem[]
-  cartItems            CartItem[]
-  orderItems           OrderItem[]
-  collectionProducts   CollectionProduct[]
-  analytics            ListingAnalytic[]
-  campaigns            Campaign[]          @relation("CampaignListings")
-  auctions             Auction[]
+  catalogProduct       CatalogProduct        @relation(fields: [catalogProductId], references: [id])
+  ecosystem            BrandEcosystem?       @relation(fields: [ecosystemId], references: [id])
+  vendor               Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   lotteries            Lottery[]
-  adCampaigns          AdCampaignProduct[]
+  orderItems           OrderItem[]
+  purchaseOrderItems   PurchaseOrderItem[]
+  stocks               Stock[]
+  transferItems        TransferItem[]
+  campaigns            Campaign[]            @relation("CampaignListings")
 
   @@index([vendorId])
   @@index([catalogProductId])
@@ -913,23 +774,23 @@ model Favorite {
 }
 
 model CategoryAttribute {
-  id           String    @id @default(cuid())
-  name         String
-  label        String
-  type         String
-  options      Json?
-  unit         String?
-  placeholder  String?
-  order        Int       @default(0)
-  categoryId   String?   @map("category_id")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  isActive     Boolean   @default(true) @map("is_active")
-  isFilterable Boolean   @default(true) @map("is_filterable")
-  isRequired   Boolean   @default(false) @map("is_required")
-  isVariant    Boolean   @default(false) @map("is_variant")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  category     Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  surplusCategoryId String?   @map("surplus_category_id")
+  id                String           @id @default(cuid())
+  name              String
+  label             String
+  type              String
+  options           Json?
+  unit              String?
+  placeholder       String?
+  order             Int              @default(0)
+  categoryId        String?          @map("category_id")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  isActive          Boolean          @default(true) @map("is_active")
+  isFilterable      Boolean          @default(true) @map("is_filterable")
+  isRequired        Boolean          @default(false) @map("is_required")
+  isVariant         Boolean          @default(false) @map("is_variant")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  surplusCategoryId String?          @map("surplus_category_id")
+  category          Category?        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   surplusCategory   SurplusCategory? @relation(fields: [surplusCategoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
@@ -964,48 +825,46 @@ model CollectionProduct {
 }
 
 model Campaign {
-  id           String       @id @default(cuid())
-  name         String
-  description  String?
-  type         CampaignType
+  id            String       @id @default(cuid())
+  name          String
+  description   String?
+  type          CampaignType
   discountValue Decimal      @map("discount_value") @db.Decimal(10, 2)
-  startDate    DateTime     @map("start_date")
-  endDate      DateTime?    @map("end_date")
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  listings     Listing[]    @relation("CampaignListings")
+  startDate     DateTime     @map("start_date")
+  endDate       DateTime?    @map("end_date")
+  isActive      Boolean      @default(true) @map("is_active")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  listings      Listing[]    @relation("CampaignListings")
 
   @@map("campaigns")
 }
 
 model GroupBuy {
-  id               String   @id @default(cuid())
-  listingId        String?  @map("listing_id")
-  targetQuantity   Int      @map("target_quantity")
-  currentQuantity  Int      @default(0) @map("current_quantity")
-  price            Decimal  @db.Decimal(18, 2)
-  endDate          DateTime @map("end_date")
-  status           String   @default("ACTIVE")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id              String   @id @default(cuid())
+  listingId       String?  @map("listing_id")
+  targetQuantity  Int      @map("target_quantity")
+  currentQuantity Int      @default(0) @map("current_quantity")
+  price           Decimal  @db.Decimal(18, 2)
+  endDate         DateTime @map("end_date")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("group_buys")
 }
 
-// === INVENTORY TABLES ===
-
 model Warehouse {
-  id          String   @id @default(cuid())
-  vendorId    String   @map("vendor_id")
-  name        String
-  address     String?
-  city        String?
-  isDefault   Boolean  @default(false) @map("is_default")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  stocks      Stock[]
+  id        String   @id @default(cuid())
+  vendorId  String   @map("vendor_id")
+  name      String
+  address   String?
+  city      String?
+  isDefault Boolean  @default(false) @map("is_default")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  stocks    Stock[]
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@index([vendorId])
   @@map("warehouses")
@@ -1018,9 +877,9 @@ model Stock {
   quantity         Int                @default(0)
   reservedQuantity Int                @default(0) @map("reserved_quantity")
   updatedAt        DateTime           @updatedAt @map("updated_at")
+  reservations     StockReservation[]
   listing          Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
   warehouse        Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  reservations     StockReservation[]
 
   @@unique([listingId, warehouseId])
   @@map("stocks")
@@ -1041,17 +900,17 @@ model StockReservation {
 }
 
 model PurchaseOrder {
-  id            String              @id @default(cuid())
-  vendorId      String              @map("vendor_id")
-  supplierName  String?             @map("supplier_name")
-  status        PurchaseOrderStatus @default(Draft)
-  totalAmount   Decimal?            @map("total_amount") @db.Decimal(18, 2)
-  orderedAt     DateTime?           @map("ordered_at")
-  receivedAt    DateTime?           @map("received_at")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  vendor        Vendor              @relation(fields: [vendorId], references: [id])
-  items         PurchaseOrderItem[]
+  id           String              @id @default(cuid())
+  vendorId     String              @map("vendor_id")
+  supplierName String?             @map("supplier_name")
+  status       PurchaseOrderStatus @default(Draft)
+  totalAmount  Decimal?            @map("total_amount") @db.Decimal(18, 2)
+  orderedAt    DateTime?           @map("ordered_at")
+  receivedAt   DateTime?           @map("received_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  items        PurchaseOrderItem[]
+  vendor       Vendor              @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])
   @@map("purchase_orders")
@@ -1064,23 +923,23 @@ model PurchaseOrderItem {
   quantity        Int
   receivedQty     Int           @default(0) @map("received_qty")
   unitPrice       Decimal?      @map("unit_price") @db.Decimal(18, 2)
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   listing         Listing       @relation(fields: [listingId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@map("purchase_order_items")
 }
 
 model Transfer {
-  id               String         @id @default(cuid())
-  vendorId         String         @map("vendor_id")
-  fromWarehouseId  String         @map("from_warehouse_id")
-  toWarehouseId    String         @map("to_warehouse_id")
-  status           TransferStatus @default(Pending)
-  notes            String?
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
-  vendor           Vendor         @relation(fields: [vendorId], references: [id])
-  items            TransferItem[]
+  id              String         @id @default(cuid())
+  vendorId        String         @map("vendor_id")
+  fromWarehouseId String         @map("from_warehouse_id")
+  toWarehouseId   String         @map("to_warehouse_id")
+  status          TransferStatus @default(Pending)
+  notes           String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  items           TransferItem[]
+  vendor          Vendor         @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])
   @@map("transfers")
@@ -1091,8 +950,8 @@ model TransferItem {
   transferId String   @map("transfer_id")
   listingId  String   @map("listing_id")
   quantity   Int
-  transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
   listing    Listing  @relation(fields: [listingId], references: [id])
+  transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 
   @@map("transfer_items")
 }
@@ -1102,58 +961,17 @@ model InventoryLog {
   vendorId      String   @map("vendor_id")
   listingId     String   @map("listing_id")
   quantity      Int
-  type          String // IN, OUT, ADJUST
-  referenceType String? // ORDER, PURCHASE_ORDER, TRANSFER, MANUAL
+  type          String
+  referenceType String?
   referenceId   String?
   createdAt     DateTime @default(now()) @map("created_at")
-  vendor        Vendor   @relation(fields: [vendorId], references: [id])
   listing       Listing  @relation(fields: [listingId], references: [id])
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])
   @@index([listingId])
   @@map("inventory_logs")
 }
-// === COMMERCE ENUMS ===
-
-enum OrderStatus {
-  PENDING
-  PAID
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  COMPLETED
-  CANCELLED
-  REFUNDED
-  PARTIALLY_REFUNDED
-}
-
-enum DisputeStatus {
-  OPEN
-  UNDER_REVIEW
-  RESOLVED
-  CANCELLED
-}
-
-enum PaymentMethod {
-  IYZICO
-  BANK_TRANSFER
-  WALLET
-  BARTER
-  GIFT_CARD
-  MIXED
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-  CANCELLED
-  PARTIALLY_REFUNDED
-}
-
-// === COMMERCE TABLES ===
 
 model Order {
   id                String               @id @default(cuid())
@@ -1188,7 +1006,6 @@ model Order {
   escrowReleaseAt   DateTime?            @map("escrow_release_at")
   payoutEligibleAt  DateTime?            @map("payout_eligible_at")
   shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(18, 2)
-  // Relations
   dispute           Dispute?
   orderItems        OrderItem[]
   returns           OrderReturn[]
@@ -1293,123 +1110,6 @@ model Dispute {
   @@map("disputes")
 }
 
-// === BARTER ENUMS ===
-
-enum SurplusStatus {
-  PENDING_APPROVAL
-  ACTIVE
-  RESERVED
-  TRADED
-  EXPIRED
-  DEACTIVATED
-}
-
-enum WantedItemStatus {
-  PENDING
-  ACTIVE
-  MATCHED
-  FULFILLED
-  EXPIRED
-}
-
-enum WantedItemType {
-  PRODUCT
-  SERVICE
-  MATERIAL
-}
-
-enum TradeOfferStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  COUNTER_OFFERED
-  EXPIRED
-  CANCELLED
-  COMPLETED
-  LEGAL_PENDING
-}
-
-enum SwapSessionStatus {
-  PENDING_COLLATERAL
-  ACTIVE
-  SHIPPING
-  PARTIALLY_COMPLETED
-  COMPLETED
-  CANCELLED
-  DISPUTED
-  TIMEOUT
-}
-
-enum BarterPartStatus {
-  PENDING
-  SHIPPED
-  DELIVERED
-  CONFIRMED
-  DISPUTED
-}
-
-enum DemandMatchStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  EXPIRED
-}
-
-enum DemandMatchType {
-  SURPLUS_TO_WANTED
-  WANTED_TO_SURPLUS
-  SURPLUS_TO_SURPLUS
-}
-
-enum TradeChainStatus {
-  DRAFT
-  PROPOSED
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum ArbitratorType {
-  INTERNAL
-  EXTERNAL
-}
-
-enum ListingType {
-  BUY
-  SELL
-  BARTER
-  BOTH
-}
-
-// === AUCTION ENUMS ===
-
-enum AuctionStatus {
-  SCHEDULED
-  ACTIVE
-  ENDED
-  COMPLETED
-  CANCELLED
-}
-
-enum ParticipationStatus {
-  PENDING
-  APPROVED
-  DEPOSIT_HELD
-  ACTIVE
-  WON
-  LOST
-  REFUNDED
-}
-
-enum LotteryStatus {
-  ACTIVE
-  ENDED
-  DRAWN
-  CANCELLED
-}
-
-// === BARTER TABLES ===
-
 model SurplusCategory {
   id          String              @id @default(cuid())
   name        String              @unique
@@ -1431,35 +1131,35 @@ model SurplusCategory {
 }
 
 model SurplusItem {
-  id                String                 @id @default(cuid())
-  companyId         String                 @map("company_id")
+  id                String        @id @default(cuid())
+  companyId         String        @map("company_id")
   title             String
   description       String?
   category          String
-  materialType      String?                @map("material_type")
-  quantity          Decimal                @db.Decimal(18, 2)
-  blockedQuantity   Decimal                @default(0) @map("blocked_quantity") @db.Decimal(18, 2)
+  materialType      String?       @map("material_type")
+  quantity          Decimal       @db.Decimal(18, 2)
+  blockedQuantity   Decimal       @default(0) @map("blocked_quantity") @db.Decimal(18, 2)
   unit              String
-  minTradeQuantity  Decimal?               @map("min_trade_quantity") @db.Decimal(18, 2)
-  unitPrice         Decimal?               @map("unit_price") @db.Decimal(18, 2)
-  wantedCategories  Json?                  @map("wanted_categories")
-  tradeModes        Json?                  @map("trade_modes")
-  technicalSpecs    Json?                  @map("technical_specs")
+  minTradeQuantity  Decimal?      @map("min_trade_quantity") @db.Decimal(18, 2)
+  unitPrice         Decimal?      @map("unit_price") @db.Decimal(18, 2)
+  wantedCategories  Json?         @map("wanted_categories")
+  tradeModes        Json?         @map("trade_modes")
+  technicalSpecs    Json?         @map("technical_specs")
   images            Json?
   location          String?
-  city              PilotCity?             @map("city")
-  status            SurplusStatus          @default(PENDING_APPROVAL)
-  reactivationCount Int                    @default(0) @map("reactivation_count")
-  lastReactivatedAt DateTime?              @map("last_reactivated_at")
-  createdAt         DateTime               @default(now()) @map("created_at")
-  updatedAt         DateTime               @updatedAt @map("updated_at")
+  city              PilotCity?    @map("city")
+  status            SurplusStatus @default(PENDING_APPROVAL)
+  reactivationCount Int           @default(0) @map("reactivation_count")
+  lastReactivatedAt DateTime?     @map("last_reactivated_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
   latitude          Float?
   longitude         Float?
   metadata          Json?
   demandMatches     DemandMatch[]
-  company           Company                @relation(fields: [companyId], references: [id])
-  givenOffers       TradeOffer[]           @relation("OfferedItemOffers")
-  offers            TradeOffer[]           @relation("RequestedItemOffers")
+  company           Company       @relation(fields: [companyId], references: [id])
+  givenOffers       TradeOffer[]  @relation("OfferedItemOffers")
+  offers            TradeOffer[]  @relation("RequestedItemOffers")
 
   @@index([city])
   @@index([city, status])
@@ -1467,26 +1167,26 @@ model SurplusItem {
 }
 
 model WantedItem {
-  id              String                 @id @default(cuid())
+  id              String           @id @default(cuid())
   keywords        String[]
   description     String?
   latitude        Float?
   longitude       Float?
-  categoryId      String                 @map("category_id")
-  companyId       String?                @map("company_id")
-  createdAt       DateTime               @default(now()) @map("created_at")
-  isActive        Boolean                @default(true) @map("is_active")
-  listingType     ListingType            @default(BUY) @map("listing_type")
-  maxPrice        Decimal?               @map("max_price") @db.Decimal(18, 2)
-  minPrice        Decimal?               @map("min_price") @db.Decimal(18, 2)
-  updatedAt       DateTime               @updatedAt @map("updated_at")
-  userId          String?                @map("user_id")
-  status          WantedItemStatus       @default(PENDING)
-  type            WantedItemType         @default(PRODUCT)
-  matchesAsBuyer  DemandMatch[]          @relation("BuyerMatch")
-  matchesAsSeller DemandMatch[]          @relation("SellerMatch")
-  category        SurplusCategory        @relation(fields: [categoryId], references: [id])
-  company         Company?               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId      String           @map("category_id")
+  companyId       String?          @map("company_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  isActive        Boolean          @default(true) @map("is_active")
+  listingType     ListingType      @default(BUY) @map("listing_type")
+  maxPrice        Decimal?         @map("max_price") @db.Decimal(18, 2)
+  minPrice        Decimal?         @map("min_price") @db.Decimal(18, 2)
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  userId          String?          @map("user_id")
+  status          WantedItemStatus @default(PENDING)
+  type            WantedItemType   @default(PRODUCT)
+  matchesAsBuyer  DemandMatch[]    @relation("BuyerMatch")
+  matchesAsSeller DemandMatch[]    @relation("SellerMatch")
+  category        SurplusCategory  @relation(fields: [categoryId], references: [id])
+  company         Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([userId])
@@ -1518,56 +1218,56 @@ model DemandMatch {
 }
 
 model TradeOffer {
-  id                String              @id @default(cuid())
-  fromCompanyId     String?             @map("from_company_id")
-  toCompanyId       String?             @map("to_company_id")
-  offeredItemId     String?             @map("offered_item_id")
-  requestedItemId   String?             @map("requested_item_id")
+  id                String           @id @default(cuid())
+  fromCompanyId     String?          @map("from_company_id")
+  toCompanyId       String?          @map("to_company_id")
+  offeredItemId     String?          @map("offered_item_id")
+  requestedItemId   String?          @map("requested_item_id")
   message           String?
-  status            TradeOfferStatus    @default(PENDING)
-  chainId           String?             @map("chain_id")
-  parentOfferId     String?             @map("parent_offer_id")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  legalAcceptedAt   DateTime?           @map("legal_accepted_at")
-  downPaymentHoldId String?             @unique @map("down_payment_hold_id")
-  acceptedAt        DateTime?           @map("accepted_at")
-  cancelledAt       DateTime?           @map("cancelled_at")
-  cashAmount        Decimal             @map("cash_amount") @db.Decimal(18, 2)
-  cashDirection     String              @map("cash_direction")
-  cashCurrency      String              @map("currency")
-  completedAt       DateTime?           @map("completed_at")
-  counterOfferId    String?             @map("counter_offer_id")
-  expiresAt         DateTime            @map("expires_at")
-  initiatorId       String              @map("initiator_id")
-  initiatorType     String              @map("initiator_type")
-  receiverId        String              @map("receiver_id")
-  receiverType      String              @map("receiver_type")
-  rejectedAt        DateTime?           @map("rejected_at")
-  offeredItems      TradeOfferItem[]    @relation("OfferedItems")
-  requestedItems    TradeOfferItem[]    @relation("RequestedItems")
+  status            TradeOfferStatus @default(PENDING)
+  chainId           String?          @map("chain_id")
+  parentOfferId     String?          @map("parent_offer_id")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  legalAcceptedAt   DateTime?        @map("legal_accepted_at")
+  downPaymentHoldId String?          @unique @map("down_payment_hold_id")
+  acceptedAt        DateTime?        @map("accepted_at")
+  cancelledAt       DateTime?        @map("cancelled_at")
+  cashAmount        Decimal          @map("cash_amount") @db.Decimal(18, 2)
+  cashDirection     String           @map("cash_direction")
+  cashCurrency      String           @map("currency")
+  completedAt       DateTime?        @map("completed_at")
+  counterOfferId    String?          @map("counter_offer_id")
+  expiresAt         DateTime         @map("expires_at")
+  initiatorId       String           @map("initiator_id")
+  initiatorType     String           @map("initiator_type")
+  receiverId        String           @map("receiver_id")
+  receiverType      String           @map("receiver_type")
+  rejectedAt        DateTime?        @map("rejected_at")
   swapSession       SwapSession?
   completion        TradeCompletion?
-  chain             TradeChain?         @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  fromCompany       Company?            @relation("GivenOffers", fields: [fromCompanyId], references: [id])
-  offeredItem       SurplusItem?        @relation("OfferedItemOffers", fields: [offeredItemId], references: [id])
-  parentOffer       TradeOffer?         @relation("CounterOffers", fields: [parentOfferId], references: [id])
-  counterOffers     TradeOffer[]        @relation("CounterOffers")
-  requestedItem     SurplusItem?        @relation("RequestedItemOffers", fields: [requestedItemId], references: [id])
-  toCompany         Company?            @relation("ReceivedOffers", fields: [toCompanyId], references: [id])
+  offeredItems      TradeOfferItem[] @relation("OfferedItems")
+  requestedItems    TradeOfferItem[] @relation("RequestedItems")
+  chain             TradeChain?      @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  fromCompany       Company?         @relation("GivenOffers", fields: [fromCompanyId], references: [id])
+  offeredItem       SurplusItem?     @relation("OfferedItemOffers", fields: [offeredItemId], references: [id])
+  parentOffer       TradeOffer?      @relation("CounterOffers", fields: [parentOfferId], references: [id])
+  counterOffers     TradeOffer[]     @relation("CounterOffers")
+  requestedItem     SurplusItem?     @relation("RequestedItemOffers", fields: [requestedItemId], references: [id])
+  toCompany         Company?         @relation("ReceivedOffers", fields: [toCompanyId], references: [id])
   reviews           TradeReview[]
 
   @@map("trade_offers")
 }
 
 model TradeOfferItem {
-  id             String      @id @default(cuid())
-  listingId      String?     @map("listing_id")
-  surplusItemId  String?     @map("surplus_item_id")
-  quantity       Decimal     @db.Decimal(18, 2)
-  estimatedValue Decimal     @map("estimated_value") @db.Decimal(18, 2)
-  offeredOfferId   String?   @map("offered_offer_id")
-  requestedOfferId String?   @map("requested_offer_id")
+  id               String      @id @default(cuid())
+  listingId        String?     @map("listing_id")
+  surplusItemId    String?     @map("surplus_item_id")
+  quantity         Decimal     @db.Decimal(18, 2)
+  estimatedValue   Decimal     @map("estimated_value") @db.Decimal(18, 2)
+  offeredOfferId   String?     @map("offered_offer_id")
+  requestedOfferId String?     @map("requested_offer_id")
   offeredAt        TradeOffer? @relation("OfferedItems", fields: [offeredOfferId], references: [id])
   requestedAt      TradeOffer? @relation("RequestedItems", fields: [requestedOfferId], references: [id])
 
@@ -1575,31 +1275,31 @@ model TradeOfferItem {
 }
 
 model SwapSession {
-  id                      String            @id @default(cuid())
-  tradeOfferId            String            @unique @map("trade_offer_id")
-  initiatorId             String            @map("initiator_id")
-  receiverId              String            @map("receiver_id")
-  shipmentMode            String            @map("shipment_mode")
-  shipments               Json?             @map("shipments")
-  escrowId                String?           @map("escrow_id")
-  collateralAmount        Decimal           @map("collateral_amount") @db.Decimal(18, 2)
-  collateralCurrency      String            @map("collateral_currency")
-  collateralStatus        String            @map("collateral_status")
-  collateralLockedAt      DateTime?         @map("collateral_locked_at")
-  collateralReleasedAt    DateTime?         @map("collateral_released_at")
-  collateralForfeitedAt   DateTime?         @map("collateral_forfeited_at")
-  fromCollateralHoldId    String?           @unique @map("from_collateral_hold_id")
-  toCollateralHoldId      String?           @unique @map("to_collateral_hold_id")
-  status                  SwapSessionStatus @default(PENDING_COLLATERAL)
-  timeoutAt               DateTime          @map("timeout_at")
-  completedAt             DateTime?         @map("completed_at")
-  cancelledAt             DateTime?         @map("cancelled_at")
-  cancelledReason         String?           @map("cancelled_reason")
-  disputedAt              DateTime?         @map("disputed_at")
-  createdAt               DateTime          @default(now()) @map("created_at")
-  updatedAt               DateTime          @updatedAt @map("updated_at")
-  tradeOffer              TradeOffer        @relation(fields: [tradeOfferId], references: [id])
-  parts                   BarterPart[]
+  id                    String            @id @default(cuid())
+  tradeOfferId          String            @unique @map("trade_offer_id")
+  initiatorId           String            @map("initiator_id")
+  receiverId            String            @map("receiver_id")
+  shipmentMode          String            @map("shipment_mode")
+  shipments             Json?             @map("shipments")
+  escrowId              String?           @map("escrow_id")
+  collateralAmount      Decimal           @map("collateral_amount") @db.Decimal(18, 2)
+  collateralCurrency    String            @map("collateral_currency")
+  collateralStatus      String            @map("collateral_status")
+  collateralLockedAt    DateTime?         @map("collateral_locked_at")
+  collateralReleasedAt  DateTime?         @map("collateral_released_at")
+  collateralForfeitedAt DateTime?         @map("collateral_forfeited_at")
+  fromCollateralHoldId  String?           @unique @map("from_collateral_hold_id")
+  toCollateralHoldId    String?           @unique @map("to_collateral_hold_id")
+  status                SwapSessionStatus @default(PENDING_COLLATERAL)
+  timeoutAt             DateTime          @map("timeout_at")
+  completedAt           DateTime?         @map("completed_at")
+  cancelledAt           DateTime?         @map("cancelled_at")
+  cancelledReason       String?           @map("cancelled_reason")
+  disputedAt            DateTime?         @map("disputed_at")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+  parts                 BarterPart[]
+  tradeOffer            TradeOffer        @relation(fields: [tradeOfferId], references: [id])
 
   @@map("barter_swap_sessions")
 }
@@ -1703,8 +1403,6 @@ model BarterDisputeLog {
 
   @@map("barter_dispute_logs")
 }
-
-// === AUCTION TABLES ===
 
 model Auction {
   id                   String                 @id @default(cuid())
@@ -1816,58 +1514,6 @@ model LotteryTicket {
   @@index([userId])
   @@map("lottery_tickets")
 }
-
-// === CONTENT ENUMS ===
-
-enum ArticleStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-// === ADVERTISING ENUMS ===
-
-enum AdType {
-  BANNER
-  SPONSORED_PRODUCT
-  SEARCH_AD
-  SIDE_AD
-  VIDEO
-  REWARD_DISTRIBUTION
-}
-
-enum AdSlotType {
-  HOMEPAGE_BANNER
-  HOMEPAGE_SIDEBAR
-  SEARCH_TOP
-  SEARCH_SIDEBAR
-  CATEGORY_TOP
-  CATEGORY_SIDEBAR
-  PRODUCT_DETAIL
-  CART_SIDEBAR
-  CHECKOUT_BANNER
-}
-
-enum BillingModel {
-  PREPAID
-  POSTPAID
-}
-
-enum PricingModel {
-  CPC
-  CPM
-  CPA
-  FIXED
-}
-
-enum TargetRole {
-  ALL
-  CUSTOMER
-  VENDOR
-  B2B
-}
-
-// === CONTENT TABLES ===
 
 model HomeBanner {
   id          String       @id @default(cuid())
@@ -2027,47 +1673,45 @@ model SeoMetadata {
   @@map("seo_metadata")
 }
 
-// === ADVERTISING TABLES ===
-
 model AdCampaign {
-  id                     String               @id @default(uuid())
-  name                   String
-  platform               Platform             @default(BAZARX)
-  budget                 Decimal              @db.Decimal(18, 2)
-  adStatus               AdStatus             @default(PENDING) @map("ad_status")
-  adType                 AdType               @map("ad_type")
-  bidAmount              Decimal              @map("bid_amount") @db.Decimal(18, 2)
-  billingModel           BillingModel         @default(PREPAID) @map("billing_model")
-  createdAt              DateTime             @default(now()) @map("created_at")
-  creatorId              String?              @map("creator_id")
-  endDate                DateTime             @map("end_date")
-  imageUrl               String?              @map("image_url")
-  linkUrl                String?              @map("link_url")
-  metadata               Json?
-  pricingModel           PricingModel         @map("pricing_model")
-  remainingBudget        Decimal              @map("remaining_budget") @db.Decimal(18, 2)
-  startDate              DateTime             @map("start_date")
-  targetCategories       String[]             @map("target_categories")
-  targetKeywords         String[]             @map("target_keywords")
-  targetRole             TargetRole           @default(ALL) @map("target_role")
-  updatedAt              DateTime             @updatedAt @map("updated_at")
-  vendorId               String?              @map("vendor_id")
-  rejectionReason        String?              @map("rejection_reason")
-  targetCities           String[]             @default([]) @map("target_cities")
-  targetDistricts        String[]             @default([]) @map("target_districts")
-  targetSlots            String[]             @default([]) @map("target_slots")
-  targetUrl              String?              @map("target_url")
-  qualityScore           Decimal?             @default(1.0) @map("quality_score") @db.Decimal(5, 2)
-  historicCTR            Decimal?             @default(0.01) @map("historic_ctr") @db.Decimal(8, 6)
-  maxBidPerClick         Decimal?             @default(0.5) @map("max_bid_per_click") @db.Decimal(18, 2)
-  maxBidPerMille         Decimal?             @default(5.0) @map("max_bid_per_mille") @db.Decimal(18, 2)
-  mediaUrl               String?              @map("media_url")
-  negativeKeywords       String[]             @default([]) @map("negative_keywords")
-  metrics                AdCampaignMetric[]
-  products               AdCampaignProduct[]
-  vendor                 Vendor?              @relation(fields: [vendorId], references: [id])
-  locations              AdLocation[]         @relation("AdCampaignLocations")
-  adSlots                AdSlotToAdCampaign[]
+  id               String               @id @default(uuid())
+  name             String
+  platform         Platform             @default(BAZARX)
+  budget           Decimal              @db.Decimal(18, 2)
+  adStatus         AdStatus             @default(PENDING) @map("ad_status")
+  adType           AdType               @map("ad_type")
+  bidAmount        Decimal              @map("bid_amount") @db.Decimal(18, 2)
+  billingModel     BillingModel         @default(PREPAID) @map("billing_model")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  creatorId        String?              @map("creator_id")
+  endDate          DateTime             @map("end_date")
+  imageUrl         String?              @map("image_url")
+  linkUrl          String?              @map("link_url")
+  metadata         Json?
+  pricingModel     PricingModel         @map("pricing_model")
+  remainingBudget  Decimal              @map("remaining_budget") @db.Decimal(18, 2)
+  startDate        DateTime             @map("start_date")
+  targetCategories String[]             @map("target_categories")
+  targetKeywords   String[]             @map("target_keywords")
+  targetRole       TargetRole           @default(ALL) @map("target_role")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  vendorId         String?              @map("vendor_id")
+  rejectionReason  String?              @map("rejection_reason")
+  targetCities     String[]             @default([]) @map("target_cities")
+  targetDistricts  String[]             @default([]) @map("target_districts")
+  targetSlots      String[]             @default([]) @map("target_slots")
+  targetUrl        String?              @map("target_url")
+  qualityScore     Decimal?             @default(1.0) @map("quality_score") @db.Decimal(5, 2)
+  historicCTR      Decimal?             @default(0.01) @map("historic_ctr") @db.Decimal(8, 6)
+  maxBidPerClick   Decimal?             @default(0.5) @map("max_bid_per_click") @db.Decimal(18, 2)
+  maxBidPerMille   Decimal?             @default(5.0) @map("max_bid_per_mille") @db.Decimal(18, 2)
+  mediaUrl         String?              @map("media_url")
+  negativeKeywords String[]             @default([]) @map("negative_keywords")
+  metrics          AdCampaignMetric[]
+  products         AdCampaignProduct[]
+  vendor           Vendor?              @relation(fields: [vendorId], references: [id])
+  locations        AdLocation[]         @relation("AdCampaignLocations")
+  adSlots          AdSlotToAdCampaign[]
 
   @@index([adStatus])
   @@index([adType])
@@ -2164,16 +1808,6 @@ model SideAd {
   @@map("side_ads")
 }
 
-// === LOYALTY ENUMS ===
-
-enum LoyaltyTier {
-  BRONZE
-  SILVER
-  GOLD
-  PLATINUM
-  DIAMOND
-}
-
 model MembershipTier {
   id               String      @id @default(cuid())
   name             LoyaltyTier @unique
@@ -2187,8 +1821,6 @@ model MembershipTier {
 
   @@map("membership_tiers")
 }
-
-// === LOYALTY TABLES ===
 
 model UserLevel {
   id               String          @id @default(cuid())
@@ -2278,7 +1910,7 @@ model MilestoneTracker {
   weeklyOrderCount   Int       @default(0) @map("weekly_order_count")
   weeklyPeriodStart  DateTime? @map("weekly_period_start")
   weeklyBonusGiven   Boolean   @default(false) @map("weekly_bonus_given")
-  monthlySpendTotal  Decimal   @default(0) @db.Decimal(18, 2) @map("monthly_spend_total")
+  monthlySpendTotal  Decimal   @default(0) @map("monthly_spend_total") @db.Decimal(18, 2)
   monthlyPeriodStart DateTime? @map("monthly_period_start")
   monthlyBonusGiven  Boolean   @default(false) @map("monthly_bonus_given")
   createdAt          DateTime  @default(now()) @map("created_at")
@@ -2320,22 +1952,22 @@ model XpDistributionRule {
 }
 
 model XpSpendingLimitRule {
-  id                  String       @id @default(cuid())
-  vendorTier          VendorTier?  @map("vendor_tier")
-  maxSpendPerTx       Decimal?     @map("max_spend_per_tx") @db.Decimal(18, 2)
-  monthlyVolumeLimit  Decimal?     @map("monthly_volume_limit") @db.Decimal(18, 2)
-  priority            Int          @default(0)
-  isActive            Boolean      @default(true) @map("is_active")
-  createdAt           DateTime     @default(now()) @map("created_at")
-  updatedAt           DateTime     @updatedAt @map("updated_at")
-  dailyLimit          Decimal?     @map("daily_limit") @db.Decimal(18, 2)
-  loyaltyTier         LoyaltyTier? @map("loyalty_tier")
-  maxSpendPercentage  Decimal?     @map("max_spend_percentage") @db.Decimal(5, 2)
-  minCartAmount       Decimal?     @map("min_cart_amount") @db.Decimal(18, 2)
-  monthlyLimit        Decimal?     @map("monthly_limit") @db.Decimal(18, 2)
-  weeklyLimit         Decimal?     @map("weekly_limit") @db.Decimal(18, 2)
-  weeklyVolumeLimit   Decimal?     @map("weekly_volume_limit") @db.Decimal(18, 2)
-  xpToTlRate          Decimal?     @map("xp_to_tl_rate") @db.Decimal(18, 2)
+  id                 String       @id @default(cuid())
+  vendorTier         VendorTier?  @map("vendor_tier")
+  maxSpendPerTx      Decimal?     @map("max_spend_per_tx") @db.Decimal(18, 2)
+  monthlyVolumeLimit Decimal?     @map("monthly_volume_limit") @db.Decimal(18, 2)
+  priority           Int          @default(0)
+  isActive           Boolean      @default(true) @map("is_active")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  dailyLimit         Decimal?     @map("daily_limit") @db.Decimal(18, 2)
+  loyaltyTier        LoyaltyTier? @map("loyalty_tier")
+  maxSpendPercentage Decimal?     @map("max_spend_percentage") @db.Decimal(5, 2)
+  minCartAmount      Decimal?     @map("min_cart_amount") @db.Decimal(18, 2)
+  monthlyLimit       Decimal?     @map("monthly_limit") @db.Decimal(18, 2)
+  weeklyLimit        Decimal?     @map("weekly_limit") @db.Decimal(18, 2)
+  weeklyVolumeLimit  Decimal?     @map("weekly_volume_limit") @db.Decimal(18, 2)
+  xpToTlRate         Decimal?     @map("xp_to_tl_rate") @db.Decimal(18, 2)
 
   @@index([vendorTier])
   @@map("xp_spending_limit_rules")
@@ -2355,8 +1987,6 @@ model PlatinumMissionLog {
   @@index([userId, vendorId])
   @@map("platinum_mission_logs")
 }
-
-// === ANALYTICS TABLES ===
 
 model AnalyticsEvent {
   id               String   @id @default(cuid())
@@ -2402,30 +2032,6 @@ model ProductActivity {
   @@map("product_activities")
 }
 
-// === COMMUNICATION ENUMS ===
-
-enum ChatRoomStatus {
-  ACTIVE
-  ARCHIVED
-  CLOSED
-}
-
-enum ChatMessageType {
-  TEXT
-  IMAGE
-  SYSTEM
-  FILE
-}
-
-enum ComplaintStatus {
-  PENDING
-  UNDER_REVIEW
-  RESOLVED
-  REJECTED
-}
-
-// === COMMUNICATION TABLES ===
-
 model ChatRoom {
   id             String         @id @default(cuid())
   orderId        String?        @unique @map("order_id")
@@ -2438,7 +2044,6 @@ model ChatRoom {
   storageTier    String         @default("STANDARD") @map("storage_tier")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
-  // Katılımcılar — userId dizisi olarak tutulacak (User relation yok)
   participantIds String[]       @map("participant_ids")
   messages       ChatMessage[]
 
@@ -2450,7 +2055,7 @@ model ChatRoom {
 model ChatMessage {
   id        String          @id @default(cuid())
   roomId    String          @map("room_id")
-  senderId  String?         @map("sender_id")  // null = SYSTEM mesajı
+  senderId  String?         @map("sender_id")
   content   String
   type      ChatMessageType @default(TEXT)
   isRead    Boolean         @default(false) @map("is_read")
@@ -2469,7 +2074,7 @@ model ChatMessage {
 model Notification {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  type      String   // ORDER_STATUS, BARTER_OFFER, AUCTION_BID, CAMPAIGN, SYSTEM, CHAT_MESSAGE
+  type      String
   title     String
   message   String
   link      String?
@@ -2500,4 +2105,345 @@ model UserComplaint {
   @@index([subjectId])
   @@index([status])
   @@map("user_complaints")
+}
+
+enum UserRole {
+  USER
+  VENDOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum Platform {
+  BAZARX
+  BARTERBORSA
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VendorTier {
+  CORE
+  PLUS
+  PREMIUM
+  ELITE
+}
+
+enum B2BTier {
+  NONE
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum AdStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  REJECTED
+  EXPIRED
+}
+
+enum PilotCity {
+  ISTANBUL
+  ANKARA
+  IZMIR
+  HATAY
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  SUSPENDED
+  REJECTED
+  ARCHIVED
+}
+
+enum ListingVisibility {
+  PUBLIC
+  PRIVATE
+  ECOSYSTEM_ONLY
+  B2B_ONLY
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  REFURBISHED
+}
+
+enum BrandStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CategoryType {
+  GENERAL
+  BARTER
+  RESTAURANT
+  SERVICE
+}
+
+enum CampaignType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+enum PurchaseOrderStatus {
+  Draft
+  Ordered
+  PartiallyReceived
+  Received
+  Cancelled
+}
+
+enum TransferStatus {
+  Pending
+  InTransit
+  PartiallyReceived
+  Completed
+  Cancelled
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  IYZICO
+  BANK_TRANSFER
+  WALLET
+  BARTER
+  GIFT_CARD
+  MIXED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+  PARTIALLY_REFUNDED
+}
+
+enum SurplusStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  RESERVED
+  TRADED
+  EXPIRED
+  DEACTIVATED
+}
+
+enum WantedItemStatus {
+  PENDING
+  ACTIVE
+  MATCHED
+  FULFILLED
+  EXPIRED
+}
+
+enum WantedItemType {
+  PRODUCT
+  SERVICE
+  MATERIAL
+}
+
+enum TradeOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COUNTER_OFFERED
+  EXPIRED
+  CANCELLED
+  COMPLETED
+  LEGAL_PENDING
+}
+
+enum SwapSessionStatus {
+  PENDING_COLLATERAL
+  ACTIVE
+  SHIPPING
+  PARTIALLY_COMPLETED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  TIMEOUT
+}
+
+enum BarterPartStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CONFIRMED
+  DISPUTED
+}
+
+enum DemandMatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum DemandMatchType {
+  SURPLUS_TO_WANTED
+  WANTED_TO_SURPLUS
+  SURPLUS_TO_SURPLUS
+}
+
+enum TradeChainStatus {
+  DRAFT
+  PROPOSED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ArbitratorType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum ListingType {
+  BUY
+  SELL
+  BARTER
+  BOTH
+}
+
+enum AuctionStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipationStatus {
+  PENDING
+  APPROVED
+  DEPOSIT_HELD
+  ACTIVE
+  WON
+  LOST
+  REFUNDED
+}
+
+enum LotteryStatus {
+  ACTIVE
+  ENDED
+  DRAWN
+  CANCELLED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AdType {
+  BANNER
+  SPONSORED_PRODUCT
+  SEARCH_AD
+  SIDE_AD
+  VIDEO
+  REWARD_DISTRIBUTION
+}
+
+enum AdSlotType {
+  HOMEPAGE_BANNER
+  HOMEPAGE_SIDEBAR
+  SEARCH_TOP
+  SEARCH_SIDEBAR
+  CATEGORY_TOP
+  CATEGORY_SIDEBAR
+  PRODUCT_DETAIL
+  CART_SIDEBAR
+  CHECKOUT_BANNER
+}
+
+enum BillingModel {
+  PREPAID
+  POSTPAID
+}
+
+enum PricingModel {
+  CPC
+  CPM
+  CPA
+  FIXED
+}
+
+enum TargetRole {
+  ALL
+  CUSTOMER
+  VENDOR
+  B2B
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+enum ChatRoomStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+  FILE
+}
+
+enum ComplaintStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
 }

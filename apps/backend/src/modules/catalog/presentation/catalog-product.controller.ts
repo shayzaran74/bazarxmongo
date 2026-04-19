@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -11,11 +11,31 @@ import {
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CreateCatalogProductDto } from '../application/dtos/create-catalog-product.dto';
 import { CreateCatalogProductCommand } from '../application/commands/create-catalog-product.command';
+import { GetListingsQuery } from '../application/queries/get-listings/get-listings.query';
 
 @ApiTags('Listings')
 @Controller('products')
 export class CatalogProductController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
+  ) {}
+
+  @Public()
+  @ApiOperation({ summary: 'Homepage bulk products', description: 'Ana sayfa için kategorize edilmiş vitrin ürünlerini döner.' })
+  @Get('homepage-bulk')
+  async getHomepageBulk() {
+    const result = await this.queryBus.execute(new GetListingsQuery({ page: 1, limit: 8 }));
+    
+    return {
+      success: true,
+      data: {
+        featured: result.items,
+        newArrivals: result.items,
+        bestSellers: result.items
+      }
+    };
+  }
 
   @Public()
   @ApiOperation({ summary: 'List catalog products', description: 'Sistemdeki ana ürün kataloğunu listeler. Sayfalama ve arama destekler.' })

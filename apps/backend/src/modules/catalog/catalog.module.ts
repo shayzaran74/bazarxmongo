@@ -14,11 +14,14 @@ import { CreateCatalogProductHandler } from './application/commands/create-catal
 import { CategoryController } from './presentation/category.controller';
 import { CatalogProductController } from './presentation/catalog-product.controller';
 import { CatalogController } from './presentation/catalog.controller';
+import { BrandController } from './presentation/brand.controller';
+import { FavoriteController } from './presentation/favorite.controller';
 
 // Queries
 import { GetProductDetailsHandler } from './application/queries/get-product-details/get-product-details.handler';
 import { GetListingsHandler } from './application/queries/get-listings/get-listings.handler';
 import { GetProductBySlugHandler } from './application/queries/get-product-by-slug/get-product-by-slug.handler';
+import { GetCategoryTreeHandler } from './application/queries/get-category-tree/get-category-tree.handler';
 import { PRODUCT_REPO } from './domain/repositories/product.repository.interface';
 import { PrismaProductRepository } from './infrastructure/persistence/prisma-product.repository';
 
@@ -31,7 +34,8 @@ const CommandHandlers = [
 const QueryHandlers = [
   GetProductDetailsHandler,
   GetListingsHandler,
-  GetProductBySlugHandler
+  GetProductBySlugHandler,
+  GetCategoryTreeHandler
 ];
 
 const Repositories = [
@@ -49,7 +53,9 @@ const Repositories = [
     SurplusController,
     CategoryController, 
     CatalogProductController,
-    CatalogController
+    CatalogController,
+    BrandController,
+    FavoriteController
   ],
   providers: [
     ...CommandHandlers,

@@ -19,12 +19,12 @@ export class DrawLotteryDto {
 }
 
 @ApiTags('Auctions')
-@Controller('auction')
+@Controller('auctions')
 export class AuctionController {
   constructor(private readonly commandBus: CommandBus, private readonly queryBus: QueryBus) {}
 
   @Public()
-  @Get('active')
+  @Get()
   @ApiOperation({ summary: 'Get active auctions' })
   async getActiveAuctions(@Query() query: any) {
     // TODO: GetActiveAuctionsQuery implement

@@ -29,6 +29,14 @@ export class HelpController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'List popular help articles', description: 'En çok tıklanan yardım makalelerini döner.' })
+  @Get('popular')
+  async getPopular() {
+    // Şimdilik boş liste döner, stabilizasyon için 404'ü keser
+    return { success: true, data: [] };
+  }
+
+  @Public()
   @ApiOperation({ summary: 'Get help article by slug', description: 'URL slug bilgisi verilen yardım makalesinin içeriğini döner.' })
   @ApiParam({ name: 'slug', description: 'Makale slug (örn: nasil-siparis-verilir)' })
   @ApiResponse({ status: 200, description: 'Makale detayları.' })

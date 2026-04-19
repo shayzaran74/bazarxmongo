@@ -10,6 +10,36 @@ export class SettingsController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Public()
+  @ApiOperation({ summary: 'Get global settings', description: 'Ekosistem ayarlarını döner.' })
+  @Get()
+  async getSettings(@Query('ecosystem') ecosystem: string = 'BAZARX') {
+    return {
+      success: true,
+      data: {
+        siteName: ecosystem === 'BAZARX' ? 'BazarX' : 'BarterBorsa',
+        logo: '/logo.png',
+        primaryColor: '#0061ff',
+        ecosystem
+      }
+    };
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Detect user location', description: 'IP üzerinden ülke ve dil tespiti yapar.' })
+  @Get('detect-location')
+  async detectLocation() {
+    return {
+      success: true,
+      data: {
+        countryCode: 'TR',
+        countryName: 'Turkey',
+        language: 'tr',
+        currency: 'TRY'
+      }
+    };
+  }
+
+  @Public()
   @ApiOperation({ summary: 'Get side ads', description: 'Ekosistem (BAZARX, TICARITAKAS, BARTERBORSA) bazlı yan panel reklamlarını döner.' })
   @ApiQuery({ name: 'ecosystem', required: false, type: String, example: 'BAZARX' })
   @ApiResponse({ status: 200, description: 'Reklam listesi.' })

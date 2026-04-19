@@ -9,12 +9,56 @@ export class PrismaAnalyticsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async trackEvent(event: AnalyticsEvent): Promise<void> {
-    const data = { ...event.getProps(), id: event.id.toString() };
+    const props = event.getProps();
+    const data: any = {
+      id: event.id.toString(),
+      eventType: props.eventType,
+      userId: props.userId,
+      sessionId: props.sessionId,
+      path: props.path || (props as any).url, // Map url to path from legacy or frontend
+      ipAddress: props.ipAddress,
+      userAgent: props.userAgent,
+      listingId: props.listingId,
+      catalogProductId: props.catalogProductId,
+      categoryId: props.categoryId,
+      vendorId: props.vendorId,
+      source: props.source,
+      medium: props.medium,
+      campaign: props.campaign,
+      referrer: props.referrer,
+      intent: props.intent,
+      eventSource: props.eventSource,
+      metadata: props.metadata || {},
+      timestamp: props.timestamp || new Date(),
+    };
     await this.prisma.analyticsEvent.create({ data });
   }
 
   async trackBatch(events: AnalyticsEvent[]): Promise<void> {
-    const data = events.map(e => ({ ...e.getProps(), id: e.id.toString() }));
+    const data = events.map(event => {
+      const props = event.getProps();
+      return {
+        id: event.id.toString(),
+        eventType: props.eventType,
+        userId: props.userId,
+        sessionId: props.sessionId,
+        path: props.path || (props as any).url,
+        ipAddress: props.ipAddress,
+        userAgent: props.userAgent,
+        listingId: props.listingId,
+        catalogProductId: props.catalogProductId,
+        categoryId: props.categoryId,
+        vendorId: props.vendorId,
+        source: props.source,
+        medium: props.medium,
+        campaign: props.campaign,
+        referrer: props.referrer,
+        intent: props.intent,
+        eventSource: props.eventSource,
+        metadata: props.metadata || {},
+        timestamp: props.timestamp || new Date(),
+      };
+    });
     await this.prisma.analyticsEvent.createMany({ data });
   }
 
