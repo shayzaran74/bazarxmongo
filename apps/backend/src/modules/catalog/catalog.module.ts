@@ -17,6 +17,9 @@ import { CatalogController } from './presentation/catalog.controller';
 import { BrandController } from './presentation/brand.controller';
 import { FavoriteController } from './presentation/favorite.controller';
 import { CategoryAdminController } from './presentation/category-admin.controller';
+import { ProductAdminController } from './presentation/product-admin.controller';
+import { BrandAdminController } from './presentation/brand-admin.controller';
+import { ProductTypeAdminController } from './presentation/product-type-admin.controller';
 
 // Queries
 import { GetProductDetailsHandler } from './application/queries/get-product-details/get-product-details.handler';
@@ -57,7 +60,10 @@ const Repositories = [
     CatalogController,
     BrandController,
     FavoriteController,
-    CategoryAdminController
+    CategoryAdminController,
+    ProductAdminController,
+    BrandAdminController,
+    ProductTypeAdminController
   ],
   providers: [
     ...CommandHandlers,

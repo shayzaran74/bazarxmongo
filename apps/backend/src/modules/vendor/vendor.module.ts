@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CompanyController } from './presentation/company.controller';
 import { VendorController } from './presentation/vendor.controller';
+import { VendorAdminController } from './presentation/vendor-admin.controller';
 import { CreateCompanyHandler } from './application/commands/create-company.handler';
 import { RegisterVendorHandler } from './application/commands/register-vendor.handler';
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -25,7 +26,7 @@ const Repositories = [
 
 @Module({
   imports: [CqrsModule],
-  controllers: [CompanyController, VendorController],
+  controllers: [CompanyController, VendorController, VendorAdminController],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
