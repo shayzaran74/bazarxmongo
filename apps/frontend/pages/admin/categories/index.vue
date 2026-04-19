@@ -24,7 +24,7 @@
       v-if="categories.length === 0 && !loading"
       class="bg-white rounded-lg shadow-sm border border-gray-200"
     >
-      <EmptyState
+      <CommonEmptyState
         :icon="FolderIcon"
         title="Henüz kategori yok"
         description="Ürünlerinizi organize etmek için kategoriler oluşturun"
