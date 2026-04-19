@@ -15,12 +15,14 @@ import { PrismaSurplusItemRepository } from './infrastructure/persistence/prisma
 import { SurplusItemMapper } from './infrastructure/persistence/mappers/surplus-item.mapper';
 import { PrismaSwapSessionRepository } from './infrastructure/persistence/prisma-swap-session.repository';
 import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-session.mapper';
+import { BarterAdminController } from './presentation/barter-admin.controller';
 
 @Module({
   imports: [
     CqrsModule,
     RabbitMQModule,
   ],
+  controllers: [BarterAdminController],
   providers: [
     MatchingService,
     CollateralCalculatorService,

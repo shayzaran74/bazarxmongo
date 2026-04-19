@@ -14,37 +14,48 @@ export class VendorAdminController {
   @ApiOperation({ summary: 'List all vendors for admin' })
   @Get()
   async getVendors(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
     @Query('q') search?: string
   ) {
-    const skip = (page - 1) * limit;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
     
-    const [items, total] = await Promise.all([
-      this.prisma.vendor.findMany({
-        where: search ? { company: { name: { contains: search, mode: 'insensitive' } } } : {},
-        include: { 
-          company: { 
-            select: { name: true, email: true } 
-          } 
-        },
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.vendor.count({
-        where: search ? { company: { name: { contains: search, mode: 'insensitive' } } } : {}
-      })
-    ]);
+    console.log('🔍 Fetching vendors for admin...', { pageNum, limitNum, search });
 
-    return {
-      success: true,
-      data: {
-        items,
-        total,
-        page,
-        limit
-      }
-    };
+    try {
+      const where = search 
+        ? { company: { name: { contains: search, mode: 'insensitive' as any } } } 
+        : {};
+
+      const [items, total] = await Promise.all([
+        this.prisma.vendor.findMany({
+          where,
+          include: { 
+            company: { 
+              select: { name: true, email: true } 
+            } 
+          },
+          skip,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' }
+        }),
+        this.prisma.vendor.count({ where })
+      ]);
+
+      return {
+        success: true,
+        data: {
+          items,
+          total,
+          page: pageNum,
+          limit: limitNum
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error fetching vendors:', error);
+      throw error; // Let NestJS filter handle it but we see it in logs
+    }
   }
 }
