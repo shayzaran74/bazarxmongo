@@ -18,6 +18,7 @@ import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MediaModule } from './modules/media/media.module';
     LoyaltyModule,
     AnalyticsModule,
     MediaModule,
+    InventoryModule,
   ],
   providers: [
     {
