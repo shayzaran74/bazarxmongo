@@ -127,8 +127,8 @@
                   </div>
                 </template>
                 <template v-else>
-                  <NuxtLink to="/login" class="flex items-center justify-center w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase hover:bg-primary-600 transition-all mb-2">GİRİŞ YAP</NuxtLink>
-                  <NuxtLink to="/register" class="flex items-center justify-center w-full py-2.5 text-gray-500 hover:text-gray-900 text-xs font-bold text-center">Kayıt Ol</NuxtLink>
+                  <NuxtLink to="/auth/login" class="flex items-center justify-center w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase hover:bg-primary-600 transition-all mb-2">GİRİŞ YAP</NuxtLink>
+                  <NuxtLink to="/auth/register" class="flex items-center justify-center w-full py-2.5 text-gray-500 hover:text-gray-900 text-xs font-bold text-center">Kayıt Ol</NuxtLink>
                 </template>
               </div>
             </Transition>
@@ -209,6 +209,8 @@ const formatPrice = (p: number) => {
 
 const logout = async () => {
   await authStore.logout()
-  navigateTo('/login')
+  // navigateTo logic is already handled in authStore.logout if needed, 
+  // but let's ensure it points to the correct place
+  navigateTo('/auth/login')
 }
 </script>

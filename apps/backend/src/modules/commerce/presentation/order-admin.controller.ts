@@ -31,7 +31,7 @@ export class OrderAdminController {
       this.prisma.order.findMany({
         where,
         include: {
-          items: true,
+          orderItems: true,
           statusHistory: true
         },
         skip,

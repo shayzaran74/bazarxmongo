@@ -60,7 +60,7 @@ const handleLogout = async () => {
     const toast = useNuxtApp().$toast
     toast.success('Çıkış yapıldı!')
     // Redirect to login
-    await router.push('/login')
+    await router.push('/auth/login')
   } catch (error) {
     console.error('Logout error:', error)
     // Show error message

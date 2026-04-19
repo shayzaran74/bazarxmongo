@@ -934,6 +934,7 @@ model Transfer {
   vendorId        String         @map("vendor_id")
   fromWarehouseId String         @map("from_warehouse_id")
   toWarehouseId   String         @map("to_warehouse_id")
+  transferNumber  String?        @unique @map("transfer_number")
   status          TransferStatus @default(Pending)
   notes           String?
   createdAt       DateTime       @default(now()) @map("created_at")

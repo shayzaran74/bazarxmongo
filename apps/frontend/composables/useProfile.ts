@@ -306,7 +306,7 @@ export const useProfile = () => {
 
   const handleLogout = () => {
     authStore.logout()
-    navigateTo('/login')
+    navigateTo('/auth/login')
   }
 
   return {

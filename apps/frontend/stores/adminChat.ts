@@ -4,13 +4,14 @@ import { useAuthStore } from './auth';
 import { useAdminChatService } from '~/services/api/AdminChatService';
 import type { AdminMessage, AdminChatRoom, AdminAuditLog } from '@barterborsa/shared-types';
 
+let socket: Socket | null = null;
+
 export const useAdminChatStore = defineStore('adminChat', {
     state: () => ({
         rooms: [] as AdminChatRoom[],
         messages: [] as AdminMessage[],
         activeRoomId: null as string | null,
         isConnected: false,
-        socket: null as Socket | null,
         loading: false,
         isFrozen: false,
         searchQuery: '',
@@ -41,28 +42,28 @@ export const useAdminChatStore = defineStore('adminChat', {
 
     actions: {
         async connectSocket() {
-            if (this.socket) return;
+            if (socket) return;
 
             const config = useRuntimeConfig();
             const authStore = useAuthStore();
 
-            this.socket = io(config.public.apiBase as string, {
+            socket = io(config.public.apiBase as string, {
                 auth: { token: authStore.token },
                 path: '/socket.io/admin',
                 transports: ['websocket', 'polling']
             });
 
-            this.socket.on('connect', () => {
+            socket.on('connect', () => {
                 this.isConnected = true;
                 console.log('[AdminChatStore] Connected to Namespace Admin');
             });
 
-            this.socket.on('disconnect', () => {
+            socket.on('disconnect', () => {
                 this.isConnected = false;
                 console.log('[AdminChatStore] Disconnected from Namespace Admin');
             });
 
-            this.socket.on('newMessage', (message: AdminMessage) => {
+            socket.on('newMessage', (message: AdminMessage) => {
                 if (this.activeRoomId === message.chatRoomId) {
                     this.messages.push(message);
                 }
@@ -76,7 +77,7 @@ export const useAdminChatStore = defineStore('adminChat', {
                 }
             });
 
-            this.socket.on('userTyping', ({ userId, username, isTyping, tradeOfferId }: { userId: string; username: string; isTyping: boolean; tradeOfferId?: string }) => {
+            socket.on('userTyping', ({ userId, username, isTyping, tradeOfferId }: { userId: string; username: string; isTyping: boolean; tradeOfferId?: string }) => {
                 if (tradeOfferId && this.activeRoom && this.activeRoom.tradeOfferId === tradeOfferId) {
                     if (isTyping) {
                         this.typingUsers[userId] = { username, expires: Date.now() + 5000 };
@@ -86,7 +87,7 @@ export const useAdminChatStore = defineStore('adminChat', {
                 }
             });
 
-            this.socket.on('roomUpdated', ({ roomId, lastMessage, updatedAt, hasRiskyContent }: { roomId: string; lastMessage: AdminMessage; updatedAt: string; hasRiskyContent: boolean }) => {
+            socket.on('roomUpdated', ({ roomId, lastMessage, updatedAt, hasRiskyContent }: { roomId: string; lastMessage: AdminMessage; updatedAt: string; hasRiskyContent: boolean }) => {
                 const roomIndex = this.rooms.findIndex(r => r.id === roomId);
                 if (roomIndex !== -1) {
                     const room = this.rooms[roomIndex];
@@ -106,7 +107,7 @@ export const useAdminChatStore = defineStore('adminChat', {
                 }
             });
 
-            this.socket.on('chatFrozen', ({ roomId, status }: { roomId: string; status: string }) => {
+            socket.on('chatFrozen', ({ roomId, status }: { roomId: string; status: string }) => {
                 if (this.activeRoomId === roomId) {
                     this.isFrozen = true;
                 }
@@ -114,7 +115,7 @@ export const useAdminChatStore = defineStore('adminChat', {
                 if (room && room.tradeOffer) room.tradeOffer.status = (status || 'disputed') as any;
             });
 
-            this.socket.on('chatUnfrozen', ({ roomId, status }: { roomId: string; status: string }) => {
+            socket.on('chatUnfrozen', ({ roomId, status }: { roomId: string; status: string }) => {
                 if (this.activeRoomId === roomId) {
                     this.isFrozen = false;
                 }
@@ -199,41 +200,41 @@ export const useAdminChatStore = defineStore('adminChat', {
 
         async joinGhostRoom(room: AdminChatRoom) {
             this.activeRoomId = room.id;
-            if (this.socket) this.socket.emit('joinGhost', { roomId: room.id });
+            if (socket) socket.emit('joinGhost', { roomId: room.id });
             await this.fetchMessages(room.id);
         },
 
         async leaveGhostRoom() {
-            if (this.socket && this.activeRoomId) {
-                this.socket.emit('leaveGhost', { roomId: this.activeRoomId });
+            if (socket && this.activeRoomId) {
+                socket.emit('leaveGhost', { roomId: this.activeRoomId });
             }
             this.activeRoomId = null;
             this.messages = [];
         },
 
         async disconnectSocket() {
-            if (this.socket) {
-                this.socket.disconnect();
-                this.socket = null;
+            if (socket) {
+                socket.disconnect();
+                socket = null;
                 this.isConnected = false;
             }
         },
 
         async sendSystemMessage(content: string, type: string) {
-            if (this.socket && this.activeRoomId) {
-                this.socket.emit('systemMessage', { roomId: this.activeRoomId, content, type });
+            if (socket && this.activeRoomId) {
+                socket.emit('systemMessage', { roomId: this.activeRoomId, content, type });
             }
         },
 
         async sendWarning(roomId: string, reason: string, note: string) {
-            if (this.socket) {
-                this.socket.emit('sendWarning', { roomId, reason, note });
+            if (socket) {
+                socket.emit('sendWarning', { roomId, reason, note });
             }
         },
 
         async freezeRoom(roomId: string, reason: string, note: string) {
-            if (this.socket) {
-                this.socket.emit('freezeRoom', { roomId, reason, note });
+            if (socket) {
+                socket.emit('freezeRoom', { roomId, reason, note });
             }
         },
 
@@ -246,8 +247,8 @@ export const useAdminChatStore = defineStore('adminChat', {
         },
 
         async unfreezeRoom(roomId: string, note: string) {
-            if (this.socket) {
-                this.socket.emit('unfreezeRoom', { roomId, note });
+            if (socket) {
+                socket.emit('unfreezeRoom', { roomId, note });
             }
         }
     }

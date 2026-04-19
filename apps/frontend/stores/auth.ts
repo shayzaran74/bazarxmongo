@@ -9,8 +9,9 @@ interface AuthState {
   isAuthenticated: boolean
   loading: boolean
   error: string | null
-  refreshPromise: Promise<boolean> | null
 }
+
+let refreshPromise: Promise<boolean> | null = null
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
@@ -20,7 +21,6 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: false,
     loading: false,
     error: null,
-    refreshPromise: null,
   }),
 
   getters: {
@@ -154,8 +154,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async tryRefresh(): Promise<boolean> {
-      if (this.refreshPromise) return this.refreshPromise
-      this.refreshPromise = (async () => {
+      if (refreshPromise) return refreshPromise
+      refreshPromise = (async () => {
         try {
           const refreshToken = useCookie('refresh_token').value
           if (!refreshToken) return false
@@ -167,9 +167,9 @@ export const useAuthStore = defineStore('auth', {
             return true
           }
           return false
-        } catch { return false } finally { this.refreshPromise = null }
+        } catch { return false } finally { refreshPromise = null }
       })()
-      return this.refreshPromise
+      return refreshPromise
     },
     async forgotPassword(email: string) {
       const { $api } = useApi()

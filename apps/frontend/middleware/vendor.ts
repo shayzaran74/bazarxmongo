@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // If not authenticated, redirect to login
     if (!authStore.isAuthenticated) {
-        return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+        return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`)
     }
 
     // Admins always have access to vendor pages for support/debugging

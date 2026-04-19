@@ -3,14 +3,14 @@ import { useAuthStore } from '~/stores/auth';
 export default defineNuxtRouteMiddleware(async (to) => {
   // Public sayfalar - giriş yapmadan erişilebilir
   const publicPages = [
-    '/login', 
-    '/register', 
+    '/auth/login', 
+    '/auth/register', 
     '/', 
     '/products', 
     '/auctions', 
     '/lotteries', 
-    '/forgot-password', 
-    '/reset-password', 
+    '/auth/forgot-password', 
+    '/auth/reset-password', 
     '/become-vendor',
     '/categories',
     '/cart',
@@ -55,6 +55,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Sadece gerçekten private sayfalar için login'e yönlendir
   if (!authStore.isLoggedIn && !isPublicPage) {
     // Özel sayfalar için login'e yönlendir, ama redirect parametresi ekle
-    return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+    return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`)
   }
 })

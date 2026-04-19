@@ -9,14 +9,15 @@ export interface AiMessage extends Message {
     role: 'user' | 'assistant' | 'system';
 }
 
+let socket: Socket | null = null;
+
 export const useChatStore = defineStore('chat', {
     state: () => ({
-        socket: null as Socket | null,
         messages: [] as Message[],
         isConnected: false,
         activeRoomId: null as string | null,
         roomOnlineCount: 0,
-        typingUsers: new Map<string, string>(), // userId -> username
+        typingUsers: {} as Record<string, string>, // userId -> username
 
         // AI Assistant States
         isOpen: false,
@@ -27,9 +28,9 @@ export const useChatStore = defineStore('chat', {
     getters: {
         isSocketConnected: (state) => state.isConnected,
         roomMessages: (state) => state.messages,
-        typingList: (state) => Array.from(state.typingUsers.values()),
+        typingList: (state) => Object.values(state.typingUsers),
         typingText: (state) => {
-            const users = Array.from(state.typingUsers.values());
+            const users = Object.values(state.typingUsers);
             if (users.length === 0) return '';
             if (users.length === 1) return `${users[0]} yazıyor...`;
             if (users.length === 2) return `${users[0]} ve ${users[1]} yazıyor...`;
@@ -42,13 +43,13 @@ export const useChatStore = defineStore('chat', {
          * Socket.io bağlantısını başlatır
          */
         connect() {
-            if (this.socket) return;
+            if (socket) return;
 
             const config = useRuntimeConfig();
             const socketUrl = `${config.public.apiBase}/chat`;
 
             const authStore = useAuthStore();
-            this.socket = io(socketUrl, {
+            socket = io(socketUrl, {
                 withCredentials: true,
                 transports: ['polling', 'websocket'],
                 auth: {
@@ -56,18 +57,18 @@ export const useChatStore = defineStore('chat', {
                 }
             });
 
-            this.socket.on('connect', () => {
+            socket.on('connect', () => {
                 this.isConnected = true;
                 console.log('[ChatStore] Connected to /chat namespace');
             });
 
-            this.socket.on('disconnect', () => {
+            socket.on('disconnect', () => {
                 this.isConnected = false;
                 console.log('[ChatStore] Disconnected from /chat namespace');
             });
 
             // Yeni mesaj geldiğinde
-            this.socket.on('newMessage', (message: Message) => {
+            socket.on('newMessage', (message: Message) => {
                 const authStore = useAuthStore();
                 this.addMessage({
                     ...message,
@@ -76,28 +77,28 @@ export const useChatStore = defineStore('chat', {
             });
 
             // Yazıyor... bilgisi geldiğinde
-            this.socket.on('userTyping', ({ userId, username, isTyping }: { userId: string; username: string; isTyping: boolean }) => {
+            socket.on('userTyping', ({ userId, username, isTyping }: { userId: string; username: string; isTyping: boolean }) => {
                 if (isTyping) {
-                    this.typingUsers.set(userId, username);
+                    this.typingUsers[userId] = username;
                 } else {
-                    this.typingUsers.delete(userId);
+                    delete this.typingUsers[userId];
                 }
             });
 
             // Kullanıcı katıldığında
-            this.socket.on('userJoined', ({ userId }: { userId: string }) => {
+            socket.on('userJoined', ({ userId }: { userId: string }) => {
                 console.log(`[ChatStore] User joined: ${userId}`);
                 this.roomOnlineCount++;
             });
 
             // Kullanıcı ayrıldığında
-            this.socket.on('userLeft', ({ userId }: { userId: string }) => {
+            socket.on('userLeft', ({ userId }: { userId: string }) => {
                 console.log(`[ChatStore] User left: ${userId}`);
                 this.roomOnlineCount = Math.max(1, this.roomOnlineCount - 1);
             });
 
             // Mesajlar okunduğunda
-            this.socket.on('messagesRead', ({ messageIds, readAt }: { messageIds: string[], readAt: string }) => {
+            socket.on('messagesRead', ({ messageIds, readAt }: { messageIds: string[], readAt: string }) => {
                 this.messages.forEach(m => {
                     if (messageIds.length === 0 || messageIds.includes(m.id)) {
                         m.readAt = readAt;
@@ -110,9 +111,9 @@ export const useChatStore = defineStore('chat', {
          * Bağlantıyı keser
          */
         disconnect() {
-            if (this.socket) {
-                this.socket.disconnect();
-                this.socket = null;
+            if (socket) {
+                socket.disconnect();
+                socket = null;
                 this.isConnected = false;
                 this.messages = [];
                 this.activeRoomId = null;
@@ -123,14 +124,14 @@ export const useChatStore = defineStore('chat', {
          * Odaya katılır ve geçmişi yükler
          */
         async joinRoom(tradeOfferId: string) {
-            if (!this.socket) {
+            if (!socket) {
                 this.connect();
             }
 
             // Wait for connection if not connected
-            if (!this.socket?.connected) {
+            if (!socket?.connected) {
                 await new Promise((resolve) => {
-                    this.socket?.once('connect', () => resolve(true));
+                    socket?.once('connect', () => resolve(true));
                     // Timeout after 5s
                     setTimeout(() => resolve(false), 5000);
                 });
@@ -140,7 +141,7 @@ export const useChatStore = defineStore('chat', {
             this.messages = [];
 
             return new Promise((resolve, reject) => {
-                this.socket?.emit('joinTradeRoom', { tradeOfferId }, (response: { status: string; data?: Message[]; message?: string }) => {
+                socket?.emit('joinTradeRoom', { tradeOfferId }, (response: { status: string; data?: Message[]; message?: string }) => {
                     if (response.status === 'ok') {
                         const authStore = useAuthStore();
                         if (response.data) {
@@ -194,7 +195,7 @@ export const useChatStore = defineStore('chat', {
             if (!message) return;
 
             message.status = 'pending';
-            this.socket?.emit('sendMessage',
+            socket?.emit('sendMessage',
                 { tradeOfferId, content: message.content, tempId },
                 (response: { status: string; message?: string }) => {
                     if (response.status === 'ok') {

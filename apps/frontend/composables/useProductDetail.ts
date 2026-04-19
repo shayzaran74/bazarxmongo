@@ -190,7 +190,7 @@ export const useProductDetail = () => {
   const submitReview = async () => {
     if (!authStore.isLoggedIn) {
       toast.info(t('products.detail.review.loginToReview'));
-      return navigateTo('/login');
+      return navigateTo('/auth/login');
     }
     if (!product.value?.id) return;
     try {
@@ -216,7 +216,7 @@ export const useProductDetail = () => {
     const vendorId = product.value?.vendorId;
     if (!authStore.isLoggedIn) {
       toast.info(t('products.detail.followLoginRequired'));
-      return navigateTo('/login');
+      return navigateTo('/auth/login');
     }
     if (!vendorId) return;
     try {
@@ -300,7 +300,7 @@ export const useProductDetail = () => {
   const buyWithBarter = async () => {
     if (!authStore.isLoggedIn) {
       toast.info(t('products.detail.barterLoginRequired'));
-      return navigateTo('/login');
+      return navigateTo('/auth/login');
     }
     if (!product.value?.id) return;
     const totalCost = displayPrice.value * quantity.value;

@@ -112,7 +112,7 @@
         <p class="text-sm text-gray-600">
           Şifrenizi hatırladınız mı?
           <NuxtLink
-            to="/login"
+            to="/auth/login"
             class="font-medium text-primary-600 hover:text-primary-500"
           >
             Giriş yapın

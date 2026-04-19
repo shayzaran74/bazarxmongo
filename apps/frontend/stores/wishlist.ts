@@ -31,7 +31,7 @@ export const useWishlistStore = defineStore('wishlist', {
       const { $api } = useApi()
       const authStore = useAuthStore()
       if (!authStore.isLoggedIn) { 
-        navigateTo('/login')
+        navigateTo('/auth/login')
         return 
       }
       

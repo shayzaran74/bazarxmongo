@@ -30,7 +30,7 @@
       
       <div class="text-center mt-6">
         <NuxtLink
-          to="/forgot-password"
+          to="/auth/forgot-password"
           class="btn-primary"
         >
           Yeni Şifre Sıfırlama Talebi
@@ -186,7 +186,7 @@
         <p class="text-sm text-gray-600">
           Giriş sayfasına dönmek mi istiyorsunuz?
           <NuxtLink
-            to="/login"
+            to="/auth/login"
             class="font-medium text-primary-600 hover:text-primary-500"
           >
             Giriş yap

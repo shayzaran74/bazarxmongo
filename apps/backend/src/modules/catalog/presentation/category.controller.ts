@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Param } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -46,6 +46,16 @@ export class CategoryController {
   @Get('mega-menu')
   async getMegaMenu() {
     return this.getCategoryTree();
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Get category attributes' })
+  @Get(':id/attributes')
+  async getAttributes(@Param('id') id: string) {
+    return {
+      success: true,
+      data: []
+    };
   }
 
   @ApiBearerAuth()

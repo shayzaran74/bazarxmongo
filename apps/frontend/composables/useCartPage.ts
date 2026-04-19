@@ -85,7 +85,7 @@ export const useCartPage = () => {
 
   const init = async () => {
     if (!authStore.isLoggedIn) {
-      await navigateTo('/login')
+      await navigateTo('/auth/login')
       return
     }
     

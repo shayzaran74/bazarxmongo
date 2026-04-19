@@ -23,7 +23,12 @@ export default defineNuxtConfig({
   ],
 
   routeRules: {
-    '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/v1/**` }
+    '/login': { redirect: '/auth/login' },
+    '/register': { redirect: '/auth/register' },
+    '/forgot-password': { redirect: '/auth/forgot-password' },
+    '/reset-password': { redirect: '/auth/reset-password' },
+    '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/v1/**` },
+    '/socket.io': { proxy: 'http://localhost:3001/socket.io' }
   },
 
   i18n: {

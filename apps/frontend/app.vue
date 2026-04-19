@@ -62,14 +62,14 @@ onMounted(async () => {
       console.error('OAuth user fetch error:', error)
       const toast = useNuxtApp().$toast
       toast.error('Giriş doğrulanırken bir hata oluştu.')
-      await router.replace({ path: '/login', query: { error: 'auth_failed' } })
+      await router.replace({ path: '/auth/login', query: { error: 'auth_failed' } })
     }
   }
   // Check for OAuth error
   else if (route.query.error === 'oauth_failed') {
     const toast = useNuxtApp().$toast
     toast.error('Google ile giriş başarısız oldu. Lütfen tekrar deneyin.')
-    await router.replace({ path: '/login', query: {} })
+    await router.replace({ path: '/auth/login', query: {} })
   }
   // Normal initialization
   else {

@@ -1,10 +1,7 @@
 // apps/backend/src/main.ts
 
 import { NestFactory } from '@nestjs/core';
-import { 
-  FastifyAdapter, 
-  NestFastifyApplication 
-} from '@nestjs/platform-fastify';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -12,9 +9,8 @@ import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create<NestFastifyApplication>(
+  const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
-    new FastifyAdapter()
   );
 
   // CORS: Frontend'in backend ile konuşabilmesi için şart
@@ -26,9 +22,8 @@ async function bootstrap() {
   // Global prefix: /api/v1
   app.setGlobalPrefix('api/v1');
   
-  // Statik dosyalar (Uploads)
-  app.useStaticAssets({
-    root: join(process.cwd(), 'public/uploads'),
+  // Statik dosyalar (Uploads) - Express formatına uygun güncellendi
+  app.useStaticAssets(join(process.cwd(), 'public/uploads'), {
     prefix: '/uploads/',
   });
 
@@ -57,7 +52,7 @@ async function bootstrap() {
   const port = process.env.BACKEND_PORT || 3001;
   await app.listen(port, '0.0.0.0');
   
-  logger.log(`Backend ${port} portunda çalışmaya başladı.`);
+  logger.log(`Backend ${port} portunda (Express) çalışmaya başladı.`);
 }
 
 bootstrap();

@@ -13,20 +13,20 @@
             <div
               class="w-16 h-16 bg-primary-600 rounded-3xl flex items-center justify-center rotate-6 shadow-xl shadow-primary-500/30"
             >
-              <UserPlusIcon class="h-8 w-8 text-white -rotate-6" />
+              <ShoppingCartIcon class="h-8 w-8 text-white -rotate-6" />
             </div>
           </div>
 
           <h2 class="text-center text-3xl font-black text-gray-900 mb-2 tracking-tight">
-            {{ $t('auth.registerTitle') }}
+            {{ $t('auth.welcome') }}
           </h2>
           <p class="text-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-10">
-            {{ $t('auth.registerSubtitle') }}
+            {{ $t('auth.loginTitle') }}
           </p>
 
           <form
-            class="space-y-4"
-            @submit.prevent="handleRegister"
+            class="space-y-6"
+            @submit.prevent="handleLogin"
           >
             <!-- Email -->
             <div class="space-y-1">
@@ -34,45 +34,39 @@
                 for="email"
                 class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
               >{{
-                $t('auth.email') }} *</label>
+                $t('auth.email') }}</label>
               <input
                 id="email"
                 v-model="form.email"
                 type="email"
+                autocomplete="email"
                 required
                 class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 transition-all"
                 placeholder="name@example.com"
               >
             </div>
 
-            <!-- Name -->
-            <div class="space-y-1">
-              <label
-                for="name"
-                class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
-              >{{
-                $t('auth.fullName') }}</label>
-              <input
-                id="name"
-                v-model="form.name"
-                type="text"
-                class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 transition-all"
-                :placeholder="$t('auth.fullName')"
-              >
-            </div>
-
             <!-- Password -->
             <div class="space-y-1">
-              <label
-                for="password"
-                class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
-              >{{
-                $t('auth.password') }} *</label>
+              <div class="flex items-center justify-between px-1">
+                <label
+                  for="password"
+                  class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
+                >{{
+                  $t('auth.password') }}</label>
+                <NuxtLink
+                  to="/auth/forgot-password"
+                  class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700"
+                >
+                  {{ $t('auth.forgotPassword') }}
+                </NuxtLink>
+              </div>
               <div class="relative">
                 <input
                   id="password"
                   v-model="form.password"
                   :type="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
                   required
                   class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 transition-all pr-12"
                   placeholder="••••••••"
@@ -84,42 +78,6 @@
                 >
                   <EyeIcon
                     v-if="showPassword"
-                    class="h-5 w-5"
-                  />
-                  <EyeSlashIcon
-                    v-else
-                    class="h-5 w-5"
-                  />
-                </button>
-              </div>
-              <p class="text-[10px] text-gray-500 font-medium ml-2 mt-1">
-                * {{ $t('auth.passwordHint') }}
-              </p>
-            </div>
-
-            <!-- Confirm Password -->
-            <div class="space-y-1">
-              <label
-                for="confirmPassword"
-                class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
-              >{{
-                $t('auth.confirmPassword') }} *</label>
-              <div class="relative">
-                <input
-                  id="confirmPassword"
-                  v-model="form.confirmPassword"
-                  :type="showConfirmPassword ? 'text' : 'password'"
-                  required
-                  class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 transition-all pr-12"
-                  placeholder="••••••••"
-                >
-                <button
-                  type="button"
-                  class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400"
-                  @click="showConfirmPassword = !showConfirmPassword"
-                >
-                  <EyeIcon
-                    v-if="showConfirmPassword"
                     class="h-5 w-5"
                   />
                   <EyeSlashIcon
@@ -169,68 +127,13 @@
               </label>
             </div>
 
-            <!-- KVKK -->
-            <div class="flex items-start px-1 py-1">
-              <input
-                id="kvkkConsent"
-                v-model="form.kvkkConsent"
-                type="checkbox"
-                required
-                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-0.5"
-              >
-              <label
-                for="kvkkConsent"
-                class="ml-2 block text-[10px] font-bold text-gray-500 uppercase tracking-tight"
-              >
-                <i18n-t
-                  keypath="auth.kvkkConsentTemplate"
-                  scope="global"
-                >
-                  <template #kvkk>
-                    <NuxtLink
-                      to="/legal/kvkk"
-                      target="_blank"
-                      class="text-primary-600 hover:underline"
-                    >
-                      {{ $t('auth.kvkk') }}
-                    </NuxtLink>
-                  </template>
-                </i18n-t>
-              </label>
-            </div>
-
-            <!-- Marketing Consent -->
-            <div class="flex items-start px-1 py-1">
-              <input
-                id="marketingConsent"
-                v-model="form.marketingConsent"
-                type="checkbox"
-                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-0.5"
-              >
-              <label
-                for="marketingConsent"
-                class="ml-2 block text-[10px] font-bold text-gray-500 uppercase tracking-tight"
-              >
-                {{ $t('auth.marketingConsent') }}
-              </label>
-            </div>
-
             <!-- Error Message -->
             <Transition name="fade">
               <div
-                v-if="authStore.error || Object.values(errors).some(e => e)"
-                class="bg-red-50 text-red-600 rounded-2xl p-4 text-xs font-bold border border-red-100 text-center animate-shake space-y-1"
+                v-if="authStore.error"
+                class="bg-red-50 text-red-600 rounded-2xl p-4 text-xs font-bold border border-red-100 text-center animate-shake"
               >
-                <div v-if="authStore.error">
-                  {{ authStore.error }}
-                </div>
-                <div
-                  v-for="(err, key) in errors"
-                  v-show="err"
-                  :key="key"
-                >
-                  {{ err }}
-                </div>
+                {{ authStore.error }}
               </div>
             </Transition>
 
@@ -244,11 +147,11 @@
                 v-if="authStore.loading"
                 class="spinner h-4 w-4 border-white/30 border-t-white"
               />
-              <span>{{ authStore.loading ? $t('auth.creatingAccount') : $t('auth.registerBtn') }}</span>
+              <span>{{ authStore.loading ? $t('auth.loggingIn') : $t('auth.login') }}</span>
             </button>
 
-            <!-- Google Register -->
-            <div class="relative my-6">
+            <!-- Google Login -->
+            <div class="relative my-8">
               <div class="absolute inset-0 flex items-center">
                 <div class="w-full border-t border-gray-100" />
               </div>
@@ -262,7 +165,7 @@
             <button
               type="button"
               class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-50 h-14 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
-              @click="handleGoogleRegister"
+              @click="handleGoogleLogin"
             >
               <svg
                 class="h-5 w-5"
@@ -288,14 +191,14 @@
               {{ $t('auth.continueWithGoogle') }}
             </button>
 
-            <!-- Login Link -->
-            <p class="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-6">
-              {{ $t('auth.alreadyHaveAccount') }}
+            <!-- Register Link -->
+            <p class="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-8">
+              {{ $t('auth.noAccount') }}
               <NuxtLink
-                to="/login"
+                to="/auth/register"
                 class="text-primary-600 hover:text-primary-700"
               >
-                {{ $t('auth.loginNow') }}
+                {{ $t('auth.registerNow') }}
               </NuxtLink>
             </p>
           </form>
@@ -306,112 +209,82 @@
 </template>
 
 <script setup>
-import { EyeIcon, EyeSlashIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCartIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 
-// Layout
 definePageMeta({
   layout: 'auth'
 })
 
-// Page meta
 const { t } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
-// Page meta
 useHead({
-  title: `${t('auth.register')} | TicariTakas`,
+  title: t('auth.login'),
   meta: [
-    {
-      name: 'description',
-      content: t('auth.registerTitle')
-    }
+    { name: 'description', content: t('auth.loginTitle') }
   ]
 })
 
-// Reactive data
 const showPassword = ref(false)
-const showConfirmPassword = ref(false)
 const form = reactive({
   email: '',
-  name: '',
-  phone: '',
   password: '',
-  confirmPassword: '',
   acceptTerms: false,
-  kvkkConsent: false,
-  marketingConsent: false
+  rememberMe: false
 })
 
-const errors = reactive({
-  email: '',
-  name: '',
-  phone: '',
-  password: '',
-  confirmPassword: ''
-})
-
-// Check if already logged in
 onMounted(async () => {
+  if (route.query.error) {
+    const errorMap = {
+      'oauth_failed': 'Google ile giriş yapılamadı.',
+      'missing_token': 'Token bulunamadı. Lütfen tekrar deneyin.',
+      'auth_failed': 'Giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.',
+      'session_expired': 'Oturum süresi doldu.',
+      'security_violation': 'Güvenlik ihlali tespit edildi. Lütfen tekrar giriş yapın.'
+    }
+    
+    authStore.error = errorMap[route.query.error] || 'Bilinmeyen bir hata oluştu.'
+    
+    // Clean up url
+    router.replace({ query: {} })
+  }
+
   await authStore.init()
   if (authStore.isLoggedIn) {
     await router.push('/')
   }
 })
 
-// Validation
-const validateForm = () => {
-  let isValid = true
-  Object.keys(errors).forEach(key => errors[key] = '')
-
-  if (!form.email) {
-    errors.email = t('auth.validation.emailRequired'); isValid = false
-  } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-    errors.email = t('auth.validation.emailInvalid'); isValid = false
+const handleLogin = async () => {
+  if (!form.acceptTerms) {
+    const toast = useNuxtApp().$toast
+    toast.error(t('auth.acceptTermsError'))
+    return
   }
-
-  // Strong password validation
-  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._-])[A-Za-z\d@$!%*?&._-]{8,}$/
-
-  if (!form.password) {
-    errors.password = t('auth.validation.passwordRequired'); isValid = false
-  } else if (!strongPasswordRegex.test(form.password)) {
-    errors.password = t('auth.validation.passwordCriteria'); isValid = false
-  }
-
-  if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = t('auth.validation.passwordMismatch'); isValid = false
-  }
-
-  return isValid
-}
-
-// Register handler
-const handleRegister = async () => {
-  if (!validateForm()) return
-  if (!form.acceptTerms) return
 
   authStore.clearError()
-
   try {
-    await authStore.register({
+    await authStore.login({
       email: form.email,
       password: form.password,
-      name: form.name || undefined,
-      phone: form.phone || undefined,
-      kvkkConsent: form.kvkkConsent,
-      marketingConsent: form.marketingConsent
+      rememberMe: form.rememberMe
     })
 
-    const toast = useNuxtApp().$toast
-    toast.success(t('auth.registerSuccess'))
-    await router.push('/')
+    if (authStore.isLoggedIn) {
+      const toast = useNuxtApp().$toast
+      toast.success(t('auth.loginSuccess'))
+      window.location.href = '/'
+    }
   } catch (error) {
-    console.error('Register error:', error)
+    console.error('Login error:', error)
   }
 }
 
-const handleGoogleRegister = () => {
-  window.location.href = `${useRuntimeConfig().public.apiBase}/api/auth/google`
+const handleGoogleLogin = () => {
+  const googleUrl = `${useRuntimeConfig().public.apiBase}/api/auth/google`
+  console.log('🔗 Redirecting to backend Google auth:', googleUrl)
+  window.location.href = googleUrl
 }
 </script>
