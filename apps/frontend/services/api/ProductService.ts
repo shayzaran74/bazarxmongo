@@ -16,13 +16,13 @@ export const useProductService = () => {
 
   return {
     async getProducts(params: Record<string, unknown> = {}): Promise<ApiResponse<Product[]>> {
-      const res = await $api<PaginatedListingsDto>('/api/products', { query: params })
+      const res = await $api<Product[]>('/api/products', { query: params })
       
       return {
         success: res.success,
         message: res.message,
         error: res.error,
-        data: (res.data?.items || []) as Product[]
+        data: (res.data || []) as Product[]
       }
     },
 

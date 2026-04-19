@@ -88,8 +88,8 @@ export class ProductAdminController {
 
     return {
       success: true,
-      data: {
-        items,
+      data: items,
+      meta: {
         total,
         page: Number(page),
         limit: Number(limit)
@@ -114,6 +114,70 @@ export class ProductAdminController {
         success: false,
         error: 'Ürün silinirken bir hata oluştu. Ürün sipariş geçmişine sahip olabilir, lütfen silmek yerine pasife alınız.'
       };
+    }
+  }
+
+  @ApiOperation({ summary: 'Bulk update products' })
+  @Put('bulk-update')
+  async bulkUpdate(@Body() body: { ids: string[]; updates: any }) {
+    try {
+      const { ids, updates } = body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return { success: false, error: 'Güncellenecek ürün ID listesi boş' };
+      }
+
+      // Yardımcı fonksiyon: Hem string "true" hem bool true yakalar
+      const parseBool = (val: any) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return undefined;
+      };
+
+      // CatalogProduct alanlarını ayıkla
+      const catalogData: any = {};
+      if (updates.status !== undefined && updates.status !== '') catalogData.status = updates.status;
+      
+      const isFeatured = parseBool(updates.isFeatured);
+      const isFlashSale = parseBool(updates.isFlashSale);
+      const isSpecialOffer = parseBool(updates.isSpecialOffer);
+
+      if (isFeatured !== undefined) catalogData.isFeatured = isFeatured;
+      if (isFlashSale !== undefined) catalogData.isFlashSale = isFlashSale;
+      if (isSpecialOffer !== undefined) catalogData.isSpecialOffer = isSpecialOffer;
+
+      // Listing alanlarını ayıkla
+      const listingData: any = {};
+      if (updates.status !== undefined && updates.status !== '') listingData.status = updates.status;
+      
+      if (updates.isActive !== undefined && updates.isActive !== '') {
+        const isActive = parseBool(updates.isActive);
+        if (isActive !== undefined) listingData.status = isActive ? 'ACTIVE' : 'INACTIVE';
+      }
+
+      if (isFeatured !== undefined) listingData.isFeatured = isFeatured;
+      if (isFlashSale !== undefined) listingData.isFlashSale = isFlashSale;
+      if (isSpecialOffer !== undefined) listingData.isSpecialOffer = isSpecialOffer;
+
+      await this.prisma.$transaction(async (tx) => {
+        if (Object.keys(catalogData).length > 0) {
+          await tx.catalogProduct.updateMany({
+            where: { id: { in: ids } },
+            data: catalogData
+          });
+        }
+        
+        if (Object.keys(listingData).length > 0) {
+          await tx.listing.updateMany({
+            where: { catalogProductId: { in: ids } },
+            data: listingData
+          });
+        }
+      });
+
+      return { success: true, message: `${ids.length} ürün başarıyla güncellendi` };
+
+    } catch (error: any) {
+      return { success: false, error: 'Toplu güncelleme sırasında hata: ' + error.message };
     }
   }
 

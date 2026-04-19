@@ -4,7 +4,12 @@ import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class AddToCartDto {
   @IsString()
-  listingId!: string;
+  @IsOptional()
+  listingId?: string; // Optional for backward compatibility if used
+
+  @IsString()
+  @IsOptional()
+  productId?: string;
 
   @IsNumber()
   @Min(1)
@@ -13,4 +18,8 @@ export class AddToCartDto {
   @IsOptional()
   @IsString()
   variantId?: string;
+
+  @IsOptional()
+  @IsString()
+  productVariantId?: string;
 }
