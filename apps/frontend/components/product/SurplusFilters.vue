@@ -1,609 +1,223 @@
 <template>
-  <div class="space-y-6">
-    <!-- Search -->
-    <div class="border-b border-gray-200 pb-4">
-      <div class="relative">
-        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+  <div class="space-y-6 font-sans italic">
+    <!-- Global Search -->
+    <div class="bg-slate-900/40 p-1 rounded-[1.5rem] border border-slate-800 focus-within:border-amber-600/50 transition-all duration-500">
+      <div class="relative group">
+        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 text-lg group-focus-within:text-amber-500 transition-colors">🔍</span>
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Malzeme, kategori ara..."
-          class="w-full px-3 py-2 pl-10 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          placeholder="ENVANTERDE ARA..."
+          class="w-full bg-transparent border-0 rounded-[1.2rem] pl-16 pr-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-200 outline-none placeholder:text-slate-700"
           @input="debouncedSearch"
         >
       </div>
     </div>
 
-    <!-- Category Filter -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('category')"
+    <!-- Collapsible Filters -->
+    <div class="space-y-2">
+      <!-- Categories -->
+      <FilterSection
+        title="KATEGORİ LABORATUVARI"
+        :is-open="openSections.category"
+        @toggle="toggleSection('category')"
       >
-        <span>Kategori</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.category && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.category"
-        class="mt-3 space-y-2"
-      >
-        <div class="relative">
-          <input
-            v-model="categorySearch"
-            type="text"
-            placeholder="Kategori ara..."
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-        </div>
-        <div class="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-          <button
-            :class="[
-              'block w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
-              !localFilters.category
-                ? 'bg-primary-50 text-primary-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            ]"
-            @click="selectCategory('')"
-          >
-            Tüm Kategoriler
-          </button>
+        <CategoryFilter
+          v-model:search-query="categorySearch"
+          :categories="filteredCategories"
+          :active-category="localFilters.category"
+          :expanded-categories="expandedCategories"
+          :has-sub="(id) => getSubCategories(id).length > 0"
+          :get-sub="getSubCategories"
+          :is-expanded="(id) => expandedCategories.has(id)"
+          @select="selectCategory"
+          @toggle-expand="toggleCategory"
+        />
+      </FilterSection>
 
-          <div
-            v-for="cat in filteredCategories"
-            :key="cat.id"
-            class="space-y-1"
-          >
-            <div class="flex items-center group">
-              <button
-                :class="[
-                  'flex-grow text-left px-3 py-2 text-sm rounded-l-md transition-colors',
-                  localFilters.category === cat.name
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                ]"
-                @click="selectCategory(cat.name)"
+      <!-- Location -->
+      <FilterSection
+        title="LOJİSTİK KONUM"
+        :is-open="openSections.location"
+        @toggle="toggleSection('location')"
+      >
+        <LocationFilter
+          v-model:search-query="citySearch"
+          :cities="filteredCities"
+          :active-location="localFilters.location"
+          @select="selectLocation"
+        />
+      </FilterSection>
+
+      <!-- Quantity Range -->
+      <FilterSection
+        title="MİKTAR SPEKTRUMU"
+        :is-open="openSections.quantity"
+        @toggle="toggleSection('quantity')"
+      >
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="text-[8px] font-black text-slate-600 tracking-widest uppercase ml-1">MİN</label>
+              <input
+                v-model.number="localFilters.minQuantity"
+                type="number"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-black text-slate-200 outline-none focus:border-amber-600/50"
               >
-                {{ cat.name }}
-              </button>
-              <button
-                v-if="!categorySearch && getSubCategories(cat.id).length"
-                class="px-2 py-2 hover:bg-gray-100 rounded-r-md transition-colors"
-                @click.stop="toggleCategory(cat.id)"
-              >
-                <ChevronDownIcon
-                  :class="[
-                    'w-4 h-4 text-gray-400 transition-transform',
-                    expandedCategories.has(cat.id) ? 'rotate-180' : ''
-                  ]"
-                />
-              </button>
             </div>
-
-            <!-- Subcategories -->
-            <div
-              v-if="!categorySearch && expandedCategories.has(cat.id)"
-              class="pl-4 space-y-1"
-            >
-              <button
-                v-for="sub in getSubCategories(cat.id)"
-                :key="sub.id"
-                :class="[
-                  'block w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors',
-                  localFilters.category === sub.name
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50'
-                ]"
-                @click="selectCategory(sub.name)"
+            <div class="space-y-2">
+              <label class="text-[8px] font-black text-slate-600 tracking-widest uppercase ml-1">MAKS</label>
+              <input
+                v-model.number="localFilters.maxQuantity"
+                type="number"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-black text-slate-200 outline-none focus:border-amber-600/50"
               >
-                {{ sub.name }}
-              </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Location Filter -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('location')"
-      >
-        <span>Konum</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.location && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.location"
-        class="mt-3 space-y-2"
-      >
-        <div class="relative">
-          <input
-            v-model="citySearch"
-            type="text"
-            placeholder="Şehir ara..."
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-        </div>
-        <div class="max-h-48 overflow-y-auto space-y-1">
           <button
-            :class="[
-              'block w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
-              !localFilters.location
-                ? 'bg-primary-50 text-primary-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            ]"
-            @click="selectLocation('')"
+            class="w-full py-3 bg-slate-800 hover:bg-amber-600 text-[10px] font-black uppercase tracking-widest text-slate-200 hover:text-white rounded-xl transition-all shadow-xl active:scale-95"
+            @click="emitFilters"
           >
-            Tüm Türkiye
-          </button>
-          <button
-            v-for="city in filteredCities"
-            :key="city"
-            :class="[
-              'block w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
-              localFilters.location === city
-                ? 'bg-primary-50 text-primary-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            ]"
-            @click="selectLocation(city)"
-          >
-            {{ city }}
+            FİLTREYİ UYGULA
           </button>
         </div>
-      </div>
-    </div>
+      </FilterSection>
 
-    <!-- Quantity Range -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('quantity')"
+      <!-- Price Range -->
+      <FilterSection
+        title="BİRİM MALİYET"
+        :is-open="openSections.price"
+        @toggle="toggleSection('price')"
       >
-        <span>Miktar Aralığı</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.quantity && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.quantity"
-        class="mt-3 space-y-3"
-      >
-        <div class="grid grid-cols-2 gap-2">
-          <input
-            v-model.number="localFilters.minQuantity"
-            type="number"
-            placeholder="Min"
-            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-          <input
-            v-model.number="localFilters.maxQuantity"
-            type="number"
-            placeholder="Max"
-            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-        </div>
-        <button
-          class="w-full px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
-          @click="emitFilters"
-        >
-          Uygula
-        </button>
-      </div>
-    </div>
-
-    <!-- Price Range -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('price')"
-      >
-        <span>Birim Fiyat Aralığı</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.price && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.price"
-        class="mt-3 space-y-3"
-      >
-        <div class="grid grid-cols-2 gap-2">
-          <div class="relative">
-            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">₺</span>
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
             <input
               v-model.number="localFilters.minPrice"
               type="number"
-              placeholder="Min"
-              class="w-full pl-5 pr-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="MİN ₺"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-black text-slate-200 outline-none focus:border-amber-600/50"
             >
-          </div>
-          <div class="relative">
-            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">₺</span>
             <input
               v-model.number="localFilters.maxPrice"
               type="number"
-              placeholder="Max"
-              class="w-full pl-5 pr-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="MAKS ₺"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-black text-slate-200 outline-none focus:border-amber-600/50"
             >
           </div>
-        </div>
-        <button
-          class="w-full px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
-          @click="emitFilters"
-        >
-          Uygula
-        </button>
-      </div>
-    </div>
-
-    <!-- Status Filter -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('status')"
-      >
-        <span>Durum</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.status && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.status"
-        class="mt-3 space-y-2"
-      >
-        <label
-          v-for="status in statusOptions"
-          :key="status.value"
-          class="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
-        >
-          <input
-            v-model="localFilters.status"
-            type="radio"
-            :value="status.value"
-            class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-            @change="emitFilters"
-          >
-          <span class="text-sm text-gray-700">{{ status.label }}</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Material Type -->
-    <div
-      v-show="specs?.materials?.length"
-      class="border-b border-gray-200 pb-4"
-    >
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('materials')"
-      >
-        <span>Malzeme Türü</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.materials && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.materials"
-        class="mt-3 space-y-2"
-      >
-        <div class="relative">
-          <input
-            v-model="materialSearch"
-            type="text"
-            placeholder="Malzeme ara..."
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-        </div>
-        <div class="max-h-48 overflow-y-auto pr-1 custom-scrollbar space-y-1">
           <button
-            :class="[
-              'block w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
-              !localFilters.materialType
-                ? 'bg-primary-50 text-primary-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            ]"
-            @click="handleMaterialChange('')"
+            class="w-full py-3 bg-slate-800 hover:bg-amber-600 text-[10px] font-black uppercase tracking-widest text-slate-200 hover:text-white rounded-xl transition-all shadow-xl active:scale-95"
+            @click="emitFilters"
           >
-            Tüm Malzemeler
-          </button>
-          <button
-            v-for="material in filteredMaterials"
-            :key="material"
-            :class="[
-              'block w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
-              localFilters.materialType === material
-                ? 'bg-primary-50 text-primary-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            ]"
-            @click="handleMaterialChange(material)"
-          >
-            {{ material }}
+            FİLTREYİ UYGULA
           </button>
         </div>
-      </div>
-    </div>
+      </FilterSection>
 
-    <!-- Trade Mode -->
-    <div class="border-b border-gray-200 pb-4">
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('tradeMode')"
+      <!-- Status & Trade Mode -->
+      <FilterSection
+        title="İŞLEM DURUMU"
+        :is-open="openSections.status"
+        @toggle="toggleSection('status')"
       >
-        <span>Takas Yöntemi</span>
-        <ChevronDownIcon :class="['w-5 h-5 transition-transform', openSections.tradeMode && 'rotate-180']" />
-      </button>
-      <div
-        v-show="openSections.tradeMode"
-        class="mt-3 space-y-2"
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            v-for="status in statusOptions"
+            :key="status.value"
+            :class="[
+              'px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border',
+              localFilters.status === status.value
+                ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-900/20'
+                : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
+            ]"
+            @click="localFilters.status = status.value; emitFilters()"
+          >
+            {{ status.label }}
+          </button>
+        </div>
+      </FilterSection>
+      
+      <FilterSection
+        title="TAKAS PROTOKOLÜ"
+        :is-open="openSections.tradeMode"
+        @toggle="toggleSection('tradeMode')"
       >
+        <div class="space-y-2">
+          <button
+            v-for="mode in tradeModeOptions"
+            :key="mode.value"
+            :class="[
+              'w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border',
+              localFilters.tradeMode === mode.value
+                ? 'bg-slate-800 border-amber-600/50 text-amber-500'
+                : 'bg-slate-950 border-slate-800 text-slate-600 hover:text-slate-400'
+            ]"
+            @click="localFilters.tradeMode = mode.value; emitFilters()"
+          >
+            <div class="flex items-center justify-between">
+              {{ mode.label }}
+              <span v-if="localFilters.tradeMode === mode.value" class="text-amber-500">●</span>
+            </div>
+          </button>
+        </div>
+      </FilterSection>
+
+      <!-- Toggle Flags -->
+      <div class="pt-6 grid grid-cols-1 gap-3">
         <label
-          v-for="mode in tradeModeOptions"
-          :key="mode.value"
-          class="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
+          v-for="flag in [
+            { key: 'urgent', label: 'ACİL İLANLAR', icon: '⚡' },
+            { key: 'bulkAvailable', label: 'TOPLU ALIM', icon: '📦' },
+            { key: 'withImages', label: 'GÖRSEL KAYITLI', icon: '🖼️' }
+          ]"
+          :key="flag.key"
+          class="flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-800/60 transition-all group"
         >
-          <input
-            v-model="localFilters.tradeMode"
-            type="radio"
-            :value="mode.value"
-            class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-            @change="emitFilters"
-          >
-          <span class="text-sm text-gray-700">{{ mode.label }}</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Toggle Filters -->
-    <div class="border-b border-gray-200 pb-4">
-      <div class="space-y-3">
-        <label class="flex items-center justify-between cursor-pointer">
-          <span class="text-sm font-medium text-gray-900">Sadece Acil İlanlar</span>
-          <input
-            v-model="localFilters.urgent"
-            type="checkbox"
-            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            @change="emitFilters"
-          >
-        </label>
-        <label class="flex items-center justify-between cursor-pointer">
-          <span class="text-sm font-medium text-gray-900">Toplu Alıma Uygun</span>
-          <input
-            v-model="localFilters.bulkAvailable"
-            type="checkbox"
-            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            @change="emitFilters"
-          >
-        </label>
-        <label class="flex items-center justify-between cursor-pointer">
-          <span class="text-sm font-medium text-gray-900">Fotoğraflı İlanlar</span>
-          <input
-            v-model="localFilters.withImages"
-            type="checkbox"
-            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            @change="emitFilters"
-          >
-        </label>
-      </div>
-    </div>
-
-    <!-- Wanted Categories -->
-    <div
-      v-show="specs?.wantedCategories?.length"
-      class="border-b border-gray-200 pb-4"
-    >
-      <button
-        class="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-primary-600"
-        @click="toggleSection('wantedCategories')"
-      >
-        <span>Takas Karşılığı Aranan</span>
-        <ChevronDownIcon
-          :class="['w-5 h-5 transition-transform', openSections.wantedCategories && 'rotate-180']"
-        />
-      </button>
-      <div
-        v-show="openSections.wantedCategories"
-        class="mt-3 space-y-2"
-      >
-        <div class="relative">
-          <input
-            v-model="wantedCategorySearch"
-            type="text"
-            placeholder="Kategori ara..."
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-        </div>
-        <div class="max-h-48 overflow-y-auto pr-2 space-y-1 custom-scrollbar">
-          <label class="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+          <div class="flex items-center gap-4">
+            <span class="text-lg opacity-40 group-hover:opacity-100 transition-opacity">{{ flag.icon }}</span>
+            <span class="text-[10px] font-black text-slate-400 group-hover:text-amber-500 tracking-widest uppercase transition-colors">{{ flag.label }}</span>
+          </div>
+          <div class="relative inline-flex items-center cursor-pointer">
             <input
-              v-model="localFilters.wantedCategory"
-              type="radio"
-              value=""
-              class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+              v-model="localFilters[flag.key]"
+              type="checkbox"
+              class="sr-only peer"
               @change="emitFilters"
             >
-            <span class="text-sm text-gray-700 font-medium">Tümü</span>
-          </label>
-          <label
-            v-for="cat in filteredWantedCategories"
-            :key="cat"
-            class="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
-          >
-            <input
-              v-model="localFilters.wantedCategory"
-              type="radio"
-              :value="cat"
-              class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-              @change="emitFilters"
-            >
-            <span class="text-sm text-gray-700">{{ cat }}</span>
-          </label>
-        </div>
+            <div class="w-10 h-5 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white shadow-inner" />
+          </div>
+        </label>
       </div>
     </div>
 
-    <!-- Clear Filters Button -->
+    <!-- Cleanup Engine -->
     <button
       v-if="hasActiveFilters"
-      class="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
+      class="w-full py-5 bg-slate-950 border border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] rounded-[1.5rem] hover:text-red-500 hover:border-red-500/30 transition-all shadow-2xl active:scale-95"
       @click="clearAllFilters"
     >
-      Filtreleri Temizle
+      PROTOKOLLERİ SIFIRLA
     </button>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, watch } from '#imports'
-import ChevronDownIcon from '@heroicons/vue/24/outline/ChevronDownIcon'
-import MagnifyingGlassIcon from '@heroicons/vue/24/outline/MagnifyingGlassIcon'
+<script setup lang="ts">
+import FilterSection from './filters/FilterSection.vue'
+import CategoryFilter from './filters/CategoryFilter.vue'
+import LocationFilter from './filters/LocationFilter.vue'
 
 const props = defineProps({
-    categories: {
-        type: Array,
-        default: () => []
-    },
-    cities: {
-        type: Array,
-        default: () => []
-    },
-    specs: {
-        type: Object,
-        default: () => ({
-            materials: [],
-            units: [],
-            locations: [],
-            wantedCategories: [],
-            tradeModes: []
-        })
-    },
-    currentFilters: {
-        type: Object,
-        default: () => ({})
-    }
+  categories: { type: Array, default: () => [] },
+  cities: { type: Array, default: () => [] },
+  specs: { type: Object, default: () => ({ materials: [], units: [], locations: [], wantedCategories: [], tradeModes: [] }) },
+  currentFilters: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['update:filters', 'clear:filters'])
 
-// Local state
-const openSections = ref({
-    category: true,
-    location: false,
-    quantity: false,
-    price: false,
-    materials: false,
-    tradeModes: false,
-    wantedCategories: false,
-    status: false
-})
-
-const searchQuery = ref('')
-const citySearch = ref('')
-const categorySearch = ref('')
-const wantedCategorySearch = ref('')
-const materialSearch = ref('')
-const expandedCategories = ref(new Set())
-const localFilters = ref({ ...props.currentFilters })
-
-const statusOptions = [
-    { value: '', label: 'Tümü' },
-    { value: 'active', label: 'Aktif' },
-    { value: 'pending', label: 'Onay Bekliyor' },
-    { value: 'completed', label: 'Tamamlandı' }
-]
-
-const tradeModeOptions = [
-    { value: '', label: 'Tümü' },
-    { value: 'FULL_BARTER', label: 'Tam Takas' },
-    { value: 'PARTIAL_BARTER', label: 'Kısmi Takas' },
-    { value: 'CASH_ONLY', label: 'Sadece Nakit' }
-]
-
-// Computed
-const filteredCategories = computed(() => {
-    if (!categorySearch.value) {
-        return props.categories.filter(c => !c.parentId)
-    }
-    return props.categories.filter(c =>
-        c.name.toLowerCase().includes(categorySearch.value.toLowerCase())
-    )
-})
-
-const getSubCategories = (parentId) => {
-    return props.categories.filter(c => c.parentId === parentId)
-}
-
-const toggleCategory = (catId) => {
-    const next = new Set(expandedCategories.value)
-    if (next.has(catId)) {
-        next.delete(catId)
-    } else {
-        next.add(catId)
-    }
-    expandedCategories.value = next
-}
-
-const filteredWantedCategories = computed(() => {
-    if (!wantedCategorySearch.value) return props.specs.wantedCategories || []
-    return (props.specs.wantedCategories || []).filter(c =>
-        c.toLowerCase().includes(wantedCategorySearch.value.toLowerCase())
-    )
-})
-
-const filteredMaterials = computed(() => {
-    if (!materialSearch.value) return props.specs.materials || []
-    return (props.specs.materials || []).filter(m =>
-        m.toLowerCase().includes(materialSearch.value.toLowerCase())
-    )
-})
-
-const filteredCities = computed(() => {
-    if (!citySearch.value) return props.cities.slice(0, 20)
-    return props.cities.filter(c =>
-        c.toLowerCase().includes(citySearch.value.toLowerCase())
-    ).slice(0, 20)
-})
-
-const hasActiveFilters = computed(() => {
-    return Object.keys(localFilters.value).some(key => {
-        const value = localFilters.value[key]
-        return value !== undefined && value !== null && value !== '' && value !== false
-    })
-})
-
-// Methods
-const toggleSection = (section) => {
-    openSections.value[section] = !openSections.value[section]
-}
-
-const selectCategory = (categoryName) => {
-    localFilters.value.category = categoryName
-    emitFilters()
-}
-
-const selectLocation = (location) => {
-    localFilters.value.location = location
-    emitFilters()
-}
-
-const emitFilters = () => {
-    emit('update:filters', { ...localFilters.value })
-}
-
-const clearAllFilters = () => {
-    localFilters.value = {}
-    searchQuery.value = ''
-    emit('clear:filters')
-}
-
-const handleMaterialChange = (material) => {
-    localFilters.value.materialType = material
-    emitFilters()
-}
-
-// Debounced search
-let searchTimeout
-const debouncedSearch = () => {
-    clearTimeout(searchTimeout)
-    searchTimeout = setTimeout(() => {
-        localFilters.value.search = searchQuery.value
-        emitFilters()
-    }, 500)
-}
-
-// Watch for prop changes
-watch(() => props.currentFilters, (newFilters) => {
-    localFilters.value = { ...newFilters }
-    searchQuery.value = newFilters.search || ''
-}, { deep: true, immediate: true })
+const {
+  openSections, searchQuery, categorySearch, citySearch, expandedCategories, localFilters,
+  statusOptions, tradeModeOptions, filteredCategories, filteredCities, hasActiveFilters,
+  toggleSection, selectCategory, selectLocation, emitFilters, clearAllFilters,
+  debouncedSearch, toggleCategory, getSubCategories
+} = useSurplusFilters(props, emit)
 </script>

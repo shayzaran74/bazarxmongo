@@ -20,11 +20,12 @@
           </div>
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <span
-                class="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20"
-              >{{
-                $t('auctionsHome.badge') }}</span>
-              <span class="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+              <GhostBadge variant="rose" glow>
+                <template #icon>
+                  <span class="w-2 h-2 bg-rose-500 rounded-full animate-ping mr-2" />
+                </template>
+                {{ $t('auctionsHome.badge') }}
+              </GhostBadge>
             </div>
             <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">
               {{
@@ -77,12 +78,12 @@
 
             <!-- Floating Badges -->
             <div class="absolute top-6 left-6 flex flex-col gap-2">
-              <div
-                class="bg-red-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-xl flex items-center gap-2"
-              >
-                <div class="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+              <GhostBadge variant="rose" glow custom-class="!bg-rose-600 !text-white !border-rose-500">
+                <template #icon>
+                  <div class="w-1.5 h-1.5 bg-white rounded-full animate-ping mr-2" />
+                </template>
                 {{ $t('auctionsHome.live') }}
-              </div>
+              </GhostBadge>
             </div>
 
             <div class="absolute bottom-6 left-6 right-6">

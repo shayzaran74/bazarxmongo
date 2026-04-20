@@ -11,12 +11,12 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col lg:flex-row items-center justify-between mb-12 gap-10">
         <div class="text-center lg:text-left">
-          <div
-            class="inline-flex items-center gap-3 px-5 py-2 bg-white/10 border border-white/20 rounded-full text-white text-xs font-black uppercase tracking-[0.3em] mb-6 backdrop-blur-xl"
-          >
-            <TicketIcon class="h-4 w-4" />
+          <GhostBadge variant="ghost" glow custom-class="!bg-white/10 !border-white/20 !text-white px-5 py-2 text-xs mb-6 backdrop-blur-xl gap-3">
+            <template #icon>
+              <TicketIcon class="h-4 w-4" />
+            </template>
             {{ $t('lotteriesHome.badge') }}
-          </div>
+          </GhostBadge>
           <h2 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase italic leading-[0.8]">
             {{ $t('lotteriesHome.title') }}
             <span
@@ -54,10 +54,12 @@
         v-else-if="lotteries.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in"
       >
-        <div
+        <GlassCard
           v-for="lottery in lotteries"
           :key="lottery.id"
-          class="group relative bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 overflow-hidden hover:border-primary-500/50 transition-all duration-700 h-[30rem] flex flex-col cursor-pointer active:scale-95"
+          variant="watchtower"
+          :glow="true"
+          custom-class="group flex flex-col h-[30rem] cursor-pointer hover:border-primary-500/50 active:scale-95"
           @click="navigateTo(`/lotteries/${lottery.id}`)"
         >
           <!-- Background Image with Overlay -->
@@ -75,9 +77,9 @@
           <!-- Content Wrapper -->
           <div class="relative z-10 p-10 flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
-              <div :class="['px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest', getLotteryStatusBadgeClass(lottery.status || 'Active')]">
+              <GhostBadge :variant="getLotteryStatusVariant(lottery.status || 'Active')" glow>
                 {{ getLotteryStatusText(lottery.status || 'Active') }}
-              </div>
+              </GhostBadge>
               <div class="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl flex flex-col items-center">
                 <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.participants || 0) }}</span>
                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{{ $t('lotteriesHome.remaining') }}</span>
@@ -116,7 +118,7 @@
               </div>
             </div>
           </div>
-        </div>
+          </GlassCard>
       </div>
     </div>
   </div>
@@ -156,12 +158,12 @@ const fetchLotteries = async () => {
   }
 }
 
-const getLotteryStatusBadgeClass = (status: string) => {
+const getLotteryStatusVariant = (status: string): 'emerald' | 'blue' | 'rose' | 'ghost' => {
   switch (status) {
-    case 'Active': return 'bg-green-500 text-white'
-    case 'Completed': return 'bg-blue-500 text-white'
-    case 'Cancelled': return 'bg-red-500 text-white'
-    default: return 'bg-gray-500 text-white'
+    case 'Active': return 'emerald'
+    case 'Completed': return 'blue'
+    case 'Cancelled': return 'rose'
+    default: return 'ghost'
   }
 }
 

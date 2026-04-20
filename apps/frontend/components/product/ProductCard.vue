@@ -44,24 +44,32 @@
             {{ displayBadges.topLeft.text }}
           </div>
 
-          <div
+          <GhostBadge
             v-if="product.isSponsored"
             key="sponsored"
-            class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg bg-indigo-600 text-white flex items-center gap-1.5"
+            variant="ghost"
+            glow
+            custom-class="!bg-indigo-600 !text-white px-3 py-1 text-[9px] gap-1.5 shadow-lg flex items-center"
           >
-            <SparklesIcon class="w-3 h-3 animate-pulse" />
+            <template #icon>
+              <SparklesIcon class="w-3 h-3 animate-pulse" />
+            </template>
             {{ $t('product.sponsored') }}
-          </div>
+          </GhostBadge>
 
-          <div
+          <GhostBadge
             v-if="product.distance !== undefined && product.distance !== null"
             key="distance"
-            class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white backdrop-blur-xl flex items-center gap-1.5 border border-white/20"
+            variant="ghost"
+            glow
+            custom-class="!bg-white/90 dark:!bg-gray-900/90 !text-gray-900 dark:!text-white backdrop-blur-xl px-3 py-1 text-[9px] gap-1.5 shadow-lg flex items-center border-white/20"
           >
-            <MapPinIcon class="w-3 h-3 text-primary-500" />
+            <template #icon>
+              <MapPinIcon class="w-3 h-3 text-primary-500" />
+            </template>
             {{ product.distance < 1 ? (product.distance * 1000).toFixed(0) + 'm' :
               product.distance.toFixed(1) + 'km' }}
-          </div>
+          </GhostBadge>
         </TransitionGroup>
       </div>
 

@@ -135,6 +135,43 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Trading Hub / Watchtower Utilities */
+  .tracking-tightest {
+    letter-spacing: -0.06em;
+  }
+
+  .watchtower-glass {
+    @apply bg-black/60 backdrop-blur-xl border border-white/10;
+  }
+
+  .watchtower-glow-blue {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
+  }
+
+  .watchtower-glow-amber {
+    box-shadow: 0 0 30px rgba(255, 216, 20, 0.15);
+  }
+
+  .shadow-neon {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+
+  .shadow-gold-heavy {
+    box-shadow: 0 0 100px rgba(255, 216, 20, 0.1);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  }
 }
 
 /* Page transitions */
