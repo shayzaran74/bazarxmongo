@@ -1,176 +1,55 @@
 <template>
-  <Teleport to="body">
-    <div
-      v-if="show"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-    >
-      <div class="bg-white rounded-3xl shadow-xl max-w-lg w-full overflow-hidden">
-        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 class="text-xl font-bold text-gray-900">
-            {{ isEditing ? 'Markayı Düzenle' : 'Yeni Marka Ekle' }}
-          </h2>
-          <button
-            class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
-            @click="$emit('close')"
-          >
-            <XMarkIcon class="h-6 w-6" />
-          </button>
+  <div v-if="show" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[32px] w-full max-w-xl shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden">
+      <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-xl font-black text-gray-900 italic uppercase">
+          {{ isEditing ? 'Markayı Düzenle' : 'Yeni Marka Ekle' }}
+        </h3>
+        <button class="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400" @click="$emit('close')">
+          <XMarkIcon class="w-6 h-6" />
+        </button>
+      </div>
+
+      <div class="p-8 space-y-5">
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Marka Adı</label>
+          <input v-model="form.name" type="text" class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all text-sm font-bold outline-none">
         </div>
-
-        <form class="p-8 space-y-6" @submit.prevent="$emit('save')">
-          <div class="grid grid-cols-2 gap-6">
-            <div class="col-span-2">
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-widest">Marka Adı</label>
-              <input
-                :value="modelValue.name"
-                type="text"
-                required
-                class="w-full px-5 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
-                placeholder="Örn: Apple"
-                @input="$emit('update:modelValue', { ...modelValue, name: $event.target.value }); $emit('generate-slug')"
-              >
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-widest">Slug</label>
-              <input
-                :value="modelValue.slug"
-                type="text"
-                required
-                class="w-full px-5 py-3 border border-gray-200 rounded-2xl bg-gray-50 outline-none text-xs font-mono"
-                placeholder="apple"
-                @input="$emit('update:modelValue', { ...modelValue, slug: $event.target.value })"
-              >
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-widest">Sıralama</label>
-              <input
-                :value="modelValue.order"
-                type="number"
-                class="w-full px-5 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
-                @input="$emit('update:modelValue', { ...modelValue, order: Number($event.target.value) })"
-              >
-            </div>
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Slug (URL)</label>
+          <div class="flex gap-2">
+            <input v-model="form.slug" type="text" class="flex-1 px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold text-gray-500 outline-none">
+            <button class="px-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors" @click="$emit('generate-slug')">ÜRET</button>
           </div>
-
-          <div class="grid grid-cols-2 gap-6">
-            <div class="col-span-2">
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-widest">Logo (Görsel veya URL)</label>
-              <div class="flex gap-2">
-                <input
-                  :value="modelValue.image"
-                  type="text"
-                  class="flex-1 px-5 py-3 border border-gray-200 rounded-2xl outline-none text-xs"
-                  placeholder="https://example.com/logo.png"
-                  @input="$emit('update:modelValue', { ...modelValue, image: $event.target.value })"
-                >
-                <label class="cursor-pointer bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-200 px-4 rounded-2xl shadow-sm transition-all flex items-center justify-center">
-                  <CloudArrowUpIcon class="h-6 w-6 text-blue-600" />
-                  <input
-                    type="file"
-                    class="hidden"
-                    accept="image/*"
-                    @change="handleFileUpload"
-                  >
-                </label>
-              </div>
-            </div>
+        </div>
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Logo URL</label>
+          <input v-model="form.icon" type="text" class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold outline-none focus:bg-white focus:border-indigo-500 transition-all" placeholder="https://...">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex items-center gap-3 p-4 bg-indigo-50 rounded-2xl cursor-pointer border border-indigo-100">
+            <input v-model="form.isPopular" type="checkbox" class="w-5 h-5 rounded text-indigo-600">
+            <span class="text-xs font-black text-gray-900 uppercase tracking-widest">POPÜLER</span>
+          </label>
+          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
+            <span class="text-xs font-black text-gray-400 uppercase tracking-widest">SIRA:</span>
+            <input v-model.number="form.order" type="number" class="w-16 bg-transparent border-none outline-none text-sm font-black text-center">
           </div>
+        </div>
+      </div>
 
-          <!-- Preview -->
-          <div v-if="modelValue.image" class="p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-4">
-            <img :src="resolveImageUrl(modelValue.image)" class="w-20 h-20 object-contain rounded-2xl bg-white p-2 shadow-sm">
-            <div class="flex-1 min-w-0">
-              <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Logo Önizlemesi</p>
-              <p class="text-xs text-gray-500 truncate">{{ modelValue.image }}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-6">
-            <div class="flex-1 flex items-center p-4 bg-amber-50 rounded-2xl border border-amber-100">
-              <input
-                id="isPopularForm"
-                :checked="modelValue.isPopular"
-                type="checkbox"
-                class="w-6 h-6 text-amber-600 rounded-lg cursor-pointer border-amber-200 focus:ring-amber-500"
-                @change="$emit('update:modelValue', { ...modelValue, isPopular: $event.target.checked })"
-              >
-              <label for="isPopularForm" class="ml-4 text-sm font-bold text-amber-900 cursor-pointer">Popüler Marka</label>
-            </div>
-            
-            <div class="flex-1">
-              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-widest text-center">Durum</label>
-              <select
-                :value="modelValue.status"
-                class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-xs font-bold outline-none cursor-pointer hover:bg-gray-50 transition-all text-center"
-                @change="$emit('update:modelValue', { ...modelValue, status: $event.target.value })"
-              >
-                <option value="APPROVED">Onaylı</option>
-                <option value="PENDING">Beklemede</option>
-                <option value="REJECTED">Reddedildi</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="pt-4 flex gap-4">
-            <button
-              type="submit"
-              :disabled="saving"
-              class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 transition-all shadow-lg shadow-blue-200"
-            >
-              {{ saving ? 'Kaydediliyor...' : (isEditing ? 'Güncelle' : 'Marka Ekle') }}
-            </button>
-            <button
-              type="button"
-              class="px-8 py-4 border border-gray-200 rounded-2xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
-              @click="$emit('close')"
-            >
-              İptal
-            </button>
-          </div>
-        </form>
+      <div class="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+        <button class="px-6 py-3 text-sm font-black text-gray-500 italic uppercase" @click="$emit('close')">VAZGEÇ</button>
+        <button :disabled="saving" class="px-10 py-3 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-gray-900 transition-all shadow-lg disabled:opacity-50" @click="$emit('save')">
+          {{ saving ? 'KAYDEDİLİYOR...' : 'KAYDET' }}
+        </button>
       </div>
     </div>
-  </Teleport>
+  </div>
 </template>
 
 <script setup>
-import { XMarkIcon, CloudArrowUpIcon } from '@heroicons/vue/24/outline'
-
-const props = defineProps({
-  show: Boolean,
-  isEditing: Boolean,
-  modelValue: Object,
-  saving: Boolean
-})
-
-const emit = defineEmits(['close', 'save', 'update:modelValue', 'generate-slug'])
-
-const { resolveImageUrl } = useAppImage()
-const { $api } = useApi()
-const toast = useNuxtApp().$toast
-
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  const data = new FormData()
-  data.append('file', file)
-
-  try {
-    toast.info('Görsel yükleniyor...')
-    const response = await $api('/api/upload?type=logo', {
-      method: 'POST',
-      body: data
-    })
-
-    if (response.success) {
-      emit('update:modelValue', { ...props.modelValue, image: response.url })
-      toast.success('Logo başarıyla yüklendi')
-    }
-  } catch (error) {
-    toast.error('Görsel yüklenirken bir hata oluştu')
-  }
-}
+import { XMarkIcon } from '@heroicons/vue/24/outline'
+defineProps({ show: Boolean, isEditing: Boolean, form: Object, saving: Boolean })
+defineEmits(['close', 'save', 'generate-slug'])
 </script>

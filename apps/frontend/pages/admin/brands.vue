@@ -1,165 +1,129 @@
 <template>
-  <div class="p-6 space-y-6 bg-[#F8FAFC] min-h-screen">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
+  <div class="min-h-screen bg-gray-50 p-6 lg:p-10">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
       <div>
-        <h1 class="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-          <ShieldCheckIcon class="h-10 w-10 text-blue-600" />
-          Marka Yönetimi
+        <h1 class="text-3xl font-black text-gray-900 tracking-tight italic uppercase">
+          🏷️ Marka <span class="text-indigo-600">Yönetimi</span>
         </h1>
-        <p class="text-sm text-gray-500 font-medium mt-1">
-          Üreticileri, distribütörleri ve marka ihlallerini uçtan uca yönetin.
-        </p>
+        <p class="text-gray-500 mt-1 font-medium italic opacity-70">Platform markalarını, başvuruları ve ihlal bildirimlerini yönetin.</p>
       </div>
+      <div class="flex gap-3">
+        <button class="px-6 py-3 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-gray-900 transition-all shadow-lg flex items-center gap-2" @click="openNewBrand">
+          <PlusIcon class="w-5 h-5" /> YENİ MARKA
+        </button>
+        <button class="p-3 bg-white hover:bg-gray-50 rounded-2xl shadow-sm border border-gray-100 transition-all group" @click="fetchBrands">
+          <ArrowPathIcon class="h-6 w-6 text-indigo-600 group-hover:rotate-180 transition-all duration-500" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <BrandStats :stats="brandStats" />
+
+    <!-- Tab Control -->
+    <div class="flex items-center gap-1 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm w-fit mb-8">
       <button
-        class="bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-2"
-        @click="openCreateModal"
+        v-for="tab in tabs" :key="tab.key"
+        class="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+        :class="currentTab === tab.key ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'"
+        @click="currentTab = tab.key"
       >
-        <PlusIcon class="h-5 w-5" />
-        Yeni Marka Ekle
+        <component :is="tab.icon" class="w-4 h-4" />
+        {{ tab.label }}
+        <span v-if="tab.key === 'pending' && brandStats.PENDING" class="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats.PENDING }}</span>
+        <span v-if="tab.key === 'violations' && brandStats.VIOLATIONS" class="bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats.VIOLATIONS }}</span>
       </button>
     </div>
 
-    <!-- Stats Cards -->
-    <BrandStatsCards :stats="brandStats" />
-
-    <!-- Tabs & Filters Nav -->
-    <div class="space-y-4">
-      <BrandTabBar v-model="currentTab" :stats="brandStats" />
-      
-      <BrandFilters 
-        v-if="currentTab !== 'violations'"
-        v-model:search-query="searchQuery"
-        v-model:status="currentStatus"
+    <!-- Content -->
+    <div v-if="currentTab !== 'violations'" class="animate-in fade-in duration-300">
+      <BrandTable
+        v-model:current-page="currentPage"
         v-model:selected-letter="selectedLetter"
+        :brands="brands"
+        :total-items="totalItems"
+        :total-pages="totalPages"
+        :search-query="searchQuery"
+        :resolve-image-url="resolveImageUrl"
         @search="handleSearch"
-      />
-    </div>
-
-    <!-- Dynamic Content Area -->
-    <div v-if="loading && brands.length === 0" class="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
-      <ArrowPathIcon class="h-12 w-12 text-blue-600 animate-spin mb-4" />
-      <p class="text-gray-400 font-black uppercase tracking-widest text-xs">Markalar Yükleniyor...</p>
-    </div>
-
-    <div v-else>
-      <!-- View: Pending Applications -->
-      <BrandPendingList 
-        v-if="currentTab === 'pending'" 
-        :brands="brands" 
         @review="openReviewModal"
-      />
-
-      <!-- View: All Brands Table -->
-      <BrandTable 
-        v-if="currentTab === 'all'" 
-        :brands="brands" 
-        :loading="loading"
-        @edit="editBrand"
+        @edit="openEditBrand"
         @delete="deleteBrand"
       />
+    </div>
 
-      <!-- View: Violations -->
-      <BrandViolationList 
-        v-if="currentTab === 'violations'" 
+    <div v-else class="animate-in fade-in duration-300">
+      <BrandViolations
         :violations="violations"
-        @view="openViolationModal"
-        @resolve="resolveViolationQuickly"
+        :loading="violationsLoading"
+        @review="openViolationModal"
+        @resolve-quick="resolveViolationQuickly"
       />
     </div>
 
     <!-- Modals -->
-    <BrandReviewModal 
-      v-model:rejection-reason="rejectionReason"
-      v-model:is-popular="isPopularToggle"
-      :show="showReviewModal"
-      :brand="selectedBrand"
-      :selected-template="selectedTemplate"
-      :submitting="submitting"
-      :templates="rejectionTemplates"
-      @close="showReviewModal = false"
-      @select-template="v => { selectedTemplate = v.id; rejectionReason = v.label }"
-      @approve="approveBrandApplication(selectedBrand.id)"
-      @reject="rejectBrandApplication(selectedBrand.id)"
-      @request-docs="requestAdditionalDocs(selectedBrand.id)"
-    />
-
-    <BrandFormModal 
-      v-model="formData"
+    <BrandFormModal
       :show="showModal"
       :is-editing="isEditing"
+      :form="formData"
       :saving="saving"
       @close="showModal = false"
       @save="saveBrand"
       @generate-slug="generateSlug"
     />
 
-    <BrandViolationModal 
-      v-model:severity="violationSeverity"
-      v-model:status="violationStatus"
-      v-model:notes="violationNotes"
-      :show="showViolationModal"
-      :violation="selectedViolation"
-      :submitting="submitting"
-      @close="showViolationModal = false"
-      @update="updateViolation"
+    <BrandReviewModal
+      :show="showReviewModal"
+      :brand="selectedBrand"
+      :is-popular="isPopularToggle"
+      :resolve-image-url="resolveImageUrl"
+      @close="showReviewModal = false"
+      @approve="approveBrandApplication(selectedBrand?.id)"
+      @reject="(reason) => { rejectionReason = reason; rejectBrandApplication(selectedBrand?.id) }"
+      @request-docs="requestAdditionalDocs(selectedBrand?.id)"
+      @update:isPopular="isPopularToggle = $event"
     />
   </div>
 </template>
 
 <script setup>
-import { 
-  ShieldCheckIcon, 
-  PlusIcon, 
-  ArrowPathIcon 
-} from '@heroicons/vue/24/outline'
-
+import { PlusIcon, ArrowPathIcon, ClockIcon, TagIcon, ShieldExclamationIcon } from '@heroicons/vue/24/outline'
 import { useAdminBrands } from '~/composables/useAdminBrands'
 
-// Components
-import BrandStatsCards from '~/components/admin/brands/BrandStatsCards.vue'
-import BrandTabBar from '~/components/admin/brands/BrandTabBar.vue'
-import BrandFilters from '~/components/admin/brands/BrandFilters.vue'
-import BrandPendingList from '~/components/admin/brands/BrandPendingList.vue'
+import BrandStats from '~/components/admin/brands/BrandStats.vue'
 import BrandTable from '~/components/admin/brands/BrandTable.vue'
-import BrandViolationList from '~/components/admin/brands/BrandViolationList.vue'
-import BrandReviewModal from '~/components/admin/brands/BrandReviewModal.vue'
+import BrandViolations from '~/components/admin/brands/BrandViolations.vue'
 import BrandFormModal from '~/components/admin/brands/BrandFormModal.vue'
-import BrandViolationModal from '~/components/admin/brands/BrandViolationModal.vue'
+import BrandReviewModal from '~/components/admin/brands/BrandReviewModal.vue'
 
-definePageMeta({
-  layout: 'admin',
-  middleware: ['auth', 'admin']
-})
+definePageMeta({ layout: 'admin', middleware: 'admin' })
+useHead({ title: 'Marka Yönetimi - BazarX Admin' })
 
 const {
-  brands, loading, saving, submitting, brandStats,
-  currentTab, currentStatus, searchQuery, selectedLetter,
-  showModal, showReviewModal, isEditing, selectedBrand, rejectionReason, selectedTemplate, isPopularToggle,
-  violations, showViolationModal, selectedViolation, violationNotes, violationStatus, violationSeverity,
-  formData,
+  brands, loading, saving, brandStats,
+  currentTab, searchQuery, selectedLetter, currentPage, totalPages, totalItems,
+  showModal, showReviewModal, isEditing, selectedBrand, rejectionReason, isPopularToggle,
+  violations, violationsLoading, formData,
   fetchBrands, handleSearch, openReviewModal, approveBrandApplication,
   requestAdditionalDocs, rejectBrandApplication, saveBrand, deleteBrand,
-  updateViolation, resolveViolationQuickly, openViolationModal, generateSlug
+  resolveViolationQuickly, openViolationModal, generateSlug, resolveImageUrl
 } = useAdminBrands()
 
-const rejectionTemplates = [
-  { id: 'ILLEGIBLE_DOC', label: 'Okunaksız Belge' },
-  { id: 'MISSING_CHAIN', label: 'Eksik Fatura Silsilesi' },
-  { id: 'MISSING_SIGNATURE', label: 'Marka Sahibi İmzası Eksik' },
-  { id: 'EXPIRED_CERT', label: 'Tescil Belgesi Süresi Dolmuş' },
-  { id: 'INVALID_CLASS', label: 'Marka Sınıfı Uyumsuz' },
-  { id: 'OTHER', label: 'Diğer' }
+const tabs = [
+  { key: 'pending',    label: 'Bekleyenler', icon: ClockIcon },
+  { key: 'all',        label: 'Tüm Markalar', icon: TagIcon },
+  { key: 'violations', label: 'İhlaller', icon: ShieldExclamationIcon }
 ]
 
-const openCreateModal = () => {
+const openNewBrand = () => {
   isEditing.value = false
   selectedBrand.value = null
   formData.value = { name: '', slug: '', icon: '', image: '', isPopular: false, order: 0, status: 'APPROVED' }
   showModal.value = true
 }
 
-const editBrand = (brand) => {
+const openEditBrand = (brand) => {
   isEditing.value = true
   selectedBrand.value = brand
   formData.value = { ...brand }
@@ -168,7 +132,3 @@ const editBrand = (brand) => {
 
 onMounted(fetchBrands)
 </script>
-
-<style scoped>
-/* Page specific styles if needed */
-</style>

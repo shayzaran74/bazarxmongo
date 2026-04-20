@@ -21,7 +21,7 @@
     <!-- Tabs & Filter Control -->
     <AdvertisingTabs 
       v-model:active-tab="activeTab"
-      v-model:active-filter="activeTab === 'PRODUCT_ADS' ? activeFilter : activeBannerFilter"
+      v-model:active-filter="currentActiveFilter"
       v-model:search-query="searchQuery"
     />
 
@@ -80,6 +80,14 @@ const {
   filteredCampaigns, filteredBanners,
   fetchAll, updateAdStatus, updateBannerStatus
 } = useAdminAdvertising()
+
+const currentActiveFilter = computed({
+  get: () => activeTab.value === 'PRODUCT_ADS' ? activeFilter.value : activeBannerFilter.value,
+  set: (val) => {
+    if (activeTab.value === 'PRODUCT_ADS') activeFilter.value = val
+    else activeBannerFilter.value = val
+  }
+})
 
 const selectedAd = ref(null)
 const isRejectingInternal = ref(false)
