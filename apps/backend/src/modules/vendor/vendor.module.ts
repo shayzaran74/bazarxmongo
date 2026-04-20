@@ -5,6 +5,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CompanyController } from './presentation/company.controller';
 import { VendorController } from './presentation/vendor.controller';
 import { VendorAdminController } from './presentation/vendor-admin.controller';
+import { VendorProductController } from './presentation/vendor-product.controller';
+import { EcosystemController, AnalyticsController, VendorBannersController, VendorBrandsController, AdsController, VendorAdsController } from './presentation/other.controller';
 import { CreateCompanyHandler } from './application/commands/create-company.handler';
 import { RegisterVendorHandler } from './application/commands/register-vendor.handler';
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -26,7 +28,18 @@ const Repositories = [
 
 @Module({
   imports: [CqrsModule],
-  controllers: [CompanyController, VendorController, VendorAdminController],
+  controllers: [
+    CompanyController, 
+    VendorController, 
+    VendorProductController,
+    VendorAdminController,
+    EcosystemController,
+    AnalyticsController,
+    VendorBannersController,
+    VendorBrandsController,
+    AdsController,
+    VendorAdsController
+  ],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,

@@ -88,11 +88,14 @@ export class ProductAdminController {
 
     return {
       success: true,
-      data: items,
-      meta: {
+      data: {
+        items
+      },
+      pagination: {
         total,
         page: Number(page),
-        limit: Number(limit)
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit))
       }
     };
   }

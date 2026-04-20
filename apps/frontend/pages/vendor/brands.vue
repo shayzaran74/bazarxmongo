@@ -984,7 +984,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   PlusIcon,
   CheckBadgeIcon,
@@ -1018,28 +1018,50 @@ definePageMeta({
   middleware: 'vendor'
 })
 
+interface Brand {
+  id: string;
+  name: string;
+  status: string;
+  icon?: string;
+  image?: string;
+  applicationType: string;
+  trademarkNumber?: string;
+  trademarkDate?: string;
+  submittedAt?: string;
+  reviewStartedAt?: string;
+  additionalDocsRequestedAt?: string;
+  reviewNotes?: string;
+  rejectionReason?: string;
+  rejectionTemplate?: string;
+  documentUrl?: string;
+  invoiceChainUrl?: string;
+  authorizationUrl?: string;
+  distributorAgreementUrl?: string;
+  acceptTerms?: boolean;
+}
+
 const { resolveImageUrl } = useAppImage()
 
-const brands = ref([])
-const showWizard = ref(false)
-const currentStep = ref(1)
-const currentFilter = ref('')
-const submitting = ref(false)
-const logoUploading = ref(false)
-const editingBrandId = ref(null)
+const brands = ref<Brand[]>([])
+const showWizard = ref<boolean>(false)
+const currentStep = ref<number>(1)
+const currentFilter = ref<string>('')
+const submitting = ref<boolean>(false)
+const logoUploading = ref<boolean>(false)
+const editingBrandId = ref<string | null>(null)
 
-const docUploading = ref({
+const docUploading = ref<{ [key: string]: boolean }>({
   documentUrl: false,
   invoiceChainUrl: false,
   authorizationUrl: false,
   distributorAgreementUrl: false
 })
 
-const logoInput = ref(null)
-const documentInput = ref(null)
-const invoiceInput = ref(null)
-const authInput = ref(null)
-const distributorInput = ref(null)
+const logoInput = ref<HTMLInputElement | null>(null)
+const documentInput = ref<HTMLInputElement | null>(null)
+const invoiceInput = ref<HTMLInputElement | null>(null)
+const authInput = ref<HTMLInputElement | null>(null)
+const distributorInput = ref<HTMLInputElement | null>(null)
 
 const statusFilters = [
   { label: 'Tümü', value: '' },
@@ -1090,10 +1112,10 @@ const form = reactive({
   authorizationUrl: '',
   distributorAgreementUrl: '',
   acceptTerms: false,
-  categoryIds: []
+  categoryIds: [] as string[]
 })
 
-const rejectionTemplates = {
+const rejectionTemplates: Record<string, string> = {
   ILLEGIBLE_DOC: 'Belge okunaklı değil',
   MISSING_CHAIN: 'Eksik fatura silsilesi',
   MISSING_SIGNATURE: 'Marka sahibi imzası eksik',
@@ -1105,8 +1127,8 @@ const rejectionTemplates = {
 const fetchBrands = async () => {
   try {
     const { $api } = useApi()
-    const res = await $api('/api/vendor-brands')
-    if (res.success) {
+    const res = await $api<Brand[]>('/api/vendor-brands')
+    if (res.success && res.data) {
       brands.value = res.data
     }
   } catch (error) {
@@ -1174,8 +1196,9 @@ const getUploadedDocCount = () => {
   return count
 }
 
-const handleLogoUpload = async (event) => {
-  const file = event.target.files[0]
+const handleLogoUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   logoUploading.value = true
@@ -1184,30 +1207,33 @@ const handleLogoUpload = async (event) => {
 
   try {
     const { $api } = useApi()
-    const res = await $api('/api/vendor-brands/upload-logo', {
+    const res = await $api<{ url: string }>('/api/vendor-brands/upload-logo', {
       method: 'POST',
       body: formData
     })
-    if (res.success) {
-      form.logo = res.url
+
+    if (res.success && res.data?.url) {
+      form.logo = res.data.url
     }
-  } catch (error) {
-    alert('Logo yüklenirken hata oluştu: ' + (error.data?.error || error.message))
+  } catch (err: unknown) {
+    const error = err as { data?: { error?: string }; message?: string };
+    alert('Logo yüklenirken hata oluştu: ' + (error.data?.error || error.message || 'Bilinmeyen hata'))
   } finally {
     logoUploading.value = false
-    event.target.value = ''
+    target.value = ''
   }
 }
 
-const handleDocumentUpload = async (event, fieldName) => {
-  const file = event.target.files[0]
+const handleDocumentUpload = async (event: Event, fieldName: string) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png']
-  const fileExt = file.name.split('.').pop().toLowerCase()
-  if (!allowedExtensions.includes(fileExt)) {
+  const fileExt = file.name.split('.').pop()?.toLowerCase()
+  if (!fileExt || !allowedExtensions.includes(fileExt)) {
     alert('Sadece PDF, JPG veya PNG formatında belgeler kabul edilmektedir.')
-    event.target.value = ''
+    target.value = ''
     return
   }
 
@@ -1217,18 +1243,20 @@ const handleDocumentUpload = async (event, fieldName) => {
 
   try {
     const { $api } = useApi()
-    const res = await $api('/api/vendor-brands/upload-document', {
+    const res = await $api<{ url: string }>('/api/vendor-brands/upload-document', {
       method: 'POST',
       body: formData
     })
-    if (res.success) {
-      form[fieldName] = res.url
+    
+    if (res.success && res.data?.url) {
+      (form as any)[fieldName] = res.data.url
     }
-  } catch (error) {
-    alert(error.data?.error || 'Belge yüklenirken bir hata oluştu')
+  } catch (err: unknown) {
+    const error = err as { data?: { error?: string }; message?: string };
+    alert(error.data?.error || error.message || 'Belge yüklenirken bir hata oluştu')
   } finally {
     docUploading.value[fieldName] = false
-    event.target.value = ''
+    target.value = ''
   }
 }
 
@@ -1266,14 +1294,14 @@ const submitApplication = async () => {
       alert(msg)
       resetForm()
     }
-  } catch (error) {
+  } catch (error: any) {
     alert('İşlem sırasında bir hata oluştu: ' + (error.data?.error || error.message))
   } finally {
     submitting.value = false
   }
 }
 
-const editBrand = (brand) => {
+const editBrand = (brand: Brand) => {
   editingBrandId.value = brand.id
   form.name = brand.name
   form.logo = brand.icon || brand.image || ''
@@ -1292,7 +1320,7 @@ const editBrand = (brand) => {
   showWizard.value = true
 }
 
-const withdrawApplication = async (id) => {
+const withdrawApplication = async (id: string) => {
   if (!confirm('Başvuruyu geri çekmek istediğinize emin misiniz?')) return
 
   try {
@@ -1308,7 +1336,7 @@ const withdrawApplication = async (id) => {
   }
 }
 
-const reapplyBrand = (brand) => {
+const reapplyBrand = (brand: Brand) => {
   form.name = brand.name
   form.logo = brand.icon || brand.image || ''
   form.applicationType = brand.applicationType || 'OWNER'
@@ -1316,9 +1344,7 @@ const reapplyBrand = (brand) => {
   showWizard.value = true
 }
 
-
-
-const getStatusBadgeClass = (status) => {
+const getStatusBadgeClass = (status: string) => {
   switch (status) {
     case 'APPROVED': return 'bg-green-50 text-green-700 border-green-200'
     case 'REJECTED': return 'bg-red-50 text-red-700 border-red-200'
@@ -1326,7 +1352,7 @@ const getStatusBadgeClass = (status) => {
   }
 }
 
-const getStatusLabel = (status) => {
+const getStatusLabel = (status: string) => {
   switch (status) {
     case 'APPROVED': return 'Onaylandı'
     case 'REJECTED': return 'Reddedildi'
@@ -1334,7 +1360,7 @@ const getStatusLabel = (status) => {
   }
 }
 
-const getApplicationTypeBadge = (type) => {
+const getApplicationTypeBadge = (type: string) => {
   switch (type) {
     case 'OWNER': return 'bg-blue-100 text-blue-700'
     case 'AUTHORIZED_SELLER': return 'bg-purple-100 text-purple-700'
@@ -1343,7 +1369,7 @@ const getApplicationTypeBadge = (type) => {
   }
 }
 
-const getApplicationTypeLabel = (type) => {
+const getApplicationTypeLabel = (type: string) => {
   switch (type) {
     case 'OWNER': return 'Marka Sahibi'
     case 'AUTHORIZED_SELLER': return 'Yetkili Satıcı'
@@ -1352,10 +1378,10 @@ const getApplicationTypeLabel = (type) => {
   }
 }
 
-const getRejectionLabel = (template) => {
+const getRejectionLabel = (template?: string) => {
+  if (!template) return null;
   return rejectionTemplates[template] || null
 }
-
 
 onMounted(() => {
   fetchBrands()

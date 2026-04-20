@@ -101,9 +101,12 @@ export const useProductForm = (props: { productId?: string | null, initialData?:
           method: 'POST',
           body: formData
         })
-        if (response.success && (response as any).url) {
-          form.value.productImages.push((response as any).url)
-          if (!form.value.image) form.value.image = (response as any).url
+        if (response.success) {
+          const url = (response as any).data?.url || (response as any).url
+          if (url) {
+            form.value.productImages.push(url)
+            if (!form.value.image) form.value.image = url
+          }
         }
       } catch (e) { toast.error(`${files[i].name} yüklenemedi`) }
     }

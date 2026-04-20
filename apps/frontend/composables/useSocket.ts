@@ -12,7 +12,8 @@ export const useSocket = () => {
             return
         }
 
-        const url = (config.public.apiBase as string).replace('/api', '')
+        // Proxy üzerinden veya mevcut host üzerinden bağlanmak için origin'i kullanıyoruz.
+        const url = window.location.origin
         socketState.value = io(url, {
             transports: ['polling', 'websocket'],
             path: '/socket.io'

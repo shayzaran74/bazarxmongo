@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -35,6 +35,49 @@ export class VendorController {
   async getVendorOrders(@CurrentUser() user: any, @Query() query: any) {
     // TODO: vendor scope'unda order query implementasyon
     return { success: true, data: [], total: 0 }
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor pending orders count', description: 'Satıcının bekleyen sipariş sayısını döner.' })
+  @Get('orders/pending-count')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getPendingOrderCount(@CurrentUser() user: any) {
+    // Mock implementation for now to satisfy frontend
+    return { success: true, data: 0 };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor dashboard stats', description: 'Satıcı paneli için istatistikleri döner.' })
+  @Get('me/dashboard')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getDashboard(@CurrentUser() user: any) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!vendor) return { success: false, message: 'Vendor not found' };
+
+    // Get basic stats from prisma
+    const [productCount, totalSales] = await Promise.all([
+      this.prisma.listing.count({ where: { vendorId: vendor.id } }),
+      0 // Mock total sales for now
+    ]);
+
+    return {
+      success: true,
+      data: {
+        totalSales: 0,
+        orderCount: 0,
+        productCount,
+        recentActivity: [],
+        stats: {
+          views: 0,
+          conversions: 0
+        }
+      }
+    };
   }
 
   @ApiBearerAuth()
@@ -173,6 +216,35 @@ export class VendorController {
       .replace(/--+/g, '-');
   }
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor transfers' })
+  @Get('transfers')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getTransfers(@CurrentUser() user: any) {
+    return { success: true, data: [] };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor invoices' })
+  @Get('invoices')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getInvoices(@CurrentUser() user: any) {
+    return { success: true, data: [] };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor profile by user ID' })
+  @Get('profile/:userId')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Param('userId') userId: string) {
+    const profile = await this.prisma.vendorProfile.findFirst({
+      where: { vendor: { userId } }
+    });
+    return { success: true, data: profile };
+  }
+
   @Public()
   @ApiOperation({ summary: 'List vendors', description: 'Sistemdeki satıcıları listeler. Sayfalama ve filtreleme destekler.' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -180,7 +252,114 @@ export class VendorController {
   @ApiResponse({ status: 200, description: 'Satıcı listesi.' })
   @Get()
   async list(@Query() query: any) {
-    return this.queryBus.execute(new ListVendorsQuery(query));
+    const data = await this.queryBus.execute(new ListVendorsQuery(query));
+    return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get vendor products list' })
+  @Get('products')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getProducts(@CurrentUser() user: any, @Query() query: any) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!vendor) return { success: false, message: 'Vendor not found' };
+
+    const { search, categoryId, limit = 100 } = query;
+
+    const listings = await this.prisma.listing.findMany({
+      where: {
+        vendorId: vendor.id,
+        AND: [
+          search ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { sku: { contains: search, mode: 'insensitive' } }
+            ]
+          } : {},
+          categoryId ? { catalogProduct: { categoryId } } : {}
+        ]
+      },
+      include: {
+        catalogProduct: {
+          include: {
+            category: true,
+            media: {
+              where: { type: 'IMAGE' },
+              take: 1
+            }
+          }
+        }
+      },
+      take: Number(limit),
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    // Map to frontend structure
+    const data = listings.map(l => ({
+      id: l.id,
+      name: l.title,
+      sku: l.sku,
+      price: l.price,
+      stock: l.stock,
+      status: l.status,
+      image: l.catalogProduct?.media?.[0]?.url,
+      Category: l.catalogProduct?.category
+    }));
+
+    return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update product stock' })
+  @Patch('products/:id/stock')
+  @Roles('VENDOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async updateStock(
+    @Param('id') id: string,
+    @Body() body: { change: number; reason: string },
+    @CurrentUser() user: any
+  ) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!vendor) return { success: false, message: 'Vendor not found' };
+
+    const listing = await this.prisma.listing.findFirst({
+      where: { id, vendorId: vendor.id }
+    });
+
+    if (!listing) return { success: false, message: 'Listing not found' };
+
+    const newStock = Math.max(0, listing.stock + body.change);
+
+    const updated = await this.prisma.listing.update({
+      where: { id },
+      data: { stock: newStock }
+    });
+
+    // Log the change if possible
+    try {
+      await (this.prisma as any).inventoryLog.create({
+        data: {
+          productId: id,
+          vendorId: vendor.id,
+          change: body.change,
+          previousStock: listing.stock,
+          newStock: newStock,
+          reason: body.reason,
+          createdAt: new Date()
+        }
+      });
+    } catch (e) {
+      // Ignore if table missing
+    }
+
+    return { success: true, data: updated };
   }
 
   @Public()
@@ -190,6 +369,7 @@ export class VendorController {
   @ApiResponse({ status: 404, description: 'Satıcı bulunamadı.' })
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
-    return this.queryBus.execute(new GetVendorBySlugQuery(slug));
+    const data = await this.queryBus.execute(new GetVendorBySlugQuery(slug));
+    return { success: true, data };
   }
 }

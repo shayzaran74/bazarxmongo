@@ -14,6 +14,7 @@ export class GetCompanyHandler implements IQueryHandler<GetCompanyQuery> {
   ) {}
 
   async execute(query: GetCompanyQuery): Promise<any> {
+    console.log('--- GetCompanyHandler: Executing for ID ---', query.id);
     const company = await this.companyRepository.findById(query.id);
     if (!company) {
       throw new NotFoundException('Şirket bulunamadı.');
@@ -23,7 +24,7 @@ export class GetCompanyHandler implements IQueryHandler<GetCompanyQuery> {
     return {
       id: company.id,
       name: props.name,
-      taxNumber: props.taxNumber.value,
+      taxNumber: props.taxNumber?.value || null,
       status: props.status,
     };
   }

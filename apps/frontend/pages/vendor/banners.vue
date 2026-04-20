@@ -227,7 +227,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
     ArrowLeftIcon,
     PlusIcon,
@@ -246,13 +246,21 @@ useHead({
     title: 'Banner Yönetimi - Satıcı Paneli'
 })
 
+interface Banner {
+  id: string;
+  imageUrl: string;
+  linkUrl?: string;
+  isActive: boolean;
+  order?: number;
+}
+
 const { resolveImageUrl } = useAppImage()
 const toast = useNuxtApp().$toast
 
-const banners = ref([])
-const loading = ref(true)
-const showAddModal = ref(false)
-const submitting = ref(false)
+const banners = ref<Banner[]>([])
+const loading = ref<boolean>(true)
+const showAddModal = ref<boolean>(false)
+const submitting = ref<boolean>(false)
 
 const newBanner = ref({
     imageUrl: '',
@@ -264,14 +272,15 @@ const fetchBanners = async () => {
     loading.value = true
     try {
         const { $api } = useApi()
-        const data = await $api('/api/vendor-banners')
+        const data = await $api<Banner[]>('/api/vendor-banners')
 
-        if (data.success) {
+        if (data.success && data.data) {
             banners.value = data.data
         }
-    } catch (error) {
-        console.error('Fetch banner error:', error)
-        toast.error('Bannerlar yüklenirken hata oluştu')
+    } catch (err: unknown) {
+        console.error('Fetch banner error:', err)
+        const error = err as { data?: { error?: string }; message?: string };
+        toast.error(error.data?.error || error.message || 'Bannerlar yüklenirken hata oluştu')
     } finally {
         loading.value = false
     }
@@ -286,7 +295,7 @@ const createBanner = async () => {
     submitting.value = true
     try {
         const { $api } = useApi()
-        const data = await $api('/api/vendor-banners', {
+        const data = await $api<Banner>('/api/vendor-banners', {
             method: 'POST',
             body: newBanner.value
         })
@@ -297,20 +306,21 @@ const createBanner = async () => {
             newBanner.value = { imageUrl: '', linkUrl: '', isActive: true }
             fetchBanners()
         }
-    } catch (error) {
-        console.error('Create banner error:', error)
-        toast.error(error.data?.error || 'Banner eklenirken hata oluştu')
+    } catch (err: unknown) {
+        console.error('Create banner error:', err)
+        const error = err as { data?: { error?: string }; message?: string };
+        toast.error(error.data?.error || error.message || 'Banner eklenirken hata oluştu')
     } finally {
         submitting.value = false
     }
 }
 
-const deleteBanner = async (id) => {
+const deleteBanner = async (id: string) => {
     if (!confirm('Bu bannerı silmek istediğinize emin misiniz?')) return
 
     try {
         const { $api } = useApi()
-        const data = await $api(`/api/vendor-banners/${id}`, {
+        const data = await $api<{success: boolean}>(`/api/vendor-banners/${id}`, {
             method: 'DELETE'
         })
 
@@ -318,16 +328,17 @@ const deleteBanner = async (id) => {
             toast.success('Banner silindi')
             fetchBanners()
         }
-    } catch (error) {
-        console.error('Delete banner error:', error)
-        toast.error('Silme işlemi başarısız')
+    } catch (err: unknown) {
+        console.error('Delete banner error:', err)
+        const error = err as { data?: { error?: string }; message?: string };
+        toast.error(error.data?.error || error.message || 'Silme işlemi başarısız')
     }
 }
 
-const toggleStatus = async (banner) => {
+const toggleStatus = async (banner: Banner) => {
     try {
         const { $api } = useApi()
-        const data = await $api(`/api/vendor-banners/${banner.id}`, {
+        const data = await $api<{success: boolean}>(`/api/vendor-banners/${banner.id}`, {
             method: 'PUT',
             body: {
                 isActive: !banner.isActive
@@ -338,9 +349,10 @@ const toggleStatus = async (banner) => {
             toast.success('Durum güncellendi')
             fetchBanners()
         }
-    } catch (error) {
-        console.error('Update banner error:', error)
-        toast.error('Güncelleme başarısız')
+    } catch (err: unknown) {
+        console.error('Update banner error:', err)
+        const error = err as { data?: { error?: string }; message?: string };
+        toast.error(error.data?.error || error.message || 'Güncelleme başarısız')
     }
 }
 

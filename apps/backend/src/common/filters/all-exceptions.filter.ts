@@ -28,9 +28,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     // Hata detaylarını terminale bas (Stack Trace dahil)
+    let errorDetails = '';
+    try {
+      errorDetails = exception instanceof Error ? exception.stack || exception.message : JSON.stringify(exception);
+    } catch (e) {
+      errorDetails = 'Could not stringify exception: ' + String(exception);
+    }
+
     this.logger.error(
       `Hata: ${request.method} ${request.url}`,
-      exception instanceof Error ? exception.stack : JSON.stringify(exception),
+      errorDetails
     );
 
     response.status(status).send({

@@ -149,6 +149,7 @@ const { resolveImageUrl } = useAppImage()
 const config = useRuntimeConfig()
 const { locale } = useI18n()
 const authStore = useAuthStore()
+const { $api } = useApi()
 
 const banners = ref([])
 const currentIndex = ref(0)
@@ -177,9 +178,7 @@ const fetchBanners = async () => {
 
         const query = params.toString() ? `?${params.toString()}` : ''
 
-        const data = await $fetch(`/api/banners${query}`, {
-            baseURL: config.public.apiBase
-        })
+        const data = await $api(`/api/banners${query}`)
 
         if (data.success && data.data && data.data.length > 0) {
             banners.value = data.data

@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, useI18n, useRuntimeConfig } from '#imports'
+import { ref, computed, onMounted, useI18n, useRuntimeConfig, useApi } from '#imports'
 import ArrowRightIcon from '@heroicons/vue/24/outline/ArrowRightIcon'
 
 const emit = defineEmits(['add-to-cart'])
@@ -109,6 +109,7 @@ const prediction = ref(null)
 const userBehavior = ref({ clicks: [], dwellTime: 0 })
 
 const { t, tm, rt } = useI18n()
+const { $api } = useApi()
 
 // Cache random indices to prevent flickering on every re-render
 const randomIndex = ref({
@@ -225,9 +226,8 @@ const fetchPersonalizedData = async () => {
       query.isFeatured = true
     }
 
-    const data = await $fetch('/api/products', {
-      query,
-      baseURL: useRuntimeConfig().public.apiBase
+    const data = await $api('/api/products', {
+      query
     })
 
     if (data?.success) {
@@ -246,9 +246,8 @@ const fetchPersonalizedData = async () => {
     console.error('Personalized feed error:', err)
     // Fallback to featured products
     try {
-      const fallback = await $fetch('/api/products', {
-        query: { limit: 12, isFeatured: true },
-        baseURL: useRuntimeConfig().public.apiBase
+      const fallback = await $api('/api/products', {
+        query: { limit: 12, isFeatured: true }
       })
       if (fallback?.success) products.value = fallback.data
     } catch (e) {

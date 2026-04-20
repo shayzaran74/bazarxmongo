@@ -213,11 +213,31 @@ const deleteProduct = async (id: string) => {
   }
 }
 
-const handleExcelUpload = (event: any) => {
-  // Excel upload logic (BFF endpoint)
+const handleExcelUpload = async (event: any) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  loading.value = true
+  try {
+    const res = await vendorService.importExcel(formData)
+    if (res.success) {
+      alert('Ürünler başarıyla yüklendi!')
+      refresh()
+    } else {
+      alert('Yükleme sırasında hata: ' + (res.error || 'Bilinmeyen hata'))
+    }
+  } catch (err: any) {
+    alert('Bir hata oluştu: ' + (err.data?.message || err.message))
+  } finally {
+    loading.value = false
+    event.target.value = ''
+  }
 }
 
 const downloadSimpleTemplate = () => {
-  // Template download logic
+  vendorService.downloadTemplate()
 }
 </script>

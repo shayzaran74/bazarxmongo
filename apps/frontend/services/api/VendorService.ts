@@ -60,7 +60,7 @@ export const useVendorService = () => {
         },
 
         async getMyListings(params: any = {}): Promise<ApiResponse<PaginatedResponse<any>>> {
-            return await $api<PaginatedResponse<any>>('/api/listings', { params })
+            return await $api<PaginatedResponse<any>>('/api/listings', { query: params })
         },
 
         async createListing(data: any): Promise<ApiResponse<any>> {
@@ -78,7 +78,7 @@ export const useVendorService = () => {
         },
 
         async getVendorProducts(vendorId: string | number, params: Record<string, unknown> = {}): Promise<ApiResponse<PaginatedResponse<Product>>> {
-            return $api<PaginatedResponse<Product>>('/api/products', { params: { vendorId, ...params } })
+            return $api<PaginatedResponse<Product>>('/api/products', { query: { vendorId, ...params } })
         },
 
         async followVendor(vendorId: string | number): Promise<ApiResponse<unknown>> {
@@ -91,6 +91,20 @@ export const useVendorService = () => {
 
         async checkFollowStatus(vendorId: string): Promise<ApiResponse<{ isFollowing: boolean }>> {
             return $api<{ isFollowing: boolean }>(`/api/vendors/${vendorId}/is-following`)
+        },
+
+        async importExcel(formData: FormData): Promise<ApiResponse<any>> {
+            return await $api<any>('/api/vendor-inventory/import-excel', {
+                method: 'POST',
+                body: formData
+            })
+        },
+
+        async downloadTemplate(): Promise<void> {
+            const authStore = useAuthStore()
+            // Proxy üzerinden çekmek için mevcut origin'i kullanıyoruz
+            const url = `${window.location.origin}/api/v1/vendor-inventory/template/download?token=${authStore.token}`
+            window.open(url, '_blank')
         }
     }
 }

@@ -2,16 +2,15 @@ import type { ApiResponse } from '@barterborsa/shared-types'
 
 export const useApi = () => {
   const config = useRuntimeConfig()
-  const authStore = useAuthStore()
-  const apiBase = config.public.apiBase
 
   const customFetch = async <T>(path: string, options: any = {}): Promise<ApiResponse<T>> => {
-    let normalizedPath = path.startsWith('/') ? path.slice(1) : path
+    const authStore = useAuthStore()
+    let normalizedPath = path.startsWith('/') ? path : `/${path}`
     
     // Backend 'api/v1' prefix kullandığı için, 'api/' ile başlayan yolların
     // arasına 'v1' ekliyoruz (eğer zaten yoksa).
-    if (normalizedPath.startsWith('api/') && !normalizedPath.startsWith('api/v1/')) {
-      normalizedPath = normalizedPath.replace('api/', 'api/v1/')
+    if (normalizedPath.startsWith('/api/') && !normalizedPath.startsWith('/api/v1/')) {
+      normalizedPath = normalizedPath.replace('/api/', '/api/v1/')
     }
     
     const headers: Record<string, string> = { ...(options.headers || {}) }
@@ -22,20 +21,15 @@ export const useApi = () => {
     }
 
     try {
-      console.log('--- API FETCH ---', { 
-        path, 
-        normalizedPath, 
-        baseURL: apiBase, 
-        full: `${apiBase}/${normalizedPath}` 
-      })
-      return await $fetch<ApiResponse<T>>(normalizedPath, { baseURL: apiBase, ...options, headers })
+      // baseURL parametresini kaldırıyoruz, böylece Nuxt proxy (nitro) üzerinden mevcut host kullanılır.
+      return await $fetch<ApiResponse<T>>(normalizedPath, { ...options, headers })
     } catch (error: any) {
       if ((error.status === 419 || error.status === 401) && authStore.isLoggedIn) {
         if (error.status === 419) {
           const refreshed = await authStore.tryRefresh()
           if (refreshed) {
             headers['Authorization'] = `Bearer ${authStore.token}`
-            return await $fetch<ApiResponse<T>>(normalizedPath, { baseURL: apiBase, ...options, headers })
+            return await $fetch<ApiResponse<T>>(normalizedPath, { ...options, headers })
           }
         }
         authStore.logout()

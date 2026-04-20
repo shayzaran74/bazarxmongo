@@ -229,7 +229,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   ArrowsRightLeftIcon,
   ArrowUpTrayIcon,
@@ -243,20 +243,40 @@ definePageMeta({
   middleware: 'vendor'
 })
 
-const toast = useNuxtApp().$toast
-
-const fileInput = ref(null)
-const uploading = ref(false)
-const loading = ref(false)
-const transfers = ref([])
-const importResults = ref(null)
-
-const triggerFileInput = () => {
-  fileInput.value.click()
+interface Transfer {
+  id: string;
+  transferNumber: string;
+  _count?: { items: number };
+  createdAt: string;
 }
 
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
+interface ImportResult {
+  success: boolean;
+  results: {
+    success: number;
+    failed: number;
+    errors: string[];
+  };
+  error?: string;
+}
+
+const toast = useNuxtApp().$toast
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref<boolean>(false)
+const loading = ref<boolean>(false)
+const transfers = ref<Transfer[]>([])
+const importResults = ref<ImportResult | null>(null)
+
+const triggerFileInput = () => {
+  if (fileInput.value) {
+    fileInput.value.click()
+  }
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   uploading.value = true
@@ -265,28 +285,25 @@ const handleFileUpload = async (event) => {
 
   try {
     const { $api } = useApi()
-    const response = await $api('/api/vendors/products/bulk/import', {
+    const response = await $api<ImportResult>('/api/vendors/products/bulk/import', {
       method: 'POST',
       body: formData
     })
 
-    if (response.success) {
+    if (response.success && response.data) {
       toast.success('Excel başarıyla işlendi!')
-      importResults.value = response
+      importResults.value = response.data
       await fetchTransfers()
     } else {
       toast.error(response.error || 'Yükleme başarısız')
     }
-  } catch (error) {
-    console.error('Upload error:', error)
-    if (error.data && error.data.error) {
-      toast.error(error.data.error)
-    } else {
-      toast.error('Dosya yüklenirken bir hata oluştu')
-    }
+  } catch (err: unknown) {
+    console.error('Upload error:', err)
+    const error = err as { data?: { error?: string }; message?: string };
+    toast.error(error.data?.error || error.message || 'Dosya yüklenirken bir hata oluştu')
   } finally {
     uploading.value = false
-    event.target.value = ''
+    target.value = ''
   }
 }
 
@@ -294,18 +311,20 @@ const fetchTransfers = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const response = await $api('/api/vendors/transfers')
-    if (response.success) {
+    const response = await $api<Transfer[]>('/api/vendors/transfers')
+    if (response.success && response.data) {
       transfers.value = response.data
     }
-  } catch (error) {
-    console.error('Fetch transfers error:', error)
+  } catch (err: unknown) {
+    console.error('Fetch transfers error:', err)
+    const error = err as { data?: { error?: string }; message?: string };
+    toast.error(error.data?.error || error.message || 'Geçmiş yüklenemedi')
   } finally {
     loading.value = false
   }
 }
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string | Date | number) => {
   return new Date(dateString).toLocaleDateString('tr-TR', {
     day: 'numeric',
     month: 'long',

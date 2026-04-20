@@ -6,12 +6,14 @@ import { isErr } from '@barterborsa/shared-core';
 
 export class CompanyMapper {
   public static toDomain(record: any): Company {
-    const taxNumberResult = TaxNumber.create(record.taxNumber);
-    if (isErr(taxNumberResult)) {
-      throw taxNumberResult.error;
+    let taxNumber = undefined;
+    if (record.taxNumber) {
+      const taxNumberResult = TaxNumber.create(record.taxNumber);
+      if (isErr(taxNumberResult)) {
+        throw taxNumberResult.error;
+      }
+      taxNumber = taxNumberResult.data;
     }
-
-    const taxNumber = taxNumberResult.data;
 
     const props: CompanyProps = {
       taxNumber: taxNumber,
@@ -42,7 +44,7 @@ export class CompanyMapper {
     const props = company.getProps();
     return {
       id: company.id,
-      taxNumber: props.taxNumber.value,
+      taxNumber: props.taxNumber?.value,
       name: props.name,
       address: props.address,
       phone: props.phone,

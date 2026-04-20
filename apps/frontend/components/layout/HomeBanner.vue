@@ -147,6 +147,7 @@ const props = defineProps({
 const { resolveImageUrl } = useAppImage()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const { $api } = useApi()
 const { locale } = useI18n()
 
 const banners = ref([])
@@ -176,9 +177,7 @@ const fetchBanners = async () => {
         params.append('position', 'home_top')
         const query = params.toString() ? `?${params.toString()}` : ''
 
-        const data = await $fetch(`/api/banners${query}`, {
-            baseURL: config.public.apiBase
-        })
+        const data = await $api(`/api/banners${query}`)
         if (data.success) {
             banners.value = data.data
             // Varsayılan altyazı desteği yoksa, Premium bir görünüm için rastgele subtitle ekle (Eğer API'den gelmiyorsa)

@@ -185,7 +185,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { 
   ArrowPathIcon, 
   DocumentTextIcon, 
@@ -201,19 +201,33 @@ definePageMeta({
   middleware: 'vendor'
 })
 
-const loading = ref(false)
-const invoices = ref([])
+interface Invoice {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  viewUrl: string;
+  metadata?: {
+    month: number;
+    year: number;
+    totalAmount: number;
+  };
+}
+
+const loading = ref<boolean>(false)
+const invoices = ref<Invoice[]>([])
 
 const fetchInvoices = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const res = await $api('/api/vendors/invoices')
-    if (res.success) {
+    const res = await $api<Invoice[]>('/api/vendors/invoices')
+    if (res.success && res.data) {
       invoices.value = res.data
     }
-  } catch (error) {
-    console.error('Failed to fetch invoices:', error)
+  } catch (err: unknown) {
+    console.error('Failed to fetch invoices:', err)
+    const error = err as { data?: { error?: string }; message?: string };
+    useNuxtApp().$toast.error(error.data?.error || error.message || 'Faturalar yüklenemedi')
   } finally {
     loading.value = false
   }
@@ -224,7 +238,8 @@ const lastMonthAmount = computed(() => {
   return invoices.value[0].metadata?.totalAmount || 0
 })
 
-const getMonthName = (month) => {
+const getMonthName = (month?: number) => {
+  if (!month) return 'Bilinmeyen'
   const months = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
@@ -232,12 +247,12 @@ const getMonthName = (month) => {
   return months[month - 1] || 'Bilinmeyen'
 }
 
-const formatAmount = (val) => {
+const formatAmount = (val?: number | string) => {
   if (!val) return '0,00'
-  return parseFloat(val).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return parseFloat(val.toString()).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const formatFileSize = (bytes) => {
+const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']

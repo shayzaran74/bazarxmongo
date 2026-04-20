@@ -440,8 +440,7 @@ const fetchCategories = async () => {
     */
 
     // Fetch surplus/barter categories (SurplusCategory table)
-    const surplusData = await $fetch<ApiResponse<any>>('/api/surplus/categories', {
-      baseURL: useRuntimeConfig().public.apiBase,
+    const surplusData = await $api<any>('/api/surplus/categories', {
       query: { all: false, includeChildren: true } // all: false to get root-only with children
     })
     if (surplusData.success) {
@@ -594,9 +593,7 @@ const autoDetectLocation = async () => {
 
     // 2. Fallback: IP-based Geolocation via Backend Proxy
     try {
-      const resp = await $fetch<ApiResponse<{city?: string; regionName?: string; district?: string;}>>('/api/settings/detect-location', {
-        baseURL: useRuntimeConfig().public.apiBase
-      })
+      const resp = await $api<any>('/api/settings/detect-location')
 
       if (resp.success && (resp.data?.city || resp.data?.regionName)) {
         console.log(`[GEO] IP fallback: city="${resp.data.city}", region="${resp.data.regionName}"`)
@@ -933,12 +930,9 @@ onMounted(async () => {
 
     // Connect to TicariTakas Socket
     try {
-      const res = await $fetch<any>('/api/companies/me', {
-        baseURL: config.public.apiBase,
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      }).catch(() => null)
-      if (res?.success && res?.company) {
-        connect(res.company.id)
+      const res = await $api<any>('/api/companies/me').catch(() => null)
+      if (res?.success && (res.data as any)?.id) {
+        connect((res.data as any).id)
       } else {
         connect()
       }

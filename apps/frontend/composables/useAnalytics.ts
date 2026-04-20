@@ -9,6 +9,7 @@ interface UtmParams {
 export const useAnalytics = () => {
     const config = useRuntimeConfig()
     const route = useRoute()
+    const { $api } = useApi()
 
     const getSessionId = (): string | null => {
         if (process.server) return null
@@ -44,9 +45,8 @@ export const useAnalytics = () => {
         try {
             const sid = getSessionId()
             const utm: UtmParams = JSON.parse(sessionStorage.getItem('utm_params') || '{}')
-            await $fetch('/api/analytics/track', {
+            await $api('/api/analytics/track', {
                 method: 'POST',
-                baseURL: config.public.apiBase as string,
                 body: {
                     eventType, sessionId: sid,
                     url: window.location.pathname,
@@ -62,25 +62,19 @@ export const useAnalytics = () => {
         }
     }
 
-    const authHeader = () => ({
-        Authorization: `Bearer ${useAuthStore().token}`
-    })
-
-    const base = config.public.apiBase as string
-
-    const getRealTimeStats     = () => $fetch('/api/analytics/realtime',  { baseURL: base, headers: authHeader() })
-    const getCampaignPerformance = () => $fetch('/api/analytics/campaigns', { baseURL: base, headers: authHeader() })
-    const getChannelBreakdown  = () => $fetch('/api/analytics/channels',  { baseURL: base, headers: authHeader() })
-    const getUserTrends        = () => $fetch('/api/analytics/trends',    { baseURL: base, headers: authHeader() })
+    const getRealTimeStats     = () => $api('/api/analytics/realtime')
+    const getCampaignPerformance = () => $api('/api/analytics/campaigns')
+    const getChannelBreakdown  = () => $api('/api/analytics/channels')
+    const getUserTrends        = () => $api('/api/analytics/trends')
 
     const createCampaign = (data: Record<string, unknown>) =>
-        $fetch('/api/analytics/campaigns', { method: 'POST', body: data, baseURL: base, headers: authHeader() })
+        $api('/api/analytics/campaigns', { method: 'POST', body: data })
 
     const updateCampaign = (id: string, data: Record<string, unknown>) =>
-        $fetch(`/api/analytics/campaigns/${id}`, { method: 'PUT', body: data, baseURL: base, headers: authHeader() })
+        $api(`/api/analytics/campaigns/${id}`, { method: 'PUT', body: data })
 
     const deleteCampaign = (id: string) =>
-        $fetch(`/api/analytics/campaigns/${id}`, { method: 'DELETE', baseURL: base, headers: authHeader() })
+        $api(`/api/analytics/campaigns/${id}`, { method: 'DELETE' })
 
     return {
         track, captureUtmParams,

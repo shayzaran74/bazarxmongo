@@ -535,7 +535,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   PhotoIcon,
   LinkIcon,
@@ -554,15 +554,58 @@ definePageMeta({
   middleware: 'vendor'
 })
 
+interface VendorSettingsForm {
+  businessName: string;
+  logoUrl: string;
+  coverImageUrl: string;
+  description: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+  address: string;
+  city: string;
+  country: string;
+  zipCode: string;
+  bankName: string;
+  bankAccountName: string;
+  bankIban: string;
+  adImageUrlLeft: string;
+  adLinkUrlLeft: string;
+  adImageUrlRight: string;
+  adLinkUrlRight: string;
+  adProductIdLeft: string;
+  adProductIdRight: string;
+  showAd: boolean;
+  showFlashSales: boolean;
+  flashProductIds: string[];
+  [key: string]: any;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image?: string;
+  [key: string]: any;
+}
+
+interface Vendor {
+  id: string;
+  status: string;
+  rejectionReason?: string;
+  [key: string]: any;
+}
+
 const authStore = useAuthStore()
 const toast = useNuxtApp().$toast
 
-const loading = ref(true)
-const saving = ref(false)
-const vendor = ref(null)
-const vendorProducts = ref([])
+const loading = ref<boolean>(true)
+const saving = ref<boolean>(false)
+const vendor = ref<Vendor | null>(null)
+const vendorProducts = ref<Product[]>([])
 
-const form = ref({
+const form = ref<VendorSettingsForm>({
   businessName: '',
   logoUrl: '',
   coverImageUrl: '',
@@ -593,13 +636,13 @@ const fetchProfile = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const response = await $api(`/api/vendors/profile/${authStore.user.id}`)
+    const response = await $api<Vendor>(`/api/vendors/profile/${authStore.user?.id}`)
 
-    if (response.success) {
+    if (response.success && response.data) {
       vendor.value = response.data
       // Fill form
       Object.keys(form.value).forEach(key => {
-        if (response.data[key] !== undefined) {
+        if (response.data && response.data[key] !== undefined) {
           form.value[key] = response.data[key] ?? form.value[key]
         }
       })
@@ -612,14 +655,15 @@ const fetchProfile = async () => {
   }
 }
 
-const handleFileUpload = async (event, type) => {
-  const file = event.target.files[0]
+const handleFileUpload = async (event: Event, type: string) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   // Frontend validation
   const validation = validateImage(file)
   if (!validation.isValid) {
-    toast.error(validation.error)
+    toast.error(validation.error || 'Geçersiz görsel')
     return
   }
 
@@ -629,24 +673,29 @@ const handleFileUpload = async (event, type) => {
   try {
     toast.info('Görsel yükleniyor...')
     const uploadUrl = `/api/upload?type=${type}`
-
     const { $api } = useApi()
-    const response = await $api(uploadUrl, {
+
+    const urlResponse = await $api<{ url: string }>(uploadUrl, {
       method: 'POST',
       body: formDataToSend
     })
 
-    if (response.success) {
+    // ApiResponse yapısı gereği veriler data içindedir
+    if (urlResponse.success && urlResponse.data?.url) {
       if (type === 'logo') {
-        form.value.logoUrl = response.url
+        form.value.logoUrl = urlResponse.data.url
       } else if (type === 'banner') {
-        form.value.coverImageUrl = response.url
+        form.value.coverImageUrl = urlResponse.data.url
       }
       toast.success('Görsel başarıyla yüklendi!')
     }
-  } catch (error) {
-    console.error('Upload error:', error)
-    toast.error('Görsel yüklenirken bir hata oluştu')
+  } catch (err: unknown) {
+    console.error('Upload error:', err)
+    // unknown tipini güvenli bir şekilde kontrol ediyoruz
+    const error = err as { data?: { error?: string }; message?: string };
+    toast.error(error.data?.error || error.message || 'Görsel yüklenirken bir hata oluştu')
+  } finally {
+    target.value = ''
   }
 }
 
@@ -654,11 +703,11 @@ const fetchVendorProducts = async () => {
   if (!vendor.value?.id) return
   try {
     const { $api } = useApi()
-    const response = await $api(`/api/products`, {
+    const response = await $api<Product[]>(`/api/products`, {
       params: { vendorId: vendor.value.id, limit: 100, status: 'ACTIVE' }
     })
     console.log('Fetched vendor products:', response.data?.length)
-    if (response.success) {
+    if (response.success && response.data) {
       vendorProducts.value = response.data || []
     }
   } catch (error) {
@@ -666,7 +715,7 @@ const fetchVendorProducts = async () => {
   }
 }
 
-const toggleFlashProduct = (productId) => {
+const toggleFlashProduct = (productId: string) => {
   if (!form.value.flashProductIds) {
     form.value.flashProductIds = []
   }
@@ -680,11 +729,11 @@ const toggleFlashProduct = (productId) => {
   }
 }
 
-const formatPrice = (price) => {
+const formatPrice = (price?: number | string) => {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
     currency: 'TRY'
-  }).format(price || 0)
+  }).format(Number(price || 0))
 }
 
 const saveSettings = async () => {
@@ -696,12 +745,12 @@ const saveSettings = async () => {
     console.log('Saving vendor settings:', body)
 
     const { $api } = useApi()
-    const response = await $api(`/api/vendors/${vendor.value.id}`, {
+    const response = await $api<Vendor>(`/api/vendors/${vendor.value.id}`, {
       method: 'PUT',
       body
     })
 
-    if (response.success) {
+    if (response.success && response.data) {
       toast.success('Ayarlar başarıyla kaydedildi!')
       // Update local data
       vendor.value = response.data

@@ -256,7 +256,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   HomeIcon,
   ShoppingBagIcon,
@@ -279,9 +279,10 @@ import {
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const { $api } = useApi()
 
 // Dynamic page title
-const routeTitles = {
+const routeTitles: Record<string, string> = {
   '/vendor/dashboard': 'Dashboard',
   '/vendor/products': 'Ürünler',
   '/vendor/inventory': 'Envanter',
@@ -326,19 +327,15 @@ onUnmounted(() => {
 
 // Pending orders count
 const pendingOrderCount = ref(0)
-let pendingOrderInterval = null
+let pendingOrderInterval: ReturnType<typeof setInterval> | null = null
 const config = useRuntimeConfig()
 
 const fetchPendingOrderCount = async () => {
   try {
-    const response = await $fetch('/api/vendors/orders/pending-count', {
-      baseURL: config.public.apiBase,
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
+    const response = await $api('/api/vendors/orders/pending-count')
     if (response.success) {
-      pendingOrderCount.value = response.data.pendingCount
+      const data = response.data as any
+      pendingOrderCount.value = data.pendingCount || data
     }
   } catch (error) {
     console.error('Failed to fetch pending order count:', error)
