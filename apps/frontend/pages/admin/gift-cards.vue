@@ -128,7 +128,7 @@ const loading = ref(false)
 const fetchGiftCards = async () => {
   loading.value = true
   try {
-    const response = await $api('/api/admin/gift-cards')
+    const response = await $api('/api/v1/admin/gift-cards')
     giftCards.value = response.data
   } catch (error) {
     console.error('Error fetching gift cards:', error)
@@ -161,7 +161,7 @@ const deleteCard = async (id) => {
   if (!confirm('Bu hediye kartını kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return
 
   try {
-    await $api(`/api/admin/gift-cards/${id}/permanent`, {
+    await $api(`/api/v1/admin/gift-cards/${id}/permanent`, {
       method: 'DELETE'
     })
 

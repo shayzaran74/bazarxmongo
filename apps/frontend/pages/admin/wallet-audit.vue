@@ -260,7 +260,7 @@ const runReconciliation = async () => {
   result.value = null
 
   try {
-    const response = await $api('/api/admin/wallet/reconcile', {
+    const response = await $api('/api/v1/admin/wallet/reconcile', {
       method: 'POST',
       body: {
         autoSuspend: autoSuspend.value

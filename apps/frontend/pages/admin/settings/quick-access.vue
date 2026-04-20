@@ -256,7 +256,7 @@ const getIconComponent = (iconName) => {
 
 const loadSettings = async () => {
   try {
-    const response = await $api('/api/admin/settings')
+    const response = await $api('/api/v1/admin/settings')
     if (response.success && response.data.quickAccessMenu) {
       try {
         menuItems.value = JSON.parse(response.data.quickAccessMenu)
@@ -359,7 +359,7 @@ const moveDown = (index) => {
 const saveSettings = async () => {
   saving.value = true
   try {
-    const response = await $api('/api/admin/settings', {
+    const response = await $api('/api/v1/admin/settings', {
       method: 'POST',
       body: {
         quickAccessMenu: JSON.stringify(menuItems.value)

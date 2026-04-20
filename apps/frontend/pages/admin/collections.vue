@@ -230,7 +230,7 @@ const fetchCollections = async () => {
       type: filters.value.type || undefined
     }
 
-    const response = await $api('/api/admin/collections', { query })
+    const response = await $api('/api/v1/admin/collections', { query })
 
     collections.value = response.data
     pagination.value = { ...pagination.value, ...response.pagination }
@@ -248,7 +248,7 @@ const deleteCollection = async (id) => {
   if (!confirm('Bu koleksiyonu silmek istediğinize emin misiniz?')) return
 
   try {
-    await $api(`/api/admin/collections/${id}`, {
+    await $api(`/api/v1/admin/collections/${id}`, {
       method: 'DELETE'
     })
 

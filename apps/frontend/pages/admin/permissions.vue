@@ -311,8 +311,8 @@ const anomalies = ref([])
 onMounted(async () => {
     try {
         const [statsRes, auditRes] = await Promise.all([
-            $api('/api/admin/users/stats'),
-            $api('/api/admin/logs/audit', { params: { limit: 10 } })
+            $api('/api/v1/admin/users/stats'),
+            $api('/api/v1/admin/logs/audit', { params: { limit: 10 } })
         ])
 
         if (statsRes.success) {

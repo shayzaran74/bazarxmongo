@@ -28,7 +28,11 @@ export default defineNuxtConfig({
     '/forgot-password': { redirect: '/auth/forgot-password' },
     '/reset-password': { redirect: '/auth/reset-password' },
     '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/**` },
-    '/socket.io/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/socket.io/**` }
+  },
+
+  nitro: {
+    // Socket.io Nitro üzerinden geçmez — EPIPE döngüsüne yol açar.
+    // Vite devProxy ile client-side direkt bağlantı kullanılır.
   },
 
   i18n: {

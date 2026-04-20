@@ -172,7 +172,7 @@ const selectedOffer = ref(null)
 const fetchOffers = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/admin/offers/pending')
+        const response = await $api('/api/v1/admin/offers/pending')
         if (response.success) {
             offers.value = response.offers
         }
@@ -187,7 +187,7 @@ const approveOffer = async (id) => {
     if (!confirm('Bu teklifi onaylamak istediğinize emin misiniz?')) return
 
     try {
-        const response = await $api(`/api/admin/offers/${id}/approve`, {
+        const response = await $api(`/api/v1/admin/offers/${id}/approve`, {
             method: 'PATCH'
         })
 
@@ -205,7 +205,7 @@ const rejectOffer = async (id) => {
     if (!confirm('Bu teklifi reddetmek istediğinize emin misiniz?')) return
 
     try {
-        const response = await $api(`/api/admin/offers/${id}/reject`, {
+        const response = await $api(`/api/v1/admin/offers/${id}/reject`, {
             method: 'PATCH'
         })
 

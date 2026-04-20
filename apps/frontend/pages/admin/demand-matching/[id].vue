@@ -229,7 +229,7 @@ const adminNotes = ref('')
 const fetchMatch = async () => {
     loading.value = true
     try {
-        const response = await $api(`/api/admin/barter/demand-matches/${route.params.id}`) as ApiResponse<DemandMatch>
+        const response = await $api(`/api/v1/admin/barter/demand-matches/${route.params.id}`) as ApiResponse<DemandMatch>
         if (response.success) match.value = response.data || null
     } catch (err) {
         console.error('Fetch error:', err)
@@ -242,7 +242,7 @@ const fetchMatch = async () => {
 const updateStatus = async (status: string, extras = {}) => {
     submitting.value = true
     try {
-        const response = await $api(`/api/admin/barter/demand-matches/${route.params.id}/status`, {
+        const response = await $api(`/api/v1/admin/barter/demand-matches/${route.params.id}/status`, {
             method: 'PATCH',
             body: { status, ...extras }
         }) as ApiResponse<DemandMatch>

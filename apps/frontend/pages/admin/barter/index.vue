@@ -213,7 +213,7 @@ const totalLimits = ref(0)
 const fetchUsers = async () => {
     loading.value = true
     try {
-        const res = await $api('/api/admin/barter/users')
+        const res = await $api('/api/v1/admin/barter/users')
         if (res.success) {
             users.value = res.data
             calculateStats()
@@ -257,7 +257,7 @@ const editUserBarter = (user) => {
 const saveBarterChanges = async () => {
     saving.value = true
     try {
-        const res = await $api(`/api/admin/barter/user/${editingUser.value.id}`, {
+        const res = await $api(`/api/v1/admin/barter/user/${editingUser.value.id}`, {
             method: 'PATCH',
             body: {
                 barterBalance: editForm.value.balance,

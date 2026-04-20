@@ -252,8 +252,8 @@ const fetchTransactions = async () => {
     loading.value = true
     try {
         const endpoint = activeTab.value === 'barter'
-            ? '/api/admin/barter/transactions'
-            : '/api/admin/barter/xp-transactions'
+            ? '/api/v1/admin/barter/transactions'
+            : '/api/v1/admin/barter/xp-transactions'
 
         const res = await $api(endpoint, {
             params: {

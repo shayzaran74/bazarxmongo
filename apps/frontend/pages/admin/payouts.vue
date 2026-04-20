@@ -209,7 +209,7 @@ const processingId = ref(null)
 const fetchPayouts = async () => {
   loading.value = true
   try {
-    const res = await $api('/api/admin/orders/payouts/pending')
+    const res = await $api('/api/v1/admin/orders/payouts/pending')
     pendingPayouts.value = res.data
   } catch (e) {
     $toast.error('Hak edişler yüklenemedi')
@@ -222,7 +222,7 @@ const approvePayout = async (order) => {
   if (confirm('#' + order.orderNumber + ' numaralı siparişin hak edişini onaylıyor musunuz?')) {
     processingId.value = order.id
     try {
-      await $api(`/api/admin/orders/payouts/${order.id}/approve`, {
+      await $api(`/api/v1/admin/orders/payouts/${order.id}/approve`, {
         method: 'POST'
       })
       $toast.success('Hak ediş başarıyla onaylandı ve satıcı hesaplarına aktarıldı.')

@@ -222,7 +222,7 @@ const saving = ref(false)
 const fetchCards = async () => {
     loading.value = true
     try {
-        const data = await $api('/api/admin/home-quad-cards')
+        const data = await $api('/api/v1/admin/home-quad-cards')
         if (data.success) {
             cards.value = data.data.map(c => ({
                 ...c,
@@ -320,7 +320,7 @@ const saveAll = async () => {
             }))
         }
 
-        const data = await $api('/api/admin/home-quad-cards', {
+        const data = await $api('/api/v1/admin/home-quad-cards', {
             method: 'POST',
             body: payload
         })

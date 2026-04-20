@@ -10,6 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { CreateNotificationDto } from '../application/dtos/notification-complaint.dtos';
 import { CreateNotificationCommand } from '../application/commands/create-notification.command';
 
@@ -42,5 +43,20 @@ export class CommunicationAdminController {
     return this.commandBus.execute(
       new CreateNotificationCommand(dto.userId, dto.type, dto.title, dto.message, dto.link)
     );
+  }
+}
+
+@ApiTags('Chat Admin')
+@ApiBearerAuth()
+@Roles('ADMIN')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('admin/chats')
+export class ChatAdminController {
+  constructor(private readonly prisma: PrismaService) {}
+
+  @ApiOperation({ summary: 'List all chats (Admin)' })
+  @Get()
+  async getChats() {
+    return { success: true, data: [] };
   }
 }

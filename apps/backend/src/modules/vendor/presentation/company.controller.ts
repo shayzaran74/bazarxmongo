@@ -66,12 +66,30 @@ export class CompanyController {
     return this.commandBus.execute(new CreateCompanyCommand(dto));
   }
 
+  @ApiOperation({ summary: 'Get pending companies', description: 'Onay bekleyen tüm şirketleri döner (Admin).' })
+  @Get('pending')
+  async getPending() {
+    const items = await this.prisma.company.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        vendor: {
+          include: { user: { select: { email: true } } }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data: items };
+  }
+
   @ApiOperation({ summary: 'Get company by ID', description: 'ID bilgisi verilen şirketin detaylarını döner.' })
   @ApiParam({ name: 'id', description: 'Şirket ID' })
   @ApiResponse({ status: 200, description: 'Şirket detayları.' })
   @ApiResponse({ status: 404, description: 'Şirket bulunamadı.' })
   @Get(':id')
   async findOne(@Param('id') id: string) {
+    // If id is 'pending' due to routing race (though we placed it above), handle it
+    if (id === 'pending') return this.getPending();
+    
     const result = await this.queryBus.execute(new GetCompanyQuery(id));
     if (!result) return { success: false, message: 'Şirket bulunamadı.' };
     return { success: true, data: result };

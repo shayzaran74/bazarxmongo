@@ -243,8 +243,8 @@ const fetchSubscribers = async () => {
   loading.value = true
   try {
     const [subRes, statRes] = await Promise.all([
-      $api('/api/admin/newsletter/subscribers'),
-      $api('/api/admin/newsletter/stats')
+      $api('/api/v1/admin/newsletter/subscribers'),
+      $api('/api/v1/admin/newsletter/stats')
     ])
 
     if (subRes.success) subscribers.value = subRes.data
@@ -261,7 +261,7 @@ const sendBulkEmail = async () => {
 
   sending.value = true
   try {
-    const response = await $api('/api/admin/newsletter/send-bulk', {
+    const response = await $api('/api/v1/admin/newsletter/send-bulk', {
       method: 'POST',
       body: form.value
     })

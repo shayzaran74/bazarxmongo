@@ -309,7 +309,7 @@ const form = ref({
 const fetchRules = async () => {
     loading.value = true
     try {
-        const data = await $api('/api/admin/badge-rules')
+        const data = await $api('/api/v1/admin/badge-rules')
         if (data.success) {
             rules.value = data.data || []
         }
@@ -346,7 +346,7 @@ const saveRule = async () => {
     saving.value = true
     try {
         const method = editingId.value ? 'PUT' : 'POST'
-        const url = editingId.value ? `/api/admin/badge-rules/${editingId.value}` : '/api/admin/badge-rules'
+        const url = editingId.value ? `/api/v1/admin/badge-rules/${editingId.value}` : '/api/v1/admin/badge-rules'
 
         const data = await $api(url, {
             method,
@@ -368,7 +368,7 @@ const saveRule = async () => {
 const deleteRule = async (id) => {
     if (!confirm('Bu kuralı silmek istediğinize emin misiniz?')) return
     try {
-        const data = await $api(`/api/admin/badge-rules/${id}`, {
+        const data = await $api(`/api/v1/admin/badge-rules/${id}`, {
             method: 'DELETE'
         })
         if (data.success) {

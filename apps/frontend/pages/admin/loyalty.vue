@@ -329,7 +329,7 @@ const parseRegionSettings = (keysMap) => {
 const fetchSettings = async () => {
     try {
         isLoading.value = true
-        const response = await $api('/api/admin/settings')
+        const response = await $api('/api/v1/admin/settings')
         if (response?.data) {
             const d = response.data
 
@@ -394,7 +394,7 @@ const saveSettings = async () => {
             payload[`XP_SPLIT_${city}_SERVICE`] = String(r.splitService)
         })
 
-        const response = await $api('/api/admin/settings', {
+        const response = await $api('/api/v1/admin/settings', {
             method: 'POST',
             body: payload
         })

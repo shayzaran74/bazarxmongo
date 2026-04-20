@@ -413,7 +413,7 @@ const fetchCollection = async () => {
   if (!route.query.id) return
 
   try {
-    const response = await $api(`/api/admin/collections/${route.query.id}`)
+    const response = await $api(`/api/v1/admin/collections/${route.query.id}`)
 
     const collection = response.data
     Object.keys(form.value).forEach(key => {
@@ -495,8 +495,8 @@ const saveCollection = async () => {
   saving.value = true
   try {
     const url = isEditing.value
-      ? `/api/admin/collections/${route.query.id}`
-      : '/api/admin/collections'
+      ? `/api/v1/admin/collections/${route.query.id}`
+      : '/api/v1/admin/collections'
 
     const method = isEditing.value ? 'PUT' : 'POST'
 

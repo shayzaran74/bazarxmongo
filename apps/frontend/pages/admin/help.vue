@@ -431,8 +431,8 @@ watch(() => editingCategory.value.name, (newName) => {
 const fetchAll = async () => {
     try {
         const [artRes, catRes] = await Promise.all([
-            $api('/api/admin/help/articles'),
-            $api('/api/admin/help/categories')
+            $api('/api/v1/admin/help/articles'),
+            $api('/api/v1/admin/help/categories')
         ])
         articles.value = artRes.data
         categories.value = catRes.data
@@ -483,7 +483,7 @@ const closeCategoryModal = () => {
 const saveCategory = async () => {
     try {
         if (!editingCategory.value.name) return
-        await $api('/api/admin/help/categories', {
+        await $api('/api/v1/admin/help/categories', {
             method: 'POST',
             body: editingCategory.value
         })
@@ -504,13 +504,13 @@ const saveArticle = async () => {
         }
 
         if (editingArticle.value.id) {
-            await $api(`/api/admin/help/articles/${editingArticle.value.id}`, {
+            await $api(`/api/v1/admin/help/articles/${editingArticle.value.id}`, {
                 method: 'PUT',
                 body: editingArticle.value
             })
             toast.success('Makale güncellendi')
         } else {
-            await $api('/api/admin/help/articles', {
+            await $api('/api/v1/admin/help/articles', {
                 method: 'POST',
                 body: editingArticle.value
             })
@@ -527,7 +527,7 @@ const saveArticle = async () => {
 const deleteArticle = async (id) => {
     if (!confirm('Bu makaleyi silmek istediğinize emin misiniz?')) return
     try {
-        await $api(`/api/admin/help/articles/${id}`, {
+        await $api(`/api/v1/admin/help/articles/${id}`, {
             method: 'DELETE'
         })
         toast.success('Makale silindi')

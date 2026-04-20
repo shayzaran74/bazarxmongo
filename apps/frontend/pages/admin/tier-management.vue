@@ -547,7 +547,7 @@ const sortedTiers = computed(() => {
 const fetchTiers = async () => {
     loading.value = true
     try {
-        const data = await $api('/api/admin/tier-benefits')
+        const data = await $api('/api/v1/admin/tier-benefits')
         if (data.success) {
             tiers.value = data.data || []
         }
@@ -561,7 +561,7 @@ const fetchTiers = async () => {
 const resetCache = async () => {
     resetting.value = true
     try {
-        const response = await $api('/api/admin/tier-benefits/reset', {
+        const response = await $api('/api/v1/admin/tier-benefits/reset', {
             method: 'POST'
         })
         if (response.success) {
@@ -589,7 +589,7 @@ const openModal = (tier) => {
 const saveTier = async () => {
     saving.value = true
     try {
-        const url = `/api/admin/tier-benefits/${form.value.tier.toLowerCase()}`
+        const url = `/api/v1/admin/tier-benefits/${form.value.tier.toLowerCase()}`
         const payload = { ...form.value }
         delete payload.tier
         delete payload.id

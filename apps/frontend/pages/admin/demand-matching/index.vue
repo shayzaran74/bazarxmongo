@@ -282,7 +282,7 @@ const { $api } = useApi()
 const fetchMatches = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/admin/barter/demand-matches')
+        const response = await $api('/api/v1/admin/barter/demand-matches')
 
         if (response.success) {
             matches.value = response.data
@@ -298,7 +298,7 @@ const establishConnection = async (match) => {
     if (match.status === 'CONNECTED') return
 
     try {
-        const response = await $api(`/api/admin/barter/demand-matches/${match.id}/connect`, {
+        const response = await $api(`/api/v1/admin/barter/demand-matches/${match.id}/connect`, {
             method: 'PATCH'
         })
 

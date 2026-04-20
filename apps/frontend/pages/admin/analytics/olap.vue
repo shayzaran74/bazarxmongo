@@ -238,15 +238,15 @@ const fetchData = async () => {
   loading.value = true
   try {
     // 1. Fetch Heatmap
-    const heatmapRes = await $api('/api/admin/analytics/heatmap')
+    const heatmapRes = await $api('/api/v1/admin/analytics/heatmap')
     if (heatmapRes.success) heatmapData.value = heatmapRes.data
 
     // 2. Fetch Trends
-    const trendRes = await $api('/api/admin/analytics/trends-heavy')
+    const trendRes = await $api('/api/v1/admin/analytics/trends-heavy')
     if (trendRes.success) trendData.value = trendRes.data
 
     // 3. Fetch Anomalies
-    const anomalyRes = await $api('/api/admin/analytics/anomalies')
+    const anomalyRes = await $api('/api/v1/admin/analytics/anomalies')
     if (anomalyRes.success) anomalies.value = anomalyRes.data.alerts || []
     
   } catch (error) {

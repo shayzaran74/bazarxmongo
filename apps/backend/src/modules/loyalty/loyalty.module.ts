@@ -43,9 +43,12 @@ const Repositories = [
   { provide: 'IXpSpendingLimitRuleRepository', useClass: ruleRepos.PrismaXpSpendingLimitRuleRepository },
 ];
 
+import { BadgeAdminController } from './presentation/badge-admin.controller';
+import { TierController } from './presentation/tier.controller';
+
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [XpController, MissionController, LoyaltyAdminController],
+  controllers: [XpController, MissionController, LoyaltyAdminController, BadgeAdminController, TierController],
   providers: [
     ...Handlers,
     ...Repositories,

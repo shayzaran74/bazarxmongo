@@ -10,6 +10,9 @@ import { ContentAdminController } from './presentation/content-admin.controller'
 import { HomeQuadCardsController } from './presentation/home-quad-cards.controller';
 import { DynamicContentController } from './presentation/dynamic-content.controller';
 import { LegalController } from './presentation/legal.controller';
+import { BannersAdminController } from './presentation/banners-admin.controller';
+import { DynamicContentAdminController } from './presentation/dynamic-admin.controller';
+import { HelpAdminController } from './presentation/help-admin.controller';
 
 import { CreateHomeBannerHandler } from './application/commands/create-home-banner.handler';
 import { CreateQuadCardHandler } from './application/commands/create-quad-card.handler';
@@ -79,6 +82,8 @@ const Repositories = [
   { provide: 'ISeoMetadataRepository', useClass: PrismaSeoMetadataRepository },
 ];
 
+import { SettingsAdminController } from './presentation/settings-admin.controller';
+
 @Module({
   imports: [CqrsModule, PrismaModule],
   controllers: [
@@ -87,7 +92,11 @@ const Repositories = [
     ContentAdminController,
     HomeQuadCardsController,
     DynamicContentController,
-    LegalController
+    LegalController,
+    SettingsAdminController,
+    BannersAdminController,
+    DynamicContentAdminController,
+    HelpAdminController
   ],
   providers: [
     ...CommandHandlers,

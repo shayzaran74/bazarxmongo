@@ -152,7 +152,7 @@ const fetchGiftCard = async () => {
   if (!route.query.id) return
 
   try {
-    const response = await $api(`/api/admin/gift-cards/${route.query.id}`)
+    const response = await $api(`/api/v1/admin/gift-cards/${route.query.id}`)
 
     form.value = response.data
     if (form.value.customer) {
@@ -179,7 +179,7 @@ const saveGiftCard = async () => {
       expiresAt: expiryType.value === 'custom' ? form.value.expiresAt : null
     }
 
-    const response = await $api('/api/admin/gift-cards', {
+    const response = await $api('/api/v1/admin/gift-cards', {
       method: 'POST',
       body: data
     })

@@ -211,7 +211,7 @@ const pagination = ref({
 const fetchLogs = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/admin/logs/archived', {
+        const response = await $api('/api/v1/admin/logs/archived', {
             params: {
                 page: pagination.value.page,
                 limit: pagination.value.limit,
@@ -224,7 +224,7 @@ const fetchLogs = async () => {
             pagination.value.total = response.pagination.total
 
             // Get stats as well
-            const statsRes = await $api('/api/admin/logs/stats')
+            const statsRes = await $api('/api/v1/admin/logs/stats')
             if (statsRes.success) {
                 stats.value = statsRes.stats
             }

@@ -28,6 +28,7 @@ export interface ProductFormState {
   badgeText: string
   badgeColor: string
   isActive: boolean
+  isNew: boolean
   isFeatured: boolean
   isFlashSale: boolean
   isSpecialOffer: boolean

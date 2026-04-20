@@ -388,7 +388,7 @@ const mainCategories = computed(() => {
 const fetchCategories = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/admin/surplus-categories?includeChildren=true')
+        const response = await $api('/api/v1/admin/surplus-categories?includeChildren=true')
         categories.value = response.categories
     } catch (error) {
         console.error('Error fetching categories:', error)
@@ -426,8 +426,8 @@ const closeModal = () => {
 const saveCategory = async () => {
     try {
         const url = editingCategory.value
-            ? `/api/admin/surplus-categories/${editingCategory.value.id}`
-            : '/api/admin/surplus-categories'
+            ? `/api/v1/admin/surplus-categories/${editingCategory.value.id}`
+            : '/api/v1/admin/surplus-categories'
 
         const method = editingCategory.value ? 'PATCH' : 'POST'
 
@@ -455,7 +455,7 @@ const deleteCategory = async (id) => {
     if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return
 
     try {
-        await $api(`/api/admin/surplus-categories/${id}`, {
+        await $api(`/api/v1/admin/surplus-categories/${id}`, {
             method: 'DELETE'
         })
 

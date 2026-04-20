@@ -36,6 +36,7 @@ export const useAuthStore = defineStore('auth', {
     balance: (state) => state.user?.wallet?.balance || 0,
     barterBalance: (state) => state.user?.wallet?.barterBalance || 0,
     vendorStatus: (state) => state.user?.vendor?.status || 'NONE',
+    isApexPlus: (state) => (state.user?.vendor as any)?.tier === 'APEX_PLUS' || state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
   },
 
   actions: {

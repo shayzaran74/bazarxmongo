@@ -12,9 +12,10 @@ export const useSocket = () => {
             return
         }
 
-        // Proxy üzerinden veya mevcut host üzerinden bağlanmak için origin'i kullanıyoruz.
-        const url = window.location.origin
-        socketState.value = io(url, {
+        // SSR=false (SPA) modunda Nuxt proxy üzerinden değil,
+        // direkt backend'e bağlanıyoruz — EPIPE döngüsünü önler.
+        const backendUrl = config.public.apiBase || 'http://localhost:3001'
+        socketState.value = io(backendUrl, {
             transports: ['polling', 'websocket'],
             path: '/socket.io'
         })

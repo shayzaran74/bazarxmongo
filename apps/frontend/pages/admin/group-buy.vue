@@ -364,7 +364,7 @@ const form = ref({
 // Fetch campaigns
 const fetchCampaigns = async () => {
   try {
-    const res = await $api('/api/admin/group-buy')
+    const res = await $api('/api/v1/admin/group-buy')
     if (res.success) {
       campaigns.value = res.data
     }
@@ -380,7 +380,7 @@ const searchProducts = async () => {
     return
   }
   try {
-    const res = await $api(`/api/admin/products`, {
+    const res = await $api(`/api/v1/admin/products`, {
       query: { search: productSearch.value, limit: 5 }
     })
     if (res.success) {
@@ -450,8 +450,8 @@ const saveCampaign = async () => {
   saving.value = true
   try {
     const url = editingCampaign.value
-      ? `/api/admin/group-buy/${editingCampaign.value.id}`
-      : '/api/admin/group-buy'
+      ? `/api/v1/admin/group-buy/${editingCampaign.value.id}`
+      : '/api/v1/admin/group-buy'
 
     const method = editingCampaign.value ? 'PUT' : 'POST'
 
@@ -476,7 +476,7 @@ const saveCampaign = async () => {
 const deleteCampaign = async (id) => {
   if (!confirm('Bu kampanyayı silmek istediğinizden emin misiniz?')) return
   try {
-    const res = await $api(`/api/admin/group-buy/${id}`, {
+    const res = await $api(`/api/v1/admin/group-buy/${id}`, {
       method: 'DELETE'
     })
     if (res.success) {

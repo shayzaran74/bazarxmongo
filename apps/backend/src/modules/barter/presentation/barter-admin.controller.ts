@@ -26,6 +26,35 @@ export class BarterAdminController {
     return { success: true, data };
   }
 
+  @ApiOperation({ summary: 'List pending trade offers' })
+  @Get('offers/pending')
+  async getPendingOffers() {
+    const data = await this.prisma.tradeOffer.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        fromCompany: true,
+        toCompany: true,
+        offeredItems: true,
+        requestedItems: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'List wanted items/surplus requests' })
+  @Get('wanted-items')
+  async getWantedItems(@Query('status') status?: string) {
+    const where: any = {};
+    if (status) where.status = status;
+    const data = await this.prisma.wantedItem.findMany({
+      where,
+      include: { company: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
+  }
+
   @ApiOperation({ summary: 'List surplus categories' })
   @Get('surplus-categories')
   async getSurplusCategories() {
@@ -50,6 +79,12 @@ export class BarterAdminController {
   @ApiOperation({ summary: 'List barter chains' })
   @Get('barter/chains')
   async getBarterChains() {
-    return { success: true, data: [] }; // Zincir eşleştirme algoritması sonuçları buraya gelecek
+    return { success: true, data: [] };
+  }
+
+  @ApiOperation({ summary: 'List demand matches' })
+  @Get('barter/demand-matches')
+  async getDemandMatches() {
+    return { success: true, data: [] };
   }
 }

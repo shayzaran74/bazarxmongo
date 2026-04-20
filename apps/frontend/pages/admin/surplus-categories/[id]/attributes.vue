@@ -398,7 +398,7 @@ const parsedOptions = computed(() => {
 // Fetch category info
 const fetchCategory = async () => {
     try {
-        const response = await $api(`/api/admin/surplus-categories/${categoryId}`)
+        const response = await $api(`/api/v1/admin/surplus-categories/${categoryId}`)
         category.value = response.data
     } catch (error) {
         console.error('Error fetching category:', error)
@@ -409,7 +409,7 @@ const fetchCategory = async () => {
 const fetchAttributes = async () => {
     loading.value = true
     try {
-        const response = await $api(`/api/admin/category-attributes`, {
+        const response = await $api(`/api/v1/admin/category-attributes`, {
             query: { surplusCategoryId: categoryId }
         })
         attributes.value = response.data || []
@@ -449,8 +449,8 @@ const saveAttribute = async () => {
         }
 
         const url = editingAttribute.value
-            ? `/api/admin/category-attributes/${editingAttribute.value.id}`
-            : '/api/admin/category-attributes'
+            ? `/api/v1/admin/category-attributes/${editingAttribute.value.id}`
+            : '/api/v1/admin/category-attributes'
 
         const method = editingAttribute.value ? 'PUT' : 'POST'
 
@@ -481,7 +481,7 @@ const deleteAttribute = async (id) => {
     if (!confirm('Bu özelliği silmek istediğinize emin misiniz?')) return
 
     try {
-        await $api(`/api/admin/category-attributes/${id}`, {
+        await $api(`/api/v1/admin/category-attributes/${id}`, {
             method: 'DELETE'
         })
 

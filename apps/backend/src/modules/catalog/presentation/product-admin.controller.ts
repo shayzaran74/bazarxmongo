@@ -57,7 +57,9 @@ export class ProductAdminController {
     @Query('limit') limit: number = 50,
     @Query('q') search?: string
   ) {
-    const skip = (Number(page) - 1) * Number(limit);
+    const pageVal = Number(page) || 1;
+    const limitVal = Number(limit) || 50;
+    const skip = Math.max(0, (pageVal - 1) * limitVal);
     
     const [rawItems, total] = await Promise.all([
       this.prisma.catalogProduct.findMany({

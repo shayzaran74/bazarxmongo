@@ -442,7 +442,7 @@ const fetchLogs = async () => {
             ...filters.value
         })
 
-        const response = await $api(`/api/admin/logs/audit?${params.toString()}`)
+        const response = await $api(`/api/v1/admin/logs/audit?${params.toString()}`)
         if (response.success) {
             logs.value = response.data
             pagination.value = response.pagination

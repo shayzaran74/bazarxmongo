@@ -131,7 +131,7 @@ const formatNumber = (value) => {
 // Fetch Logic
 const fetchAnalytics = async () => {
     try {
-        const res = await $api('/api/admin/analytics?days=30')
+        const res = await $api('/api/v1/admin/analytics?days=30')
         if (res && res.success) {
             data.value = res.data
         }

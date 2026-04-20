@@ -3,12 +3,12 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { PrismaService, PrismaModule } from '@barterborsa/shared-persistence';
 
 import { ChatController } from './presentation/chat.controller';
 import { NotificationController } from './presentation/notification.controller';
 import { ComplaintController } from './presentation/complaint.controller';
-import { CommunicationAdminController } from './presentation/communication-admin.controller';
+import { CommunicationAdminController, ChatAdminController } from './presentation/communication-admin.controller';
 
 import { CreateChatRoomHandler } from './application/commands/create-chat-room.handler';
 import { SendMessageHandler } from './application/commands/send-message.handler';
@@ -40,12 +40,14 @@ import { TradeOfferAcceptedNotificationHandler } from './application/event-handl
   imports: [
     CqrsModule,
     RabbitMQModule,
+    PrismaModule,
   ],
   controllers: [
     ChatController, 
     NotificationController, 
     ComplaintController, 
-    CommunicationAdminController
+    CommunicationAdminController,
+    ChatAdminController
   ],
   providers: [
     PrismaService,

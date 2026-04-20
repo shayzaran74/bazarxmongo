@@ -432,8 +432,8 @@ const fetchData = async () => {
     loading.value = true
     try {
         const [ecoRes, logRes] = await Promise.all([
-            $api('/api/admin/ecosystems'),
-            $api('/api/admin/ecosystems/logs')
+            $api('/api/v1/admin/ecosystems'),
+            $api('/api/v1/admin/ecosystems/logs')
         ])
         ecosystems.value = ecoRes.ecosystems || []
         auditLogs.value = logRes.logs || []
@@ -468,7 +468,7 @@ const submitOverride = async () => {
     if (submitting.value) return
     submitting.value = true
     try {
-        await $api('/api/admin/ecosystems/trust-score', {
+        await $api('/api/v1/admin/ecosystems/trust-score', {
             method: 'POST',
             body: {
                 vendorId: targetMember.value.id,
@@ -489,7 +489,7 @@ const submitOverride = async () => {
 const removeMember = async (vendorId) => {
     if (!confirm('Bu üyeyi ekosistemden çıkarmak istediğinize emin misiniz?')) return
     try {
-        await $api(`/api/admin/ecosystems/members/${vendorId}`, {
+        await $api(`/api/v1/admin/ecosystems/members/${vendorId}`, {
             method: 'DELETE'
         })
         $toast.success('Üye başarıyla çıkarıldı')

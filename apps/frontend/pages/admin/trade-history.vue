@@ -311,7 +311,7 @@ const fetchAllOffers = async () => {
         const params = {}
         if (statusFilter.value) params.status = statusFilter.value
 
-        const response = await $api('/api/admin/offers/all', {
+        const response = await $api('/api/v1/admin/offers/all', {
             params
         })
         if (response.success) {
@@ -342,7 +342,7 @@ const approveOffer = async () => {
     if (!selectedOffer.value) return
 
     try {
-        const response = await $api(`/api/admin/offers/${selectedOffer.value.id}/approve`, {
+        const response = await $api(`/api/v1/admin/offers/${selectedOffer.value.id}/approve`, {
             method: 'PATCH'
         })
 
@@ -363,7 +363,7 @@ const rejectOffer = async () => {
     if (!selectedOffer.value) return
 
     try {
-        const response = await $api(`/api/admin/offers/${selectedOffer.value.id}/reject`, {
+        const response = await $api(`/api/v1/admin/offers/${selectedOffer.value.id}/reject`, {
             method: 'PATCH'
         })
 

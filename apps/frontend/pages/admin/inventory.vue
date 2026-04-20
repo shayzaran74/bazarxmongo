@@ -305,7 +305,7 @@ const fetchProducts = async () => {
     if (filters.value.categoryId) query.append('categoryId', filters.value.categoryId)
     if (filters.value.vendorId) query.append('vendorId', filters.value.vendorId)
 
-    const response = await $api(`/api/admin/products?${query.toString()}`)
+    const response = await $api(`/api/v1/admin/products?${query.toString()}`)
 
     let filtered = response.data
 
@@ -339,7 +339,7 @@ const resetFilters = () => {
 // Fetch vendors
 const fetchVendors = async () => {
   try {
-    const response = await $api('/api/admin/vendors')
+    const response = await $api('/api/v1/admin/vendors')
     if (response.success) {
       vendors.value = response.data
     }
@@ -385,7 +385,7 @@ const closeStockModal = () => {
 
 const updateStock = async () => {
   try {
-    await $api(`/api/admin/products/${selectedProduct.value.id}`, {
+    await $api(`/api/v1/admin/products/${selectedProduct.value.id}`, {
       method: 'PUT',
       body: { stock: newStock.value }
     })

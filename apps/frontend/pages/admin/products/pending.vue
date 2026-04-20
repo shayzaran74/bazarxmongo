@@ -500,7 +500,7 @@ const fetchPendingProducts = async (page = 1) => {
     loading.value = true
     error.value = null
 
-    const response = await $api('/api/admin/products/pending', {
+    const response = await $api('/api/v1/admin/products/pending', {
       query: {
         page,
         limit: pagination.value.limit
@@ -526,7 +526,7 @@ const fetchPendingProducts = async (page = 1) => {
 
 const approveProduct = async (productId) => {
   try {
-    const response = await $api(`/api/admin/products/${productId}/approve`, {
+    const response = await $api(`/api/v1/admin/products/${productId}/approve`, {
       method: 'PUT'
     })
 
@@ -551,7 +551,7 @@ const approveProduct = async (productId) => {
 
 const rejectProduct = async (productId) => {
   try {
-    const response = await $api(`/api/admin/products/${productId}/reject`, {
+    const response = await $api(`/api/v1/admin/products/${productId}/reject`, {
       method: 'PUT',
       body: {
         rejectionReason: 'Admin tarafından reddedildi'

@@ -102,7 +102,7 @@ const {
   form, saving, mainCategories, subCategories1, subCategories2,
   selectedMainCategory, selectedSubCategory1, selectedSubCategory2,
   fetchCategories, fetchProduct, handleFileUpload, saveProduct 
-} = useProductForm(route.query.id as string)
+} = useProductForm(route.query.id)
 
 onMounted(async () => {
   await fetchCategories()

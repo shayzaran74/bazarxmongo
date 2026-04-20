@@ -373,7 +373,7 @@ const fetchCustomer = async () => {
   if (!route.query.id) return
 
   try {
-    const response = await $api(`/api/admin/users/${route.query.id}`)
+    const response = await $api(`/api/v1/admin/users/${route.query.id}`)
 
     const customer = response.data
     form.value = {
@@ -402,8 +402,8 @@ const saveCustomer = async () => {
   saving.value = true
   try {
     const url = isEditing.value
-      ? `/api/admin/users/${route.query.id}`
-      : '/api/admin/users'
+      ? `/api/v1/admin/users/${route.query.id}`
+      : '/api/v1/admin/users'
 
     const method = isEditing.value ? 'PUT' : 'POST'
 

@@ -608,7 +608,7 @@ const pagination = ref({
 const fetchChains = async () => {
     loading.value = true
     try {
-        const { data, pagination: paging } = await $api('/api/admin/barter/chains', {
+        const { data, pagination: paging } = await $api('/api/v1/admin/barter/chains', {
             params: {
                 page: currentPage.value,
                 limit: itemsPerPage.value,
@@ -649,7 +649,7 @@ const changePage = (page) => {
 const detectCycles = async () => {
     detecting.value = true
     try {
-        const response = await $api('/api/admin/barter/detect-cycles', {
+        const response = await $api('/api/v1/admin/barter/detect-cycles', {
             method: 'POST'
         })
 
@@ -671,7 +671,7 @@ const approveChain = async (id) => {
 
     try {
         loading.value = true
-        const response = await $api(`/api/admin/barter/approve-chain/${id}`, {
+        const response = await $api(`/api/v1/admin/barter/approve-chain/${id}`, {
             method: 'POST'
         })
 
@@ -692,7 +692,7 @@ const deleteDraft = async (id) => {
 
     try {
         loading.value = true
-        const response = await $api(`/api/admin/barter/chains/${id}`, {
+        const response = await $api(`/api/v1/admin/barter/chains/${id}`, {
             method: 'DELETE'
         })
 

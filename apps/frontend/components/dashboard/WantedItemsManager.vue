@@ -214,8 +214,7 @@ const props = defineProps({
 
 defineEmits(['edit'])
 
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
+const { $api } = useApi()
 const items = ref([])
 const loading = ref(false)
 const currentFilter = ref('PENDING')
@@ -228,11 +227,9 @@ const formatPrice = (p) => {
 const fetchData = async () => {
     loading.value = true
     try {
-        const params = props.isAdmin ? { status: currentFilter.value } : {}
-        const res = await $fetch(props.apiEndpoint, {
-            baseURL: config.public.apiBase,
-            headers: { Authorization: `Bearer ${authStore.token}` },
-            params
+        const query = props.isAdmin ? { status: currentFilter.value } : {}
+        const res = await $api(props.apiEndpoint, {
+            query
         })
         if (res.success) {
             items.value = res.data
@@ -248,10 +245,8 @@ const deleteItem = async (id) => {
     if (!confirm('Silmek istediğinize emin misiniz?')) return
     try {
         const endpoint = props.isAdmin ? `/api/admin/wanted-items/${id}` : `/api/wanted-items/${id}`
-        await $fetch(endpoint, {
-            method: 'DELETE',
-            baseURL: config.public.apiBase,
-            headers: { Authorization: `Bearer ${authStore.token}` }
+        await $api(endpoint, {
+            method: 'DELETE'
         })
         useNuxtApp().$toast?.success('Silindi')
         fetchData()
@@ -262,10 +257,8 @@ const deleteItem = async (id) => {
 
 const updateStatus = async (id, status) => {
     try {
-        await $fetch(`/api/admin/wanted-items/${id}/status`, {
+        await $api(`/api/admin/wanted-items/${id}/status`, {
             method: 'PATCH',
-            baseURL: config.public.apiBase,
-            headers: { Authorization: `Bearer ${authStore.token}` },
             body: { status }
         })
         useNuxtApp().$toast?.success('Durum güncellendi')

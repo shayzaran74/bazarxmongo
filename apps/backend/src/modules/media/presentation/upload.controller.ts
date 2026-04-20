@@ -36,12 +36,12 @@ export class UploadController {
     schema: {
       type: 'object',
       properties: {
-        image: { type: 'string', format: 'binary' },
+        file: { type: 'string', format: 'binary' },
       },
     },
   })
   @UseInterceptors(
-    FileInterceptor('image', {
+    FileInterceptor('file', {
       storage: diskStorage({
         destination: TEMP_UPLOAD_DIR,
         filename: (_req, file, cb) => {
@@ -77,7 +77,7 @@ export class UploadController {
 
     if (!file) {
       console.warn('⚠️ No file attached to upload request');
-      throw new BadRequestException('Dosya yüklenmedi veya geçersiz format (Field name "image" olmalı)');
+      throw new BadRequestException('Dosya yüklenmedi veya geçersiz format (Field name "file" olmalı)');
     }
 
     const result = await this.mediaService.processAndUpload(file, { subPath });

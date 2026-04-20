@@ -275,7 +275,7 @@ const handleFileUpload = async (event) => {
   formData.append('file', file)
 
   try {
-    const response = await $api('/api/admin/transfers/import-excel', {
+    const response = await $api('/api/v1/admin/transfers/import-excel', {
       method: 'POST',
       body: formData
     })
@@ -305,7 +305,7 @@ const handleFileUpload = async (event) => {
 const fetchTransfers = async () => {
   loading.value = true
   try {
-    const response = await $api('/api/admin/transfers')
+    const response = await $api('/api/v1/admin/transfers')
     if (response.success) {
       transfers.value = response.data
     }

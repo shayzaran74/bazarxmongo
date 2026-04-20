@@ -263,7 +263,7 @@ const fetchReviews = async () => {
       }
     })
 
-    const response = await $api('/api/admin/reviews', {
+    const response = await $api('/api/v1/admin/reviews', {
       query
     })
     reviews.value = response.data || []
@@ -288,7 +288,7 @@ const changePage = (newPage) => {
 // Approve review
 const approveReview = async (reviewId) => {
   try {
-    await $api(`/api/admin/reviews/${reviewId}/approve`, {
+    await $api(`/api/v1/admin/reviews/${reviewId}/approve`, {
       method: 'POST'
     })
     fetchReviews()
@@ -305,7 +305,7 @@ const deleteReview = async (reviewId) => {
   }
 
   try {
-    await $api(`/api/admin/reviews/${reviewId}`, {
+    await $api(`/api/v1/admin/reviews/${reviewId}`, {
       method: 'DELETE'
     })
     fetchReviews()

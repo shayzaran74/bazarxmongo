@@ -48,6 +48,10 @@ export class TrackingController {
 export class AnalyticsAdminController {
   constructor(private readonly queryBus: QueryBus) {}
 
+  @ApiOperation({ summary: 'Get root analytics (Admin)', description: 'Genel istatistikleri döner.' })
+  @Get()
+  async getRoot(@Query('period') period: any) { return this.queryBus.execute(new GetDashboardStatsQuery(period || 'DAILY')); }
+
   @ApiOperation({ summary: 'Get dashboard statistics (Admin)', description: 'Yönetim paneli için özet istatistikleri ve grafik verilerini döner.' })
   @ApiQuery({ name: 'period', required: false, enum: ['DAILY', 'WEEKLY', 'MONTHLY'], example: 'DAILY' })
   @ApiResponse({ status: 200, description: 'İstatistik verileri.' })
@@ -59,6 +63,18 @@ export class AnalyticsAdminController {
   @ApiResponse({ status: 200, description: 'Genel istatistik verileri.' })
   @Get('stats')
   async getStats() { return this.queryBus.execute(new GetAdminStatsQuery()); }
+
+  @ApiOperation({ summary: 'Get ledger analytics' })
+  @Get('ledger')
+  async getLedger(@Query('days') days: number = 30) {
+    return { success: true, data: { items: [], total: 0 } };
+  }
+
+  @ApiOperation({ summary: 'Get anomaly analytics' })
+  @Get('anomalies')
+  async getAnomalies(@Query('window') window: number = 60) {
+    return { success: true, data: { items: [], total: 0 } };
+  }
 }
 
 @ApiTags('Analytics Vendor')

@@ -247,7 +247,7 @@ const filteredTransactions = computed(() => {
 const fetchTransactions = async () => {
     loading.value = true
     try {
-        const res = await $api('/api/admin/wallet/transactions', {
+        const res = await $api('/api/v1/admin/wallet/transactions', {
             params: {
                 page: pagination.value.page,
                 limit: pagination.value.limit

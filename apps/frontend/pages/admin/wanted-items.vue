@@ -4,7 +4,7 @@
       title="İstek Onay ve Yönetim"
       subtitle="Kullanıcılar ve firmalar tarafından oluşturulan alım/satım isteklerini yönetin."
       :is-admin="true"
-      api-endpoint="/api/admin/wanted-items"
+      api-endpoint="/api/v1/admin/wanted-items"
     />
   </div>
 </template>
