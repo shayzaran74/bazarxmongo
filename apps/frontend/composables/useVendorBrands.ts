@@ -5,7 +5,7 @@ export const useVendorBrands = () => {
   const toast = useNuxtApp().$toast
   const { resolveImageUrl } = useAppImage()
 
-  const brands = ref([])
+  const brands = ref<any[]>([])
   const loading = ref(false)
   const submitting = ref(false)
   const showWizard = ref(false)
@@ -31,7 +31,7 @@ export const useVendorBrands = () => {
   const fetchBrands = async () => {
     loading.value = true
     try {
-      const response = await $api('/api/vendor/brands')
+      const response: any = await $api('/api/vendor/brands')
       if (response.success) {
         brands.value = response.data || []
         updateStats()
@@ -46,13 +46,13 @@ export const useVendorBrands = () => {
   const updateStats = () => {
     brandStats.value = {
       total: brands.value.length,
-      approved: brands.value.filter(b => b.status === 'APPROVED').length,
-      pending: brands.value.filter(b => b.status === 'PENDING').length,
-      rejected: brands.value.filter(b => b.status === 'REJECTED').length
+      approved: brands.value.filter((b: any) => b.status === 'APPROVED').length,
+      pending: brands.value.filter((b: any) => b.status === 'PENDING').length,
+      rejected: brands.value.filter((b: any) => b.status === 'REJECTED').length
     }
   }
 
-  const handleFileUpload = async (event, field) => {
+  const handleFileUpload = async (event: any, field: string) => {
     const file = event.target.files[0]
     if (!file) return
 
@@ -61,12 +61,12 @@ export const useVendorBrands = () => {
 
     try {
       toast.info('Belge yükleniyor...')
-      const response = await $api('/api/upload?type=brand_doc', {
+      const response: any = await $api('/api/upload?type=brand_doc', {
         method: 'POST',
         body: formData
       })
       if (response.success) {
-        form.value[field] = response.url
+        (form.value as any)[field] = response.url
         toast.success('Belge başarıyla yüklendi')
       }
     } catch (e) {

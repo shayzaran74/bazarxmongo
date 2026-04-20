@@ -62,7 +62,7 @@ export const useSurplusList = () => {
         cleanFilters.location = authStore.user.city
       }
 
-      const res = await $api('/api/surplus', {
+      const res: any = await $api('/api/surplus', {
         query: { page, limit: pagination.value.limit, ...cleanFilters }
       })
 
@@ -72,7 +72,7 @@ export const useSurplusList = () => {
           ...pagination.value,
           page: res.pagination?.page || page,
           total: res.pagination?.total || 0,
-          pages: res.pagination?.pages || 0
+          pages: res.pagination?.pages || res.pagination?.totalPages || 0
         }
       }
     } finally {
@@ -84,7 +84,7 @@ export const useSurplusList = () => {
     showcase.value.specialLoading = true
     showcase.value.loading = true
     try {
-      const [specialRes, bestRes, visitRes, repRes, favRes, ratedRes, gbRes] = await Promise.all([
+      const [specialRes, bestRes, visitRes, repRes, favRes, ratedRes, gbRes]: any[] = await Promise.all([
         $api('/api/products', { query: { limit: 6, isSpecialOffer: true } }),
         $api('/api/products/stats/bestsellers', { query: { limit: 6 } }),
         $api('/api/products/stats/most-visited', { query: { limit: 6 } }),
@@ -108,12 +108,12 @@ export const useSurplusList = () => {
   }
 
   const fetchHomeSettings = async () => {
-    const res = await $api('/api/settings?ecosystem=ticaritakas')
+    const res: any = await $api('/api/settings?ecosystem=ticaritakas')
     if (res.success) homeSettings.value = { ...homeSettings.value, ...res.data }
   }
 
   const fetchCategoriesAndSpecs = async () => {
-    const [catRes, specRes] = await Promise.all([
+    const [catRes, specRes]: any[] = await Promise.all([
       $api('/api/surplus/categories'),
       $api('/api/surplus/specs')
     ])

@@ -5,7 +5,7 @@ export const useAdminBrands = () => {
   const { resolveImageUrl } = useAppImage()
   const toast = useNuxtApp().$toast
 
-  const brands = ref([])
+  const brands = ref<any[]>([])
   const loading = ref(false)
   const saving = ref(false)
   const submitting = ref(false)
@@ -18,7 +18,7 @@ export const useAdminBrands = () => {
   const currentPage = ref(1)
   const totalPages = ref(1)
   const totalItems = ref(0)
-  const searchTimeout = ref(null)
+  const searchTimeout = ref<any>(null)
 
   const brandStats = ref({
     PENDING: 0,
@@ -32,16 +32,16 @@ export const useAdminBrands = () => {
   const showModal = ref(false)
   const showReviewModal = ref(false)
   const isEditing = ref(false)
-  const selectedBrand = ref(null)
+  const selectedBrand = ref<any>(null)
   const rejectionReason = ref('')
   const selectedTemplate = ref('')
   const isPopularToggle = ref(false)
 
   // Violations
-  const violations = ref([])
+  const violations = ref<any[]>([])
   const violationsLoading = ref(false)
   const showViolationModal = ref(false)
-  const selectedViolation = ref(null)
+  const selectedViolation = ref<any>(null)
   const violationNotes = ref('')
   const violationStatus = ref('PENDING')
   const violationSeverity = ref('MEDIUM')
@@ -59,7 +59,7 @@ export const useAdminBrands = () => {
   const fetchBrands = async () => {
     loading.value = true
     try {
-      const response = await $api('/api/admin/brands', {
+      const response: any = await $api('/api/admin/brands', {
         params: {
           status: currentStatus.value,
           q: searchQuery.value,
@@ -86,7 +86,7 @@ export const useAdminBrands = () => {
   const fetchViolations = async () => {
     violationsLoading.value = true
     try {
-      const response = await $api('/api/admin/brands/violations')
+      const response: any = await $api('/api/admin/brands/violations')
       if (response.success) {
         violations.value = response.data || []
       }
@@ -98,14 +98,14 @@ export const useAdminBrands = () => {
   }
 
   const handleSearch = () => {
-    clearTimeout(searchTimeout.value)
+    if (searchTimeout.value) clearTimeout(searchTimeout.value)
     searchTimeout.value = setTimeout(() => {
       currentPage.value = 1
       fetchBrands()
     }, 500)
   }
 
-  const openReviewModal = (brand) => {
+  const openReviewModal = (brand: any) => {
     selectedBrand.value = brand
     rejectionReason.value = ''
     selectedTemplate.value = ''
@@ -113,10 +113,10 @@ export const useAdminBrands = () => {
     showReviewModal.value = true
   }
 
-  const approveBrandApplication = async (id) => {
+  const approveBrandApplication = async (id: string) => {
     submitting.value = true
     try {
-      const response = await $api(`/api/admin/brands/${id}/approve`, {
+      const response: any = await $api(`/api/admin/brands/${id}/approve`, {
         method: 'PATCH',
         body: {
           isPopular: isPopularToggle.value,
@@ -135,10 +135,10 @@ export const useAdminBrands = () => {
     }
   }
 
-  const requestAdditionalDocs = async (id) => {
+  const requestAdditionalDocs = async (id: string) => {
     submitting.value = true
     try {
-      const response = await $api(`/api/admin/brands/${id}/request-docs`, {
+      const response: any = await $api(`/api/admin/brands/${id}/request-docs`, {
         method: 'PATCH',
         body: { notes: rejectionReason.value }
       })
@@ -154,11 +154,11 @@ export const useAdminBrands = () => {
     }
   }
 
-  const rejectBrandApplication = async (id) => {
+  const rejectBrandApplication = async (id: string) => {
     if (!rejectionReason.value && !selectedTemplate.value) return
     submitting.value = true
     try {
-      const response = await $api(`/api/admin/brands/${id}/reject`, {
+      const response: any = await $api(`/api/admin/brands/${id}/reject`, {
         method: 'PATCH',
         body: {
           rejectionReason: rejectionReason.value,
@@ -180,10 +180,10 @@ export const useAdminBrands = () => {
   const saveBrand = async () => {
     saving.value = true
     try {
-      const url = isEditing.value ? `/api/admin/brands/${selectedBrand.value.id}` : '/api/admin/brands'
+      const url = isEditing.value ? `/api/admin/brands/${selectedBrand.value?.id}` : '/api/admin/brands'
       const method = isEditing.value ? 'PUT' : 'POST'
       
-      const response = await $api(url, {
+      const response: any = await $api(url, {
         method,
         body: formData.value
       })
@@ -201,10 +201,10 @@ export const useAdminBrands = () => {
     }
   }
 
-  const deleteBrand = async (id) => {
+  const deleteBrand = async (id: string) => {
     if (!confirm('Bu markayı silmek istediğinize emin misiniz?')) return
     try {
-      const response = await $api(`/api/admin/brands/${id}`, {
+      const response: any = await $api(`/api/admin/brands/${id}`, {
         method: 'DELETE'
       })
       if (response.success) {
@@ -221,7 +221,7 @@ export const useAdminBrands = () => {
     if (!selectedViolation.value) return
     submitting.value = true
     try {
-      const response = await $api(`/api/admin/brands/violations/${selectedViolation.value.id}`, {
+      const response: any = await $api(`/api/admin/brands/violations/${selectedViolation.value?.id}`, {
         method: 'PATCH',
         body: {
           status: violationStatus.value,
@@ -242,9 +242,9 @@ export const useAdminBrands = () => {
     }
   }
 
-  const resolveViolationQuickly = async (violation) => {
+  const resolveViolationQuickly = async (violation: any) => {
     try {
-      const response = await $api(`/api/admin/brands/violations/${violation.id}`, {
+      const response: any = await $api(`/api/admin/brands/violations/${violation.id}`, {
         method: 'PATCH',
         body: {
           status: 'RESOLVED',
@@ -261,7 +261,7 @@ export const useAdminBrands = () => {
     }
   }
 
-  const openViolationModal = (violation) => {
+  const openViolationModal = (violation: any) => {
     selectedViolation.value = violation
     violationNotes.value = violation.adminNotes || ''
     violationStatus.value = violation.status

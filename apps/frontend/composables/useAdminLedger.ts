@@ -54,7 +54,7 @@ export const useAdminLedger = () => {
   const fetchLedgerData = async () => {
     loading.value = true
     try {
-      const [lRes, rRes] = await Promise.all([
+      const [lRes, rRes]: any[] = await Promise.all([
         $api(`/api/admin/analytics/ledger?days=${selectedDays.value}`),
         $api('/api/admin/wallet/transactions?page=1&limit=20')
       ])
@@ -70,7 +70,7 @@ export const useAdminLedger = () => {
     try {
       const params = new URLSearchParams({ window: '60' })
       if (anomalySeverityFilter.value) params.set('severity', anomalySeverityFilter.value)
-      const res = await $api(`/api/admin/analytics/anomalies?${params.toString()}`)
+      const res: any = await $api(`/api/admin/analytics/anomalies?${params.toString()}`)
       if (res?.success) {
         anomalyAlerts.value = res.data.alerts || []
         anomalySummary.value = res.data.summary || { total: 0, high: 0, medium: 0, low: 0 }

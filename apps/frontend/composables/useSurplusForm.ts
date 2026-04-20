@@ -78,7 +78,7 @@ export const useSurplusForm = (item: any = null) => {
   }
 
   const fetchCategoriesData = async () => {
-    const res = await $api('/api/surplus/categories', { query: { all: true } })
+    const res: any = await $api('/api/surplus/categories', { query: { all: true } })
     if (res.success) {
       surplusCategories.value = res.data
       mainCategories.value = surplusCategories.value.filter(c => !c.parentId)
@@ -86,7 +86,7 @@ export const useSurplusForm = (item: any = null) => {
   }
 
   const fetchMyCompany = async () => {
-    const res = await $api('/api/companies/me')
+    const res: any = await $api('/api/companies/me')
     if (res.success && res.company) {
       formData.value.companyId = res.company.id
       formData.value.location = `${res.company.city} / ${res.company.district}`
@@ -97,11 +97,11 @@ export const useSurplusForm = (item: any = null) => {
     const main = mainCategories.value.find(c => c.name === formData.value.category)
     if (main) {
       selectedMainCategory.value = main.id
-      subCategories1.value = surplusCategories.value.filter(c => c.parentId === main.id)
+      subCategories1.value = surplusCategories.value.filter((c: any) => c.parentId === main.id)
       const sub1 = subCategories1.value.find(c => c.name === formData.value.materialType)
       if (sub1) {
         selectedSubCategory1.value = sub1.id
-        subCategories2.value = surplusCategories.value.filter(c => c.parentId === sub1.id)
+        subCategories2.value = surplusCategories.value.filter((c: any) => c.parentId === sub1.id)
         const sub2 = subCategories2.value.find(c => c.name === formData.value.materialType)
         if (sub2) selectedSubCategory2.value = sub2.id
       }
@@ -135,7 +135,7 @@ export const useSurplusForm = (item: any = null) => {
 
   const fetchSurplusAttributes = async (categoryId: string) => {
     if (!categoryId) return
-    const res = await $api(`/api/surplus/categories/${categoryId}/attributes`)
+    const res: any = await $api(`/api/surplus/categories/${categoryId}/attributes`)
     if (res.success) {
       surplusAttributes.value = res.data
       res.data.forEach((attr: any) => {
@@ -156,7 +156,7 @@ export const useSurplusForm = (item: any = null) => {
     advisorTimer = setTimeout(async () => {
       priceAdvisorLoading.value = true
       try {
-        const res = await $api('/api/price-advisor/check', {
+        const res: any = await $api('/api/price-advisor/check', {
           query: { title: formData.value.title, price: formData.value.unitPrice }
         })
         if (res.success) priceAdvisorData.value = res
@@ -175,7 +175,7 @@ export const useSurplusForm = (item: any = null) => {
       if (file.size > 5 * 1024 * 1024) continue
       const data = new FormData()
       data.append('image', file)
-      const res = await $api(`/api/upload?type=product`, { method: 'POST', body: data })
+      const res: any = await $api(`/api/upload?type=product`, { method: 'POST', body: data })
       if (res.success) formData.value.images.push(res.url)
     }
   }

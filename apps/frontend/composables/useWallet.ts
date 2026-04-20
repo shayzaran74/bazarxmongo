@@ -39,7 +39,7 @@ export const useWallet = () => {
   const serviceAccount = computed(() => accounts.value.find((a: any) => a.type === 'XP_SERVICE'))
 
   // Computed tier info
-  const userTier = computed(() => authStore.user?.currentTier || authStore.user?.vendor?.vendorTier || 'CORE')
+  const userTier = computed(() => authStore.user?.currentTier || (authStore.user?.vendor as any)?.vendorTier || 'CORE')
   const tierConfig = computed(() => (TIER_CONFIG as any)[userTier.value] || TIER_CONFIG.CORE)
   
   // Format price helper
