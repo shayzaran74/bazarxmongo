@@ -65,7 +65,7 @@ const emit = defineEmits(['close', 'approve', 'reject', 'request-docs', 'update:
 const localReason = ref('')
 
 const documents = computed(() => {
-  const docs: Record<string, string> = {}
+  const docs = {}
   if (props.brand?.documentUrl) docs['Marka Tescil'] = props.brand.documentUrl
   if (props.brand?.invoiceChainUrl) docs['Fatura Silsilesi'] = props.brand.invoiceChainUrl
   if (props.brand?.authorizationUrl) docs['Yetki Belgesi'] = props.brand.authorizationUrl

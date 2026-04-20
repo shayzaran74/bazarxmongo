@@ -125,7 +125,7 @@
               <div class="flex gap-3">
                 <div class="flex-1 px-5 py-3 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:border-indigo-400 hover:bg-white transition-all" @click="$refs[doc.field]?.[0]?.click()">
                   <CloudArrowUpIcon class="w-5 h-5 text-gray-400" />
-                  <span class="text-sm font-bold text-gray-500">{{ (form as any)[doc.field] ? '✅ Yüklendi' : 'Dosya seç...' }}</span>
+                  <span class="text-sm font-bold text-gray-500">{{ (form)[doc.field] ? '✅ Yüklendi' : 'Dosya seç...' }}</span>
                   <input :ref="doc.field" type="file" class="hidden" @change="handleFileUpload($event, doc.field)">
                 </div>
               </div>
