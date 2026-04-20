@@ -71,7 +71,25 @@ export default defineNuxtConfig({
     typeCheck: false
   },
   
-  ssr: true,
+  ssr: false,
+
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@barterborsa/shared-types',
+        'socket.io-client',
+        'blurhash',
+        'lodash-es'
+      ],
+      exclude: [
+        '@heroicons/vue'
+      ]
+    }
+  },
+
+  experimental: {
+    appManifest: false
+  },
 
   devServer: {
     port: 3002,

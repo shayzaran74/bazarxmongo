@@ -81,7 +81,7 @@ const availableLocales = computed<Locale[]>(() => {
 })
 
 const switchLocale = async (code: string) => {
-  await setLocale(code)
+  await setLocale(code as 'tr' | 'en')
   isOpen.value = false
 }
 </script>

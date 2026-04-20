@@ -29,38 +29,32 @@ export class CompanyController {
   @ApiOperation({ summary: 'Get current user company', description: 'Giriş yapmış kullanıcının şirket bilgilerini döner.' })
   @Get('me')
   async getMe(@CurrentUser() user: any) {
-    console.log('--- GET ME CALLED BEGIN ---');
     try {
-      console.log('--- USER FROM DECORATOR ---', JSON.stringify(user));
-      
       if (!user?.id) {
-        console.error('❌ CompanyController: No user ID');
         return { success: false, message: 'Oturum bilgisi bulunamadı.' };
       }
 
-      console.log('--- FETCHING VENDOR ---', user.id);
       const vendor = await this.prisma.vendor.findUnique({
         where: { userId: user.id }
       });
 
+      // If user is ADMIN and no vendor profile yet, don't throw warning, return empty data
       if (!vendor) {
-        console.warn('⚠️ CompanyController: Vendor NOT FOUND for user', user.id);
+        if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+           return { success: true, data: null, isSystemAdmin: true };
+        }
         return { success: false, message: 'Satıcı kaydı bulunamadı.' };
       }
 
       if (!vendor.companyId) {
-        console.warn('⚠️ CompanyController: No companyId for vendor', vendor.id);
         return { success: false, message: 'Şirket kaydı bulunamadı.' };
       }
 
-      console.log('--- EXECUTING GetCompanyQuery ---', vendor.companyId);
       const result = await this.queryBus.execute(new GetCompanyQuery(vendor.companyId));
-      console.log('--- GetCompanyQuery RESULT ---', JSON.stringify(result));
-      
       return { success: true, data: result };
     } catch (error: any) {
-      console.error('❌ CompanyController CRASH:', error.stack || error);
-      return { success: false, error: error.message };
+      console.error('❌ CompanyController getMe Error:', error.message);
+      return { success: false, message: 'Şirket bilgileri alınırken bir hata oluştu.' };
     }
   }
 

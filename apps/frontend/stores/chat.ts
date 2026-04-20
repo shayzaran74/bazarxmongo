@@ -26,6 +26,7 @@ export const useChatStore = defineStore('chat', {
     }),
 
     getters: {
+        socket: () => socket,
         isSocketConnected: (state) => state.isConnected,
         roomMessages: (state) => state.messages,
         typingList: (state) => Object.values(state.typingUsers),

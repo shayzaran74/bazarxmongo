@@ -1,5 +1,5 @@
 // apps/frontend/server/api/settings/side-ads.get.ts
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<any> => {
   const config = useRuntimeConfig()
   const query = getQuery(event)
   
@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const backendUrl = `${config.public.apiBase}/api/v1/settings/side-ads`
   
   try {
-    return await $fetch(backendUrl, {
+    return await $fetch<any>(backendUrl, {
       query
     })
   } catch (err: any) {

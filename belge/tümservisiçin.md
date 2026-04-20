@@ -14,3 +14,7 @@ python3 fix_monorepo_permanent.py çalıştır yeter
 ```
 
 Artık güvenilir şekilde çalışacak. Sıradaki adım ne — `financial-service` build'i mi?
+
+
+rm -rf apps/frontend/node_modules/.vite && pnpm -C apps/frontend dev
+Bu işlemden sonra Vite tertemiz bir başlangıç yapacak ve tüm bağımlılıkları tek seferde anlayıp dev server'ı stabil tutacaktır.
