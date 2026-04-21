@@ -32,6 +32,10 @@ import {
   ResetPasswordHandler,
   PrismaVerificationTokenRepository
 } from '@barterborsa/domain-identity';
+import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
+import { UpdateUserStatusHandler } from './application/commands/update-user-status.handler';
+import { UpdateUserRoleHandler } from './application/commands/update-user-role.handler';
+import { DeleteAdminUserHandler } from './application/commands/delete-admin-user.handler';
 import { AuthController } from './auth.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
 import { ProfileController } from './profile.controller';
@@ -60,6 +64,10 @@ const Handlers = [
   UserUpdatedHandler,
   ForgotPasswordHandler,
   ResetPasswordHandler,
+  ListAdminUsersHandler,
+  UpdateUserStatusHandler,
+  UpdateUserRoleHandler,
+  DeleteAdminUserHandler,
 ];
 
 @Module({

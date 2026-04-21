@@ -7,7 +7,7 @@ import {
   IProductRepository,
   PRODUCT_REPO,
 } from '../../../domain/repositories/product.repository.interface';
-import { IMediaService, MEDIA_SERVICE } from '../../../../media/domain/media.service.interface';
+import { IMediaService, MEDIA_SERVICE } from '../../../domain/services/media.service.interface';
 import {
   PaginatedListingsDto,
   ProductListingItemDto,

@@ -1,30 +1,22 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { GetFavoritesQuery } from '../application/queries/get-favorites/get-favorites.query';
 
 @ApiTags('Catalog')
 @Controller('favorites')
 export class FavoriteController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'List user favorites', description: 'Kullanıcının favoriye eklediği ürünleri listeler.' })
-  @ApiResponse({ status: 200, description: 'Favori listesi.' })
+  @ApiOperation({ summary: 'List user favorites' })
+  @ApiResponse({ status: 200 })
   @Get()
   async getFavorites(@CurrentUser() user: any) {
-    const favorites = await this.prisma.favorite.findMany({
-      where: { userId: user.id },
-      include: {
-        product: true
-      }
-    });
-    
-    return {
-      success: true,
-      data: favorites.map(f => f.product)
-    };
+    const data = await this.queryBus.execute(new GetFavoritesQuery(user.id));
+    return { success: true, data };
   }
 }

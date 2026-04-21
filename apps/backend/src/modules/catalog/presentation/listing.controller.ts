@@ -1,19 +1,16 @@
 import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiParam, 
-  ApiQuery,
-  ApiBody 
+import {
+  ApiTags, ApiOperation, ApiResponse,
+  ApiBearerAuth, ApiParam, ApiQuery, ApiBody
 } from '@nestjs/swagger';
 import { CreateListingCommand } from '../application/commands/create-listing.command';
 import { CreateListingDto } from '../application/dtos/create-listing.dto';
+import { GetCategoryTreeQuery } from '../application/queries/get-category-tree/get-category-tree.query';
+import { ListCatalogListingsQuery } from '../application/queries/list-catalog-listings/list-catalog-listings.query';
+import { GetListingBySlugQuery } from '../application/queries/get-listing-by-slug/get-listing-by-slug.query';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard, Roles, Public } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Listings')
 @Controller('listings')
@@ -21,28 +18,21 @@ export class ListingController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
   ) {}
 
   @Public()
-  @ApiOperation({ summary: 'Get all categories', description: 'Tüm kategorileri ağaç yapısında veya düz liste olarak döner.' })
+  @ApiOperation({ summary: 'Get all categories' })
   @ApiQuery({ name: 'all', required: false, type: Boolean })
   @ApiQuery({ name: 'includeChildren', required: false, type: Boolean })
   @Get('categories')
-  async getCategories(
-    @Query('all') all: string = 'true',
-    @Query('includeChildren') includeChildren: string = 'true'
-  ) {
-    const categories = await this.prisma.category.findMany({
-      where: all === 'true' ? {} : { parentId: null },
-      include: includeChildren === 'true' ? { children: { include: { children: true } } } : undefined,
-      orderBy: { order: 'asc' }
-    });
-    return { success: true, data: categories };
+  async getCategories() {
+    // GetCategoryTreeQuery zaten tam ağaç döndürüyor
+    const data = await this.queryBus.execute(new GetCategoryTreeQuery());
+    return { success: true, data };
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List products/listings', description: 'İlanları listeler. Satıcı ise sadece kendi ilanlarını görür.' })
+  @ApiOperation({ summary: 'List products/listings' })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -54,108 +44,37 @@ export class ListingController {
     @Query('limit') limit: string = '50',
     @Query('page') page: string = '1'
   ) {
-    const limitNum = parseInt(limit, 10) || 50;
-    const pageNum = parseInt(page, 10) || 1;
-    const skip = (pageNum - 1) * limitNum;
-
-    // Determine vendor scope
-    let where: any = {};
-    
-    if (user.role === 'VENDOR') {
-      const vendor = await this.prisma.vendor.findUnique({
-        where: { userId: user.id }
-      });
-      if (vendor) {
-        where.vendorId = vendor.id;
-      }
-    }
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } }
-      ];
-    }
-
-    const [items, total] = await Promise.all([
-      this.prisma.listing.findMany({
-        where,
-        include: {
-          catalogProduct: {
-            include: {
-              media: { take: 1, orderBy: { sortOrder: 'asc' } },
-              category: true
-            }
-          },
-          vendor: { include: { company: true } }
-        },
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.listing.count({ where })
-    ]);
-
-    // Map to frontend-friendly format
-    const mappedItems = items.map(l => ({
-      id: l.id,
-      name: l.title,
-      price: l.price ? Number(l.price) : 0,
-      stock: l.stock,
-      sku: (l as any).sku || '',
-      status: l.status,
-      images: (l as any).catalogProduct?.media?.map((m: any) => m.url) || [],
-      category: (l as any).catalogProduct?.category?.name,
-      vendorName: (l as any).vendor?.company?.name || 'Bilinmeyen Satıcı'
-    }));
-
-    return {
-      success: true,
-      data: {
-        items: mappedItems
-      },
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    };
+    const data = await this.queryBus.execute(
+      new ListCatalogListingsQuery(user.id, user.role, {
+        search,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 50
+      })
+    );
+    return { success: true, data };
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new product listing', description: 'Satıcı için yeni bir ürün ilanı oluşturur.' })
+  @ApiOperation({ summary: 'Create a new product listing' })
   @ApiBody({ type: CreateListingDto })
-  @ApiResponse({ status: 201, description: 'İlan başarıyla oluşturuldu.' })
-  @ApiResponse({ status: 403, description: 'Sadece satıcılar ilan oluşturabilir.' })
+  @ApiResponse({ status: 201 })
   @Post()
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@CurrentUser() user: any, @Body() dto: CreateListingDto) {
-    return this.commandBus.execute(new CreateListingCommand(user.vendorId || user.id, dto));
+    return this.commandBus.execute(
+      new CreateListingCommand(user.vendorId || user.id, dto)
+    );
   }
 
   @Public()
-  @ApiOperation({ summary: 'Get listing by slug', description: 'URL slug bilgisi verilen ilanın detaylarını döner.' })
-  @ApiParam({ name: 'slug', description: 'İlan slug (örn: iphone-15-pro-max)' })
-  @ApiResponse({ status: 200, description: 'İlan detayları.' })
-  @ApiResponse({ status: 404, description: 'İlan bulunamadı.' })
+  @ApiOperation({ summary: 'Get listing by slug' })
+  @ApiParam({ name: 'slug' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
-    const listing = await this.prisma.listing.findUnique({
-      where: { slug },
-      include: {
-        catalogProduct: {
-          include: {
-            media: true,
-            category: true,
-            brands: true
-          }
-        },
-        vendor: { include: { company: true, profile: true } }
-      }
-    });
-
-    return { success: !!listing, data: listing };
+    const data = await this.queryBus.execute(new GetListingBySlugQuery(slug));
+    return { success: !!data, data };
   }
 }

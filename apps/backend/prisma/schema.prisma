@@ -980,6 +980,7 @@ model Order {
   deliveryDate      DateTime?            @map("delivery_date")
   notes             String?
   currency          String?              @default("TRY")
+  orderNumber       String?              @unique @map("order_number")
   subtotal          Decimal              @default(0) @db.Decimal(18, 2)
   taxAmount         Decimal              @default(0) @map("tax_amount") @db.Decimal(18, 2)
   shippingFee       Decimal              @default(0) @map("shipping_fee") @db.Decimal(18, 2)

@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param,
+         Query, UseGuards, Put, Delete } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ListAdminVendorsQuery }
+  from '../application/queries/list-admin-vendors.query';
+import { ApproveVendorCommand }
+  from '../application/commands/approve-vendor.command';
+import { RejectVendorCommand }
+  from '../application/commands/reject-vendor.command';
+import { UpdateAdminVendorCommand }
+  from '../application/commands/update-admin-vendor.command';
+import { AddVendorCategoryCommand }
+  from '../application/commands/add-vendor-category.command';
+import { RemoveVendorCategoryCommand }
+  from '../application/commands/remove-vendor-category.command';
 
 @ApiTags('Vendor Admin')
 @ApiBearerAuth()
@@ -9,7 +22,10 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/vendors')
 export class VendorAdminController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @ApiOperation({ summary: 'List all vendors for admin' })
   @Get()
@@ -19,174 +35,77 @@ export class VendorAdminController {
     @Query('q') search?: string,
     @Query('status') status?: string
   ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
-    const skip = (pageNum - 1) * limitNum;
-    
-    console.log('🔍 Fetching vendors for admin...', { pageNum, limitNum, search, status });
-
-    try {
-      const where: any = {};
-      if (search) {
-        where.OR = [
-          { company: { name: { contains: search, mode: 'insensitive' } } },
-          { profile: { storeName: { contains: search, mode: 'insensitive' } } }
-        ];
-      }
-      if (status) {
-        where.status = status;
-      }
-
-      const [items, total] = await Promise.all([
-        this.prisma.vendor.findMany({
-          where,
-          include: { 
-            company: { 
-              select: { name: true, email: true, phone: true } 
-            },
-            profile: true,
-            categories: {
-              include: { category: { select: { id: true, name: true, slug: true } } }
-            },
-            _count: {
-              select: { listings: true }
-            }
-          },
-          skip,
-          take: limitNum,
-          orderBy: { createdAt: 'desc' }
-        }),
-        this.prisma.vendor.count({ where })
-      ]);
-
-      const mappedItems = items.map(v => ({
-        ...v,
-        vendorCategories: (v as any).categories
-      }));
-
-      return {
-        success: true,
-        data: mappedItems,
-        total,
-        page: pageNum,
-        limit: limitNum
-      };
-    } catch (error) {
-      console.error('❌ Error fetching vendors:', error);
-      throw error;
-    }
+    const result = await this.queryBus.execute(
+      new ListAdminVendorsQuery({
+        search,
+        status,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 20
+      })
+    );
+    return { 
+      success: true, 
+      data: result.items,
+      total: result.total,
+      page: result.page, 
+      limit: result.limit 
+    };
   }
 
   @ApiOperation({ summary: 'Approve vendor' })
   @Put(':id/approve')
   async approveVendor(@Param('id') id: string) {
-    // Get vendor with userId
-    const vendorData = await this.prisma.vendor.findUnique({
-      where: { id },
-      select: { userId: true }
-    });
-
-    const vendor = await this.prisma.vendor.update({
-      where: { id },
-      data: { 
-        status: 'APPROVED',
-        verifiedAt: new Date(),
-        isVerified: true
-      }
-    });
-
-    // Update user role to VENDOR
-    if (vendorData?.userId) {
-      await this.prisma.user.update({
-        where: { id: vendorData.userId },
-        data: { role: 'VENDOR' }
-      });
-      console.log(`✅ User ${vendorData.userId} role updated to VENDOR`);
-    }
-
-    return { success: true, data: vendor };
+    const data = await this.commandBus.execute(new ApproveVendorCommand(id));
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Reject vendor' })
   @Put(':id/reject')
-  @ApiBody({ schema: { type: 'object', properties: { rejectionReason: { type: 'string' } } } })
-  async rejectVendor(@Param('id') id: string, @Body('rejectionReason') rejectionReason: string) {
-    const vendor = await this.prisma.vendor.update({
-      where: { id },
-      data: { 
-        status: 'REJECTED',
-        rejectionReason
-      }
-    });
-    return { success: true, data: vendor };
+  @ApiBody({ 
+    schema: { 
+      type: 'object',
+      properties: { rejectionReason: { type: 'string' } } 
+    } 
+  })
+  async rejectVendor(
+    @Param('id') id: string,
+    @Body('rejectionReason') rejectionReason: string
+  ) {
+    const data = await this.commandBus.execute(
+      new RejectVendorCommand(id, rejectionReason)
+    );
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Update vendor (Featured, B2B, etc)' })
   @Put(':id')
-  async updateVendor(@Param('id') id: string, @Body() data: any) {
-    // Separate vendor fields and profile fields if necessary
-    const { isFeatured, ...rest } = data;
-    
-    const updateData: any = { ...rest };
-    
-    // If updating profile fields directly via vendor update
-    const profileFields = ['storeName', 'description', 'city', 'district'];
-    const profileUpdate: any = {};
-    
-    Object.keys(updateData).forEach(key => {
-      if (profileFields.includes(key)) {
-        profileUpdate[key] = updateData[key];
-        delete updateData[key];
-      }
-    });
-
-    if (isFeatured !== undefined) {
-       await this.prisma.vendorProfile.update({
-         where: { vendorId: id },
-         data: { isFeatured }
-       });
-    }
-
-    if (Object.keys(profileUpdate).length > 0) {
-      await this.prisma.vendorProfile.update({
-        where: { vendorId: id },
-        data: profileUpdate
-      });
-    }
-
-    const vendor = await this.prisma.vendor.update({
-      where: { id },
-      data: updateData,
-      include: { profile: true }
-    });
-
-    return { success: true, data: vendor };
+  async updateVendor(@Param('id') id: string, @Body() body: any) {
+    const data = await this.commandBus.execute(
+      new UpdateAdminVendorCommand(id, body)
+    );
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Add category to vendor' })
   @Post(':id/categories')
-  async addCategory(@Param('id') id: string, @Body('categoryId') categoryId: string) {
-    const vc = await this.prisma.vendorCategory.create({
-      data: {
-        vendorId: id,
-        categoryId: categoryId
-      }
-    });
-    return { success: true, data: vc };
+  async addCategory(
+    @Param('id') id: string,
+    @Body('categoryId') categoryId: string
+  ) {
+    const data = await this.commandBus.execute(
+      new AddVendorCategoryCommand(id, categoryId)
+    );
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Remove category from vendor' })
   @Delete(':id/categories/:categoryId')
-  async removeCategory(@Param('id') id: string, @Param('categoryId') categoryId: string) {
-    await this.prisma.vendorCategory.delete({
-      where: {
-        vendorId_categoryId: {
-          vendorId: id,
-          categoryId: categoryId
-        }
-      }
-    });
-    return { success: true };
+  async removeCategory(
+    @Param('id') id: string,
+    @Param('categoryId') categoryId: string
+  ) {
+    return this.commandBus.execute(
+      new RemoveVendorCategoryCommand(id, categoryId)
+    );
   }
 }
-

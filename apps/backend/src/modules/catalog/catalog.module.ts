@@ -27,20 +27,48 @@ import { GetProductDetailsHandler } from './application/queries/get-product-deta
 import { GetListingsHandler } from './application/queries/get-listings/get-listings.handler';
 import { GetProductBySlugHandler } from './application/queries/get-product-by-slug/get-product-by-slug.handler';
 import { GetCategoryTreeHandler } from './application/queries/get-category-tree/get-category-tree.handler';
+import { ListCatalogListingsHandler } from './application/queries/list-catalog-listings/list-catalog-listings.handler';
+import { GetListingBySlugHandler } from './application/queries/get-listing-by-slug/get-listing-by-slug.handler';
+import { PassthroughMediaService } from './infrastructure/services/passthrough-media.service';
+import { MEDIA_SERVICE } from './domain/services/media.service.interface';
+import { GetCatalogProductsHandler } from './application/queries/get-catalog-products/get-catalog-products.handler';
+import { GetCatalogProductBySlugHandler } from './application/queries/get-catalog-product-by-slug/get-catalog-product-by-slug.handler';
+import { GetBrandsHandler } from './application/queries/get-brands/get-brands.handler';
+import { GetFavoritesHandler } from './application/queries/get-favorites/get-favorites.handler';
+import { ListAdminProductsHandler } from './application/queries/list-admin-products/list-admin-products.handler';
+import { DeleteAdminProductHandler } from './application/commands/delete-admin-product.handler';
+import { BulkDeleteAdminProductsHandler } from './application/commands/bulk-delete-admin-products.handler';
+import { BulkUpdateAdminProductsHandler } from './application/commands/bulk-update-admin-products.handler';
+import { UpdateAdminProductHandler } from './application/commands/update-admin-product.handler';
+import { ListAdminBrandsHandler } from './application/queries/list-admin-brands/list-admin-brands.handler';
+import { ListAdminReviewsHandler } from './application/queries/list-admin-reviews/list-admin-reviews.handler';
 import { PRODUCT_REPO } from './domain/repositories/product.repository.interface';
 import { PrismaProductRepository } from './infrastructure/persistence/prisma-product.repository';
 
 const CommandHandlers = [
   CreateCategoryHandler, 
   CreateListingHandler, 
-  CreateCatalogProductHandler
+  CreateCatalogProductHandler,
+  DeleteAdminProductHandler,
+  BulkDeleteAdminProductsHandler,
+  BulkUpdateAdminProductsHandler,
+  UpdateAdminProductHandler,
 ];
 
 const QueryHandlers = [
   GetProductDetailsHandler,
   GetListingsHandler,
   GetProductBySlugHandler,
-  GetCategoryTreeHandler
+  GetCategoryTreeHandler,
+  ListCatalogListingsHandler,
+  GetListingBySlugHandler,
+  GetCatalogProductsHandler,
+  GetCatalogProductBySlugHandler,
+  GetBrandsHandler,
+  GetFavoritesHandler,
+  ListAdminProductsHandler,
+  ListAdminBrandsHandler,
+  ListAdminReviewsHandler,
 ];
 
 const Repositories = [
@@ -75,7 +103,14 @@ const Repositories = [
     PrismaBrandRepository,
     PrismaListingRepository,
     PrismaCatalogProductRepository,
+    {
+      provide: MEDIA_SERVICE,
+      useClass: PassthroughMediaService,
+    },
   ],
-  exports: [...Repositories],
+  exports: [
+    ...Repositories,
+    MEDIA_SERVICE,
+  ],
 })
 export class CatalogModule {}
