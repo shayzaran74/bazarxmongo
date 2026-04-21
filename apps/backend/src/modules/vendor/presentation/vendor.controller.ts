@@ -20,6 +20,9 @@ import { GetVendorProfileQuery } from '../application/queries/get-vendor-profile
 import { GetVendorOrdersQuery } from '../application/queries/get-vendor-orders.query';
 import { GetVendorPendingOrderCountQuery } from '../application/queries/get-vendor-pending-order-count.query';
 import { GetVendorTransfersQuery } from '../application/queries/get-vendor-transfers.query';
+import { GetVendorInvoicesQuery } from '../application/queries/get-vendor-invoices.query';
+import { GetInvoiceDownloadUrlQuery } from '../application/queries/get-invoice-download-url.query';
+import { GenerateInvoiceCommand } from '../../commerce/application/commands/generate-invoice.command';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { VendorRegistrationService } from '../application/services/vendor-registration.service';
@@ -120,9 +123,18 @@ export class VendorController {
   @Get('invoices')
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getInvoices(@CurrentUser() user: any) {
-    // TODO: Invoice modeli eklendiğinde GetVendorInvoicesQuery implement edilecek
-    return { success: true, data: [] };
+  async getInvoices(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20'
+  ) {
+    const data = await this.queryBus.execute(
+      new GetVendorInvoicesQuery(user.id, {
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 20
+      })
+    );
+    return { success: true, data };
   }
 
   @Public()

@@ -1,6 +1,7 @@
 // apps/backend/src/modules/commerce/application/services/checkout.service.ts
 
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { DomainException } from '@barterborsa/shared-core';
 import { RabbitMQService } from '@barterborsa/shared-messaging';
 import { ICartRepository } from '../../domain/repositories/cart.repository.interface';
@@ -14,6 +15,7 @@ import { Order } from '../../domain/entities/order.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { Prisma } from '@prisma/client';
+import { GenerateInvoiceCommand } from '../commands/generate-invoice.command';
 
 @Injectable()
 export class CheckoutService {
@@ -25,7 +27,10 @@ export class CheckoutService {
     private readonly pricingService: PricingService,
     private readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
+    private readonly commandBus: CommandBus,
   ) {}
+
+  private readonly logger = new Logger(CheckoutService.name);
 
   async checkout(userId: string, shippingAddress: ShippingAddress, billingAddress: ShippingAddress, paymentMethod: string) {
     const cart = await this.cartRepository.findByUserId(userId);
@@ -152,6 +157,15 @@ export class CheckoutService {
         })),
         createdAt: new Date(),
       });
+
+      // --- NEW: Generate Invoices ---
+      try {
+        await this.commandBus.execute(
+          new GenerateInvoiceCommand(order.id, true)
+        );
+      } catch (e: any) {
+        this.logger.warn(`Failed to auto-generate invoice for order ${order.id}: ${e.message}`);
+      }
     }
 
     return createdOrders;

@@ -1008,6 +1008,7 @@ model Order {
   orderItems        OrderItem[]
   returns           OrderReturn[]
   statusHistory     OrderStatusHistory[]
+  invoices          Invoice[]
   vendor            Vendor               @relation(fields: [vendorId], references: [id])
   reviews           Review[]
   user              User                 @relation(fields: [userId], references: [id])
@@ -2445,4 +2446,63 @@ enum ComplaintStatus {
   UNDER_REVIEW
   RESOLVED
   REJECTED
+}
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique @map("invoice_number")
+  orderId        String        @map("order_id")
+  type           InvoiceType
+  recipientId    String        @map("recipient_id")   // userId veya vendorId
+  recipientType  RecipientType @map("recipient_type") // BUYER veya VENDOR
+  status         InvoiceStatus @default(DRAFT)
+  subtotal       Decimal       @db.Decimal(18, 2)
+  taxAmount      Decimal       @default(0) @map("tax_amount") @db.Decimal(18, 2)
+  totalAmount    Decimal       @map("total_amount") @db.Decimal(18, 2)
+  currency       String        @default("TRY")
+  pdfUrl         String?       @map("pdf_url")
+  pdfGeneratedAt DateTime?     @map("pdf_generated_at")
+  issuedAt       DateTime      @default(now()) @map("issued_at")
+  dueAt          DateTime?     @map("due_at")
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  order          Order         @relation(fields: [orderId], references: [id])
+  items          InvoiceItem[]
+
+  @@index([orderId])
+  @@index([recipientId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String   @map("invoice_id")
+  description String
+  quantity    Int
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(18, 2)
+  totalPrice  Decimal  @map("total_price") @db.Decimal(18, 2)
+  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+enum InvoiceType {
+  BUYER_INVOICE    // Alıcı faturası
+  VENDOR_INVOICE   // Satıcı faturası (komisyon dahil)
+}
+
+enum RecipientType {
+  BUYER
+  VENDOR
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  SENT
+  PAID
+  CANCELLED
 }

@@ -2,6 +2,7 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { CommerceModule } from '../commerce/commerce.module';
 import { CompanyController } from './presentation/company.controller';
 import { VendorController } from './presentation/vendor.controller';
 import { VendorAdminController } from './presentation/vendor-admin.controller';
@@ -39,6 +40,8 @@ import { GetPendingCompaniesHandler } from './application/queries/get-pending-co
 import { GetVendorOrdersHandler } from './application/queries/get-vendor-orders.handler';
 import { GetVendorPendingOrderCountHandler } from './application/queries/get-vendor-pending-order-count.handler';
 import { GetVendorTransfersHandler } from './application/queries/get-vendor-transfers.handler';
+import { GetVendorInvoicesHandler } from './application/queries/get-vendor-invoices.handler';
+import { GetInvoiceDownloadUrlHandler } from './application/queries/get-invoice-download-url.handler';
 import { PrismaCompanyRepository } from './infrastructure/persistence/prisma-company.repository';
 import { PrismaVendorRepository } from './infrastructure/persistence/prisma-vendor.repository';
 import { PrismaVendorProfileRepository } from './infrastructure/persistence/prisma-vendor-profile.repository';
@@ -76,6 +79,8 @@ const QueryHandlers = [
   GetVendorOrdersHandler,
   GetVendorPendingOrderCountHandler,
   GetVendorTransfersHandler,
+  GetVendorInvoicesHandler,
+  GetInvoiceDownloadUrlHandler,
 ];
 const Repositories = [
   { provide: 'ICompanyRepository', useClass: PrismaCompanyRepository },
@@ -85,7 +90,10 @@ const Repositories = [
 ];
 
 @Module({
-  imports: [CqrsModule],
+  imports: [
+    CqrsModule,
+    CommerceModule,
+  ],
   controllers: [
     CompanyController, 
     VendorController, 
