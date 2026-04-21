@@ -60,12 +60,10 @@ export const useChatStore = defineStore('chat', {
 
             socket.on('connect', () => {
                 this.isConnected = true;
-                console.log('[ChatStore] Connected to /chat namespace');
             });
 
             socket.on('disconnect', () => {
                 this.isConnected = false;
-                console.log('[ChatStore] Disconnected from /chat namespace');
             });
 
             // Yeni mesaj geldiğinde
@@ -88,13 +86,11 @@ export const useChatStore = defineStore('chat', {
 
             // Kullanıcı katıldığında
             socket.on('userJoined', ({ userId }: { userId: string }) => {
-                console.log(`[ChatStore] User joined: ${userId}`);
                 this.roomOnlineCount++;
             });
 
             // Kullanıcı ayrıldığında
             socket.on('userLeft', ({ userId }: { userId: string }) => {
-                console.log(`[ChatStore] User left: ${userId}`);
                 this.roomOnlineCount = Math.max(1, this.roomOnlineCount - 1);
             });
 
@@ -151,7 +147,6 @@ export const useChatStore = defineStore('chat', {
                                 isFromMe: msg.senderId === authStore.user?.id
                             }));
                         } else {
-                            console.log('[ChatStore] Already in room or no history received');
                         }
                         resolve(response.data || []);
                     } else {

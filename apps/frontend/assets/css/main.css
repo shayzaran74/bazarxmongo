@@ -9,46 +9,13 @@
     --sab: env(safe-area-inset-bottom);
     --sal: env(safe-area-inset-left);
 
-    /* Global Scale Factor (0.6 = 40% reduction) */
-    --scale-factor: 0.6;
+    /* Global Scale Factor (Normalized for premium feel) */
+    --scale-factor: 1.0;
 
-    /* Design System Tokens from kullanım.md */
-    --color-primary: #232F3E;
+    --color-primary: #2563eb;
     --color-accent: #FFD814;
-    --color-background: #FFFFFF;
-    --color-text-primary: #0F1111;
-    --color-link: #232F3E;
-    --base-unit: 4px;
-    --radius-base: 5px;
-
-    /* Scaled Spacing (base 4px system) */
-    --spacing-xs: calc(4px * var(--scale-factor));
-    --spacing-sm: calc(8px * var(--scale-factor));
-    --spacing-md: calc(16px * var(--scale-factor));
-    --spacing-lg: calc(24px * var(--scale-factor));
-    --spacing-xl: calc(32px * var(--scale-factor));
-    --spacing-2xl: calc(48px * var(--scale-factor));
-
-    /* Scaled Typography (min 12px enforced for iOS) */
-    --font-2xs: max(10px, calc(10px * var(--scale-factor)));
-    --font-xs: max(12px, calc(12px * var(--scale-factor)));
-    --font-sm: max(12px, calc(14px * var(--scale-factor)));
-    --font-base: max(12px, calc(16px * var(--scale-factor)));
-    --font-lg: max(14px, calc(18px * var(--scale-factor)));
-    --font-xl: max(16px, calc(24px * var(--scale-factor)));
-    --font-2xl: max(18px, calc(30px * var(--scale-factor)));
-    --font-3xl: max(20px, calc(36px * var(--scale-factor)));
-
-    /* Scaled Card Dimensions */
-    --card-padding: calc(16px * var(--scale-factor));
-    --card-padding-sm: calc(12px * var(--scale-factor));
-    --card-radius: calc(20px * var(--scale-factor));
-    --card-radius-sm: calc(12px * var(--scale-factor));
-
-    /* Button Sizing (touch target min 44px) */
-    --btn-padding-x: calc(16px * var(--scale-factor));
-    --btn-padding-y: max(11px, calc(12px * var(--scale-factor)));
-    --btn-font-size: max(12px, calc(14px * var(--scale-factor)));
+    --radius-premium: 24px;
+    --radius-button: 16px;
   }
 
   html {
@@ -57,8 +24,12 @@
     scroll-behavior: smooth;
   }
 
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Outfit', sans-serif;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50/50 text-slate-900 antialiased;
     padding-top: var(--sat);
     padding-bottom: var(--sab);
   }
@@ -68,7 +39,7 @@
 
   /* Premium Glassmorphism */
   .glass {
-    @apply bg-white/80 backdrop-blur-md border border-white/20;
+    @apply bg-white/70 backdrop-blur-xl border border-white shadow-premium;
   }
 
   .glass-dark {
@@ -77,11 +48,11 @@
 
   /* Button styles */
   .btn {
-    @apply inline-flex items-center justify-center px-5 py-2.5 border border-transparent rounded-xl shadow-sm text-sm font-bold transition-all duration-200 focus:outline-none active:scale-95;
+    @apply inline-flex items-center justify-center px-6 py-3.5 rounded-[16px] text-xs font-black uppercase tracking-widest transition-all duration-300 focus:outline-none active:scale-95;
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/20;
+    @apply btn bg-slate-900 text-white hover:bg-primary-600 shadow-2xl shadow-slate-900/10 hover:shadow-primary-500/20;
   }
 
   .btn-secondary {
@@ -99,12 +70,22 @@
 
   /* Card styles */
   .card-premium {
-    @apply bg-white rounded-3xl shadow-[0_8px_30px_rgb(0, 0, 0, 0.04)] border border-gray-100/50 transition-all duration-300 hover:shadow-[0_20px_40px_rgb(0, 0, 0, 0.06)];
+    @apply bg-white rounded-[32px] border border-white shadow-premium transition-all duration-500 hover:shadow-premium-hover hover:-translate-y-1;
+  }
+
+  /* Premium Typography */
+  .text-premium {
+    @apply font-heading font-black italic tracking-tightest uppercase;
   }
 
   /* Search Bar Premium */
   .search-input-premium {
     @apply w-full bg-gray-100/50 border-none rounded-2xl px-12 py-3 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all duration-300;
+  }
+
+  /* Form Control Premium */
+  .input-premium {
+    @apply w-full bg-gray-50 border-2 border-transparent rounded-[20px] px-6 py-4 text-sm font-bold focus:bg-white focus:border-primary-500/20 transition-all duration-300 outline-none;
   }
 
   /* Utility classes for mobile */

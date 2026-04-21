@@ -55,12 +55,10 @@ export const useAdminChatStore = defineStore('adminChat', {
 
             socket.on('connect', () => {
                 this.isConnected = true;
-                console.log('[AdminChatStore] Connected to Namespace Admin');
             });
 
             socket.on('disconnect', () => {
                 this.isConnected = false;
-                console.log('[AdminChatStore] Disconnected from Namespace Admin');
             });
 
             socket.on('newMessage', (message: AdminMessage) => {

@@ -284,7 +284,6 @@ const handleLogin = async () => {
 
 const handleGoogleLogin = () => {
   const googleUrl = `${useRuntimeConfig().public.apiBase}/api/auth/google`
-  console.log('🔗 Redirecting to backend Google auth:', googleUrl)
   window.location.href = googleUrl
 }
 </script>

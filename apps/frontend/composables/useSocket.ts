@@ -42,7 +42,6 @@ export const useSocket = () => {
         })
 
         socketState.value.on('disconnect', () => {
-            console.log('Socket disconnected')
         })
     }
 

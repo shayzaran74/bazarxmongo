@@ -19,7 +19,6 @@ export default defineNuxtPlugin(() => {
             // Let's make it smart: simpler approach first.
             // If the User is running on Android AND the configured host is localhost or 192.168...
 
-            console.log('🔌 Detected Android Platform')
 
             // Override for Android Emulator (works for 10.0.2.2)
             // NOTICE: This assumes you are running in emulator. 
@@ -37,7 +36,6 @@ export default defineNuxtPlugin(() => {
             // IF the user is using the emulator.
 
             config.public.apiBase = 'http://10.0.2.2:3001'
-            console.log('🔧 Backend URL adjusted for Android Emulator:', config.public.apiBase)
         }
     }
 })

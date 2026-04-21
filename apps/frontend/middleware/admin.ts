@@ -13,15 +13,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // 2. Admin Role Check
-  console.log('🛡️ Admin Middleware - Global Check:', {
-    userEmail: authStore.user?.email,
-    userRole: authStore.user?.role,
-    isAdmin: authStore.isAdmin
-  })
+
 
   // Eğer veritabanı güncelse ama Store hala eski rolü tutuyorsa, me endpoint'ini zorla çağırabiliriz
   if (authStore.isAuthenticated && !authStore.isAdmin) {
-    console.log('🔄 Re-fetching user to verify admin role...')
     await authStore.fetchUser(true)
   }
 

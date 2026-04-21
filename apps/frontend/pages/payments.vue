@@ -179,7 +179,6 @@ const handlePaymentSuccess = (paymentData) => {
     recentPayments.value = recentPayments.value.slice(0, 5)
   }
   
-  console.log('Payment successful:', paymentData)
 }
 
 const handlePaymentError = (error) => {

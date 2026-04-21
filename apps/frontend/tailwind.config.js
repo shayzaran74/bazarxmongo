@@ -12,6 +12,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        heading: ['Outfit', 'Inter', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -21,44 +22,35 @@ module.exports = {
           300: '#93c5fd',
           400: '#60a5fa',
           500: '#3b82f6',
-          600: '#2563eb',
+          600: '#2563eb', // BazarX Blue
           700: '#1d4ed8',
           800: '#1e40af',
           900: '#1e3a8a',
           950: '#172554',
         },
-        secondary: {
-          50: '#fdf4ff',
-          100: '#fae8ff',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7c3aed',
-          900: '#581c87'
+        accent: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          500: '#FFD814', // Amazon-like Gold
+          600: '#eab308',
+          700: '#a16207',
+          900: '#713f12'
+        },
+        slate: {
+          900: '#0F172A',
+          950: '#020617', // Darkest background
         },
         success: {
           50: '#f0fdf4',
-          100: '#dcfce7',
           500: '#22c55e',
           600: '#16a34a',
-          700: '#15803d',
-          900: '#14532d'
         },
-        warning: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          900: '#78350f'
-        },
-        error: {
-          50: '#fef2f2',
-          100: '#fee2e2',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          900: '#7f1d1d'
-        }
+      },
+      boxShadow: {
+        'premium': '0 10px 40px -10px rgba(0, 0, 0, 0.05)',
+        'premium-hover': '0 20px 50px -12px rgba(0, 0, 0, 0.1)',
+        'glow-primary': '0 0 20px rgba(59, 130, 246, 0.2)',
+        'glow-accent': '0 0 20px rgba(255, 216, 20, 0.3)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

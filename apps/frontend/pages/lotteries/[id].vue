@@ -356,7 +356,6 @@ const handlePurchase = async () => {
     }
 
     buying.value = true
-    console.log('Lottery Buy Body:', { count: selectedCount.value })
     try {
         const { $api } = useApi()
         const res = await $api(`/api/lotteries/${lottery.value.id}/buy`, {
