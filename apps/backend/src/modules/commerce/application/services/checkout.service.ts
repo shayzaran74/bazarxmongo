@@ -13,6 +13,7 @@ import { ShippingAddress } from '../../domain/value-objects/shipping-address.vo'
 import { Order } from '../../domain/entities/order.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CheckoutService {
@@ -49,10 +50,10 @@ export class CheckoutService {
 
     const createdOrders: Order[] = [];
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const [vendorId, group] of vendorGroups) {
         const pricingItems = group.map((g) => ({
-          price: g.listing.getProps().price.amount, // Fix: use .amount
+          price: g.listing.getProps().price.amount,
           quantity: g.item.getProps().quantity,
         }));
         const totals = this.pricingService.calculateOrderTotal(pricingItems);
@@ -62,7 +63,7 @@ export class CheckoutService {
           return OrderItem.create(
             g.item.getProps().listingId,
             g.item.getProps().quantity,
-            lProps.price.amount, // Fix: use .amount
+            lProps.price.amount,
             lProps.title,
             [],
             g.item.getProps().variantId
@@ -95,27 +96,23 @@ export class CheckoutService {
           idempotencyKey
         );
 
-        const orderData: any = {
-           id: order.id,
-           userId: order.getProps().userId,
-           vendorId: order.getProps().vendorId,
-           status: order.getProps().status,
-           orderNumber: order.getProps().orderNumber.value,
-           totalAmount: order.getProps().totalAmount,
-           shippingAddress: order.getProps().shippingAddress.toJson(),
-           billingAddress: order.getProps().billingAddress.toJson(),
-           paymentMethod: order.getProps().paymentMethod,
-           paymentStatus: order.getProps().paymentStatus,
-           currency: order.getProps().currency,
-           discountAmount: order.getProps().discountAmount,
-           shippingCost: order.getProps().shippingCost,
-           paidWithXP: order.getProps().paidWithXP,
-           paidWithCash: order.getProps().paidWithCash,
-        };
-
-        await (tx as any).order.create({
+        await tx.order.create({
           data: {
-            ...orderData,
+            id: order.id,
+            userId: order.getProps().userId,
+            vendorId: order.getProps().vendorId,
+            status: order.getProps().status,
+            orderNumber: order.getProps().orderNumber.value,
+            totalAmount: order.getProps().totalAmount,
+            shippingAddress: order.getProps().shippingAddress.toJson(),
+            billingAddress: order.getProps().billingAddress.toJson(),
+            paymentMethod: order.getProps().paymentMethod as any,
+            paymentStatus: order.getProps().paymentStatus as any,
+            currency: order.getProps().currency,
+            discountAmount: order.getProps().discountAmount,
+            shippingCost: order.getProps().shippingCost,
+            paidWithXP: order.getProps().paidWithXP,
+            paidWithCash: order.getProps().paidWithCash,
             orderItems: {
               create: orderItems.map((oi) => ({
                 id: oi.id,
@@ -132,7 +129,7 @@ export class CheckoutService {
 
         createdOrders.push(order);
       }
-      await (tx as any).cartItem.deleteMany({ where: { cart: { userId } } });
+      await tx.cartItem.deleteMany({ where: { cart: { userId } } });
     });
     
     // Publish Events

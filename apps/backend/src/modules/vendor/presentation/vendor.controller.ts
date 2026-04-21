@@ -17,6 +17,9 @@ import { GetVendorBySlugQuery } from '../application/queries/get-vendor-by-slug.
 import { GetVendorProductsQuery } from '../application/queries/get-vendor-products.query';
 import { GetVendorDashboardQuery } from '../application/queries/get-vendor-dashboard.query';
 import { GetVendorProfileQuery } from '../application/queries/get-vendor-profile.query';
+import { GetVendorOrdersQuery } from '../application/queries/get-vendor-orders.query';
+import { GetVendorPendingOrderCountQuery } from '../application/queries/get-vendor-pending-order-count.query';
+import { GetVendorTransfersQuery } from '../application/queries/get-vendor-transfers.query';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { VendorRegistrationService } from '../application/services/vendor-registration.service';
@@ -36,7 +39,14 @@ export class VendorController {
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getVendorOrders(@CurrentUser() user: any, @Query() query: any) {
-    return { success: true, data: [], total: 0 };
+    const data = await this.queryBus.execute(
+      new GetVendorOrdersQuery(user.id, {
+        status: query.status,
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 20
+      })
+    );
+    return { success: true, data: data.items, total: data.total };
   }
 
   @ApiBearerAuth()
@@ -45,7 +55,10 @@ export class VendorController {
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getPendingOrderCount(@CurrentUser() user: any) {
-    return { success: true, data: 0 };
+    const count = await this.queryBus.execute(
+      new GetVendorPendingOrderCountQuery(user.id)
+    );
+    return { success: true, data: count };
   }
 
   @ApiBearerAuth()
@@ -96,7 +109,10 @@ export class VendorController {
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getTransfers(@CurrentUser() user: any) {
-    return { success: true, data: [] };
+    const data = await this.queryBus.execute(
+      new GetVendorTransfersQuery(user.id)
+    );
+    return { success: true, data };
   }
 
   @ApiBearerAuth()
@@ -105,6 +121,7 @@ export class VendorController {
   @Roles('VENDOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getInvoices(@CurrentUser() user: any) {
+    // TODO: Invoice modeli eklendiğinde GetVendorInvoicesQuery implement edilecek
     return { success: true, data: [] };
   }
 

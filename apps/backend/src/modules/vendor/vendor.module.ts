@@ -36,6 +36,9 @@ import { RemoveVendorCategoryHandler } from './application/commands/remove-vendo
 import { ListAdminVendorsHandler } from './application/queries/list-admin-vendors.handler';
 import { GetMyCompanyHandler } from './application/queries/get-my-company.handler';
 import { GetPendingCompaniesHandler } from './application/queries/get-pending-companies.handler';
+import { GetVendorOrdersHandler } from './application/queries/get-vendor-orders.handler';
+import { GetVendorPendingOrderCountHandler } from './application/queries/get-vendor-pending-order-count.handler';
+import { GetVendorTransfersHandler } from './application/queries/get-vendor-transfers.handler';
 import { PrismaCompanyRepository } from './infrastructure/persistence/prisma-company.repository';
 import { PrismaVendorRepository } from './infrastructure/persistence/prisma-vendor.repository';
 import { PrismaVendorProfileRepository } from './infrastructure/persistence/prisma-vendor-profile.repository';
@@ -70,6 +73,9 @@ const QueryHandlers = [
   ListAdminVendorsHandler,
   GetMyCompanyHandler,
   GetPendingCompaniesHandler,
+  GetVendorOrdersHandler,
+  GetVendorPendingOrderCountHandler,
+  GetVendorTransfersHandler,
 ];
 const Repositories = [
   { provide: 'ICompanyRepository', useClass: PrismaCompanyRepository },

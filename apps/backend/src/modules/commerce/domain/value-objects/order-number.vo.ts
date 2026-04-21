@@ -25,6 +25,10 @@ export class OrderNumber extends ValueObject<OrderNumberProps> {
     return new OrderNumber({ value: `BB-${datePart}-${randomPart}` });
   }
 
+  public static fromValue(value: string): OrderNumber {
+    return new OrderNumber({ value });
+  }
+
   get value(): string {
     return this.props.value;
   }

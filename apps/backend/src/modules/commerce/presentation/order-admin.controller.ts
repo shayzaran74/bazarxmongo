@@ -1,7 +1,9 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ListAdminOrdersQuery }
+  from '../application/queries/list-admin-orders.query';
 
 @ApiTags('Order Admin')
 @ApiBearerAuth()
@@ -9,7 +11,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/orders')
 export class OrderAdminController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   @ApiOperation({ summary: 'List all orders for admin' })
   @Get()
@@ -19,35 +21,21 @@ export class OrderAdminController {
     @Query('status') status?: string,
     @Query('vendorId') vendorId?: string
   ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
-    const skip = (pageNum - 1) * limitNum;
-
-    const where: any = {};
-    if (status) where.status = status;
-    if (vendorId) where.vendorId = vendorId;
-
-    const [items, total] = await Promise.all([
-      this.prisma.order.findMany({
-        where,
-        include: {
-          orderItems: true,
-          statusHistory: true
-        },
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.order.count({ where })
-    ]);
-
+    const result = await this.queryBus.execute(
+      new ListAdminOrdersQuery({
+        status,
+        vendorId,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 20
+      })
+    );
     return {
       success: true,
       data: {
-        items,
-        total,
-        page: pageNum,
-        limit: limitNum
+        items: result.items,
+        total: result.total,
+        page: result.page,
+        limit: result.limit
       }
     };
   }
