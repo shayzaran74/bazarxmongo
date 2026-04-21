@@ -23,15 +23,13 @@
         @toggle="toggleSection('category')"
       >
         <CategoryFilter
-          v-model:search-query="categorySearch"
+          v-model:search="categorySearch"
           :categories="filteredCategories"
-          :active-category="localFilters.category"
-          :expanded-categories="expandedCategories"
-          :has-sub="(id) => getSubCategories(id).length > 0"
-          :get-sub="getSubCategories"
-          :is-expanded="(id) => expandedCategories.has(id)"
+          :selected-slug="localFilters.category"
+          :expanded-ids="expandedCategories"
+          :get-sub-categories="(parentId: string | number) => getSubCategories(parentId as string)"
           @select="selectCategory"
-          @toggle-expand="toggleCategory"
+          @toggle-expand="(id: string | number) => toggleCategory(id as string)"
         />
       </FilterSection>
 

@@ -1,450 +1,100 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-gray-50/50 py-16 px-4">
     <div class="max-w-3xl mx-auto">
       <!-- Header -->
-      <div class="text-center mb-8 relative">
-        <h1 class="text-3xl font-bold text-gray-900">
-          🏪 Satıcı Başvurusu
-        </h1>
-        <p class="mt-2 text-gray-600">
-          Platformumuzda satış yapmak için başvurun
-        </p>
+      <div class="text-center mb-12 relative">
+        <h1 class="text-5xl font-black text-gray-900 italic tracking-tighter uppercase mb-4">SATICI BAŞVURUSU</h1>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8">EKOSİSTEMİMİZE KATILARAK TİCARETİN GELECEĞİNİ ŞEKİLLENDİRİN</p>
 
-        <!-- Announcements & Files -->
-        <div
-          v-if="announcements.length"
-          class="mt-4 flex flex-wrap justify-center gap-3"
-        >
-          <div
+        <!-- Announcements / Policy Files -->
+        <div v-if="announcements.length" class="flex flex-wrap justify-center gap-4">
+          <a
             v-for="ann in announcements"
             :key="ann.id"
+            :href="ann.linkUrl?.startsWith('http') ? ann.linkUrl : (ann.linkUrl?.startsWith('/') ? config.public.apiBase + ann.linkUrl : ann.linkUrl)"
+            target="_blank"
+            class="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-2xl hover:border-orange-500 hover:bg-orange-50/50 transition-all group shadow-sm"
           >
-            <a
-              v-if="ann.linkUrl"
-              :href="ann.linkUrl.startsWith('http') ? ann.linkUrl : (ann.linkUrl.startsWith('/') ? config.public.apiBase + ann.linkUrl : ann.linkUrl)"
-              target="_blank"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-full text-[10px] font-bold hover:bg-orange-100 border border-orange-200 transition-all shadow-sm group"
-            >
-              <span
-                class="p-1 bg-orange-600 text-white rounded-md group-hover:scale-110 transition-transform text-[8px]"
-              >📄</span>
-              {{ ann.linkText || 'BİLGİLENDİRME DOSYASI' }}
-            </a>
-            <div
-              v-else
-              class="text-xs text-gray-600 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm"
-            >
-              {{ ann.content }}
-            </div>
-          </div>
+            <div class="p-2 bg-orange-600 text-white rounded-lg group-hover:scale-110 transition-transform text-[10px]">📁</div>
+            <span class="text-[10px] font-black text-gray-700 uppercase tracking-widest">{{ ann.linkText || 'BİLGİLENDİRME DOSYASI' }}</span>
+          </a>
         </div>
       </div>
 
-      <!-- Application Form -->
-      <div class="bg-white shadow-lg rounded-lg p-8">
-        <form
-          class="space-y-6"
-          @submit.prevent="submitApplication"
-        >
-          <!-- Business Information -->
-          <div class="border-b pb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">
-              📋 İş Bilgileri
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">İşletme Adı *</label>
-                <input
-                  v-model="formData.businessName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Örn: ABC Ticaret Ltd. Şti."
-                >
-              </div>
+      <!-- Application Stepper -->
+      <ApplicationStepper :current-step="currentStep" :total-steps="totalSteps" />
 
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">TC Kimlik No (Şahıs İşletmeleri
-                  İçin)</label>
-                <input
-                  v-model="formData.tckn"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="11111111111"
-                  maxlength="11"
-                >
-              </div>
+      <!-- Form Container -->
+      <div class="bg-white rounded-[3rem] shadow-2xl shadow-gray-200 border border-white p-10 lg:p-14">
+        <form @submit.prevent="currentStep === totalSteps ? submitApplication() : nextStep()">
+          
+          <!-- Step 1: Business Info -->
+          <StepBusinessInfo v-if="currentStep === 1" v-model="formData" />
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Vergi Kimlik No</label>
-                <input
-                  v-model="formData.vergiNo"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="1234567890"
-                  maxlength="10"
-                >
-              </div>
+          <!-- Step 2: Contact & Address -->
+          <StepContactAddress v-if="currentStep === 2" v-model="formData" />
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">MERSİS No</label>
-                <input
-                  v-model="formData.mersisNo"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="0123456789000000"
-                  maxlength="16"
-                >
-              </div>
+          <!-- Step 3: Bank & Categories -->
+          <StepBankCategories v-if="currentStep === 3" v-model="formData" :categories="categories" />
 
-              <!-- Old fields for backward compatibility/alias -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ticaret Sicil No</label>
-                <input
-                  v-model="formData.businessRegistration"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="12345678"
-                >
-              </div>
+          <!-- Navigation Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 mt-12 pt-10 border-t border-gray-50">
+            <button
+              v-if="currentStep > 1"
+              type="button"
+              class="flex-1 px-8 py-5 bg-gray-50 text-gray-400 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-gray-100 transition-all active:scale-95"
+              @click="prevStep"
+            >
+              Geri Dön
+            </button>
+            <button
+              v-else
+              type="button"
+              class="flex-1 px-8 py-5 bg-gray-50 text-gray-400 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-gray-100 transition-all active:scale-95"
+              @click="$router.push('/')"
+            >
+              Vazgeç
+            </button>
 
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">İşletme Türü *</label>
-                <select
-                  v-model="formData.businessType"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">
-                    Seçiniz
-                  </option>
-                  <option value="individual">
-                    Şahıs
-                  </option>
-                  <option value="company">
-                    Şirket
-                  </option>
-                  <option value="cooperative">
-                    Kooperatif
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Contact Information -->
-          <div class="border-b pb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">
-              📞 İletişim Bilgileri
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-                <input
-                  v-model="formData.phone"
-                  type="tel"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="+90 555 123 45 67"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                <input
-                  v-model="formData.whatsapp"
-                  type="tel"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="+90 555 123 45 67"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
-                <input
-                  v-model="formData.email"
-                  type="email"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="info@firma.com"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Web Sitesi</label>
-                <input
-                  v-model="formData.website"
-                  type="url"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="https://www.firma.com"
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Address -->
-          <div class="border-b pb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">
-              📍 Adres Bilgileri
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Adres *</label>
-                <textarea
-                  v-model="formData.address"
-                  rows="3"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Tam adres..."
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Şehir *</label>
-                <select
-                  v-model="formData.city"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  @change="formData.district = ''"
-                >
-                  <option value="">
-                    Seçiniz
-                  </option>
-                  <option
-                    v-for="(districts, city) in iller"
-                    :key="city"
-                    :value="city"
-                  >
-                    {{ city }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">İlçe *</label>
-                <select
-                  v-model="formData.district"
-                  :disabled="!formData.city"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">
-                    Seçiniz
-                  </option>
-                  <option
-                    v-for="district in (iller[formData.city] || [])"
-                    :key="district"
-                    :value="district"
-                  >
-                    {{ district
-                    }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ülke</label>
-                <input
-                  v-model="formData.country"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Türkiye"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Posta Kodu</label>
-                <input
-                  v-model="formData.zipCode"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="34000"
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Bank Information -->
-          <div class="border-b pb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">
-              🏦 Banka Bilgileri
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Banka Adı *</label>
-                <input
-                  v-model="formData.bankName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Örn: Ziraat Bankası"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Hesap Sahibi *</label>
-                <input
-                  v-model="formData.bankAccountName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Ad Soyad / Şirket Adı"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">IBAN *</label>
-                <input
-                  v-model="formData.bankIban"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="TR00 0000 0000 0000 0000 0000 00"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Hesap Numarası</label>
-                <input
-                  v-model="formData.bankAccountNumber"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="1234567890"
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Categories -->
-          <div class="pb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">
-              🏷️ Satış Yapacağınız Kategoriler
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <label
-                v-for="category in categories"
-                :key="category.id"
-                class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
-              >
-                <input
-                  v-model="formData.categories"
-                  type="checkbox"
-                  :value="category.id"
-                  class="w-4 h-4 text-primary-600 rounded"
-                >
-                <span class="ml-2 text-sm text-gray-700">{{ category.name }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Submit Button -->
-          <div class="flex gap-4">
             <button
               type="submit"
               :disabled="loading"
-              class="flex-1 bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 disabled:bg-gray-400 transition-colors font-semibold"
+              class="flex-1 px-8 py-5 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-primary-600 shadow-2xl shadow-slate-900/10 transition-all active:scale-95 disabled:opacity-20"
             >
-              {{ loading ? 'Gönderiliyor...' : 'Başvuru Gönder' }}
+              <template v-if="loading">İşleniyor...</template>
+              <template v-else-if="currentStep === totalSteps">Başvuruyu Protokolle</template>
+              <template v-else>Sonraki Adım</template>
             </button>
-            <NuxtLink
-              to="/"
-              class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-center"
-            >
-              İptal
-            </NuxtLink>
           </div>
         </form>
+      </div>
+
+      <!-- Support Footer -->
+      <div class="mt-16 text-center">
+        <p class="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em] mb-4 italic">BazarX Merchant Ecosystem</p>
+        <div class="flex justify-center gap-8 opacity-20 filter grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
+          <img src="/images/brands/security-1.png" class="h-6" alt="Secure">
+          <img src="/images/brands/security-2.png" class="h-6" alt="Trusted">
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { iller } from '~/assets/css/data/component/iller'
-import { useAuthStore } from '~/stores/auth'
+import { useVendorApplication } from '~/composables/useVendorApplication'
 
-definePageMeta({
-  middleware: 'auth'
-})
+// Components
+import ApplicationStepper from '~/components/vendor/application/ApplicationStepper.vue'
+import StepBusinessInfo from '~/components/vendor/application/StepBusinessInfo.vue'
+import StepContactAddress from '~/components/vendor/application/StepContactAddress.vue'
+import StepBankCategories from '~/components/vendor/application/StepBankCategories.vue'
 
-const authStore = useAuthStore()
-const config = useRuntimeConfig()
-const loading = ref(false)
-const categories = ref([])
-const announcements = ref([])
+definePageMeta({ middleware: 'auth' })
+useHead({ title: 'Satıcı Başvuru Protokolü | BazarX Merchants' })
 
-const fetchAnnouncements = async () => {
-  try {
-    const { $api } = useApi()
-    const response = await $api('/api/dynamic/announcements?page=vendor_app')
-    if (response.success) {
-      announcements.value = response.data
-    }
-  } catch (error) {
-    console.error('Announcements fetch error:', error)
-  }
-}
-
-const formData = ref({
-  businessName: '',
-  businessRegistration: '',
-  taxId: '',
-  tckn: '',
-  vergiNo: '',
-  mersisNo: '',
-  businessType: '',
-  phone: '',
-  whatsapp: '',
-  email: authStore.user?.email || '',
-  website: '',
-  address: '',
-  city: '',
-  district: '',
-  country: 'Türkiye',
-  zipCode: '',
-  bankName: '',
-  bankAccountName: '',
-  bankAccountNumber: '',
-  bankIban: '',
-  categories: []
-})
-
-const fetchCategories = async () => {
-  try {
-    const { $api } = useApi()
-    const response = await $api('/api/categories')
-    if (response.success) {
-      categories.value = response.data
-    }
-  } catch (error) {
-    console.error('Kategoriler yüklenirken hata:', error)
-  }
-}
-
-const submitApplication = async () => {
-  loading.value = true
-  try {
-    const { $api } = useApi()
-    const response = await $api('/api/vendors/register', {
-      method: 'POST',
-      body: formData.value
-    })
-
-    if (response.success) {
-      useNuxtApp().$toast.success('Başvurunuz alındı! Admin onayı bekleniyor.')
-      await navigateTo('/')
-    }
-  } catch (error) {
-    console.error('Başvuru hatası:', error)
-    useNuxtApp().$toast.error(error.data?.error || 'Başvuru gönderilirken bir hata oluştu')
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  fetchCategories()
-  fetchAnnouncements()
-})
+const {
+  loading, currentStep, totalSteps, categories, announcements, formData, config,
+  nextStep, prevStep, submitApplication
+} = useVendorApplication()
 </script>
