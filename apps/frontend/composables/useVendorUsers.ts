@@ -1,68 +1,49 @@
-import { ref, computed, onMounted } from 'vue'
-
 export const useVendorUsers = () => {
   const { $api } = useApi()
-  const toast = useNuxtApp().$toast
+  const { $toast } = useNuxtApp() as any
 
-  // State
   const users = ref<any[]>([])
   const loading = ref(false)
-  
-  const filters = ref({
-    search: '',
-    status: '',
-    sortBy: 'created_desc'
-  })
-
-  const pagination = ref({
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0
-  })
-
-  const showCreateModal = ref(false)
   const selectedUser = ref<any>(null)
+  const showCreateModal = ref(false)
 
-  // Methods
+  const filters = reactive({ search: '', role: '', page: 1, limit: 10 })
+  const pagination = ref({ page: 1, pages: 1, total: 0, limit: 10 })
+
   const fetchUsers = async () => {
     loading.value = true
     try {
-      // Not: Şu an admin API kullanılıyor, gerçek senaryoda /api/vendor-users olmalı
-      const res: any = await $api('/api/admin/users', {
-        query: {
-          page: pagination.value.page,
-          limit: pagination.value.limit,
-          search: filters.value.search || ''
-        }
-      })
-      if (res.success) {
-        users.value = res.data || []
-        pagination.value = res.pagination || pagination.value
+      const res = await $api<any>(
+        '/api/vendor/users',
+        { query: { ...filters } }
+      )
+      users.value = res.data || []
+      const resAny = res as any
+      if (resAny.pagination) pagination.value = {
+        page: resAny.pagination.page || 1,
+        pages: resAny.pagination.totalPages || 1,
+        total: resAny.pagination.total || 0,
+        limit: resAny.pagination.limit || 10,
       }
-    } catch (e) {
-      toast.error('Kullanıcılar yüklenemedi')
-    } finally {
+    } catch { /* ignore */ } finally {
       loading.value = false
     }
   }
 
-  const toggleUserStatus = async (user: any) => {
-    const newStatus = user.status === 'Active' ? 'Inactive' : 'Active'
-    user.status = newStatus
-    toast.success('Personel durumu güncellendi (Demo)')
-  }
-
-  const deleteUser = (user: any) => {
-    if (confirm('Personel kaydını silmek istediğinize emin misiniz?')) {
-      users.value = users.value.filter(u => u.id !== user.id)
-      toast.success('Personel silindi')
+  const deleteUser = async (id: string) => {
+    if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return
+    try {
+      await $api(`/api/vendor/users/${id}`, { method: 'DELETE' })
+      $toast.success('Kullanıcı kaldırıldı')
+      fetchUsers()
+    } catch {
+      $toast.error('Silinemedi')
     }
   }
 
   return {
     users, loading, filters, pagination,
-    showCreateModal, selectedUser,
-    fetchUsers, toggleUserStatus, deleteUser
+    selectedUser, showCreateModal,
+    fetchUsers, deleteUser,
   }
 }

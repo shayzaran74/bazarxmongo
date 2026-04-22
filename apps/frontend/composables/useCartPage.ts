@@ -1,117 +1,103 @@
-import { ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '~/stores/auth'
-import { useCartStore } from '~/stores/cart'
-import { useProductService } from '~/services/api/ProductService'
-import { navigateTo, useNuxtApp } from '#imports'
-import type { Product, EscrowCoupon } from '@barterborsa/shared-types'
-
 export const useCartPage = () => {
-  const { t, tm, rt } = useI18n()
-  const authStore = useAuthStore()
-  const cartStore = useCartStore()
-  const productService = useProductService()
-  const { $toast: toast } = useNuxtApp();
+  const { $api } = useApi()
+  const { $toast } = useNuxtApp() as any
+  const cartStore = useCartStore ? useCartStore() : null
 
-  // State
-  const { items: cartItems, summary: cartSummary, loading, error, availableEscrowCoupons, appliedEscrowCoupon } = storeToRefs(cartStore)
-  const bestSellers = ref<Product[]>([])
+  const cartItems = ref<any[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const bestSellers = ref<any[]>([])
   const bestSellersLoading = ref(false)
+  const applicableEscrowCoupons = ref<any[]>([])
+  const appliedEscrowCoupon = ref<any>(null)
 
-  // Computed
-  const subtitleText = computed(() => {
-    const options = tm('personalized.subtitleOptions') as unknown as string[] | Record<string, unknown>
-    if (Array.isArray(options) && options.length > 0) {
-      const val = options[0]
-      // Use explicit type narrowing instead of 'any'
-      return typeof val === 'string' ? val : rt(val as string)
+  const cartSummary = computed(() => {
+    const subtotal = cartItems.value.reduce(
+      (sum, item) => sum + Number(item.price) * item.quantity, 0
+    )
+    return { subtotal, total: subtotal, tax: 0, shipping: 0 }
+  })
+
+  const subtitleText = computed(() =>
+    cartItems.value.length > 0
+      ? `${cartItems.value.length} ürün sepetinizde`
+      : 'Sepetiniz boş'
+  )
+
+  const fetchCart = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await $api<{ success: boolean; data: any }>('/api/cart')
+      const resAny = res as any
+      cartItems.value = resAny.data?.items || resAny.data || resAny || []
+    } catch (e: any) {
+      error.value = 'Sepet yüklenemedi'
+    } finally {
+      loading.value = false
     }
-    return t('personalized.description')
-  })
+  }
 
-  const applicableEscrowCoupons = computed(() => {
-    if (!availableEscrowCoupons.value?.length || !cartItems.value?.length) return []
-    return availableEscrowCoupons.value.filter(coupon => {
-      return (coupon.status === 'ACTIVE' || !coupon.status) && cartItems.value.some(item => item.productId === coupon.listingId)
-    })
-  })
-
-  // Actions
   const fetchBestSellers = async () => {
     bestSellersLoading.value = true
     try {
-      const response = await productService.getProducts({ limit: 4, sort: 'popular' })
-      if (response.success && response.data) {
-        bestSellers.value = response.data
-      }
-    } catch (err) {
-      console.error('Fetch best sellers error:', err)
-    } finally {
+      const res = await $api<{ success: boolean; data: any }>(
+        '/api/catalog/products',
+        { query: { limit: 4 } }
+      )
+      const resAny = res as any
+      bestSellers.value = resAny.data?.items || resAny.data || resAny || []
+    } catch { /* ignore */ } finally {
       bestSellersLoading.value = false
     }
   }
 
-  const applyEscrowCoupon = (coupon: EscrowCoupon) => {
-    cartStore.applyEscrowCoupon(coupon.id)
-    toast.success(t('cart.appliedEscrowCouponSuccess'))
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    try {
+      await $api(`/api/cart/${itemId}`, {
+        method: 'PATCH',
+        body: { quantity }
+      })
+      await fetchCart()
+    } catch {
+      $toast.error('Güncelleme başarısız')
+    }
+  }
+
+  const removeItem = async (itemId: string) => {
+    try {
+      await $api(`/api/cart/${itemId}`, { method: 'DELETE' })
+      cartItems.value = cartItems.value.filter(i => i.id !== itemId)
+      $toast.success('Ürün sepetten kaldırıldı')
+    } catch {
+      $toast.error('Kaldırma başarısız')
+    }
+  }
+
+  const applyEscrowCoupon = async (couponId: string) => {
+    appliedEscrowCoupon.value = applicableEscrowCoupons.value.find(
+      c => c.id === couponId
+    ) || null
   }
 
   const removeEscrowCoupon = () => {
-    cartStore.removeEscrowCoupon()
-    if (toast) toast.success(t('cart.couponRemoved'))
+    appliedEscrowCoupon.value = null
   }
 
-  const updateQuantity = async (data: { id: string | number, quantity: number }) => {
-    await cartStore.updateQuantity(String(data.id), data.quantity)
-  }
+  const checkout = () => navigateTo('/checkout')
 
-  const removeItem = async (itemId: string | number) => {
-    await cartStore.removeItem(String(itemId))
-  }
-
-  const checkout = () => {
-    if (appliedEscrowCoupon.value) {
-      navigateTo({ path: '/checkout', query: { escrowCouponId: appliedEscrowCoupon.value.id } })
-    } else {
-      navigateTo('/checkout')
-    }
-  }
-
-  const quickCheckout = () => {
-    if (toast) toast.info(t('cart.quickCheckoutSim'))
-    navigateTo('/payment-success?status=succeeded&type=quick')
-  }
+  const quickCheckout = async () => navigateTo('/checkout')
 
   const init = async () => {
-    if (!authStore.isLoggedIn) {
-      await navigateTo('/auth/login')
-      return
-    }
-    
-    await Promise.allSettled([
-      cartStore.fetchCart(),
-      fetchBestSellers(),
-      cartStore.fetchEscrowCoupons()
-    ])
+    await Promise.all([fetchCart(), fetchBestSellers()])
   }
 
   return {
-    cartItems,
-    cartSummary,
-    loading,
-    error,
-    bestSellers,
-    bestSellersLoading,
-    subtitleText,
-    applicableEscrowCoupons,
-    appliedEscrowCoupon,
-    init,
-    updateQuantity,
-    removeItem,
-    applyEscrowCoupon,
-    removeEscrowCoupon,
-    checkout,
-    quickCheckout
+    cartItems, cartSummary, loading, error,
+    bestSellers, bestSellersLoading,
+    subtitleText, applicableEscrowCoupons, appliedEscrowCoupon,
+    init, updateQuantity, removeItem,
+    applyEscrowCoupon, removeEscrowCoupon,
+    checkout, quickCheckout,
   }
 }

@@ -1,121 +1,104 @@
-import { ref, computed, watch } from 'vue'
-import { useAdminOrderService } from '~/services/api/AdminOrderService'
-import type { AdminOrder, AdminVendor } from '@barterborsa/shared-types'
-
 export const useAdminOrders = () => {
-  const adminOrderService = useAdminOrderService()
-  const toast = useNuxtApp().$toast
+  const { $api } = useApi()
+  const { $toast } = useNuxtApp() as any
 
-  // State
-  const orders = ref<AdminOrder[]>([])
-  const vendors = ref<AdminVendor[]>([])
+  const orders = ref<any[]>([])
+  const vendors = ref<any[]>([])
   const loading = ref(false)
-  
-  // Filters
   const filterStatus = ref('')
   const filterVendorId = ref('')
   const searchQuery = ref('')
-  
-  // Pagination
   const totalOrders = ref(0)
-  
-  // Bulk Actions
-  const selectedOrderIds = ref<(string | number)[]>([])
+  const selectedOrderIds = ref<string[]>([])
   const bulkProcessing = ref(false)
   const bulkStatus = ref('')
 
-  // Computed
   const filteredOrders = computed(() => {
-    if (!searchQuery.value) return orders.value
-    const query = searchQuery.value.toLowerCase()
-    return orders.value.filter((order: AdminOrder) =>
-      (order.orderNumber && order.orderNumber.toLowerCase().includes(query)) ||
-      (order.User?.name && order.User.name.toLowerCase().includes(query)) ||
-      (order.User?.email && order.User.email.toLowerCase().includes(query))
-    )
-  })
-
-  const isAllOrdersSelected = computed(() => {
-    return filteredOrders.value.length > 0 && selectedOrderIds.value.length === filteredOrders.value.length
-  })
-
-  // Methods
-  const fetchVendors = async () => {
-    try {
-      const response = await adminOrderService.getVendors()
-      if (response.success && response.data) {
-        vendors.value = response.data
-      }
-    } catch (err) {
-      console.error('Fetch vendors error:', err)
+    let list = orders.value
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase()
+      list = list.filter((o: any) =>
+        o.orderNumber?.toLowerCase().includes(q) ||
+        o.userId?.toLowerCase().includes(q)
+      )
     }
-  }
+    return list
+  })
+
+  const isAllOrdersSelected = computed(() =>
+    orders.value.length > 0 &&
+    selectedOrderIds.value.length === orders.value.length
+  )
 
   const fetchOrders = async () => {
     loading.value = true
     try {
-      const response = await adminOrderService.getOrders({
-        status: filterStatus.value,
-        vendorId: filterVendorId.value
-      }) // any is removed
-      if (response.success && response.data) {
-        orders.value = response.data.items || []
-        totalOrders.value = response.data.total || orders.value.length
-      }
-    } catch (error) {
-      console.error('Fetch orders error:', error)
+      const res = await $api<any>('/api/admin/orders', {
+        query: {
+          status: filterStatus.value || undefined,
+          vendorId: filterVendorId.value || undefined,
+        }
+      })
+      orders.value = res.data?.items || []
+      totalOrders.value = res.data?.total || 0
+    } catch {
+      $toast.error('Siparişler yüklenemedi')
     } finally {
       loading.value = false
     }
   }
 
-  const handleSearch = () => {
-    // Computed property filteredOrders handles local search
+  const fetchVendors = async () => {
+    try {
+      const res = await $api<any>('/api/admin/vendors')
+      vendors.value = (res.data || []).map((v: any) => ({
+        id: v.id,
+        businessName: v.company?.name || v.profile?.storeName || 'Bilinmeyen',
+      }))
+    } catch { /* ignore */ }
   }
 
   const toggleSelectAllOrders = () => {
     if (isAllOrdersSelected.value) {
       selectedOrderIds.value = []
     } else {
-      selectedOrderIds.value = filteredOrders.value.map((o: AdminOrder) => o.id)
+      selectedOrderIds.value = orders.value.map((o: any) => o.id)
     }
   }
 
   const bulkUpdateStatus = async () => {
-    if (!bulkStatus.value || selectedOrderIds.value.length === 0) return
-
+    if (!bulkStatus.value || !selectedOrderIds.value.length) return
     bulkProcessing.value = true
     try {
-      const response = await adminOrderService.bulkUpdateStatus(selectedOrderIds.value, bulkStatus.value)
-
-      if (response.success) {
-        toast.success(`${selectedOrderIds.value.length} sipariş güncellendi`)
-        selectedOrderIds.value = []
-        bulkStatus.value = ''
-        await fetchOrders()
-      } else {
-        toast.error(response.message || 'Toplu güncelleme başarısız')
-      }
-    } catch (error) {
-      console.error('Bulk order update error:', error)
-      toast.error('Toplu güncelleme sırasında hata oluştu')
+      // Sırayla güncelle
+      await Promise.all(
+        selectedOrderIds.value.map(id =>
+          $api(`/api/admin/orders/${id}/status`, {
+            method: 'PATCH',
+            body: { status: bulkStatus.value }
+          })
+        )
+      )
+      $toast.success(`${selectedOrderIds.value.length} sipariş güncellendi`)
+      selectedOrderIds.value = []
+      bulkStatus.value = ''
+      fetchOrders()
+    } catch {
+      $toast.error('Toplu güncelleme başarısız')
     } finally {
       bulkProcessing.value = false
     }
   }
 
-  // Watchers
-  watch([filterStatus, filterVendorId], () => {
-    fetchOrders()
-  })
+  watch([filterStatus, filterVendorId], () => fetchOrders())
 
   return {
-    // State
-    orders, vendors, loading, filterStatus, filterVendorId, searchQuery,
-    totalOrders, selectedOrderIds, bulkProcessing, bulkStatus,
-    // Computed
+    orders, vendors, loading,
+    filterStatus, filterVendorId, searchQuery,
+    totalOrders, selectedOrderIds,
+    bulkProcessing, bulkStatus,
     filteredOrders, isAllOrdersSelected,
-    // Methods
-    fetchVendors, fetchOrders, handleSearch, toggleSelectAllOrders, bulkUpdateStatus
+    fetchVendors, fetchOrders,
+    toggleSelectAllOrders, bulkUpdateStatus,
   }
 }

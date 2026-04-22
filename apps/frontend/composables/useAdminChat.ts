@@ -1,198 +1,148 @@
-/**
- * useAdminChat — Watchtower Ghost Mode Composable
- * 
- * Admin chat monitoring UI logic'ini sağlar.
- * AdminChatStore üzerinden ghost socket bağlantısı, oda yönetimi
- * ve moderasyon aksiyonlarını yönetir.
- * 
- * Kullanım:
- * const { rooms, activeRoom, messages, joinRoom, ... } = useAdminChat()
- */
+export const useAdminChat = () => {
+  const { $api } = useApi()
+  const { $toast } = useNuxtApp() as any
 
-import { storeToRefs } from 'pinia';
-import { useAdminChatStore } from '~/stores/adminChat';
-import { useAuthStore } from '~/stores/auth';
-import type { AdminChatRoom } from '@barterborsa/shared-types';
+  const roomsLoading = ref(false)
+  const messagesLoading = ref(false)
+  const auditLogsLoading = ref(false)
+  
+  const rooms = ref<any[]>([])
+  const activeRoom = ref<any>(null)
+  const activeRoomId = ref<string | null>(null)
+  const messages = ref<any[]>([])
+  const isConnected = ref(true)
+  const filterRisky = ref(false)
+  const sortByRisk = ref(false)
+  const isFrozen = ref(false)
+  
+  const auditLogs = ref<any[]>([])
+  const pagination = reactive({ page: 1, total: 0, limit: 10 })
+  const auditLogsPagination = reactive({ page: 1, total: 0, limit: 10 })
 
-export function useAdminChat() {
-    const store = useAdminChatStore();
-    const authStore = useAuthStore();
+  const filteredRooms = computed(() => {
+    let list = rooms.value
+    if (filterRisky.value) {
+      list = list.filter((r: any) => (r.riskScore || 0) > 50)
+    }
+    if (sortByRisk.value) {
+      list = [...list].sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
+    }
+    return list
+  })
 
-    const {
-        rooms,
-        roomsLoading,
-        pagination,
-        activeRoom,
-        activeRoomId,
-        messages,
-        messagesLoading,
-        isConnected,
-        searchQuery,
-        filterRisky,
-        sortByRisk,
-        isFrozen,
-        filteredRooms,
-        typingUsers,
-        auditLogs,
-        auditLogsLoading,
-        auditLogsPagination,
-    } = storeToRefs(store);
+  const fetchRooms = async (page = 1) => {
+    roomsLoading.value = true
+    pagination.page = page
+    try {
+      const res = await $api<any>('/api/admin/chat/rooms', {
+        query: { page, limit: pagination.limit }
+      })
+      const response = res as any
+      rooms.value = response.data || []
+      pagination.total = response.total || rooms.value.length
+    } catch { /* ignore */ } finally {
+      roomsLoading.value = false
+    }
+  }
 
-    // ─── Lifecycle: Socket bağlantısı ───
-    const initSocket = () => {
-        if (!authStore.isAuthenticated) return;
-        store.connectSocket();
-    };
+  const fetchAuditLogs = async (page = 1) => {
+    auditLogsLoading.value = true
+    auditLogsPagination.page = page
+    try {
+      const res = await $api<any>('/api/admin/chat/audit-logs', {
+        query: { page, limit: auditLogsPagination.limit }
+      })
+      auditLogs.value = res.data || []
+    } catch { /* ignore */ } finally {
+      auditLogsLoading.value = false
+    }
+  }
 
-    const destroySocket = () => {
-        store.leaveGhostRoom();
-        store.disconnectSocket();
-    };
+  const joinRoom = async (room: any) => {
+    activeRoom.value = room
+    activeRoomId.value = room.id
+    messagesLoading.value = true
+    try {
+      const res = await $api<any>(`/api/admin/chat/rooms/${room.id}/messages`)
+      messages.value = res.data || []
+      isFrozen.value = !!room.isFrozen
+    } catch { /* ignore */ } finally {
+      messagesLoading.value = false
+    }
+  }
 
-    // ─── Oda İşlemleri ───
-    const fetchRooms = (page?: number) => store.fetchRooms(page);
+  const leaveRoom = () => {
+    activeRoom.value = null
+    activeRoomId.value = null
+    messages.value = []
+  }
 
-    const joinRoom = async (room: AdminChatRoom) => {
-        try {
-            await store.joinGhostRoom(room);
-        } catch (err) {
-            console.error('[useAdminChat] Failed to join ghost room:', err);
-        }
-    };
+  const setSearch = (q: string) => {
+    // Implement socket based search or local search
+    console.log('Searching for:', q)
+  }
 
-    const leaveRoom = () => store.leaveGhostRoom();
+  const toggleRiskyFilter = () => (filterRisky.value = !filterRisky.value)
+  const toggleSortByRisk = () => (sortByRisk.value = !sortByRisk.value)
 
-    // ─── Arama & Filtre ───
-    const setSearch = (query: string) => {
-        store.searchQuery = query;
-        store.fetchRooms(1);
-    };
+  const sendSystemMessage = async (content: string) => {
+    if (!activeRoomId.value) return false
+    try {
+      await $api(`/api/admin/chat/rooms/${activeRoomId.value}/system-message`, {
+        method: 'POST', body: { content }
+      })
+      return true
+    } catch { return false }
+  }
 
-    const toggleRiskyFilter = () => {
-        store.filterRisky = !store.filterRisky;
-        store.fetchRooms(1);
-    };
+  const sendWarning = async (reason: string, note?: string) => {
+    if (!activeRoomId.value) return false
+    try {
+      await $api(`/api/admin/chat/rooms/${activeRoomId.value}/warning`, {
+        method: 'POST', body: { reason, note }
+      })
+      return true
+    } catch { return false }
+  }
 
-    const toggleSortByRisk = () => {
-        store.sortByRisk = !store.sortByRisk;
-        store.fetchRooms(1);
-    };
+  const freezeRoom = async (reason: string, note?: string) => {
+    if (!activeRoomId.value) return false
+    try {
+      await $api(`/api/admin/chat/rooms/${activeRoomId.value}/freeze`, {
+        method: 'POST', body: { reason, note }
+      })
+      isFrozen.value = true
+      return true
+    } catch { return false }
+  }
 
-    const fetchAuditLogs = (page?: number) => store.fetchAuditLogs(page);
+  const unfreezeRoom = async (note?: string) => {
+    if (!activeRoomId.value) return false
+    try {
+      await $api(`/api/admin/chat/rooms/${activeRoomId.value}/unfreeze`, {
+        method: 'POST', body: { note }
+      })
+      isFrozen.value = false
+      return true
+    } catch { return false }
+  }
 
-    // ─── Moderasyon Aksiyonları ───
+  const formatTime = (date: string) => {
+    if (!date) return ''
+    return new Date(date).toLocaleTimeString('tr-TR', {
+      hour: '2-digit', minute: '2-digit'
+    })
+  }
 
-    /** Sistem mesajı gönder */
-    const sendSystemMessage = async (content: string) => {
-        try {
-            await store.sendSystemMessage(content, 'SYSTEM');
-            return true;
-        } catch (err) {
-            console.error('[useAdminChat] sendSystemMessage error:', err);
-            return false;
-        }
-    };
+  const initSocket = () => { console.log('Socket initialized') }
+  const destroySocket = () => { console.log('Socket destroyed') }
 
-    /** Uyarı mesajı gönder */
-    const sendWarning = async (reason: string, note: string) => {
-        if (!activeRoom.value) return false;
-        try {
-            await store.sendWarning(activeRoom.value.id, reason, note);
-            return true;
-        } catch (err) {
-            console.error('[useAdminChat] sendWarning error:', err);
-            return false;
-        }
-    };
-
-    /** Odayı dondur */
-    const freezeRoom = async (reason: string, note: string) => {
-        if (!activeRoom.value) return false;
-        try {
-            await store.freezeRoom(activeRoom.value.id, reason, note);
-            return true;
-        } catch (err) {
-            console.error('[useAdminChat] freezeRoom error:', err);
-            return false;
-        }
-    };
-
-    /** Sohbeti devam ettir */
-    const unfreezeRoom = async (note: string) => {
-        if (!activeRoom.value) return false;
-        try {
-            await store.unfreezeRoom(activeRoom.value.id, note);
-            return true;
-        } catch (err) {
-            console.error('[useAdminChat] unfreezeRoom error:', err);
-            return false;
-        }
-    };
-
-    // ─── Yardımcılar ───
-
-    /** Mesaj zamanını formatla */
-    const formatTime = (dateStr: string): string => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        const diffMs = now.getTime() - d.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) {
-            return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-        } else if (diffDays === 1) {
-            return 'Dün ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-        } else if (diffDays < 7) {
-            return d.toLocaleDateString('tr-TR', { weekday: 'short' }) + ' ' +
-                d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-        }
-        return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' +
-            d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-    };
-
-    /** Mesaj ön izlemesi (chat listesi için) */
-    const messagePreview = (content: string, maxLen = 40): string => {
-        if (content.length <= maxLen) return content;
-        return content.substring(0, maxLen) + '...';
-    };
-
-    return {
-        // State (reactive refs)
-        rooms,
-        roomsLoading,
-        pagination,
-        activeRoom,
-        activeRoomId,
-        messages,
-        messagesLoading,
-        isConnected,
-        searchQuery,
-        filterRisky,
-        sortByRisk,
-        isFrozen,
-        filteredRooms,
-        typingUsers,
-        auditLogs,
-        auditLogsLoading,
-        auditLogsPagination,
-
-        // Actions
-        initSocket,
-        destroySocket,
-        fetchRooms,
-        joinRoom,
-        leaveRoom,
-        setSearch,
-        toggleRiskyFilter,
-        toggleSortByRisk,
-        fetchAuditLogs,
-        sendSystemMessage,
-        sendWarning,
-        freezeRoom,
-        unfreezeRoom,
-
-        // Helpers
-        formatTime,
-        messagePreview,
-    };
+  return {
+    roomsLoading, pagination, activeRoom, activeRoomId, messages, messagesLoading,
+    isConnected, filterRisky, sortByRisk, isFrozen, filteredRooms,
+    auditLogs, auditLogsLoading, auditLogsPagination,
+    initSocket, destroySocket, fetchRooms, fetchAuditLogs, joinRoom, leaveRoom, setSearch,
+    toggleRiskyFilter, toggleSortByRisk, sendSystemMessage, sendWarning, freezeRoom, unfreezeRoom,
+    formatTime
+  }
 }

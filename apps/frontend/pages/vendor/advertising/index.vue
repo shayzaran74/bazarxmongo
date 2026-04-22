@@ -110,13 +110,13 @@ const summaryStats = computed<SummaryStat[]>(() => {
 const fetchData = async () => {
     try {
         // Explicitly type the API calls to avoid tuple inference issues
-        const adsRes = await ads.fetchAds()
-        const summaryRes = await ads.getAdSummary(30)
+        const adsRes = await ads.fetchAds() as any
+        const summaryRes = await ads.getAdSummary(30) as any
         const productsRes = await $api<any[]>('/api/vendors/products', { params: { limit: 500 } })
 
 
-        if (adsRes && adsRes.success && adsRes.data) adCampaigns.value = adsRes.data
-        if (summaryRes && summaryRes.success && summaryRes.data) summary.value = summaryRes.data.summary
+        if (adsRes && (adsRes as any).success && (adsRes as any).data) adCampaigns.value = (adsRes as any).data
+        if (summaryRes && (summaryRes as any).success && (summaryRes as any).data) summary.value = (summaryRes as any).data.summary
         if (productsRes && productsRes.success && productsRes.data) {
             vendorProducts.value = (productsRes.data as any[]).map((p: any) => ({
                 id: p.id,

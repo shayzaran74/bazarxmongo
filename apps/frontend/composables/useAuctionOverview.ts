@@ -1,137 +1,119 @@
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore, useApi } from '#imports'
+// composables/useAuctionOverview.ts
+import { useAuctionStore } from '~/stores/auction'
+import { useAuthStore } from '~/stores/auth'
 
 export const useAuctionOverview = () => {
+  const auctionStore = useAuctionStore()
   const authStore = useAuthStore()
-  const { $api } = useApi()
 
-  // State
-  const auctions = ref<any[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const categories = ref<any[]>([])
   const searchQuery = ref('')
   const selectedCategory = ref('')
-  const statusFilter = ref('')
+  const statusFilter = ref('ACTIVE')
   const sortBy = ref('endTime_asc')
   const showCreateModal = ref(false)
-
-  // Pagination
   const currentPage = ref(1)
-  const totalPages = ref(1)
-  const itemsPerPage = ref(12)
+  const pageSize = 12
+
+  const categories = ref<Array<{ id: string; name: string }>>([])
 
   // Computed
+  const auctions = computed(() => auctionStore.auctions)
+  const loading = computed(() => auctionStore.loading)
+  const error = computed(() => auctionStore.error)
+  const total = computed(() => auctionStore.total)
+  const totalPages = computed(() => Math.ceil(total.value / pageSize))
+
   const visiblePages = computed(() => {
-    const pages = []
+    const pages: number[] = []
     const start = Math.max(1, currentPage.value - 2)
-    const end = Math.min(totalPages.value, start + 4)
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
+    const end = Math.min(totalPages.value, currentPage.value + 2)
+    for (let i = start; i <= end; i++) pages.push(i)
     return pages
   })
 
-  // Methods
   const fetchAuctions = async () => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const query: any = {
-        page: currentPage.value,
-        limit: itemsPerPage.value,
-        sortBy: sortBy.value
-      }
-
-      if (searchQuery.value.trim()) query.search = searchQuery.value.trim()
-      if (selectedCategory.value) query.categoryId = selectedCategory.value
-      if (statusFilter.value) query.status = statusFilter.value
-
-      const data = await $api('/api/auctions', { query })
-      if ((data as any).success) {
-        auctions.value = (data as any).data
-        totalPages.value = (data as any).pagination?.totalPages || 1
-      } else {
-        throw new Error(data.error || 'Açık artırmalar yüklenirken bir hata oluştu')
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Açık artırmalar yüklenirken bir hata oluştu'
-      console.error('Fetch auctions error:', err)
-    } finally {
-      loading.value = false
-    }
+    await auctionStore.fetchAuctions({
+      page: currentPage.value,
+      limit: pageSize,
+      status: statusFilter.value || undefined,
+      categoryId: selectedCategory.value || undefined,
+      search: searchQuery.value || undefined,
+      sortBy: sortBy.value,
+    })
   }
 
   const fetchCategories = async () => {
     try {
-      const data = await $api('/api/categories', { query: { all: true } })
-      if ((data as any).success) categories.value = (data as any).data
-    } catch (err) {
-      console.error('Fetch categories error:', err)
-    }
+      const { $api } = useApi()
+      const res = await $api<any[]>(
+        '/api/listings/categories'
+      )
+      categories.value = res.data || []
+    } catch { /* ignore */ }
   }
 
   const changePage = (page: number) => {
-    if (page >= 1 && page <= totalPages.value) {
-      currentPage.value = page
-      fetchAuctions()
-    }
+    currentPage.value = page
+    fetchAuctions()
   }
 
   const clearFilters = () => {
     searchQuery.value = ''
     selectedCategory.value = ''
-    statusFilter.value = ''
+    statusFilter.value = 'ACTIVE'
     sortBy.value = 'endTime_asc'
     currentPage.value = 1
     fetchAuctions()
   }
 
-  let searchTimeout: any = null
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
   const debounceSearch = () => {
-    clearTimeout(searchTimeout)
-    searchTimeout = setTimeout(() => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
       currentPage.value = 1
       fetchAuctions()
-    }, 500)
+    }, 400)
   }
 
-  // Helpers
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('tr-TR', {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY'
-    }).format(price || 0)
-  }
+    }).format(price)
 
   const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-green-500 text-white'
-      case 'Completed': return 'bg-blue-500 text-white'
-      case 'Cancelled': return 'bg-red-500 text-white'
-      default: return 'bg-gray-500 text-white'
+    const map: Record<string, string> = {
+      ACTIVE: 'bg-green-100 text-green-700',
+      SCHEDULED: 'bg-blue-100 text-blue-700',
+      ENDED: 'bg-gray-100 text-gray-600',
+      COMPLETED: 'bg-purple-100 text-purple-700',
+      CANCELLED: 'bg-red-100 text-red-600',
     }
+    return map[status] || 'bg-gray-100 text-gray-600'
   }
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Active': return '🔥 CANLI'
-      case 'Completed': return '✅ BİTTİ'
-      case 'Cancelled': return '❌ İPTAL'
-      default: return status
+    const map: Record<string, string> = {
+      ACTIVE: 'AKTİF',
+      SCHEDULED: 'PLANLI',
+      ENDED: 'BİTTİ',
+      COMPLETED: 'TAMAMLANDI',
+      CANCELLED: 'İPTAL',
     }
+    return map[status] || status
   }
 
   onMounted(() => {
-    fetchCategories()
     fetchAuctions()
+    fetchCategories()
   })
 
   return {
-    auctions, loading, error, categories, searchQuery, selectedCategory,
-    statusFilter, sortBy, showCreateModal, currentPage, totalPages, visiblePages,
-    fetchAuctions, changePage, clearFilters, debounceSearch, formatPrice,
-    getStatusBadgeClass, getStatusText
+    auctions, loading, error, categories,
+    searchQuery, selectedCategory, statusFilter, sortBy,
+    showCreateModal, currentPage, totalPages, visiblePages,
+    authStore,
+    fetchAuctions, changePage, clearFilters, debounceSearch,
+    formatPrice, getStatusBadgeClass, getStatusText,
   }
 }

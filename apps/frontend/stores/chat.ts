@@ -231,7 +231,7 @@ export const useChatStore = defineStore('chat', {
                         id: Date.now().toString() + '-ai',
                         chatRoomId: 'ai',
                         senderId: 'ai',
-                        content: response.data.reply,
+                        content: (response as any).data?.reply || (response as any).reply,
                         type: 'text',
                         createdAt: new Date().toISOString(),
                         role: 'assistant'

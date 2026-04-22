@@ -134,6 +134,9 @@
             </Transition>
           </div>
 
+          <!-- Notification Bell -->
+          <CommonNotificationBell v-if="authStore.isLoggedIn" class="hidden lg:block" />
+
           <!-- Cart Button -->
           <NuxtLink to="/cart" class="group relative flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-gray-900 hover:bg-primary-600 text-white shadow-xl transition-all duration-500">
             <ShoppingCartIcon class="h-5 w-5 lg:h-6 lg:w-6 group-hover:rotate-12" />

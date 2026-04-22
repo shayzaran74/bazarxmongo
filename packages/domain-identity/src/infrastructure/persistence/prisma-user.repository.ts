@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { UserMapper } from './mappers/user.mapper';
-import { Optional } from '@barterborsa/shared-core';
 
 @Injectable()
 export class PrismaUserRepository implements IUserRepository {
+  private readonly logger = new Logger(PrismaUserRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<User | null> {
@@ -51,20 +52,32 @@ export class PrismaUserRepository implements IUserRepository {
   async save(user: User): Promise<void> {
     const data = UserMapper.toPersistence(user);
     const profileData = UserMapper.toProfilePersistence(user);
-    
-    await this.prisma.$transaction([
-      this.prisma.user.create({ data }),
-      this.prisma.userProfile.create({ data: profileData })
-    ]);
+    const { id, ...updateData } = data;
+
+    try {
+      // 1. User'ı upsert et (nested profile olmadan — güvenli yol)
+      await this.prisma.user.upsert({
+        where: { id },
+        create: data,
+        update: updateData,
+      });
+
+      // 2. Profile'ı ayrı upsert et (bağımsız kontrol)
+      await this.prisma.userProfile.upsert({
+        where: { userId: user.id },
+        create: { ...profileData, userId: user.id },
+        update: profileData,
+      });
+
+      this.logger.debug(`User saved: ${user.email}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to save user ${user.email}: ${err.message}`, err.stack);
+      throw err; // Hatayı yutma — üst katmana fırlat
+    }
   }
 
   async update(user: User): Promise<void> {
-    const data = UserMapper.toPersistence(user);
-    const { id, ...updateData } = data;
-    await this.prisma.user.update({
-      where: { id },
-      data: updateData
-    });
+    await this.save(user);
   }
 
   async delete(id: string): Promise<void> {

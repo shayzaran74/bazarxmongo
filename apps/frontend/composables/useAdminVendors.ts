@@ -1,59 +1,40 @@
-import { ref, computed } from 'vue'
-import { useAdminVendorService } from '~/services/api/AdminVendorService'
-import { useCategoryService } from '~/services/api/CategoryService'
-import type { AdminVendor, Category } from '@barterborsa/shared-types'
-
 export const useAdminVendors = () => {
-  const adminVendorService = useAdminVendorService()
-  const categoryService = useCategoryService()
-  const toast = useNuxtApp().$toast
+  const { $api } = useApi()
+  const { $toast } = useNuxtApp() as any
 
-  const vendors = ref<AdminVendor[]>([])
-  const categories = ref<Category[]>([])
   const loading = ref(false)
   const vendorActionLoading = ref(false)
-
-  const selectedVendor = ref<AdminVendor | null>(null)
+  const vendors = ref<any[]>([])
+  const selectedVendor = ref<any>(null)
   const selectedCategoryId = ref('')
-  const statusFilter = ref<string | null>(null)
+  const statusFilter = ref('')
   const vendorSearchQuery = ref('')
-  
   const showRejectForm = ref(false)
   const rejectionReason = ref('')
+  const availableCategories = ref<any[]>([])
 
   const filteredVendors = computed(() => {
     let list = vendors.value
     if (statusFilter.value) {
-      list = list.filter(v => v.status === statusFilter.value)
+      list = list.filter((v: any) => v.status === statusFilter.value)
     }
     if (vendorSearchQuery.value) {
       const q = vendorSearchQuery.value.toLowerCase()
-      list = list.filter(v =>
-        (v.businessName || '').toLowerCase().includes(q) ||
-        (v.name || '').toLowerCase().includes(q) ||
-        (v.phone && v.phone.toLowerCase().includes(q)) ||
-        (v.user?.email && v.user.email.toLowerCase().includes(q))
+      list = list.filter((v: any) =>
+        v.company?.name?.toLowerCase().includes(q) ||
+        v.profile?.storeName?.toLowerCase().includes(q)
       )
     }
     return list
   })
 
-  const availableCategories = computed(() => {
-    if (!selectedVendor.value) return categories.value
-    const assignedCategoryIds = selectedVendor.value.categories?.map(c => (c as any).category?.id || (c as any).id) || []
-    return categories.value.filter(c => !assignedCategoryIds.includes(c.id))
-  })
-
   const fetchVendors = async () => {
     loading.value = true
     try {
-      const response = await adminVendorService.getVendors()
-      if (response.success && response.data) {
-        vendors.value = response.data
-      }
-    } catch (error) {
-      console.error('Fetch vendors error:', error)
-      toast.error('Satıcılar yüklenirken hata oluştu')
+      const res = await $api<any>('/api/admin/vendors')
+      vendors.value = res.data || []
+    } catch {
+      $toast.error('Satıcılar yüklenemedi')
     } finally {
       loading.value = false
     }
@@ -61,176 +42,123 @@ export const useAdminVendors = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryService.getCategories()
-      if (response.success && response.data) {
-        categories.value = response.data
-      }
-    } catch (error) {
-      console.error('Fetch categories error:', error)
-    }
+      const res = await $api<any>('/api/listings/categories')
+      availableCategories.value = res.data || []
+    } catch { /* ignore */ }
   }
 
-  const openVendorDetail = (vendor: AdminVendor) => {
-    selectedVendor.value = { ...vendor } // Clone to avoid direct mutation
-    selectedCategoryId.value = ''
+  const openVendorDetail = (vendor: any) => {
+    selectedVendor.value = { ...vendor }
     showRejectForm.value = false
     rejectionReason.value = ''
   }
 
   const closeVendorDetail = () => {
     selectedVendor.value = null
+    showRejectForm.value = false
   }
 
-  const approveVendor = async (vendorId: string | number) => {
+  const approveVendor = async (vendor?: any) => {
+    const target = vendor || selectedVendor.value
+    if (!target) return
     vendorActionLoading.value = true
     try {
-      const response = await adminVendorService.approveVendor(vendorId)
-      if (response.success) {
-        const idx = vendors.value.findIndex(v => v.id === vendorId)
-        if (idx !== -1) {
-          vendors.value[idx].status = 'APPROVED'
-          vendors.value[idx].verifiedAt = new Date().toISOString()
-        }
-        if (selectedVendor.value && selectedVendor.value.id === vendorId) {
-          selectedVendor.value.status = 'APPROVED'
-        }
-        toast.success('Satıcı onaylandı')
-      }
-    } catch (error) {
-      console.error('Approve vendor error:', error)
-      toast.error('Bir hata oluştu')
+      await $api(`/api/admin/vendors/${target.id}/approve`, { method: 'PUT' })
+      $toast.success('Satıcı onaylandı')
+      closeVendorDetail()
+      fetchVendors()
+    } catch {
+      $toast.error('Onaylama başarısız')
     } finally {
       vendorActionLoading.value = false
     }
   }
 
-  const rejectVendor = async (vendorId: string | number) => {
+  const rejectVendor = async () => {
+    if (!selectedVendor.value) return
     vendorActionLoading.value = true
     try {
-      const response = await adminVendorService.rejectVendor(vendorId, rejectionReason.value)
-      if (response.success) {
-        const idx = vendors.value.findIndex(v => v.id === vendorId)
-        if (idx !== -1) {
-          vendors.value[idx].status = 'REJECTED'
-          vendors.value[idx].rejectionReason = rejectionReason.value
-        }
-        if (selectedVendor.value && selectedVendor.value.id === vendorId) {
-          selectedVendor.value.status = 'REJECTED'
-        }
-        showRejectForm.value = false
-        rejectionReason.value = ''
-        toast.success('Satıcı reddedildi')
-      }
-    } catch (error) {
-      console.error('Reject vendor error:', error)
-      toast.error('Bir hata oluştu')
+      await $api(`/api/admin/vendors/${selectedVendor.value.id}/reject`, {
+        method: 'PUT',
+        body: { rejectionReason: rejectionReason.value }
+      })
+      $toast.success('Satıcı reddedildi')
+      closeVendorDetail()
+      fetchVendors()
+    } catch {
+      $toast.error('Reddetme başarısız')
     } finally {
       vendorActionLoading.value = false
     }
   }
 
-  const toggleFeatured = async (vendor: AdminVendor) => {
+  const toggleFeatured = async (isFeatured: boolean) => {
+    if (!selectedVendor.value) return
     try {
-      const newValue = !vendor.isFeatured
-      const response = await adminVendorService.toggleFeatured(vendor.id, newValue)
-      if (response.success) {
-        const idx = vendors.value.findIndex(v => v.id === vendor.id)
-        if (idx !== -1) vendors.value[idx].isFeatured = newValue
-        if (selectedVendor.value && selectedVendor.value.id === vendor.id) {
-            selectedVendor.value.isFeatured = newValue
-        }
-        toast.success(newValue ? 'Satıcı öne çıkarıldı' : 'Öne çıkarılma kaldırıldı')
+      await $api(`/api/admin/vendors/${selectedVendor.value.id}`, {
+        method: 'PUT',
+        body: { isFeatured }
+      })
+      $toast.success('Güncellendi')
+      if (selectedVendor.value.profile) {
+        selectedVendor.value.profile.isFeatured = isFeatured
       }
-    } catch (error) {
-      console.error('Toggle featured error:', error)
-      toast.error('Bir hata oluştu')
+    } catch {
+      $toast.error('Güncellenemedi')
     }
   }
 
-  const saveB2BSettings = async (vendor: AdminVendor) => {
+  const saveB2BSettings = async (data: any) => {
+    if (!selectedVendor.value) return
     try {
-      const payload = {
-        isB2B: vendor.isB2B,
-        b2bTier: vendor.b2bTier,
-        corporateCode: vendor.corporateCode,
-        barterLimitOverride: vendor.barterLimitOverride,
-        commissionRateB2B: vendor.commissionRateB2B
-      }
-      const response = await adminVendorService.updateB2BSettings(vendor.id, payload)
-      if (response.success) {
-        const idx = vendors.value.findIndex(v => v.id === vendor.id)
-        if (idx !== -1) {
-           Object.assign(vendors.value[idx], payload)
-        }
-        toast.success('B2B ayarları güncellendi')
-      }
-    } catch (err: unknown) {
-      console.error('B2B settings error:', err)
-      const errorMsg = (err as { data?: { error?: string } })?.data?.error || (err as Error)?.message || 'B2B ayarları kaydedilemedi'
-      toast.error(errorMsg)
+      await $api(`/api/admin/vendors/${selectedVendor.value.id}`, {
+        method: 'PUT',
+        body: data
+      })
+      $toast.success('B2B ayarları kaydedildi')
+    } catch {
+      $toast.error('Kaydedilemedi')
     }
   }
 
-  const addCategory = async (vendorId: string | number) => {
-    if (!selectedCategoryId.value) return
+  const addCategory = async () => {
+    if (!selectedVendor.value || !selectedCategoryId.value) return
     try {
-      await adminVendorService.addCategory(vendorId, selectedCategoryId.value)
-      const category = categories.value.find(c => String(c.id) === String(selectedCategoryId.value))
-      
-      const newCatEntry: any = {
-        category: {
-          id: category?.id,
-          name: category?.name || '',
-          slug: category?.slug || '',
-          parentId: category?.parentId
-        }
-      }
-
-      if (selectedVendor.value) {
-        if (!selectedVendor.value.categories) selectedVendor.value.categories = []
-        selectedVendor.value.categories.push(newCatEntry)
-      }
-      
-      const idx = vendors.value.findIndex(v => v.id === vendorId)
-      if (idx !== -1) {
-          if (!vendors.value[idx].categories) vendors.value[idx].categories = []
-          vendors.value[idx].categories.push(newCatEntry)
-      }
-
+      await $api(
+        `/api/admin/vendors/${selectedVendor.value.id}/categories`,
+        { method: 'POST', body: { categoryId: selectedCategoryId.value } }
+      )
+      $toast.success('Kategori eklendi')
       selectedCategoryId.value = ''
-      toast.success('Kategori eklendi')
-    } catch (error) {
-      console.error('Add category error:', error)
-      toast.error('Bir hata oluştu')
+      fetchVendors()
+    } catch {
+      $toast.error('Kategori eklenemedi')
     }
   }
 
-  const removeCategory = async (vendorId: string | number, categoryId: string | number) => {
+  const removeCategory = async (categoryId: string) => {
+    if (!selectedVendor.value) return
     try {
-      await adminVendorService.removeCategory(vendorId, categoryId)
-      if (selectedVendor.value) {
-        selectedVendor.value.categories = selectedVendor.value.categories?.filter(c => ((c as any).category?.id || (c as any).id) !== categoryId)
-      }
-
-      const idx = vendors.value.findIndex(v => v.id === vendorId)
-      if (idx !== -1) {
-         vendors.value[idx].categories = vendors.value[idx].categories?.filter(c => ((c as any).category?.id || (c as any).id) !== categoryId)
-      }
-
-      toast.success('Kategori kaldırıldı')
-    } catch (error) {
-      console.error('Remove category error:', error)
-      toast.error('Bir hata oluştu')
+      await $api(
+        `/api/admin/vendors/${selectedVendor.value.id}/categories/${categoryId}`,
+        { method: 'DELETE' }
+      )
+      $toast.success('Kategori kaldırıldı')
+      fetchVendors()
+    } catch {
+      $toast.error('Kategori kaldırılamadı')
     }
   }
 
   return {
-    vendors, categories, loading, vendorActionLoading,
-    selectedVendor, selectedCategoryId, statusFilter, vendorSearchQuery,
+    loading, vendorActionLoading,
+    vendors, selectedVendor, selectedCategoryId,
+    statusFilter, vendorSearchQuery,
     showRejectForm, rejectionReason,
     filteredVendors, availableCategories,
-    fetchVendors, fetchCategories, openVendorDetail, closeVendorDetail,
-    approveVendor, rejectVendor, toggleFeatured, saveB2BSettings,
-    addCategory, removeCategory
+    fetchVendors, fetchCategories,
+    openVendorDetail, closeVendorDetail,
+    approveVendor, rejectVendor, toggleFeatured,
+    saveB2BSettings, addCategory, removeCategory,
   }
 }

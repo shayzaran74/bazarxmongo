@@ -73,8 +73,8 @@
       <div class="mt-16 text-center">
         <p class="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em] mb-4 italic">BazarX Merchant Ecosystem</p>
         <div class="flex justify-center gap-8 opacity-20 filter grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
-          <img src="/images/brands/security-1.png" class="h-6" alt="Secure">
-          <img src="/images/brands/security-2.png" class="h-6" alt="Trusted">
+          <img src="https://placehold.co/100x40?text=SECURE" class="h-6" alt="Secure">
+          <img src="https://placehold.co/100x40?text=TRUSTED" class="h-6" alt="Trusted">
         </div>
       </div>
     </div>

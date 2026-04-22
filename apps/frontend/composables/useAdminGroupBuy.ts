@@ -1,99 +1,81 @@
-import { ref, onMounted, watch } from 'vue'
-
 export const useAdminGroupBuy = () => {
   const { $api } = useApi()
-  const toast = useNuxtApp().$toast
-  
-  const campaigns = ref<any[]>([])
-  const showModal = ref(false)
-  const saving = ref(false)
-  const editingCampaign = ref<any>(null)
+  const { $toast } = useNuxtApp() as any
 
+  const campaigns = ref<any[]>([])
+  const loading = ref(false)
+  const saving = ref(false)
+  const showModal = ref(false)
+  const editingCampaign = ref<any>(null)
   const productSearch = ref('')
   const searchResults = ref<any[]>([])
   const selectedProductData = ref<any>(null)
 
-  const form = ref({
+  const form = ref<any>({
+    id: '',
     productId: '',
     title: '',
     description: '',
-    startDate: '',
-    endDate: '',
-    tiers: [{ minQuantity: 5, price: 0 }, { minQuantity: 10, price: 0 }] as any[],
-    isActive: true
+    startTime: '',
+    endTime: '',
+    status: 'PENDING',
+    tiers: []
   })
 
-  const fetchCampaigns = async () => {
+  const fetchGroupBuys = async () => {
+    loading.value = true
     try {
-      const res: any = await $api('/api/v1/admin/group-buy')
-      if (res.success) {
-        campaigns.value = res.data
-      }
-    } catch (error) {
-      console.error('Fetch Campaigns Error:', error)
+      const res = await $api<any>('/api/admin/group-buys')
+      campaigns.value = res.data || []
+    } catch { /* ignore */ } finally {
+      loading.value = false
     }
   }
 
   const searchProducts = async () => {
-    if (productSearch.value.length < 2) {
+    if (!productSearch.value) {
       searchResults.value = []
       return
     }
     try {
-      const res: any = await $api(`/api/v1/admin/products`, {
-        query: { search: productSearch.value, limit: 5 }
+      const res = await $api<any>('/api/admin/products', {
+        query: { q: productSearch.value, limit: 10 }
       })
-      if (res.success) {
-        searchResults.value = res.data
-      }
-    } catch (error) {
-      console.error('Search Products Error:', error)
-    }
+      searchResults.value = res.data?.items || []
+    } catch { /* ignore */ }
   }
 
   const selectProduct = (p: any) => {
-    form.value.productId = p.id
     selectedProductData.value = p
+    form.value.productId = p.id
     searchResults.value = []
-    productSearch.value = ''
-
-    if (form.value.tiers[0].price === 0) {
-      form.value.tiers[0].price = p.price * 0.95
-      form.value.tiers[1].price = p.price * 0.90
-    }
+    productSearch.value = p.name || p.title
   }
 
   const addTier = () => {
-    form.value.tiers.push({ minQuantity: 0, price: 0 })
+    form.value.tiers.push({ minQuantity: 0, discountRate: 0 })
   }
 
   const removeTier = (index: number) => {
-    form.value.tiers.splice(index, 1)
+     form.value.tiers.splice(index, 1)
   }
 
-  const openModal = (campaign: any = null) => {
+  const openModal = (campaign?: any) => {
     if (campaign) {
       editingCampaign.value = campaign
-      form.value = {
-        ...campaign,
-        startDate: new Date(campaign.startDate).toISOString().slice(0, 16),
-        endDate: new Date(campaign.endDate).toISOString().slice(0, 16),
-      }
-      selectedProductData.value = campaign.Product
+      form.value = JSON.parse(JSON.stringify(campaign))
+      selectedProductData.value = campaign.product
     } else {
       editingCampaign.value = null
-      const now = new Date()
-      const tomorrow = new Date(now)
-      tomorrow.setDate(now.getDate() + 7)
-
       form.value = {
+        id: '',
         productId: '',
         title: '',
         description: '',
-        startDate: now.toISOString().slice(0, 16),
-        endDate: tomorrow.toISOString().slice(0, 16),
-        tiers: [{ minQuantity: 5, price: 0 }, { minQuantity: 10, price: 0 }],
-        isActive: true
+        startTime: '',
+        endTime: '',
+        status: 'PENDING',
+        tiers: []
       }
       selectedProductData.value = null
     }
@@ -101,55 +83,40 @@ export const useAdminGroupBuy = () => {
   }
 
   const saveCampaign = async () => {
-    if (!form.value.productId) {
-      toast.error('Lütfen bir ürün seçin')
-      return
-    }
-
     saving.value = true
     try {
-      const url = editingCampaign.value
-        ? `/api/v1/admin/group-buy/${editingCampaign.value.id}`
-        : '/api/v1/admin/group-buy'
-      const method = editingCampaign.value ? 'PUT' : 'POST'
-
-      const res: any = await $api(url, {
-        method,
-        body: form.value
-      })
-
-      if (res.success) {
-        toast.success('Kampanya başarıyla kaydedildi')
-        showModal.value = false
-        fetchCampaigns()
+      if (form.value.id) {
+        await $api(`/api/admin/group-buys/${form.value.id}`, {
+          method: 'PUT', body: form.value
+        })
+      } else {
+        await $api('/api/admin/group-buys', {
+          method: 'POST', body: form.value
+        })
       }
-    } catch (error) {
-      console.error('Save Campaign Error:', error)
-      toast.error('Kampanya kaydedilirken hata oluştu')
+      $toast.success('Kampanya kaydedildi')
+      showModal.value = false
+      fetchGroupBuys()
+    } catch {
+      $toast.error('Kaydedilemedi')
     } finally {
       saving.value = false
     }
   }
 
   const deleteCampaign = async (id: string) => {
-    if (!confirm('Bu kampanyayı silmek istediğinizden emin misiniz?')) return
+    if (!confirm('Kampanyayı silmek istediğinize emin misiniz?')) return
     try {
-      const res: any = await $api(`/api/v1/admin/group-buy/${id}`, {
-        method: 'DELETE'
-      })
-      if (res.success) {
-        toast.success('Kampanya silindi')
-        fetchCampaigns()
-      }
-    } catch (error) {
-      console.error('Delete Campaign Error:', error)
+      await $api(`/api/admin/group-buys/${id}`, { method: 'DELETE' })
+      $toast.success('Kampanya silindi')
+      fetchGroupBuys()
+    } catch {
+      $toast.error('Silinemedi')
     }
   }
 
-  onMounted(fetchCampaigns)
-
   return {
-    campaigns, showModal, saving, editingCampaign, productSearch, searchResults, selectedProductData, form,
-    fetchCampaigns, searchProducts, selectProduct, addTier, removeTier, openModal, saveCampaign, deleteCampaign
+    campaigns, showModal, saving, editingCampaign, productSearch, searchResults, selectedProductData, form, loading,
+    searchProducts, selectProduct, addTier, removeTier, openModal, saveCampaign, deleteCampaign, fetchGroupBuys
   }
 }

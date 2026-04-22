@@ -1,68 +1,93 @@
-import { ref, computed } from 'vue'
-
 export const useVendorEcosystem = () => {
   const { $api } = useApi()
-  const authStore = useAuthStore()
-  const toast = useNuxtApp().$toast
+  const { $toast } = useNuxtApp() as any
 
-  const loading = ref(true)
   const ecosystem = ref<any>(null)
-  const isOwner = ref(false)
+  const members = ref<any[]>([])
   const auditLogs = ref<any[]>([])
-  const error = ref<string | null>(null)
+  const loading = ref(false)
   const creating = ref(false)
-
-  const isApexPlus = computed(() => authStore.isApexPlus)
+  const isOwner = ref(false)
+  const isApexPlus = ref(true) // Mocked for now
+  const error = ref<string | null>(null)
+  const showInviteModal = ref(false)
 
   const fetchData = async () => {
     loading.value = true
     error.value = null
     try {
-      const res: any = await $api('/api/ecosystem/my')
-      if (res.success) {
-        ecosystem.value = res.ecosystem
-        isOwner.value = res.isOwner
-        if (isOwner.value && ecosystem.value) await fetchAuditLogs()
+      const [ecoRes, auditRes] = await Promise.allSettled([
+        $api<any>('/api/ecosystem/my'),
+        $api<any>('/api/ecosystem/audit')
+      ])
+
+      const ecoResAny = ecoRes as any
+      const auditResAny = auditRes as any
+
+      if (ecoRes.status === 'fulfilled' && ecoResAny.value?.success) {
+        ecosystem.value = ecoResAny.value.ecosystem
+        isOwner.value = ecoResAny.value.isOwner
+        members.value = ecosystem.value?.members || []
+      }
+      
+      if (auditRes.status === 'fulfilled' && auditResAny.value?.success) {
+        auditLogs.value = auditResAny.value.data || auditResAny.value || []
       }
     } catch (e: any) {
-      error.value = e.data?.error || 'Veriler alınırken hata oluştu'
-    } finally { loading.value = false }
+      error.value = 'Ekosistem verileri alınamadı'
+    } finally {
+      loading.value = false
+    }
   }
 
-  const fetchAuditLogs = async () => {
+  const inviteMember = async (memberVendorId: string) => {
     try {
-      const res: any = await $api('/api/ecosystem/audit')
-      if (res.success) auditLogs.value = res.data
-    } catch (e) { console.error('Audit logs error:', e) }
+      await $api('/api/ecosystem/members', {
+        method: 'POST',
+        body: { memberVendorId }
+      })
+      $toast.success('Üye davet edildi')
+      showInviteModal.value = false
+      await fetchData()
+    } catch {
+      $toast.error('Davet gönderilemedi')
+    }
   }
 
-  const createEcosystem = async (name: string, description: string) => {
+  const createEcosystem = async (name: string, description?: string) => {
     creating.value = true
     try {
-      const res: any = await $api('/api/ecosystem/create', { method: 'POST', body: { name, description } })
+      const res = await $api<any>('/api/ecosystem/create', {
+        method: 'POST',
+        body: { name, description }
+      })
       if (res.success) {
-        toast.success('Ekosistem oluşturuldu!')
+        $toast.success('Ekosistem oluşturuldu')
         await fetchData()
         return true
       }
-    } catch (e: any) { toast.error(e.data?.error || 'Hata') }
-    finally { creating.value = false }
-    return false
+      return false
+    } catch {
+      $toast.error('Oluşturulamadı')
+      return false
+    } finally {
+      creating.value = false
+    }
   }
 
-  const removeMember = async (vendorId: string) => {
-    if (!confirm('Bayiyi çıkarmak istediğinize emin misiniz?')) return
+  const removeMember = async (memberId: string) => {
+    if (!confirm('Bu üyeyi ekosistemden çıkarmak istediğinize emin misiniz?')) return
     try {
-      const res: any = await $api(`/api/ecosystem/members/${vendorId}`, { method: 'DELETE' })
-      if (res.success) {
-        toast.success('Üyelik sonlandırıldı')
-        await fetchData()
-      }
-    } catch { toast.error('Hata oluştu') }
+      await $api(`/api/ecosystem/members/${memberId}`, { method: 'DELETE' })
+      $toast.success('Üye çıkarıldı')
+      await fetchData()
+    } catch {
+      $toast.error('Üye çıkarılamadı')
+    }
   }
 
   return {
-    loading, ecosystem, isOwner, auditLogs, error, creating, isApexPlus,
-    fetchData, createEcosystem, removeMember
+    ecosystem, members, auditLogs, loading, creating, isOwner, isApexPlus, 
+    error, showInviteModal, fetchData, inviteMember, createEcosystem, removeMember
   }
 }

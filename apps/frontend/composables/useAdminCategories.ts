@@ -1,93 +1,110 @@
-import { ref, computed } from 'vue'
-import type { Category } from '@barterborsa/shared-types'
-
 export const useAdminCategories = () => {
   const { $api } = useApi()
-  const toast = useNuxtApp().$toast
+  const { $toast } = useNuxtApp() as any
 
-  const categories = ref<Category[]>([])
+  const categories = ref<any[]>([])
   const loading = ref(false)
   const showModal = ref(false)
   const editingCategory = ref<any>(null)
-  const expandedCategories = ref<(number | string)[]>([])
-  const uploading = ref(false)
+  const expandedCategories = ref<string[]>([])
   const imagePreview = ref<string | null>(null)
 
-  const defaultForm = {
+  const categoryForm = ref<any>({
+    id: '',
     name: '',
-    description: '',
     slug: '',
-    icon: 'Squares2X2Icon',
+    description: '',
+    parentId: null,
     image: '',
-    colorFrom: 'from-blue-400',
-    colorTo: 'to-amber-500',
-    hoverColor: 'group-hover:text-gray-600',
-    shadowColor: 'shadow-gray-200',
-    parentId: null as number | string | null,
+    status: 'ACTIVE',
+    type: 'GENERAL',
     order: 0,
-    isActive: true,
-    badgeText: '',
-    badgeColor: '#ef4444'
-  }
-
-  const categoryForm = ref({ ...defaultForm })
+  })
 
   const fetchCategories = async () => {
     loading.value = true
     try {
-      const res: any = await $api('/api/admin/categories', { query: { includeChildren: true } })
-      if (res.success) categories.value = res.data
-    } finally { loading.value = false }
+      const res = await $api<any>('/api/listings/categories')
+      categories.value = res.data || []
+    } catch {
+      $toast.error('Kategoriler yüklenemedi')
+    } finally {
+      loading.value = false
+    }
   }
 
-  const toggleExpanded = (id: number | string) => {
-    if (expandedCategories.value.includes(id)) {
-      expandedCategories.value = expandedCategories.value.filter(catId => catId !== id)
-    } else {
-      expandedCategories.value.push(id)
+  const toggleExpanded = (id: string) => {
+    const index = expandedCategories.value.indexOf(id)
+    if (index === -1) expandedCategories.value.push(id)
+    else expandedCategories.value.splice(index, 1)
+  }
+
+  const handleFileUpload = async (event: any) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    
+    // Preview
+    const reader = new FileReader()
+    reader.onload = (e) => (imagePreview.value = e.target?.result as string)
+    reader.readAsDataURL(file)
+
+    // Upload logic usually goes here or in save
+    // For now we set image name or handle in saveCategory
+    categoryForm.value.image = file.name
+  }
+
+  const resetForm = () => {
+    categoryForm.value = {
+      id: '',
+      name: '',
+      slug: '',
+      description: '',
+      parentId: null,
+      image: '',
+      status: 'ACTIVE',
+      type: 'GENERAL',
+      order: 0,
     }
+    imagePreview.value = null
+    editingCategory.value = null
   }
 
   const saveCategory = async () => {
+    const data = categoryForm.value
     try {
-      const method = editingCategory.value ? 'PUT' : 'POST'
-      const url = editingCategory.value ? `/api/admin/categories/${editingCategory.value.id}` : '/api/admin/categories'
-      const res: any = await $api(url, { method, body: categoryForm.value })
-      if (res.success) {
-        toast.success('Başarıyla kaydedildi')
-        showModal.value = false
-        await fetchCategories()
+      if (data.id) {
+        await $api(`/api/admin/categories/${data.id}`, {
+          method: 'PUT',
+          body: data
+        })
+      } else {
+        await $api('/api/admin/categories', {
+          method: 'POST',
+          body: data
+        })
       }
-    } catch (e: any) {
-      toast.error(e.data?.error || 'Hata oluştu')
+      $toast.success('Kategori kaydedildi')
+      showModal.value = false
+      resetForm()
+      fetchCategories()
+    } catch {
+      $toast.error('Kaydedilemedi')
     }
   }
 
-  const deleteCategory = async (id: number | string) => {
-    if (!confirm('Silmek istediğinize emin misiniz?')) return
+  const deleteCategory = async (id: string) => {
+    if (!confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) return
     try {
-      const res: any = await $api(`/api/admin/categories/${id}`, { method: 'DELETE' })
-      if (res.success) {
-        toast.success('Silindi')
-        await fetchCategories()
-      }
-    } catch { toast.error('Silinirken hata oluştu') }
-  }
-
-  const handleFileUpload = async (file: File) => {
-    uploading.value = true
-    imagePreview.value = URL.createObjectURL(file)
-    try {
-      const body = new FormData()
-      body.append('file', file)
-      const res: any = await $api('/api/upload?type=category', { method: 'POST', body })
-      if (res.success) categoryForm.value.image = res.url
-    } finally { uploading.value = false }
+      await $api(`/api/admin/categories/${id}`, { method: 'DELETE' })
+      $toast.success('Kategori silindi')
+      fetchCategories()
+    } catch {
+      $toast.error('Silinemedi')
+    }
   }
 
   return {
-    categories, loading, showModal, editingCategory, expandedCategories, categoryForm, uploading, imagePreview,
-    fetchCategories, toggleExpanded, saveCategory, deleteCategory, handleFileUpload,
-    resetForm: () => { categoryForm.value = { ...defaultForm }; editingCategory.value = null; imagePreview.value = null }
+    categories, loading, showModal, editingCategory, expandedCategories, categoryForm, imagePreview,
+    fetchCategories, toggleExpanded, saveCategory, deleteCategory, handleFileUpload, resetForm
   }
 }

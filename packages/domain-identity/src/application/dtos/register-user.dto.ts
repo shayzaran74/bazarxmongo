@@ -11,12 +11,12 @@ export class RegisterUserDto {
   password!: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Ad zorunludur' })
-  firstName!: string;
+  @IsOptional()          // ← Zorunluluk kaldırıldı
+  firstName?: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Soyad zorunludur' })
-  lastName!: string;
+  @IsOptional()          // ← Zorunluluk kaldırıldı
+  lastName?: string;
 
   @IsString()
   @IsOptional()

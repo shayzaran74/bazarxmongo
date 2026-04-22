@@ -1,95 +1,70 @@
-import { ref, onMounted } from 'vue'
-import { useAuthStore, useApi, useNuxtApp, useRuntimeConfig, navigateTo } from '#imports'
-
 export const useVendorApplication = () => {
-  const authStore = useAuthStore()
-  const config = useRuntimeConfig()
   const { $api } = useApi()
-  const { $toast: toast } = useNuxtApp()
+  const { $toast } = useNuxtApp() as any
+  const authStore = useAuthStore()
 
+  const currentStep = ref(0)
   const loading = ref(false)
-  const currentStep = ref(1)
-  const totalSteps = 3
-  const categories = ref<any[]>([])
-  const announcements = ref<any[]>([])
+  const isApexPlus = ref(true)
+  const applicationStatus = ref<string | null>(null)
 
-  const formData = ref({
+  const formData = reactive({
     businessName: '',
-    businessRegistration: '',
-    taxId: '',
-    tckn: '',
-    vergiNo: '',
-    mersisNo: '',
     businessType: '',
+    taxId: '',
     phone: '',
-    whatsapp: '',
-    email: authStore.user?.email || '',
-    website: '',
+    email: '',
     address: '',
     city: '',
     district: '',
-    country: 'Türkiye',
     zipCode: '',
     bankName: '',
     bankAccountName: '',
-    bankAccountNumber: '',
     bankIban: '',
-    categories: [] as string[]
+    categories: [] as string[],
   })
 
-  const fetchAnnouncements = async () => {
+  const checkExistingApplication = async () => {
     try {
-      const response = await $api<any>('/api/dynamic/announcements?page=vendor_app')
-      if (response.success) announcements.value = response.data
-    } catch (error) {
-      console.error('Announcements fetch error:', error)
-    }
-  }
-
-  const fetchCategories = async () => {
-    try {
-      const response = await $api<any>('/api/categories')
-      if (response.success) categories.value = response.data
-    } catch (error) {
-      console.error('Kategoriler yüklenirken hata:', error)
-    }
-  }
-
-  const nextStep = () => {
-    if (currentStep.value < totalSteps) currentStep.value++
-  }
-
-  const prevStep = () => {
-    if (currentStep.value > 1) currentStep.value--
+      const res = await $api<{ success: boolean; data: any }>(
+        '/api/vendors/profile/me'
+      )
+      if (res.success && res.data) {
+        applicationStatus.value = (res.data as any).status || null
+      }
+    } catch { /* ignore */ }
   }
 
   const submitApplication = async () => {
     loading.value = true
     try {
-      const response = await $api<any>('/api/vendors/register', {
-        method: 'POST',
-        body: formData.value
-      })
-
-      if (response.success) {
-        toast.success('Başvurunuz alındı! Admin onayı bekleniyor.')
-        await navigateTo('/')
+      const res = await $api<{ success: boolean; error?: string }>(
+        '/api/vendors/apply-atomic',
+        { method: 'POST', body: { ...formData } }
+      )
+      if (res.success) {
+        $toast.success('Başvurunuz alındı!')
+        applicationStatus.value = 'PENDING'
+        await authStore.fetchUser()
+        return { success: true }
       }
-    } catch (error: any) {
-      console.error('Başvuru hatası:', error)
-      toast.error(error.data?.error || 'Başvuru gönderilirken bir hata oluştu')
+      $toast.error(res.error || 'Başvuru gönderilemedi')
+      return { success: false }
+    } catch (e: any) {
+      $toast.error(e?.data?.message || 'Başvuru gönderilemedi')
+      return { success: false }
     } finally {
       loading.value = false
     }
   }
 
-  onMounted(() => {
-    fetchCategories()
-    fetchAnnouncements()
-  })
+  const nextStep = () => { currentStep.value++ }
+  const prevStep = () => { currentStep.value-- }
+
+  onMounted(checkExistingApplication)
 
   return {
-    loading, currentStep, totalSteps, categories, announcements, formData, config,
-    nextStep, prevStep, submitApplication
+    currentStep, loading, isApexPlus, applicationStatus, formData,
+    nextStep, prevStep, submitApplication,
   }
 }

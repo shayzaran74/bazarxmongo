@@ -1,41 +1,56 @@
-import { ref, computed, onMounted } from 'vue'
-
 export const useAdminAuctions = () => {
   const { $api } = useApi()
-  const nuxtApp = useNuxtApp()
-  
-  const loading = ref(false)
-  const participationsLoading = ref(false)
+  const { $toast } = useNuxtApp() as any
+
   const auctions = ref<any[]>([])
   const participations = ref<any[]>([])
-  const activeTab = ref('auctions')
   const categories = ref<any[]>([])
-  
-  const filters = ref({
+  const loading = ref(false)
+  const participationsLoading = ref(false)
+  const activeTab = ref<'auctions' | 'participations'>('auctions')
+
+  const filters = reactive({
+    search: '',
     status: '',
     category: '',
-    search: ''
+  })
+
+  const stats = reactive({
+    total: 0,
+    active: 0,
+    scheduled: 0,
+    ended: 0,
+    completed: 0,
+    revenue: 0,
+    pendingParticipations: 0,
+  })
+
+  const filteredAuctions = computed(() => {
+    let list = auctions.value
+    if (filters.status) list = list.filter((a: any) => a.status === filters.status)
+    if (filters.category) list = list.filter((a: any) => a.listing?.catalogProduct?.categoryId === filters.category)
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      list = list.filter((a: any) =>
+        a.listing?.title?.toLowerCase().includes(q) ||
+        a.listing?.catalogProduct?.name?.toLowerCase().includes(q)
+      )
+    }
+    return list
   })
 
   const fetchAuctions = async () => {
     loading.value = true
     try {
-      const res: any = await $api('/api/auctions', { query: { page: 1, limit: 1000 } })
-      if (res.success) {
-        auctions.value = (res.data as any[]).map((a: any) => ({
-          ...a,
-          status: a.status || 'Active',
-          currentPrice: a.currentPrice || a.startingPrice,
-          bidCount: a._count?.AuctionBid || 0,
-          startDate: a.createdAt,
-          endDate: a.endTime,
-          category: a.Product?.Category?.name || 'electronics',
-          image: a.Product?.image || 'https://placehold.co/400x400?text=No+Image'
-        }))
-      }
-    } catch (err: any) {
-      console.error('Fetch auctions error:', err)
-      nuxtApp.$toast.error('Açık artırmalar yüklenemedi')
+      const res = await $api<any>('/api/admin/auctions')
+      auctions.value = res.data || []
+      stats.total = auctions.value.length
+      stats.active = auctions.value.filter((a: any) => a.status === 'ACTIVE').length
+      stats.scheduled = auctions.value.filter((a: any) => a.status === 'SCHEDULED').length
+      stats.ended = auctions.value.filter((a: any) => a.status === 'ENDED').length
+      stats.completed = stats.ended
+    } catch {
+      $toast.error('Artırmalar yüklenemedi')
     } finally {
       loading.value = false
     }
@@ -44,86 +59,81 @@ export const useAdminAuctions = () => {
   const fetchParticipations = async () => {
     participationsLoading.value = true
     try {
-      const res: any = await $api('/api/auctions/admin/participations')
+      const res = await $api<any>('/api/admin/auctions/participations')
       participations.value = res.data || []
-    } catch (err) {
-      console.error('Fetch participations error:', err)
-    } finally {
+      stats.pendingParticipations = participations.value.filter((p: any) => p.status === 'PENDING').length
+    } catch { /* ignore */ } finally {
       participationsLoading.value = false
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const res = await $api<any>('/api/listings/categories')
+      categories.value = res.data || []
+    } catch { /* ignore */ }
+  }
+
   const approveParticipation = async (id: string) => {
     try {
-      await $api(`/api/auctions/admin/participations/${id}/approve`, { method: 'POST' })
-      nuxtApp.$toast.success('Başvuru onaylandı')
-      await fetchParticipations()
-    } catch (err: any) {
-      nuxtApp.$toast.error(err.data?.error || 'Onaylama başarısız')
+      await $api(`/api/admin/auctions/participations/${id}/approve`, {
+        method: 'POST'
+      })
+      $toast.success('Katılım onaylandı')
+      fetchParticipations()
+    } catch {
+      $toast.error('Onaylanamadı')
     }
   }
 
   const rejectParticipation = async (id: string) => {
     try {
-      await $api(`/api/auctions/admin/participations/${id}/reject`, { method: 'POST' })
-      nuxtApp.$toast.success('Başvuru reddedildi')
-      await fetchParticipations()
-    } catch (err: any) {
-      nuxtApp.$toast.error(err.data?.error || 'Reddetme başarısız')
+      await $api(`/api/admin/auctions/participations/${id}/reject`, {
+        method: 'POST'
+      })
+      $toast.success('Katılım reddedildi')
+      fetchParticipations()
+    } catch {
+      $toast.error('Reddedilemedi')
     }
   }
 
-  const advanceWinner = async (id: string) => {
+  const advanceWinner = async (auctionId: string) => {
     try {
-      const res: any = await $api(`/api/auctions/${id}/advance-winner`, { method: 'POST' })
-      if (res.success) {
-        nuxtApp.$toast.success('Hakkı devredildi / Cezai işlem uygulandı.')
-        await fetchAuctions()
-      }
-    } catch (err: any) {
-      nuxtApp.$toast.error(err.data?.error || 'İşlem başarısız')
+      await $api(`/api/admin/auctions/${auctionId}/advance-winner`, {
+        method: 'POST'
+      })
+      $toast.success('Sıradaki kazanan belirlendi')
+      fetchAuctions()
+    } catch {
+      $toast.error('İşlem başarısız')
     }
   }
 
   const deleteAuction = async (id: string) => {
+    if (!confirm('Bu artırmayı silmek istediğinizden emin misiniz?')) return
     try {
-      const res: any = await $api(`/api/auctions/${id}`, { method: 'DELETE' })
-      if (res.success) {
-        nuxtApp.$toast.success('Açık artırma silindi')
-        await fetchAuctions()
-      }
-    } catch (err) {
-      console.error('Delete error:', err)
-      nuxtApp.$toast.error('Silme işlemi başarısız')
+      await $api(`/api/admin/auctions/${id}`, { method: 'DELETE' })
+      $toast.success('Artırma silindi')
+      fetchAuctions()
+    } catch {
+      $toast.error('Silinemedi')
     }
   }
 
-  const filteredAuctions = computed(() => {
-    let filtered = auctions.value
-    if (filters.value.status) filtered = filtered.filter(a => a.status === filters.value.status)
-    if (filters.value.category) filtered = filtered.filter(a => a.category === filters.value.category)
-    if (filters.value.search) {
-      const s = filters.value.search.toLowerCase()
-      filtered = filtered.filter(a => a.title.toLowerCase().includes(s) || a.description?.toLowerCase().includes(s))
-    }
-    return filtered
-  })
-
-  const stats = computed(() => ({
-    total: auctions.value.length,
-    active: auctions.value.filter(a => a.status === 'Active').length,
-    completed: auctions.value.filter(a => a.status === 'Completed' || a.status === 'Ended').length,
-    revenue: auctions.value.filter(a => a.status === 'Completed' || a.status === 'Ended').reduce((s, a) => s + (a.currentBid || a.startingPrice || 0), 0),
-    pendingParticipations: participations.value.filter(p => p.status === 'Pending').length
-  }))
-
   const init = async () => {
-    await Promise.all([fetchAuctions(), fetchParticipations()])
+    await Promise.all([
+      fetchAuctions(),
+      fetchParticipations(),
+      fetchCategories(),
+    ])
   }
 
   return {
-    loading, participationsLoading, auctions, participations, activeTab, categories, filters,
-    filteredAuctions, stats,
-    init, fetchAuctions, fetchParticipations, approveParticipation, rejectParticipation, advanceWinner, deleteAuction
+    auctions, participations, categories, loading, participationsLoading,
+    activeTab, filters, stats, filteredAuctions,
+    init, fetchAuctions, fetchParticipations,
+    approveParticipation, rejectParticipation,
+    advanceWinner, deleteAuction,
   }
 }

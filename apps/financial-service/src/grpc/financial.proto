@@ -3,11 +3,21 @@ syntax = "proto3";
 package financial;
 
 service FinancialService {
+  // Mevcut — değişmedi
   rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse) {}
   rpc HoldFunds (HoldFundsRequest) returns (HoldFundsResponse) {}
   rpc ReleaseFunds (ReleaseFundsRequest) returns (ReleaseFundsResponse) {}
   rpc RefundFunds (RefundFundsRequest) returns (RefundFundsResponse) {}
+
+  // YENİ
+  rpc GetTransactions (GetTransactionsRequest) returns (GetTransactionsResponse) {}
+  rpc TopUpWallet (TopUpWalletRequest) returns (TopUpWalletResponse) {}
+  rpc RequestWithdrawal (WithdrawalRequest) returns (WithdrawalResponse) {}
+  rpc GetWithdrawals (GetWithdrawalsRequest) returns (GetWithdrawalsResponse) {}
+  rpc GetWalletRequests (GetWalletRequestsRequest) returns (GetWalletRequestsResponse) {}
 }
+
+// ---- Mevcut Messages (değişmedi) ----
 
 message GetBalanceRequest {
   string userId = 1;
@@ -36,8 +46,8 @@ message HoldFundsResponse {
 }
 
 message ReleaseFundsRequest {
-  string holdId = 4;
-  string idempotencyKey = 5;
+  string holdId = 1;
+  string idempotencyKey = 2;
 }
 
 message ReleaseFundsResponse {
@@ -47,12 +57,116 @@ message ReleaseFundsResponse {
 }
 
 message RefundFundsRequest {
-  string holdId = 4;
-  string idempotencyKey = 5;
+  string holdId = 1;
+  string idempotencyKey = 2;
 }
 
 message RefundFundsResponse {
   bool success = 1;
   string transactionId = 2;
   string error = 3;
+}
+
+// ---- YENİ Messages ----
+
+message Transaction {
+  string id = 1;
+  string type = 2;           // TOPUP, HOLD, RELEASE, REFUND, WITHDRAWAL, TRANSFER
+  string amount = 3;
+  string status = 4;         // PENDING, COMPLETED, FAILED
+  string direction = 5;      // CREDIT, DEBIT
+  string description = 6;
+  string referenceId = 7;
+  string referenceType = 8;
+  string accountType = 9;    // MAIN, XP, ESCROW
+  string createdAt = 10;     // ISO 8601 string
+}
+
+message GetTransactionsRequest {
+  string userId = 1;
+  string accountType = 2;   // MAIN, XP, ESCROW — boş ise tümü
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetTransactionsResponse {
+  repeated Transaction items = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message TopUpWalletRequest {
+  string userId = 1;
+  string amount = 2;
+  string paymentMethod = 3;  // IYZICO, BANK_TRANSFER
+  string idempotencyKey = 4;
+}
+
+message TopUpWalletResponse {
+  bool success = 1;
+  string transactionId = 2;
+  string paymentUrl = 3;     // Iyzico redirect URL (opsiyonel)
+  string error = 4;
+}
+
+message WithdrawalRequest {
+  string userId = 1;
+  string amount = 2;
+  string iban = 3;
+  string accountHolder = 4;
+  string bankName = 5;
+  string idempotencyKey = 6;
+}
+
+message WithdrawalResponse {
+  bool success = 1;
+  string withdrawalId = 2;
+  string error = 3;
+}
+
+message WithdrawalRecord {
+  string id = 1;
+  string userId = 2;
+  string amount = 3;
+  string status = 4;         // PENDING, PROCESSING, COMPLETED, REJECTED
+  string iban = 5;
+  string accountHolder = 6;
+  string bankName = 7;
+  string createdAt = 8;
+  string processedAt = 9;
+  string rejectionReason = 10;
+}
+
+message GetWithdrawalsRequest {
+  string userId = 1;         // boş ise tüm kullanıcılar (admin)
+  string status = 2;         // filtre
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetWithdrawalsResponse {
+  repeated WithdrawalRecord items = 1;
+  int32 total = 2;
+}
+
+message WalletRequest {
+  string id = 1;
+  string userId = 2;
+  string type = 3;           // TOPUP, WITHDRAWAL
+  string amount = 4;
+  string status = 5;
+  string createdAt = 6;
+}
+
+message GetWalletRequestsRequest {
+  string userId = 1;         // boş ise tüm kullanıcılar (admin)
+  string status = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetWalletRequestsResponse {
+  repeated WalletRequest items = 1;
+  int32 total = 2;
 }

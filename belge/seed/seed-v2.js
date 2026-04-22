@@ -148,11 +148,11 @@ async function main() {
                 create: { vendorId: vendor.id, trustScore: 100 }
             })
             
-            // Create Vendor Financials
-            await prisma.vendorFinancials.upsert({
+            // Create Vendor Bank Account
+            await prisma.vendorBankAccount.upsert({
                 where: { vendorId: vendor.id },
-                update: { bankName: 'Sanayi Bank' },
-                create: { vendorId: vendor.id, bankName: 'Sanayi Bank' }
+                update: {  bankName: 'Sanayi Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011' },
+                create: { vendorId: vendor.id, bankName: 'Sanayi Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011', isPrimary: true }
             })
         }
     }
@@ -167,10 +167,7 @@ async function main() {
             brand: 'SanayiGlobal',
             description: 'Professional industrial lathe for heavy duty metal work.',
             slug: 'industrial-lathe-m1',
-            category: {
-                connect: { id: category.id }
-            }
-            // images kaldırıldı çünkü ProductMedia tablosuna bağlı
+            categoryId: category.id,
         }
     })
 
@@ -200,7 +197,7 @@ async function main() {
     // 4. Surplus Items
     console.log('⏳ Creating Surplus Items...')
     const seller1User = await prisma.user.findUnique({ where: { email: 'seller1@barterborsa.com' } })
-    const seller1CompanyUser = await prisma.companyUser.findFirst({ where: { userId: seller1User.id } })
+    const seller1CompanyUser = seller1User ? await prisma.companyUser.findFirst({ where: { userId: seller1User.id } }) : null
     
     if (seller1CompanyUser) {
         // Find existing surplus item or create
@@ -214,7 +211,7 @@ async function main() {
                     companyId: seller1CompanyUser.companyId,
                     title: 'High-Grade Steel Plates',
                     description: 'Surplus steel plates from recent project, 10mm thick.',
-                    category: 'Materials',
+                    category: 'Industrial Equipment',
                     quantity: 50,
                     unit: 'PCS',
                     unitPrice: 2000,

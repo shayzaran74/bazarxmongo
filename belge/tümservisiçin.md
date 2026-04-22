@@ -18,3 +18,8 @@ Artık güvenilir şekilde çalışacak. Sıradaki adım ne — `financial-servi
 
 rm -rf apps/frontend/node_modules/.vite && pnpm -C apps/frontend dev
 Bu işlemden sonra Vite tertemiz bir başlangıç yapacak ve tüm bağımlılıkları tek seferde anlayıp dev server'ı stabil tutacaktır.
+
+
+bash
+pnpm --filter backend add pdfkit && pnpm --filter backend add -D @types/pdfkit && pnpm --filter backend prisma generate
+Bu komutu çalıştırdıktan sonra pnpm --filter backend build komutunun başarıyla tamamlanmasını bekliyorum. 🚀📄💎👑_

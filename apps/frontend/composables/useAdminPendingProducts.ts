@@ -1,68 +1,63 @@
-import { ref, onMounted } from 'vue'
-
 export const useAdminPendingProducts = () => {
-    const { $api } = useApi()
-    const toast = useNuxtApp().$toast
-    
-    const products = ref<any[]>([])
-    const approvedToday = ref(0)
-    const activeRulesCount = ref(0)
-    const loading = ref(false)
-    const error = ref<string | null>(null)
-    const pagination = ref({ page: 1, limit: 10, total: 0 })
+  const { $api } = useApi()
+  const { $toast } = useNuxtApp() as any
 
-    const fetchPendingProducts = async (page = 1) => {
-        try {
-            loading.value = true
-            error.value = null
-            const response = await $api<any>('/api/v1/admin/products/pending', {
-                query: { page, limit: pagination.value.limit }
-            }) as any
-            if (response.success) {
-                products.value = (response.data || []) as any[]
-                pagination.value = { ...pagination.value, ...response.pagination }
-            } else {
-                error.value = response.error || 'Ürünler yüklenirken bir hata oluştu'
-            }
-        } catch (err: any) {
-            error.value = err.data?.error || 'Sunucu bağlantısı kurulamadı'
-        } finally {
-            loading.value = false
-        }
+  const products = ref<any[]>([])
+  const loading = ref(false)
+  const selectedProduct = ref<any>(null)
+  const showDetailModal = ref(false)
+
+  const stats = reactive({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  })
+
+  const fetchPendingProducts = async () => {
+    loading.value = true
+    try {
+      const res = await $api<any>('/api/admin/products', {
+        query: { status: 'PENDING', limit: 100 }
+      })
+      products.value = res.data?.items || []
+      stats.pending = products.value.length
+      stats.total = res.pagination?.total || products.value.length
+    } catch {
+      $toast.error('Ürünler yüklenemedi')
+    } finally {
+      loading.value = false
     }
+  }
 
-    const approveProduct = async (productId: string) => {
-        try {
-            const response = await $api<any>(`/api/v1/admin/products/${productId}/approve`, { method: 'PUT' }) as any
-            if (response.success) {
-                toast.success('Ürün onaylandı!')
-                approvedToday.value++
-                fetchPendingProducts(pagination.value.page)
-            }
-        } catch (err: any) {
-            toast.error('Onaylama sırasında hata oluştu')
-        }
+  const approveProduct = async (id: string) => {
+    try {
+      await $api(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        body: { status: 'ACTIVE' }
+      })
+      $toast.success('Ürün onaylandı')
+      fetchPendingProducts()
+    } catch {
+      $toast.error('Onaylanamadı')
     }
+  }
 
-    const rejectProduct = async (productId: string) => {
-        try {
-            const response = await $api<any>(`/api/v1/admin/products/${productId}/reject`, {
-                method: 'PUT',
-                body: { rejectionReason: 'Admin tarafından reddedildi' }
-            }) as any
-            if (response.success) {
-                toast.info('Ürün reddedildi')
-                fetchPendingProducts(pagination.value.page)
-            }
-        } catch (err: any) {
-            toast.error('İşlem başarısız')
-        }
+  const rejectProduct = async (id: string, reason: string) => {
+    try {
+      await $api(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        body: { status: 'REJECTED', rejectionReason: reason }
+      })
+      $toast.success('Ürün reddedildi')
+      fetchPendingProducts()
+    } catch {
+      $toast.error('Reddedilemedi')
     }
+  }
 
-    onMounted(() => fetchPendingProducts())
-
-    return {
-        products, approvedToday, activeRulesCount, loading, error, pagination,
-        fetchPendingProducts, approveProduct, rejectProduct
-    }
+  return {
+    products, loading, selectedProduct, showDetailModal, stats,
+    fetchPendingProducts, approveProduct, rejectProduct,
+  }
 }

@@ -1,63 +1,52 @@
-import { ref, onMounted } from 'vue'
-
 export const useAdminAuditLogs = () => {
   const { $api } = useApi()
-  const toast = useNuxtApp().$toast
-  
-  const loading = ref(false)
+
   const logs = ref<any[]>([])
+  const loading = ref(false)
   const isModalOpen = ref(false)
   const selectedLog = ref<any>(null)
+  const actionTypes = ref<string[]>([
+    'LOGIN', 'LOGOUT', 'UPDATE_PRODUCT', 'DELETE_USER', 'APPROVE_VENDOR', 'SYSTEM_UPDATE'
+  ])
 
-  const pagination = ref({
+  const filters = reactive({
+    search: '',
+    action: '',
+    severity: '',
     page: 1,
     limit: 20,
+  })
+
+  const pagination = reactive({
     total: 0,
-    pages: 0
+    pages: 1,
+    page: 1,
+    limit: 20
   })
-
-  const filters = ref({
-    action: '',
-    search: ''
-  })
-
-  const actionTypes = [
-    'CREATE_PRODUCT', 'UPDATE_PRODUCT', 'DELETE_PRODUCT',
-    'CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY',
-    'APPROVE_TOPUP', 'REJECT_TOPUP',
-    'APPROVE_WITHDRAWAL', 'REJECT_WITHDRAWAL',
-    'MANUAL_BALANCE_CHANGE', 'MANUAL_XP_CHANGE',
-    'UPDATE_USER', 'DELETE_USER',
-    'APPROVE_CHAIN', 'DELETE_CHAIN',
-    'CONNECT_MATCH', 'UPDATE_MATCH_STATUS',
-    'UPDATE_ORDER_STATUS', 'APPROVE_PAYOUT',
-    'RECONCILE', 'ANOMALY_BURST_REQUESTS'
-  ]
 
   const fetchLogs = async () => {
     loading.value = true
     try {
-      const params = new URLSearchParams({
-        page: pagination.value.page.toString(),
-        limit: pagination.value.limit.toString(),
-        ...filters.value
+      const res = await $api<any>('/api/admin/audit-logs', {
+        query: {
+          page: filters.page,
+          limit: filters.limit,
+          action: filters.action || undefined,
+          severity: filters.severity || undefined,
+          q: filters.search || undefined,
+        }
       })
-
-      const response: any = await $api(`/api/v1/admin/logs/audit?${params.toString()}`)
-      if (response.success) {
-        logs.value = response.data
-        pagination.value = response.pagination
-      }
-    } catch (error) {
-      console.error('Audit Logs Fetch Error:', error)
-      toast.error('Kayıtlar yüklenirken bir hata oluştu.')
-    } finally {
+      logs.value = res.data?.items || []
+      pagination.total = res.data?.total || 0
+      pagination.pages = Math.ceil(pagination.total / filters.limit)
+      pagination.page = filters.page
+    } catch { /* ignore */ } finally {
       loading.value = false
     }
   }
 
   const changePage = (page: number) => {
-    pagination.value.page = page
+    filters.page = page
     fetchLogs()
   }
 
@@ -67,32 +56,27 @@ export const useAdminAuditLogs = () => {
   }
 
   const formatDate = (date: string) => {
+    if (!date) return ''
     return new Date(date).toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: 'numeric', month: 'long', day: 'numeric'
     })
   }
 
   const formatTime = (date: string) => {
+    if (!date) return ''
     return new Date(date).toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: '2-digit', minute: '2-digit'
     })
   }
 
   const getActionBadgeClass = (action: string) => {
-    if (action.includes('CREATE')) return 'bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]'
-    if (action.includes('UPDATE')) return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-    if (action.includes('DELETE')) return 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
-    if (action.includes('APPROVE')) return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-    if (action.includes('REJECT')) return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-    if (action.includes('XP') || action.includes('BALANCE')) return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-    if (action.includes('ANOMALY')) return 'bg-slate-900 text-yellow-400 border-black animate-pulse font-black ring-2 ring-yellow-400/20'
-    return 'bg-slate-800 text-slate-400 border-slate-700'
+    switch (action) {
+      case 'DELETE': return 'bg-red-500/20 text-red-400'
+      case 'UPDATE': return 'bg-blue-500/20 text-blue-400'
+      case 'CREATE': return 'bg-green-500/20 text-green-400'
+      default: return 'bg-slate-500/20 text-slate-400'
+    }
   }
-
-  onMounted(fetchLogs)
 
   return {
     logs, loading, pagination, filters, isModalOpen, selectedLog, actionTypes,

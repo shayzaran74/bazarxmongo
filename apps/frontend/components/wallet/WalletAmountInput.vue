@@ -37,7 +37,7 @@
       <div>
         <p class="text-[11px] font-black text-red-500 uppercase tracking-tight leading-none mb-2">
           İŞLEM LİMİTİ İHLALİ
-        </div>
+        </p>
         <p class="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-relaxed">
           MEVCUT SEVİYENİZE GÖRE TEK SEFERDE EN FAZLA {{ limit }} TL YÜKLEME YAPABİLİRSİNİZ.
         </p>

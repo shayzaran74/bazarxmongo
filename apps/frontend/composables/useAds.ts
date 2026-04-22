@@ -1,54 +1,106 @@
-import { useApi } from '~/composables/useApi'
-import type { ApiResponse } from '@barterborsa/shared-types'
-import type { AdCampaign, AdSummary, LayoutForm } from '~/types/advertising'
-
 export const useAds = () => {
-    const { $api } = useApi()
+  const { $api } = useApi()
 
-    const fetchAds = (params: Record<string, unknown> = {}) =>
-        $api<AdCampaign[]>('/api/ads', { query: params })
+  const ads = ref<any[]>([])
+  const sideAds = ref<any[]>([])
+  const loading = ref(false)
 
-    const createAdCampaign = (data: FormData | Record<string, unknown>) =>
-        $api<AdCampaign>('/api/ads', { method: 'POST', body: data })
-
-    const getAdCampaign = (id: string) =>
-        $api<AdCampaign>(`/api/ads/${id}`)
-
-    const updateAdCampaign = (id: string, data: Record<string, unknown>) =>
-        $api<AdCampaign>(`/api/ads/${id}`, { method: 'PUT', body: data })
-
-    const deleteAdCampaign = (id: string) =>
-        $api<void>(`/api/ads/${id}`, { method: 'DELETE' })
-
-    const getAdSummary = (period: number = 30) =>
-        $api<{ summary: AdSummary }>('/api/ads/dashboard/summary', { query: { period } })
-
-    const seedDemoAds = () =>
-        $api<unknown>('/api/ads/seed-demo', { method: 'POST' })
-
-    const fetchBanners = (params: Record<string, unknown> = {}) =>
-        $api<LayoutForm[]>('/api/vendor-banners', { query: params })
-
-    const createBanner = (data: Record<string, unknown>) =>
-        $api<LayoutForm>('/api/vendor-banners', { method: 'POST', body: data })
-
-    const updateBanner = (id: string, data: Record<string, unknown>) =>
-        $api<LayoutForm>(`/api/vendor-banners/${id}`, { method: 'PUT', body: data })
-
-    const uploadBanner = (file: File) => {
-        const formData = new FormData()
-        formData.append('file', file)
-        return $api<{ url: string }>('/api/vendor-banners/upload', { method: 'POST', body: formData })
+  const fetchAds = async (params: any = {}) => {
+    loading.value = true
+    try {
+      const query = typeof params === 'string' ? { slot: params } : params
+      const res = await $api<any>('/api/ads', { query })
+      ads.value = res.data?.items || res.data || res || []
+    } catch { /* ignore */ } finally {
+      loading.value = false
     }
+  }
 
-    const recordClick = (productId: string) => {
-        $api('/api/ad-metrics/click', { method: 'POST', body: { productId } })
-            .catch((err: unknown) => console.error('Click tracking failed', err))
+  const fetchCampaigns = async (): Promise<any> => {
+    loading.value = true
+    try {
+      const res = await $api<any>('/api/vendors/ads/campaigns')
+      ads.value = res.data || []
+      return res
+    } catch { return { success: false } } finally {
+      loading.value = false
     }
+  }
 
-    return {
-        fetchAds, createAdCampaign, getAdCampaign, updateAdCampaign,
-        deleteAdCampaign, getAdSummary, seedDemoAds, fetchBanners,
-        createBanner, updateBanner, uploadBanner, recordClick
-    }
+  const createAdCampaign = async (data: any): Promise<any> => {
+    try {
+      const res = await $api<any>('/api/vendors/ads/campaigns', {
+        method: 'POST',
+        body: data
+      })
+      return res
+    } catch (e) { return { success: false } }
+  }
+
+  const updateAdCampaign = async (id: string, data: any) => {
+    try {
+      await $api(`/api/ads/${id}`, { method: 'PATCH', body: data })
+      return { success: true }
+    } catch { return { success: false } }
+  }
+
+  const deleteAdCampaign = async (id: string) => {
+    try {
+      await $api(`/api/ads/${id}`, { method: 'DELETE' })
+      return { success: true }
+    } catch { return { success: false } }
+  }
+
+  const uploadBanner = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await $api<any>('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      return res
+    } catch { return { success: false } }
+  }
+
+  const fetchSideAds = async (side?: 'left' | 'right') => {
+    try {
+      const res = await $api<any>('/api/side-ads', { query: side ? { side } : {} })
+      sideAds.value = res.data || res || []
+    } catch { /* ignore */ }
+  }
+
+  const trackImpression = async (adId: string) => {
+    try {
+      await $api(`/api/ads/${adId}/impression`, { method: 'POST' })
+    } catch { /* ignore */ }
+  }
+
+  const trackClick = async (adId: string) => {
+    try {
+      await $api(`/api/ads/${adId}/click`, { method: 'POST' })
+    } catch { /* ignore */ }
+  }
+
+  const getAdSummary = async (days: number = 30): Promise<any> => {
+    try {
+      const res = await $api<any>(`/api/vendors/ads/summary`, { query: { days } })
+      return res || { success: true, data: {} }
+    } catch { return { success: false, data: {} } }
+  }
+
+  const fetchBanners = async (params: any = {}): Promise<any> => {
+    try {
+      const res = await $api<any>(`/api/vendors/ads/banners`, { query: params })
+      return res || { success: true, data: [] }
+    } catch { return { success: false, data: [] } }
+  }
+
+  return {
+    ads, sideAds, loading,
+    fetchAds, fetchCampaigns, createAdCampaign, updateAdCampaign, deleteAdCampaign,
+    uploadBanner, fetchSideAds, trackImpression, trackClick, recordClick: trackClick,
+    updateBanner: updateAdCampaign, createBanner: createAdCampaign,
+    getAdSummary, fetchBanners
+  }
 }
