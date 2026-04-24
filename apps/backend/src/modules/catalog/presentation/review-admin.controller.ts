@@ -8,7 +8,7 @@ import { ListAdminReviewsQuery }
 
 @ApiTags('Review Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/reviews')
 export class ReviewAdminController {

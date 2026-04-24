@@ -7,7 +7,7 @@ import { GetAdminStatsQuery } from './application/commands-queries/analytics.bus
 
 @ApiTags('Admin Dashboard')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
 export class AdminDashboardController {

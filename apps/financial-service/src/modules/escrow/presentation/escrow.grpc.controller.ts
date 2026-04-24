@@ -17,7 +17,7 @@ export class EscrowGrpcController {
         new CreateEscrowCommand(
           data.referenceId, // orderId
           data.userId, // buyerId
-          '', // SellerId (will be resolved in handler or passed)
+          data.sellerId || '', 
           new Decimal(data.amount)
         )
       );

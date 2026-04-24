@@ -22,7 +22,7 @@ import {
 
 @ApiTags('Content Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/content')
 export class ContentAdminController {

@@ -47,15 +47,25 @@ export const useChatStore = defineStore('chat', {
             if (socket) return;
 
             const config = useRuntimeConfig();
-            const socketUrl = `${config.public.apiBase}/chat`;
-
             const authStore = useAuthStore();
-            socket = io(socketUrl, {
+
+            // Prod: socketUrl boş ise aynı origin (nginx /socket.io/ üzerinden gider)
+            // Dev:  apiBase kullanılır (localhost:3001)
+            const socketBase = (config.public.socketUrl as string) ||
+                (process.client ? window.location.origin : config.public.apiBase as string);
+
+            socket = io(socketBase, {
+                path: '/socket.io/',           // ← Nginx'te bu path proxyleniyor
                 withCredentials: true,
-                transports: ['polling', 'websocket'],
+                transports: ['polling', 'websocket'],  // polling önce — bağlantı kurulur, sonra upgrade
                 auth: {
-                    token: authStore.token || useCookie('token').value
-                }
+                    token: authStore.token || useCookie('access_token').value
+                },
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 20000,
             });
 
             socket.on('connect', () => {

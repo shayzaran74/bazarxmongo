@@ -46,7 +46,7 @@
     <header class="w-full relative pointer-events-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 shadow-sm">
       <div class="w-full px-4 lg:px-8 py-2.5 lg:py-3 flex items-center justify-between gap-4 lg:gap-8 max-w-8xl mx-auto">
         <!-- Logo -->
-        <div class="flex items-center group cursor-pointer" @click="$emit('logo-click')">
+        <NuxtLink to="/" class="flex items-center group cursor-pointer">
           <div :class="['relative w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg overflow-hidden ring-2 ring-white dark:ring-gray-800 group-hover:scale-110', logoBgClass]">
             <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain p-2" alt="Logo">
             <ShoppingCartIcon v-else class="h-8 w-8 text-white" />
@@ -59,7 +59,7 @@
               {{ brandSubtitle }}
             </span>
           </div>
-        </div>
+        </NuxtLink>
 
         <!-- Search -->
         <div class="hidden lg:flex flex-1 max-w-xl">
@@ -115,12 +115,17 @@
                     </div>
                   </div>
                   <div class="space-y-0.5">
-                    <NuxtLink to="/profile" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-600">
+                    <NuxtLink to="/profile" @click="showUserDropdown = false" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-600">
                       <UserIcon class="h-4 w-4 text-gray-400" /><span>Profilim</span>
                     </NuxtLink>
-                    <NuxtLink to="/orders" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-600">
+                    <NuxtLink to="/orders" @click="showUserDropdown = false" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-600">
                       <ShoppingBagIcon class="h-4 w-4 text-gray-400" /><span>Siparişlerim</span>
                     </NuxtLink>
+                    <NuxtLink to="/wallet" @click="showUserDropdown = false" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-emerald-50 rounded-xl text-xs font-bold text-gray-600">
+                      <BanknotesIcon class="h-4 w-4 text-emerald-500" /><span>Cüzdanım</span>
+                      <span v-if="authStore.balance" class="ml-auto text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{{ formatPrice(authStore.balance) }}</span>
+                    </NuxtLink>
+                    <div class="border-t border-gray-100 my-1" />
                     <button @click="logout" class="flex items-center space-x-3 w-full px-3 py-2.5 hover:bg-red-50 text-red-600 rounded-xl text-left text-xs font-bold">
                       <ArrowLeftOnRectangleIcon class="h-4 w-4 text-red-400" /> <span>Çıkış Yap</span>
                     </button>
@@ -172,7 +177,7 @@
 import { 
   ShoppingCartIcon, BriefcaseIcon, BuildingOffice2Icon, HeartIcon, UserIcon, 
   Cog6ToothIcon, ShoppingBagIcon, MapPinIcon, MagnifyingGlassIcon, SparklesIcon,
-  QuestionMarkCircleIcon, PhoneIcon, ArrowLeftOnRectangleIcon
+  QuestionMarkCircleIcon, PhoneIcon, ArrowLeftOnRectangleIcon, BanknotesIcon
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{

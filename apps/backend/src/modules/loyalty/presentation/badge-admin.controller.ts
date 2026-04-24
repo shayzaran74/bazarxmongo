@@ -5,7 +5,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Badge Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/badge-rules')
 export class BadgeAdminController {

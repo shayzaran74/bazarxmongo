@@ -81,18 +81,18 @@
             <div class="border-t border-gray-100 pt-6">
               <div class="flex items-center justify-between">
                 <div class="flex -space-x-3 overflow-hidden">
-                  <template v-if="order.OrderItem && order.OrderItem.length > 0">
+                  <template v-if="(order.orderItems || order.OrderItem || []).length > 0">
                     <img
-                      v-for="item in order.OrderItem.slice(0, 4)"
+                      v-for="item in (order.orderItems || order.OrderItem || []).slice(0, 4)"
                       :key="item.id"
                       :src="resolveImageUrl(item.productImage || (item.Listing?.CatalogProduct?.images?.[0])) || 'https://placehold.co/100x100?text=Ürün'"
                       class="inline-block h-12 w-12 rounded-full ring-4 ring-white object-cover bg-gray-50"
                     >
                     <div
-                      v-if="order.OrderItem.length > 4"
+                      v-if="(order.orderItems || order.OrderItem || []).length > 4"
                       class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500 ring-4 ring-white"
                     >
-                      +{{ order.OrderItem.length - 4 }}
+                      +{{ (order.orderItems || order.OrderItem || []).length - 4 }}
                     </div>
                   </template>
                   <div

@@ -51,12 +51,16 @@ export class GetCatalogProductsHandler
       const listing = item.listings?.[0] ?? null;
       return {
         ...item,
+        rating: Number(item.rating), // Convert Decimal to number
         Brand: item.brands?.[0] ?? null,
         image: item.media?.[0]?.url ?? null,
         images: item.media?.map(m => m.url) ?? [],
         price: listing ? Number(listing.price) : 0,
         stock: listing?.stock ?? 0,
-        sku: listing?.sku ?? ''
+        sku: listing?.sku ?? '',
+        isFeatured: item.isFeatured,
+        isSpecialOffer: item.isSpecialOffer,
+        isFlashSale: item.isFlashSale
       };
     });
 

@@ -9,5 +9,6 @@ export class CheckoutCommand {
     public readonly billingAddress: ShippingAddress,
     public readonly paymentMethod: string,
     public readonly couponCode?: string,
+    public readonly useWallet: boolean = false,
   ) {}
 }

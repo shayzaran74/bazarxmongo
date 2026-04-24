@@ -9,9 +9,10 @@ import { IWalletRepository } from '../../../wallet/domain/repositories/wallet.re
 import { IGeneralLedgerRepository } from '../../../ledger/domain/repositories/general-ledger.repository.interface';
 import { GeneralLedgerEntry } from '../../../ledger/domain/entities/general-ledger-entry.entity';
 import { Decimal } from 'decimal.js';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 @CommandHandler(CreateEscrowCommand)
-export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand> {
+export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand, Escrow> {
   constructor(
     @Inject('IEscrowRepository')
     private readonly escrowRepository: IEscrowRepository,
@@ -19,20 +20,21 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand>
     private readonly walletRepository: IWalletRepository,
     @Inject('IGeneralLedgerRepository')
     private readonly ledgerRepository: IGeneralLedgerRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
-  async execute(command: CreateEscrowCommand): Promise<void> {
+  async execute(command: CreateEscrowCommand): Promise<Escrow> {
     const { orderId, buyerId, sellerId, amount } = command;
 
     // 1. Mükerrer kontrolü
     const existing = await this.escrowRepository.findByOrderId(orderId);
-    if (existing) return;
+    if (existing) return existing;
 
     // 2. Cüzdan kontrolü ve bakiye düşümü
     const wallet = await this.walletRepository.findByUserId(buyerId);
     if (!wallet) throw new Error('Kullanıcı cüzdanı bulunamadı.');
     
-    // Money VO kullanarak bakiye düş (Not: Money.fromDecimal kullanımı varsayılmıştır)
+    // Money VO kullanarak bakiye düş
     const orderMoney = { amount: new Decimal(amount), currency: 'TRY' } as any; 
     wallet.withdrawTL(orderMoney); 
 
@@ -55,9 +57,32 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand>
       note: `Order ${orderId} için bakiye rezerve edildi.`,
     });
 
-    // 5. Atomik kayıt (İdealde bir unit-of-work/transaction içinde olmalı)
+    // 5. Cüzdan Hareketi (AccountTransaction)
+    // Kullanıcının MAIN hesabını bul
+    const mainAccount = await this.prisma.account.findFirst({
+      where: { userId: buyerId, type: 'MAIN' }
+    });
+
+    if (mainAccount) {
+      await this.prisma.accountTransaction.create({
+        data: {
+          accountId: mainAccount.id,
+          type: 'PAYMENT',
+          direction: 'DEBIT',
+          amount: new Decimal(amount),
+          description: `Sipariş #${orderId} için ödeme (Emanet)`,
+          referenceId: orderId,
+          referenceType: 'ORDER',
+          status: 'COMPLETED'
+        }
+      });
+    }
+
+    // 6. Atomik kayıt
     await this.walletRepository.save(wallet);
     await this.escrowRepository.save(escrow);
     await this.ledgerRepository.save(ledgerEntry); 
+
+    return escrow;
   }
 }

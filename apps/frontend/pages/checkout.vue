@@ -47,7 +47,7 @@
           v-model:use-wallet-balance="useWalletBalance"
           :wallet-balance="walletBalance"
           :wallet-loading="walletLoading"
-          :final-amount="finalAmount"
+          :final-amount="totalAmountWithShipping"
           :loyalty-status="loyaltyStatus"
           :final-amount-excluding-loyalty="finalAmountExcludingLoyalty"
           :client-secret="clientSecret"
@@ -121,7 +121,7 @@ const {
   appliedCoupon, validatingCoupon, couponError, paymentFormContent,
   appliedEscrowCoupon, selectedAddressId, showNewAddressForm, saveNewAddress,
   newAddress, useWalletBalance, finalAmountExcludingLoyalty, finalAmount,
-  xpToUse, cashToPay, isFormValid,
+  xpToUse, cashToPay, isFormValid, totalAmountWithShipping,
   init, applyCoupon: applyCouponAction, removeCoupon, handlePayment, openLegalDoc
 } = useCheckout()
 
@@ -130,6 +130,8 @@ onMounted(async () => {
   const res = await init()
   if (!res.success && res.redirect) {
     navigateTo(res.redirect)
+  } else if (cartStore.items.length === 0) {
+    navigateTo('/cart')
   }
 })
 

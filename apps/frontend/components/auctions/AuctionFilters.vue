@@ -29,18 +29,20 @@
       </div>
 
       <!-- Status -->
-      <div>
+      <div class="md:col-span-1">
         <label class="block text-sm font-medium text-gray-700 mb-2">Durum</label>
-        <select
-          :value="statusFilter"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          @change="$emit('update:statusFilter', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">Tüm Durumlar</option>
-          <option value="Active">Aktif</option>
-          <option value="Completed">Tamamlanmış</option>
-          <option value="Cancelled">İptal Edilmiş</option>
-        </select>
+        <div class="flex gap-2">
+          <button
+            v-for="status in [{v: 'ACTIVE', t: 'Aktif'}, {v: 'COMPLETED', t: 'Bitti'}]"
+            :key="status.v"
+            type="button"
+            class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+            :class="statusFilter === status.v ? 'bg-primary-600 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+            @click="$emit('update:statusFilter', status.v)"
+          >
+            {{ status.t }}
+          </button>
+        </div>
       </div>
 
       <!-- Sort -->

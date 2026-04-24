@@ -16,6 +16,9 @@ import { SendMessageCommand } from '../../application/commands/send-message.comm
 import { SendMessageDto } from '../../application/dtos/chat.dtos';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
+import { Public } from '@barterborsa/shared-security';
+
+@Public()
 @WebSocketGateway({
   cors: { origin: '*' },
 })

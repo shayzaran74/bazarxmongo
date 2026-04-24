@@ -1,5 +1,6 @@
 import { Controller, Get, Query, UseGuards,
          Delete, Param, Post, Body, Put } from '@nestjs/common';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
@@ -16,32 +17,50 @@ import { UpdateAdminProductCommand }
 
 @ApiTags('Product Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/products')
 export class ProductAdminController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @ApiOperation({ summary: 'Get product statistics' })
+  @Get('stats')
+  async getStats() {
+    const [total, active, pending] = await Promise.all([
+      this.prisma.catalogProduct.count(),
+      this.prisma.listing.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.listing.count({ where: { status: 'PENDING' } })
+    ]);
+
+    return {
+      success: true,
+      data: { total, active, pending }
+    };
+  }
 
   @ApiOperation({ summary: 'List all products for admin' })
   @Get()
   async getProducts(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 50,
-    @Query('q') search?: string
+    @Query('q') search?: string,
+    @Query('status') status?: string
   ) {
     const result = await this.queryBus.execute(
       new ListAdminProductsQuery({
         search,
+        status,
         page: Number(page) || 1,
         limit: Number(limit) || 50
       })
     );
     return {
       success: true,
-      data: { items: result.items },
+      data: result.items,
       pagination: {
         total: result.total,
         page: result.page,

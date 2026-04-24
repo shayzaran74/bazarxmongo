@@ -48,6 +48,7 @@
           :class="[
             modelValue.categories.includes(category.id) ? 'border-primary-500 bg-primary-50' : 'border-gray-50 bg-white hover:border-gray-100'
           ]"
+          data-testid="category-checkbox"
         >
           <input
             type="checkbox"

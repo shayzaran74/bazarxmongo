@@ -6,7 +6,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Dynamic Content Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('dynamic/admin')
 export class DynamicContentAdminController {

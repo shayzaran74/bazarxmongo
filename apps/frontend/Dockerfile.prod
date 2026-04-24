@@ -1,0 +1,55 @@
+# apps/frontend/Dockerfile.prod
+# Multi-stage build — production optimized
+
+# ─── Stage 1: Deps ────────────────────────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Workspace manifest'leri kopyala
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/shared-types/package.json ./packages/shared/shared-types/
+COPY apps/frontend/package.json ./apps/frontend/
+
+RUN pnpm install --frozen-lockfile --filter @bazarx/frontend...
+
+# ─── Stage 2: Build ───────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages ./packages
+COPY . .
+
+# Shared types build
+RUN pnpm --filter @barterborsa/shared-types build
+
+# Nuxt build
+WORKDIR /app/apps/frontend
+RUN pnpm build
+
+# ─── Stage 3: Runtime ─────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Güvenlik: root olmayan kullanıcı
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nuxtjs
+
+# Sadece production dosyalarını kopyala
+COPY --from=builder --chown=nuxtjs:nodejs /app/apps/frontend/.output ./
+
+USER nuxtjs
+
+EXPOSE 3000
+
+ENV NITRO_PORT=3000
+ENV NITRO_HOST=0.0.0.0
+
+CMD ["node", "server/index.mjs"]

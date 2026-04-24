@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="mb-16 space-y-4">
       <div class="flex items-center gap-6">
-        <div class="p-4 bg-indigo-600 rounded-[1.5rem] shadow-2xl animate-pulse">
-           <HandshakeIcon class="h-8 w-8 text-white" />
+        <div class="p-4 bg-indigo-600 rounded-[1.5rem] shadow-2xl animate-pulse flex items-center justify-center">
+           <span class="text-2xl">🤝</span>
         </div>
         <h1 class="text-5xl lg:text-7xl font-black text-gray-900 tracking-tightest uppercase italic leading-none">TAKAS <span class="text-indigo-600">PROTOKOLLERİ</span></h1>
       </div>
@@ -49,7 +49,6 @@
 </template>
 
 <script setup>
-import { HandshakeIcon } from 'lucide-vue-next'
 import TradeChainCard from '~/components/trade/TradeChainCard.vue'
 import TradeDetailModal from '~/components/trade/TradeDetailModal.vue'
 import ReviewForm from '~/components/trade/ReviewForm.vue'

@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/
-android/
-ios/
-.nuxt/
-.output/
-**/*.spec.ts
-**/*.test.ts

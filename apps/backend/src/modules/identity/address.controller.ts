@@ -20,7 +20,7 @@ import {
 
 @ApiTags('Addresses')
 @ApiBearerAuth()
-@Controller('identity/addresses')
+@Controller('addresses')
 @UseGuards(JwtAuthGuard)
 export class AddressController {
   constructor(

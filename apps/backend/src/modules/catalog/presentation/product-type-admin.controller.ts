@@ -4,7 +4,7 @@ import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 
 @ApiTags('Product Type Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/product-types')
 export class ProductTypeAdminController {

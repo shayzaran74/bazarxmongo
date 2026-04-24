@@ -9,7 +9,7 @@ export class CheckoutHandler implements ICommandHandler<CheckoutCommand> {
   constructor(private readonly checkoutService: CheckoutService) {}
 
   async execute(command: CheckoutCommand) {
-    const { userId, shippingAddress, billingAddress, paymentMethod } = command;
-    return this.checkoutService.checkout(userId, shippingAddress, billingAddress, paymentMethod);
+    const { userId, shippingAddress, billingAddress, paymentMethod, couponCode, useWallet } = command;
+    return this.checkoutService.checkout(userId, shippingAddress, billingAddress, paymentMethod, couponCode, useWallet);
   }
 }

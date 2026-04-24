@@ -36,7 +36,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     this.logger.error(
-      `Hata: ${request.method} ${request.url}`,
+      `Hata: ${request?.method || 'N/A'} ${request?.url || 'N/A'}`,
       errorDetails
     );
 

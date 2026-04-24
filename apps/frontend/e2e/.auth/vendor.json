@@ -1,0 +1,45 @@
+{
+  "cookies": [
+    {
+      "name": "i18n_redirected",
+      "value": "tr",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1808473920,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "csrf_token",
+      "value": "mock-csrf-token",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "access_token",
+      "value": "mock-vendor-token",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1776938821.199566,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "user",
+      "value": "%7B%22id%22%3A%22vendor-001%22%2C%22email%22%3A%22vendor%40bazarx.com.tr%22%2C%22role%22%3A%22VENDOR%22%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

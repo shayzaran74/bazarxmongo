@@ -8,12 +8,12 @@
             class="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold overflow-hidden"
           >
             <img
-              v-if="user?.profile?.avatar"
-              :src="getAvatarUrl(user.profile.avatar)"
+              v-if="user?.avatar"
+              :src="getAvatarUrl(user.avatar)"
               class="w-full h-full object-cover"
               alt="Avatar"
             >
-            <span v-else>{{ getInitials(fullName || user?.email) }}</span>
+            <span v-else>{{ getInitials(fullName || user?.email || '') }}</span>
           </div>
           <button
             class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 sm:p-2 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
@@ -62,6 +62,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { CameraIcon, CalendarIcon, ArrowLeftOnRectangleIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -84,8 +85,8 @@ const props = defineProps({
 })
 
 const fullName = computed(() => {
-  if (!props.user?.profile) return ''
-  return `${props.user.profile.firstName} ${props.user.profile.lastName || ''}`.trim()
+  if (!props.user) return ''
+  return `${props.user.firstName || ''} ${props.user.lastName || ''}`.trim()
 })
 
 defineEmits(['openAvatarUpload', 'logout'])

@@ -38,9 +38,20 @@ export const useProductDetail = () => {
     return [...new Set(imgs)]
   })
 
-  const displayPrice = computed(() => listing.value?.price || product.value?.basePrice || 0)
-  const currentStock = computed(() => listing.value?.stock || 0)
-  const averageRating = computed(() => product.value?.averageRating || 0)
+  const displayPrice = computed(() => {
+    if (listing.value?.price) return Number(listing.value.price)
+    if (product.value?.price) return Number(product.value.price)
+    return Number(product.value?.basePrice || 0)
+  })
+  const currentStock = computed(() => listing.value?.stock || product.value?.stock || 0)
+  const averageRating = computed(() => Number(product.value?.rating || product.value?.averageRating || 0))
+
+  // Watch for product changes to sync listing
+  watch(product, (newVal) => {
+    if (newVal && newVal.listings?.length > 0) {
+      listing.value = newVal.listings[0]
+    }
+  }, { immediate: true })
   
   const tabs = computed(() => [
     { id: 'description', name: 'Açıklama' },

@@ -21,10 +21,10 @@ export class EscrowGrpcService implements OnModuleInit {
     this.financialService = this.client.getService<FinancialService>('FinancialService');
   }
 
-  async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string) {
+  async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string, sellerId: string = '') {
     try {
       const response: any = await firstValueFrom(
-        this.financialService.holdFunds({ userId, amount, reason, referenceId, referenceType, idempotencyKey })
+        this.financialService.holdFunds({ userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId })
       );
       if (!response.success) {
         throw new DomainException(response.error || 'Hold funds failed');

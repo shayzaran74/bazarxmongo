@@ -147,7 +147,7 @@ defineExpose({ geo })
                   <input 
                     v-model="form.linkUrl"
                     type="text" 
-                    placeholder="https://bazarx.com/product/..." 
+                    placeholder="https://bazarx.com.tr/product/..." 
                     class="w-full h-14 bg-gray-50 border border-gray-100 rounded-2xl px-6 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-bold text-gray-700"
                   />
                 </div>

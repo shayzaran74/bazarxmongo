@@ -14,9 +14,19 @@ export const useCartStore = defineStore('cart', {
   }),
   getters: {
     count: (state) => state.items.reduce((acc, item) => acc + item.quantity, 0),
-    total: (state) => state.summary?.total || 0,
-    totalPrice: (state) => state.summary?.total || 0,
-    itemCount: (state) => state.items.reduce((acc, item) => acc + item.quantity, 0),
+    total: (state): number => {
+      const s = state.summary
+      if (s) {
+        const val = s.total ?? s.totalPrice ?? s.subtotal
+        return typeof val === 'number' ? val : Number(val || 0)
+      }
+      return state.items.reduce((acc, item) => {
+        const p = Number(item.Product?.price || item.price || 0)
+        return acc + (p * item.quantity)
+      }, 0)
+    },
+    totalPrice(): number { return this.total },
+    itemCount(): number { return this.count },
   },
   actions: {
     async initialize() {
@@ -44,9 +54,9 @@ export const useCartStore = defineStore('cart', {
       } finally { this.loading = false }
     },
     async addToCart(productId: string | number, quantity = 1, variantId?: string, product?: any) {
-       return await this.addItem(productId.toString(), quantity, variantId)
+       return await this.addItem(productId.toString(), quantity, variantId, product)
     },
-    async addItem(productId: string, quantity = 1, variantId?: string) {
+    async addItem(productId: string, quantity = 1, variantId?: string, product?: any) {
       const authStore = useAuthStore()
       const { $api } = useApi()
       this.loading = true
@@ -60,6 +70,21 @@ export const useCartStore = defineStore('cart', {
           return { success: false }
         } else {
           // Guest logic
+          const existing = this.items.find(i => i.productId === productId && i.productVariantId === variantId)
+          if (existing) {
+            existing.quantity += quantity
+          } else {
+            // We need product info for guest cart, but usually we pass it in 'product' arg
+            this.items.push({
+              id: Math.random().toString(36).substring(7),
+              productId,
+              productVariantId: variantId,
+              quantity,
+              price: product?.price || 0,
+              Product: product || {},
+              addedAt: new Date().toISOString()
+            } as any)
+          }
           this.saveLocal()
           return { success: true }
         }
@@ -84,8 +109,13 @@ export const useCartStore = defineStore('cart', {
     },
     async fetchEscrowCoupons() {
       const { $api } = useApi()
-      const res = await $api<any[]>('/api/cart/escrow-coupons')
-      return res.data || []
+      try {
+        const res = await $api<any[]>('/api/cart/escrow-coupons')
+        this.availableEscrowCoupons = res.data || []
+        return this.availableEscrowCoupons
+      } catch {
+        return []
+      }
     },
     async applyEscrowCoupon(couponId: string) {
       const { $api } = useApi()

@@ -226,7 +226,7 @@ const isValid = computed(() => {
               <section class="space-y-2">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">ÖZEL HEDEF URL (OPSİYONEL)</label>
                 <div class="relative">
-                    <input v-model="localForm.targetUrl" type="text" placeholder="https://bazarx.com/..." class="w-full h-14 bg-gray-50 border border-gray-100 rounded-2xl px-6 outline-none focus:border-orange-400 font-bold" />
+                    <input v-model="localForm.targetUrl" type="text" placeholder="https://bazarx.com.tr/..." class="w-full h-14 bg-gray-50 border border-gray-100 rounded-2xl px-6 outline-none focus:border-orange-400 font-bold" />
                 </div>
               </section>
 

@@ -9,7 +9,7 @@ export class CompanyMapper {
     let taxNumber = undefined;
     if (record.taxNumber) {
       const taxNumberResult = TaxNumber.create(record.taxNumber);
-      if (isErr(taxNumberResult)) {
+      if (!taxNumberResult.success) {
         throw taxNumberResult.error;
       }
       taxNumber = taxNumberResult.data;

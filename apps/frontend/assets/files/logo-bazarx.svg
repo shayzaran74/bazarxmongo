@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <defs>
+    <linearGradient id="bx-icon-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <!-- İkon -->
+  <rect x="0" y="0" width="80" height="80" rx="18" fill="#4f46e5"/>
+  <rect x="0" y="0" width="80" height="80" rx="18" fill="url(#bx-icon-grad)" opacity="0.5"/>
+  <!-- Alışveriş çantası -->
+  <rect x="20" y="34" width="40" height="32" rx="5" fill="white" opacity="0.95"/>
+  <path d="M30 34 Q30 20 40 20 Q50 20 50 34" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="32" y1="44" x2="48" y2="44" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="52" x2="44" y2="52" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+  <!-- X nokta aksanı -->
+  <circle cx="68" cy="12" r="6" fill="#f59e0b"/>
+  <!-- Metin -->
+  <text x="90" y="46" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-weight="700" fill="#1e1b4b" letter-spacing="-1">Bazar<tspan fill="#4f46e5">X</tspan></text>
+  <text x="91" y="64" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6366f1" letter-spacing="2.5">E-TİCARET &amp; TAKAS</text>
+</svg>

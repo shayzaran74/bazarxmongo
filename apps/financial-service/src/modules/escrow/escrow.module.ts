@@ -10,6 +10,7 @@ import { EscrowConsumer } from './infrastructure/messaging/escrow.consumer';
 import { WalletModule } from '../wallet/wallet.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { EscrowGrpcController } from './presentation/escrow.grpc.controller';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 @Module({
   imports: [CqrsModule, WalletModule, LedgerModule],
@@ -18,6 +19,7 @@ import { EscrowGrpcController } from './presentation/escrow.grpc.controller';
     CreateEscrowHandler,
     EscrowConsumer,
     EscrowMapper,
+    PrismaService,
     {
       provide: 'IEscrowRepository',
       useClass: PrismaEscrowRepository,

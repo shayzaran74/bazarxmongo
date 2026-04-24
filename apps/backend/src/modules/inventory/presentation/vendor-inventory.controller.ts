@@ -16,7 +16,7 @@ export class VendorInventoryController {
   constructor(private readonly prisma: PrismaService) {}
 
   @ApiOperation({ summary: 'Get inventory stats' })
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('stats')
   async getStats(@CurrentUser() user: any) {
@@ -47,7 +47,7 @@ export class VendorInventoryController {
   }
 
   @ApiOperation({ summary: 'Export inventory to Excel' })
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('export')
   async exportExcel(@CurrentUser() user: any, @Res() res: Response) {
@@ -88,7 +88,7 @@ export class VendorInventoryController {
   }
 
   @ApiOperation({ summary: 'Get product stock history' })
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('logs/:productId')
   async getLogs(@Param('productId') productId: string, @CurrentUser() user: unknown) {
@@ -126,7 +126,7 @@ export class VendorInventoryController {
   }
 
   @ApiOperation({ summary: 'Import products from Excel' })
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('file'))
   @Post('import-excel')
@@ -137,6 +137,7 @@ export class VendorInventoryController {
     try {
       const vendor = await this.prisma.vendor.findUnique({ where: { userId: user.id } });
       if (!vendor) return { success: false, error: 'Vendor not found' };
+      console.log('[VendorInventoryImport] Importing for vendor:', vendor.id, 'userId:', user.id);
 
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Simplify to first sheet
@@ -146,19 +147,32 @@ export class VendorInventoryController {
       let failedCount = 0;
       const errors: string[] = [];
 
+      console.log('[Import] Available Columns:', Object.keys(rows[0] || {}));
       for (const row of rows) {
         try {
-          const rawName = row['Başlık'] || row['Ürün Adı'];
+          const rawName = row['Başlık'] || row['Ürün Adı'] || row['Stok Kartı Adı'];
           if (!rawName) continue;
           
-          const barcode = String(row['Barkod'] || '');
-          const price = parseFloat(String(row['Fiyat']).replace(',', '.'));
-          const stock = parseInt(String(row['Envanter Miktar']), 10) || 0;
+          const barcode = String(row['Barkod'] || row['Stok Kodu'] || '');
+          // Esnek fiyat ve stok eşleşmesi
+          const price = parseFloat(String(row['Satış Fiyatı'] || row['Fiyat'] || '0').replace(',', '.'));
+          const stock = parseInt(String(row['Stok Adedi'] || row['Envanter Miktar'] || '0'), 10);
           const categoryName = row['Kategori'] || 'Genel';
           
+          // Resimleri çek (Akıllı Tespit: URL içeren herhangi bir kolonu kontrol et)
+          let images: string[] = [];
+          Object.values(row).forEach(val => {
+            if (typeof val === 'string' && (val.startsWith('http') || val.startsWith('//')) && 
+                (val.match(/\.(jpg|jpeg|png|webp|gif|svg)/i) || val.includes('dsmcdn.com'))) {
+              images.push(val.trim());
+            }
+          });
+          
+          console.log(`[Import] Product: ${rawName}, Auto-detected Images:`, images.length);
+          if (images.length > 0) console.log(`[Import] Sample URL: ${images[0]}`);
+
           const slug = this.slugify(`${rawName}-${barcode || Math.random().toString(36).substring(5)}`);
 
-          // Simple atomic creation for demo/mvp
           const category = await this.prisma.category.upsert({
             where: { slug: this.slugify(categoryName) },
             update: {},
@@ -168,8 +182,33 @@ export class VendorInventoryController {
           const catalogProduct = await this.prisma.catalogProduct.upsert({
             where: { slug },
             update: { name: rawName },
-            create: { name: rawName, slug, categoryId: category.id, status: 'ACTIVE', brand: 'Genel', description: rawName }
+            create: { 
+              name: rawName, 
+              slug, 
+              categoryId: category.id, 
+              status: 'ACTIVE', 
+              brand: row['Marka'] || 'Genel', 
+              description: rawName
+            }
           });
+
+          // Resimleri ayrıca işle (Hem yeni hem eski ürünler için)
+          if (images.length > 0) {
+            // Mevcut resimleri temizle ve yenilerini ekle (veya sadece eksikleri ekle)
+            // Basitlik için mevcutları silip yenileri ekliyoruz
+            await this.prisma.productMedia.deleteMany({
+              where: { productId: catalogProduct.id }
+            });
+
+            await this.prisma.productMedia.createMany({
+              data: images.map((url, idx) => ({
+                productId: catalogProduct.id,
+                url: url.trim(),
+                type: 'IMAGE',
+                sortOrder: idx
+              }))
+            });
+          }
 
           await this.prisma.listing.upsert({
             where: { slug },
@@ -181,14 +220,16 @@ export class VendorInventoryController {
               slug,
               price,
               stock,
-              status: 'ACTIVE'
+              sku: barcode,
+              status: 'PENDING',
+              listingType: 'SELL'
             }
           });
 
           successCount++;
         } catch (err: any) {
           failedCount++;
-          errors.push(`${row['Başlık']}: ${err.message}`);
+          errors.push(`${row['Başlık'] || 'Bilinmeyen'}: ${err.message}`);
         }
       }
 

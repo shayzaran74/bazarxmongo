@@ -57,6 +57,7 @@
                     v-for="item in cartItems"
                     :key="item.id"
                     class="p-4 sm:p-6 hover:bg-gray-50/50 transition-colors"
+                    data-testid="cart-item"
                   >
                     <ProductItem 
                       :product="item" 

@@ -136,7 +136,8 @@ import ProfileAvatarModal from '~/components/profile/ProfileAvatarModal.vue'
 import ProfileAddressModal from '~/components/profile/ProfileAddressModal.vue'
 
 definePageMeta({ layout: 'default', middleware: 'auth' })
-useHead({ title: `${useI18n().t('profile.title')} - BazarX` })
+const { t } = useI18n()
+useHead({ title: `${t('profile.title')} - BazarX` })
 
 const {
   user,

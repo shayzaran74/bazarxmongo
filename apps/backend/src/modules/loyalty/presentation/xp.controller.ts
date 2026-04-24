@@ -52,7 +52,7 @@ export class XpController {
   @ApiResponse({ status: 201, description: 'XP başarıyla eklendi.' })
   @ApiResponse({ status: 403, description: 'Sadece admin yetkisi ile erişilebilir.' })
   @Post('earn')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async earnXp(@Body() dto: { userId: string, amount: number, type: XpSourceType }) {
     return this.commandBus.execute(new EarnXpCommand(dto.userId, dto.amount, dto.type));
   }

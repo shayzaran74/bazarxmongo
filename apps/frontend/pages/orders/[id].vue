@@ -76,7 +76,7 @@
           </div>
           <div class="divide-y divide-gray-100">
             <div
-              v-for="item in order.OrderItem"
+              v-for="item in (order.orderItems || order.OrderItem || [])"
               :key="item.id"
               class="p-6"
             >

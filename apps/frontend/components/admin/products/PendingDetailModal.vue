@@ -43,7 +43,7 @@ const formatPrice = (p) => new Intl.NumberFormat('tr-TR', { style: 'currency', c
 
 const details = computed(() => [
   { l: 'ÜRÜN ADI', v: props.product?.name },
-  { l: 'SATICI', v: props.product?.Vendor?.businessName },
+  { l: 'SATICI', v: props.product?.Vendor?.company?.name || props.product?.Vendor?.profile?.storeName || 'BİLİNMİYOR' },
   { l: 'KATEGORİ', v: props.product?.Category?.name || '-' },
   { l: 'FİYAT', v: formatPrice(props.product?.price) },
   { l: 'STOK', v: `${props.product?.stock} ADET` },

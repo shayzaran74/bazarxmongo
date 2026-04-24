@@ -5,7 +5,11 @@ export class AddressResponseDto {
   title!: string;
   firstName!: string;
   lastName!: string;
+  fullName!: string;
   phone!: string;
+  addressLine!: string;
+  city!: string;
+  district!: string;
   fullAddress!: string;
   isDefault!: boolean;
 
@@ -15,7 +19,11 @@ export class AddressResponseDto {
     dto.title = address.title;
     dto.firstName = address.firstName;
     dto.lastName = address.lastName;
+    dto.fullName = `${address.firstName} ${address.lastName}`.trim();
     dto.phone = address.phone;
+    dto.addressLine = address.addressLine1;
+    dto.city = address.city;
+    dto.district = address.district;
     dto.fullAddress = address.getFullAddress();
     dto.isDefault = address.isDefault;
     return dto;

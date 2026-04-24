@@ -68,8 +68,8 @@
           </td>
           <td class="px-6 py-4">
             <div class="flex flex-col">
-              <span class="text-sm font-semibold text-gray-900">{{ order.User?.name || 'Anonim' }}</span>
-              <span class="text-xs text-gray-500">{{ order.User?.email }}</span>
+              <span class="text-sm font-semibold text-gray-900">{{ getCustomerName(order) }}</span>
+              <span class="text-xs text-gray-500">{{ order.user?.email }}</span>
             </div>
           </td>
           <td class="px-6 py-4">
@@ -164,5 +164,12 @@ const getStatusText = (status) => {
     'Cancelled': 'İptal Edildi'
   }
   return map[status] || status
+}
+
+const getCustomerName = (order) => {
+  if (!order.user || !order.user.profile) return 'Anonim'
+  const { firstName, lastName } = order.user.profile
+  if (!firstName && !lastName) return 'İsimsiz Kullanıcı'
+  return `${firstName || ''} ${lastName || ''}`.trim()
 }
 </script>

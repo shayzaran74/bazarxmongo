@@ -1,6 +1,6 @@
 // apps/backend/src/modules/commerce/application/dtos/checkout.dto.ts
 
-import { IsString, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class AddressDto {
@@ -16,13 +16,19 @@ class AddressDto {
 }
 
 export class CheckoutDto {
+  @IsOptional()
   @ValidateNested()
   @Type(() => AddressDto)
-  shippingAddress!: AddressDto;
+  shippingAddress?: AddressDto;
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => AddressDto)
-  billingAddress!: AddressDto;
+  billingAddress?: AddressDto;
+
+  @IsOptional()
+  @IsString()
+  addressId?: string;
 
   @IsString()
   paymentMethod!: string;
@@ -30,6 +36,10 @@ export class CheckoutDto {
   @IsOptional()
   @IsString()
   couponCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  useWallet?: boolean;
 
   @IsOptional()
   @IsString()

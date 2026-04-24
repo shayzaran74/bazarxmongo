@@ -92,7 +92,7 @@
                 v-if="product.Vendor"
                 class="text-[9px] font-bold text-indigo-500 mt-0.5 uppercase tracking-tighter"
               >
-                Satıcı: {{ product.Vendor.businessName }}
+                Satıcı: {{ product.Vendor.company?.name || product.Vendor.profile?.storeName || 'Bilinmeyen' }}
               </div>
             </td>
             <td class="px-6 py-4">

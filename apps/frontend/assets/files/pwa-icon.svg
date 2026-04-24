@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="pwa-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <!-- Arka plan -->
+  <rect x="0" y="0" width="512" height="512" rx="114" fill="url(#pwa-bg)"/>
+  <!-- Çanta gövdesi -->
+  <rect x="130" y="230" width="252" height="200" rx="28" fill="white" opacity="0.95"/>
+  <!-- Çanta sapı -->
+  <path d="M192 230 Q192 128 256 128 Q320 128 320 230" fill="none" stroke="white" stroke-width="28" stroke-linecap="round"/>
+  <!-- Detay çizgileri -->
+  <line x1="192" y1="290" x2="320" y2="290" stroke="#4f46e5" stroke-width="16" stroke-linecap="round"/>
+  <line x1="192" y1="340" x2="290" y2="340" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
+  <!-- Aksан noktası -->
+  <circle cx="430" cy="82" r="40" fill="#f59e0b"/>
+  <text x="430" y="97" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#78350f">X</text>
+</svg>

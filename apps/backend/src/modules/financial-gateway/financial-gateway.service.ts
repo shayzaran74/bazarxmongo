@@ -15,8 +15,8 @@ export class FinancialGatewayService {
   }
 
   // Escrow Methods
-  async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string) {
-    return this.escrowService.holdFunds(userId, amount, reason, referenceId, referenceType, idempotencyKey);
+  async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string, sellerId: string = '') {
+    return this.escrowService.holdFunds(userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId);
   }
 
   async releaseFunds(holdId: string, idempotencyKey: string) {
@@ -32,9 +32,10 @@ export class FinancialGatewayService {
     userId: string,
     accountType?: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    accountId?: string
   ) {
-    return this.walletService.getTransactions(userId, accountType, page, limit);
+    return this.walletService.getTransactions(userId, accountType, page, limit, accountId);
   }
 
   async topUpWallet(
@@ -75,5 +76,14 @@ export class FinancialGatewayService {
     limit: number = 10
   ) {
     return this.walletService.getWalletRequests(userId, status, page, limit);
+  }
+
+  async processWalletRequest(data: {
+    requestId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    return this.walletService.processWalletRequest(data);
   }
 }

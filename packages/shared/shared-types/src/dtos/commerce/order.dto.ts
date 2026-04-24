@@ -10,6 +10,7 @@ export interface Order {
   createdAt: string;
   totalAmount?: number;
   paymentMethod?: string;
+  orderItems?: OrderItem[];
   OrderItem?: OrderItem[];
 }
 

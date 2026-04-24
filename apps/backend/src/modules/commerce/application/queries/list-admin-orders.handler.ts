@@ -22,6 +22,17 @@ export class ListAdminOrdersHandler
         include: {
           orderItems: true,
           statusHistory: true,
+          user: {
+            select: {
+              email: true,
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            }
+          },
           vendor: {
             include: { company: { select: { name: true } } }
           }

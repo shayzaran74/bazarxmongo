@@ -64,7 +64,7 @@ export class CategoryController {
   @ApiResponse({ status: 201, description: 'Kategori oluşturuldu.' })
   @ApiResponse({ status: 403, description: 'Sadece admin yetkisiyle erişilebilir.' })
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@Body() dto: CreateCategoryDto) {
     return this.commandBus.execute(new CreateCategoryCommand(dto));

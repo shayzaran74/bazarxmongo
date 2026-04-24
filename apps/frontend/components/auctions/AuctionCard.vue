@@ -1,9 +1,12 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 group">
+  <div
+    data-testid="auction-card"
+    class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 group"
+  >
     <!-- Auction Image & Status -->
     <div class="relative">
       <img
-        :src="auction.Product?.image || 'https://placehold.co/300x300?text=Ürün+Resmi'"
+        :src="auction.Product?.image || '/placeholder-product.svg'"
         :alt="auction.Product?.name"
         class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         @error="handleImageError"
@@ -16,6 +19,7 @@
       </div>
       <div class="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-mono">
         <CountdownTimer
+          data-testid="countdown"
           :end-time="auction.endTime"
           size="small"
         />
@@ -24,7 +28,10 @@
 
     <!-- Auction Info -->
     <div class="p-4">
-      <h3 class="text-sm font-bold text-gray-900 mb-2 line-clamp-2 h-10">
+      <h3
+        data-testid="auction-title"
+        class="text-sm font-bold text-gray-900 mb-2 line-clamp-2 h-10"
+      >
         {{ auction.title }}
       </h3>
       <p class="text-xs text-gray-500 mb-3 line-clamp-1 italic">
@@ -46,7 +53,10 @@
         </div>
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-400 font-medium">Güncel Teklif:</span>
-          <span class="text-base font-black text-primary-600">
+          <span
+            data-testid="current-price"
+            class="text-base font-black text-primary-600"
+          >
             {{ formatPrice(auction.currentPrice || auction.startingPrice) }}
           </span>
         </div>
@@ -63,7 +73,7 @@
         :to="`/auctions/${auction.id}`"
         class="w-full bg-slate-900 border border-slate-800 text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-600 hover:border-primary-500 transition-all text-center block"
       >
-        {{ auction.status === 'Active' ? 'CANLI TEKLİF VER' : 'DETAYLARI İNCELE' }}
+        {{ auction.status === 'ACTIVE' ? 'CANLI TEKLİF VER' : 'DETAYLARI İNCELE' }}
       </NuxtLink>
     </div>
   </div>
@@ -80,6 +90,6 @@ const props = defineProps<{
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   target.onerror = null
-  target.src = 'https://placehold.co/300x300?text=Ürün+Resmi'
+  target.src = '/placeholder-product.svg'
 }
 </script>

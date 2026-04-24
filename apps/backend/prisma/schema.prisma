@@ -2165,6 +2165,7 @@ enum PilotCity {
 
 enum ListingStatus {
   DRAFT
+  PENDING
   ACTIVE
   INACTIVE
   OUT_OF_STOCK

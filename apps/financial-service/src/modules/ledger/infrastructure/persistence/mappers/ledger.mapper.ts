@@ -23,6 +23,7 @@ export class LedgerMapper {
 
   toPersistence(entity: GeneralLedgerEntry): any {
     return {
+      id: entity.id,
       type: entity.type as LedgerType,
       debitAccountId: entity.debitAccountId,
       creditAccountId: entity.creditAccountId,

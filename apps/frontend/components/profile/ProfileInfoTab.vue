@@ -33,7 +33,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.phone') }}</label>
           <input
-            v-model="form.phone"
+            v-model="form.phoneNumber"
             type="tel"
             class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
           >

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-start my-2">
+  <div data-testid="cart-item" class="flex justify-start my-2">
     <!-- Checkbox for selection (only shown in cart) -->
     <div
       v-if="showCheckbox"
@@ -39,7 +39,7 @@
             class="sm:block hidden bg-[#FD374F] text-white text-[0.625rem] font-semibold px-1.5 rounded-sm min-w-20"
           >{{
             $t('cart.welcomeDeal') }}</span>
-          <div class="truncate sm:pl-2 font-medium text-gray-900">
+          <div data-testid="cart-product-name" class="truncate sm:pl-2 font-medium text-gray-900">
             {{ product.Product.name }}
           </div>
         </div>
@@ -55,8 +55,8 @@
       </div>
 
       <!-- Price -->
-      <div class="text-xl font-bold text-gray-900">
-        {{ formatPrice(product.Product.price * product.quantity) }}
+      <div data-testid="product-price" class="text-xl font-bold text-gray-900">
+        {{ formatPrice((product.Product?.price || product.price || 0) * product.quantity) }}
       </div>
 
       <!-- Delivery info -->

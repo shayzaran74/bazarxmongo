@@ -1,10 +1,12 @@
-import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards, Delete, Put } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   ApiTags, ApiOperation, ApiResponse,
   ApiBearerAuth, ApiParam, ApiQuery, ApiBody
 } from '@nestjs/swagger';
 import { CreateListingCommand } from '../application/commands/create-listing.command';
+import { DeleteListingCommand } from '../application/commands/delete-listing.command';
+import { UpdateListingCommand } from '../application/commands/update-listing.command';
 import { CreateListingDto } from '../application/dtos/create-listing.dto';
 import { GetCategoryTreeQuery } from '../application/queries/get-category-tree/get-category-tree.query';
 import { ListCatalogListingsQuery } from '../application/queries/list-catalog-listings/list-catalog-listings.query';
@@ -59,12 +61,39 @@ export class ListingController {
   @ApiBody({ type: CreateListingDto })
   @ApiResponse({ status: 201 })
   @Post()
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@CurrentUser() user: any, @Body() dto: CreateListingDto) {
     return this.commandBus.execute(
       new CreateListingCommand(user.vendorId || user.id, dto)
     );
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a listing' })
+  @ApiParam({ name: 'id' })
+  @Put(':id')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: any) {
+    const result = await this.commandBus.execute(
+      new UpdateListingCommand(user.id, user.role, id, dto)
+    );
+    return { success: true, data: result };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a listing' })
+  @ApiParam({ name: 'id' })
+  @Delete(':id')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async delete(@CurrentUser() user: any, @Param('id') id: string) {
+    // Burada yetki kontrolü handler içinde yapılacak
+    const result = await this.commandBus.execute(
+      new DeleteListingCommand(user.id, user.role, id)
+    );
+    return { success: true, data: result };
   }
 
   @Public()

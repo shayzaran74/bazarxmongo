@@ -94,7 +94,7 @@ export const useVendorService = () => {
         },
 
         async importExcel(formData: FormData): Promise<ApiResponse<any>> {
-            return await $api<any>('/api/vendor-inventory/import-excel', {
+            return await $api<any>('/api/vendors/inventory/import-excel', {
                 method: 'POST',
                 body: formData
             })
@@ -103,7 +103,7 @@ export const useVendorService = () => {
         async downloadTemplate(): Promise<void> {
             const authStore = useAuthStore()
             // Proxy üzerinden çekmek için mevcut origin'i kullanıyoruz
-            const url = `${window.location.origin}/api/v1/vendor-inventory/template/download?token=${authStore.token}`
+            const url = `${window.location.origin}/api/v1/vendors/inventory/template/download?token=${authStore.token}`
             window.open(url, '_blank')
         }
     }

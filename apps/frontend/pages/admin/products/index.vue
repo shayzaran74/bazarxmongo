@@ -5,20 +5,29 @@
       title="Ürün Yönetimi" 
       subtitle="Katalog, stok ve fiyat yönetimi merkezi"
       :stats="[
-        { label: 'Toplam Ürün', value: pagination.total, icon: 'CubeIcon', color: 'blue' },
-        { label: 'Düşük Stok', value: products.filter(p => p.stock > 0 && p.stock < 10).length, icon: 'ExclamationTriangleIcon', color: 'yellow' },
-        { label: 'Onay Bekleyen', value: 0, icon: 'ClockIcon', color: 'orange' }
+        { label: 'Toplam Ürün', value: productStats.total, icon: 'CubeIcon', color: 'blue' },
+        { label: 'Onaylı Ürün', value: productStats.active, icon: 'CheckBadgeIcon', color: 'green' },
+        { label: 'Onay Bekleyen', value: productStats.pending, icon: 'ClockIcon', color: 'orange' }
       ]"
     >
       <template #actions>
-        <button 
-          v-if="!showForm"
-          class="bg-primary-600 text-white px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary-500/30 flex items-center group" 
-          @click="showForm = true; resetForm()"
-        >
-          <PlusIcon class="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-          YENİ ÜRÜN EKLE
-        </button>
+        <div class="flex items-center space-x-3">
+          <NuxtLink
+            to="/admin/products/pending"
+            class="bg-amber-100 text-amber-700 px-6 py-2.5 rounded-xl hover:bg-amber-200 transition-all font-black uppercase tracking-widest text-[10px] flex items-center group shadow-lg shadow-amber-500/10"
+          >
+            <ClockIcon class="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
+            ONAY BEKLEYENLER
+          </NuxtLink>
+          <button 
+            v-if="!showForm"
+            class="bg-primary-600 text-white px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary-500/30 flex items-center group" 
+            @click="showForm = true; resetForm()"
+          >
+            <PlusIcon class="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            YENİ ÜRÜN EKLE
+          </button>
+        </div>
       </template>
     </AdminHeader>
 
@@ -328,7 +337,9 @@
 import { 
   PlusIcon, 
   CloudArrowUpIcon, 
-  XMarkIcon 
+  XMarkIcon,
+  ClockIcon,
+  CheckBadgeIcon
 } from '@heroicons/vue/24/outline'
 
 import { useAdminProducts } from '~/composables/useAdminProducts'
@@ -349,34 +360,19 @@ const toast = useNuxtApp().$toast
 const {
   products, vendors, categories, brands, formData,
   loading, loadingProducts, editingId, showForm, showVendorProducts, showPendingProducts,
-  searchQuery, selectedFilterCategoryId, selectedFilterVendorId, pagination,
+  searchQuery, selectedFilterCategoryId, selectedFilterVendorId, pagination, productStats,
   selectedProductIds, bulkProcessing, showBulkEditModal,
   selectedMainCategory, selectedSubCategory1, selectedSubCategory2,
   variationOptions,
   mainCategories, subCategories1, subCategories2, isAllSelected,
-  fetchInitialData, fetchProducts, fetchCategoryAttributes, resetForm, submitForm,
+  fetchInitialData, fetchProducts, fetchProductStats, fetchCategoryAttributes, resetForm, submitForm,
   deleteProduct, approveProduct, bulkApprove, bulkDelete, executeBulkUpdate,
   editProduct, toggleSelectAll
 } = useAdminProducts()
 
 const newImageUrl = ref('')
 
-const handleMainCategoryChange = () => {
-  selectedSubCategory1.value = ''; selectedSubCategory2.value = '';
-  formData.value.categoryId = selectedMainCategory.value
-  fetchCategoryAttributes(formData.value.categoryId)
-}
 
-const handleSubCategory1Change = () => {
-  selectedSubCategory2.value = '';
-  formData.value.categoryId = selectedSubCategory1.value || selectedMainCategory.value
-  fetchCategoryAttributes(formData.value.categoryId)
-}
-
-const handleSubCategory2Change = () => {
-  formData.value.categoryId = selectedSubCategory2.value || selectedSubCategory1.value || selectedMainCategory.value
-  fetchCategoryAttributes(formData.value.categoryId)
-}
 
 const handleFileUpload = async (event) => {
   const files = Array.from(event.target.files)
@@ -442,5 +438,7 @@ const addImageUrl = () => {
 onMounted(() => {
   fetchInitialData()
   fetchProducts()
+  fetchProductStats()
 })
+
 </script>

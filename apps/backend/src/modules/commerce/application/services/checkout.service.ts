@@ -14,6 +14,7 @@ import { ShippingAddress } from '../../domain/value-objects/shipping-address.vo'
 import { Order } from '../../domain/entities/order.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { Decimal } from 'decimal.js';
 import { Prisma } from '@prisma/client';
 import { GenerateInvoiceCommand } from '../commands/generate-invoice.command';
 
@@ -32,7 +33,7 @@ export class CheckoutService {
 
   private readonly logger = new Logger(CheckoutService.name);
 
-  async checkout(userId: string, shippingAddress: ShippingAddress, billingAddress: ShippingAddress, paymentMethod: string) {
+  async checkout(userId: string, shippingAddress: ShippingAddress, billingAddress: ShippingAddress, paymentMethod: string, couponCode?: string, useWallet: boolean = false) {
     const cart = await this.cartRepository.findByUserId(userId);
     if (!cart || cart.items.length === 0) {
       throw new DomainException('Cart is empty');
@@ -55,87 +56,122 @@ export class CheckoutService {
 
     const createdOrders: Order[] = [];
 
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      for (const [vendorId, group] of vendorGroups) {
-        const pricingItems = group.map((g) => ({
-          price: g.listing.getProps().price.amount,
-          quantity: g.item.getProps().quantity,
-        }));
-        const totals = this.pricingService.calculateOrderTotal(pricingItems);
+    const heldFunds: string[] = [];
+    try {
+      await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        for (const [vendorId, group] of vendorGroups) {
+          const pricingItems = group.map((g) => ({
+            price: g.listing.getProps().price.amount,
+            quantity: g.item.getProps().quantity,
+          }));
+          const totals = this.pricingService.calculateOrderTotal(pricingItems);
 
-        const orderItems = group.map((g) => {
-          const lProps = g.listing.getProps();
-          return OrderItem.create(
-            g.item.getProps().listingId,
-            g.item.getProps().quantity,
-            lProps.price.amount,
-            lProps.title,
-            [],
-            g.item.getProps().variantId
+          const orderItems = group.map((g) => {
+            const lProps = g.listing.getProps();
+            return OrderItem.create(
+              g.item.getProps().listingId,
+              g.item.getProps().quantity,
+              lProps.price.amount,
+              lProps.title,
+              [],
+              g.item.getProps().variantId
+            );
+          });
+
+          const order = Order.create(
+            userId,
+            vendorId,
+            OrderNumber.generate(),
+            orderItems,
+            shippingAddress,
+            billingAddress,
+            paymentMethod,
+            totals
           );
-        });
 
-        const order = Order.create(
-          userId,
-          vendorId,
-          OrderNumber.generate(),
-          orderItems,
-          shippingAddress,
-          billingAddress,
-          paymentMethod,
-          totals
-        );
+          for (const g of group) {
+             const success = g.listing.reserveStock(g.item.getProps().quantity);
+             if (!success) throw new DomainException(`Insufficient stock for ${g.listing.getProps().title}`);
+             // Persist stock change within transaction
+             await tx.listing.update({
+               where: { id: g.item.getProps().listingId },
+               data: {
+                 stock: g.listing.getProps().stock,
+                 availableQuantity: g.listing.getProps().availableQuantity,
+               },
+             });
+          }
 
-        for (const g of group) {
-           const success = g.listing.reserveStock(g.item.getProps().quantity);
-           if (!success) throw new DomainException(`Insufficient stock for ${g.listing.getProps().title}`);
-        }
+          const idempotencyKey = `checkout-${userId}-${order.orderNumber}`;
+          
+          const isWalletPayment = paymentMethod.toLowerCase() === 'wallet' || useWallet;
+          
+          // ONLY hold funds if paymentMethod is wallet OR useWallet is true
+          if (isWalletPayment) {
+            const holdResult = await this.financialGateway.holdFunds(
+              userId,
+              totals.total.toString(),
+              'ORDER_CHECKOUT',
+              order.id,
+              'ORDER',
+              idempotencyKey,
+              vendorId
+            );
+            if (holdResult?.holdId) {
+              heldFunds.push(holdResult.holdId);
+              order.pay(); // Update internal state to PAID and COMPLETED
+            } else {
+              throw new DomainException(holdResult?.error || 'Cüzdan ile ödeme başarısız.');
+            }
+          }
 
-        const idempotencyKey = `checkout-${userId}-${order.orderNumber}`;
-        await this.financialGateway.holdFunds(
-          userId,
-          totals.total.toString(),
-          'ORDER_CHECKOUT',
-          order.id,
-          'ORDER',
-          idempotencyKey
-        );
-
-        await tx.order.create({
-          data: {
-            id: order.id,
-            userId: order.getProps().userId,
-            vendorId: order.getProps().vendorId,
-            status: order.getProps().status,
-            orderNumber: order.getProps().orderNumber.value,
-            totalAmount: order.getProps().totalAmount,
-            shippingAddress: order.getProps().shippingAddress.toJson(),
-            billingAddress: order.getProps().billingAddress.toJson(),
-            paymentMethod: order.getProps().paymentMethod as any,
-            paymentStatus: order.getProps().paymentStatus as any,
-            currency: order.getProps().currency,
-            discountAmount: order.getProps().discountAmount,
-            shippingCost: order.getProps().shippingCost,
-            paidWithXP: order.getProps().paidWithXP,
-            paidWithCash: order.getProps().paidWithCash,
-            orderItems: {
-              create: orderItems.map((oi) => ({
-                id: oi.id,
-                listingId: oi.getProps().listingId,
-                quantity: oi.getProps().quantity,
-                price: oi.getProps().price,
-                totalAmount: oi.getProps().totalAmount,
-                productName: oi.getProps().productName,
-                productImages: oi.getProps().productImages,
-              })),
+          await tx.order.create({
+            data: {
+              id: order.id,
+              userId: order.getProps().userId,
+              vendorId: order.getProps().vendorId,
+              status: order.getProps().status as any,
+              orderNumber: order.getProps().orderNumber.value,
+              totalAmount: new Decimal(order.getProps().totalAmount),
+              shippingAddress: order.getProps().shippingAddress.toJson(),
+              billingAddress: order.getProps().billingAddress.toJson(),
+              paymentMethod: (isWalletPayment ? 'WALLET' : order.getProps().paymentMethod) as any,
+              paymentStatus: order.getProps().paymentStatus as any,
+              currency: order.getProps().currency,
+              discountAmount: new Decimal(order.getProps().discountAmount),
+              shippingFee: new Decimal(order.getProps().shippingCost),
+              paidWithXP: new Decimal(order.getProps().paidWithXP),
+              paidWithCash: new Decimal(order.getProps().paidWithCash),
+              orderItems: {
+                create: orderItems.map((oi) => ({
+                  id: oi.id,
+                  listingId: oi.getProps().listingId,
+                  quantity: oi.getProps().quantity,
+                  price: new Decimal(oi.getProps().price),
+                  totalAmount: new Decimal(oi.getProps().totalAmount),
+                  productName: oi.getProps().productName,
+                  productImages: oi.getProps().productImages,
+                })),
+              },
             },
-          },
-        });
+          });
 
-        createdOrders.push(order);
+          createdOrders.push(order);
+        }
+        await tx.cartItem.deleteMany({ where: { cart: { userId } } });
+      });
+    } catch (error: any) {
+      this.logger.error(`Checkout failed, attempting to refund ${heldFunds.length} holds. Error: ${error.message}`);
+      // Refund already held funds
+      for (const holdId of heldFunds) {
+        try {
+          await this.financialGateway.refundFunds(holdId, `refund-${holdId}-${Date.now()}`);
+        } catch (refundError: any) {
+          this.logger.error(`Failed to refund hold ${holdId}: ${refundError.message}`);
+        }
       }
-      await tx.cartItem.deleteMany({ where: { cart: { userId } } });
-    });
+      throw error;
+    }
     
     // Publish Events
     for (const order of createdOrders) {

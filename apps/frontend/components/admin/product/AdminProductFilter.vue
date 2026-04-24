@@ -45,7 +45,7 @@
             :key="vendor.id"
             :value="vendor.id"
           >
-            {{ vendor.businessName }}
+            {{ vendor.name }}
           </option>
         </select>
       </div>

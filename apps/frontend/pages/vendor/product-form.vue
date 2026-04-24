@@ -52,6 +52,7 @@
         ref="productFormRef"
         user-role="vendor"
         :product-id="productId"
+        :initial-data="initialProductData || {}"
         @save="handleSave"
       />
     </div>
@@ -61,7 +62,7 @@
 <script setup lang="ts">
 import { ChevronLeftIcon } from '@heroicons/vue/24/outline'
 import ProductForm from '~/components/forms/ProductForm.vue'
-import type { Product, ApiResponse } from '@barterborsa/shared-types'
+import type { ApiResponse } from '@barterborsa/shared-types'
 
 definePageMeta({
   layout: 'vendor',
@@ -75,13 +76,28 @@ const productFormRef = ref<InstanceType<typeof ProductForm> | null>(null)
 
 const productId = computed(() => route.query.id as string | undefined)
 
+const { $api } = useApi()
+const { data: initialProductData } = await useAsyncData(`product-${productId.value}`, async () => {
+  if (!productId.value) return {}
+  try {
+    const res = await $api(`/api/listings/${productId.value}`)
+    return res.data || {}
+  } catch (err) {
+    console.error('Error fetching product:', err)
+    return {}
+  }
+}, { watch: [productId] })
+
 const handleSave = async () => {
   if (!productFormRef.value) return
   
   saving.value = true
   try {
     const isValid = await productFormRef.value.saveProduct()
-    if (!isValid) return
+    if (!isValid) {
+      saving.value = false
+      return
+    }
     
     const formData = productFormRef.value.form
     const toast = useNuxtApp().$toast
@@ -89,24 +105,24 @@ const handleSave = async () => {
     // Client-side validation for Price Floor
     if (formData.minMarketPrice && formData.price < formData.minMarketPrice) {
       toast.error(`Ürün fiyatı (${formData.price} TL), belirlenen taban fiyattan (${formData.minMarketPrice} TL) düşük olamaz.`)
+      saving.value = false
       return
     }
 
-    const { $api } = useApi()
     const url = isEditing.value 
-      ? `/api/vendors/products/${route.query.id}`
-      : '/api/vendors/products'
+      ? `/api/listings/${route.query.id}`
+      : '/api/listings'
     
     const method = isEditing.value ? 'PUT' : 'POST'
     
     const payload = {
       ...formData,
-      image: formData.image || (formData.productImages?.[0]) || 'https://placehold.co/300x300?text=Ürün+Resmi',
+      image: formData.image || (formData.productImages?.[0]?.url) || 'https://placehold.co/300x300?text=Ürün+Resmi',
       description: formData.description || '',
       maxPurchasePerMember: formData.maxPurchasePerMember || 0
     }
 
-    const response = await $api<ApiResponse<Product>>(url, {
+    const response = await $api<ApiResponse<any>>(url, {
       method,
       body: payload
     })
@@ -115,10 +131,10 @@ const handleSave = async () => {
       toast.success(isEditing.value ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!')
       await navigateTo('/vendor/products')
     }
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error('Error saving product:', err)
     const toast = useNuxtApp().$toast
-    const errorMessage = (err as { data?: { error?: string } })?.data?.error || 'Ürün kaydedilirken bir hata oluştu'
+    const errorMessage = err.data?.message || err.data?.error || 'Ürün kaydedilirken bir hata oluştu'
     toast.error(errorMessage)
   } finally {
     saving.value = false

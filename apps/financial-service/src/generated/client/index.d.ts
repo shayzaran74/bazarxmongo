@@ -246,6 +246,7 @@ export type HoldStatus = (typeof HoldStatus)[keyof typeof HoldStatus]
 export const PaymentMethod: {
   IYZICO: 'IYZICO',
   BANK_TRANSFER: 'BANK_TRANSFER',
+  EFT: 'EFT',
   WALLET: 'WALLET',
   BARTER: 'BARTER',
   GIFT_CARD: 'GIFT_CARD',

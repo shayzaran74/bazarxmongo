@@ -18,7 +18,7 @@ import { RemoveVendorCategoryCommand }
 
 @ApiTags('Vendor Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/vendors')
 export class VendorAdminController {

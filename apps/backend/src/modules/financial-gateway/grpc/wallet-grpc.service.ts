@@ -10,6 +10,7 @@ interface FinancialService {
     accountType?: string;
     page?: number;
     limit?: number;
+    accountId?: string;
   }): any;
   topUpWallet(data: {
     userId: string;
@@ -36,6 +37,12 @@ interface FinancialService {
     status?: string;
     page?: number;
     limit?: number;
+  }): any;
+  processWalletRequest(data: {
+    requestId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
   }): any;
 }
 
@@ -66,7 +73,8 @@ export class WalletGrpcService implements OnModuleInit {
     userId: string,
     accountType?: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    accountId?: string
   ) {
     try {
       return await firstValueFrom(
@@ -74,7 +82,8 @@ export class WalletGrpcService implements OnModuleInit {
           userId,
           accountType: accountType || '',
           page,
-          limit
+          limit,
+          accountId: accountId || ''
         })
       );
     } catch (error: any) {
@@ -160,6 +169,25 @@ export class WalletGrpcService implements OnModuleInit {
           limit
         })
       );
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+
+  async processWalletRequest(data: {
+    requestId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    try {
+      const response: any = await firstValueFrom(
+        this.financialService.processWalletRequest(data)
+      );
+      if (!response.success) {
+        throw new DomainException(response.error || 'Request processing failed');
+      }
+      return response;
     } catch (error: any) {
       throw new DomainException(`Financial Service Error: ${error.message}`);
     }

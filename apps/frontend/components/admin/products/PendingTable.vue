@@ -27,7 +27,7 @@
               </div>
             </td>
             <td class="px-10 py-8">
-              <div class="text-sm text-gray-900 uppercase tracking-tight">{{ product.Vendor?.businessName || 'BİLİNMİYOR' }}</div>
+              <div class="text-sm text-gray-900 uppercase tracking-tight">{{ product.Vendor?.company?.name || product.Vendor?.profile?.storeName || 'BİLİNMİYOR' }}</div>
               <div class="text-[10px] text-gray-400 uppercase italic opacity-60">{{ product.Vendor?.user?.email }}</div>
             </td>
             <td class="px-10 py-8">

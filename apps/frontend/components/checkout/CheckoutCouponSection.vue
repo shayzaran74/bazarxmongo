@@ -37,6 +37,7 @@
     <p
       v-if="error"
       class="text-[10px] text-red-500 font-bold mt-1 ml-1 uppercase"
+      data-testid="form-error"
     >
       {{ error }}
     </p>

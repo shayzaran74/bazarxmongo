@@ -7,16 +7,16 @@
         </h2>
         <div class="space-y-4">
           <div class="space-y-2">
-            <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Hesap Sahibi Adı *</label>
-            <input v-model="form.bankAccountName" type="text" class="input-premium" placeholder="AD SOYAD">
+            <label for="bank-account-name" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Hesap Sahibi Adı *</label>
+            <input id="bank-account-name" v-model="form.bankAccountName" type="text" class="input-premium" placeholder="AD SOYAD">
           </div>
           <div class="space-y-2">
-            <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Banka Adı *</label>
-            <input v-model="form.bankName" type="text" class="input-premium" placeholder="ZİRAAT, GARANTİ...">
+            <label for="bank-name" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Banka Adı *</label>
+            <input id="bank-name" v-model="form.bankName" type="text" class="input-premium" placeholder="ZİRAAT, GARANTİ...">
           </div>
           <div class="space-y-2">
-            <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">IBAN *</label>
-            <input v-model="form.bankIban" type="text" class="input-premium font-mono" placeholder="TRXX XXXX...">
+            <label for="bank-iban" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">IBAN *</label>
+            <input id="bank-iban" v-model="form.bankIban" type="text" class="input-premium font-mono" placeholder="TRXX XXXX...">
           </div>
         </div>
       </div>
@@ -34,7 +34,7 @@
             class="flex items-center gap-3 p-4 rounded-2xl border-2 border-transparent bg-neutral-50 hover:bg-neutral-100 cursor-pointer transition-all group"
             :class="form.categories.includes(cat.id) ? 'border-indigo-500 bg-white shadow-lg' : ''"
           >
-            <input v-model="form.categories" type="checkbox" :value="cat.id" class="w-5 h-5 rounded border-2 border-neutral-300 text-indigo-600 focus:ring-indigo-500">
+            <input v-model="form.categories" data-testid="category-checkbox" type="checkbox" :value="cat.id" class="w-5 h-5 rounded border-2 border-neutral-300 text-indigo-600 focus:ring-indigo-500">
             <span class="text-[10px] font-black text-neutral-700 uppercase italic">{{ cat.name }}</span>
           </label>
         </div>

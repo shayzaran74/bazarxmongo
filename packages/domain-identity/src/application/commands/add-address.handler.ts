@@ -20,11 +20,11 @@ export class AddAddressHandler implements ICommandHandler<AddAddressCommand, Res
       ...dto
     });
 
+    await this.addressRepository.save(address);
+
     if (address.isDefault) {
       await this.addressRepository.setDefault(address.id, userId);
     }
-
-    await this.addressRepository.save(address);
 
     return Ok(AddressResponseDto.fromEntity(address));
   }

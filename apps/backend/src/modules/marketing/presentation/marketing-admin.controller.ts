@@ -5,7 +5,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Gift Card Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/gift-cards')
 export class GiftCardAdminController {
@@ -20,7 +20,7 @@ export class GiftCardAdminController {
 
 @ApiTags('Marketing Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/coupons')
 export class CouponAdminController {

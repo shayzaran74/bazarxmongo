@@ -7,7 +7,7 @@ import { ListAdminBrandsQuery }
 
 @ApiTags('Brand Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/brands')
 export class BrandAdminController {

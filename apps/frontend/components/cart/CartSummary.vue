@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" data-testid="cart-summary">
     <h2 class="text-lg font-medium text-gray-900 mb-4">
       {{ $t('cart.summary') }}
     </h2>

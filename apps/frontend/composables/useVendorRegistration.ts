@@ -54,8 +54,8 @@ export const useVendorRegistration = () => {
 
     const fetchLegalDocs = async () => {
         try {
-            const response: any = await $api('/api/v1/legal/docs')
-            if (response.success) legalDocs.value = response.data
+            const response: any = await $api('/api/v1/legal')
+            if (response.success) legalDocs.value = response.data || []
         } catch (error) {
             console.error('Legal docs error:', error)
         }

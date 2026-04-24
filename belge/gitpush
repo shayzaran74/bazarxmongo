@@ -1,7 +1,0 @@
-github push main yerine git push origin main komutunu denemek isteyebilirsiniz.
-
-Ancak değişikliklerinizi henüz commit etmediyseniz, önce şunları yapmanız gerekebilir:
-
-Değişiklikleri ekleyin: git add .
-Mesajla kaydedin: git commit -m "fix: resolve identity prisma mapping and clean up node_modules"
-Push yapın: git push origin main

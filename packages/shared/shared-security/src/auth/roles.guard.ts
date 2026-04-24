@@ -22,7 +22,12 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest<{ user: { role: string } }>();
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest<{ user?: { role: string } }>();
+    const user = request?.user;
     
     // Eğer kullanıcı yoksa veya rolü uymuyorsa erişimi engelle
     if (!user || !user.role) {

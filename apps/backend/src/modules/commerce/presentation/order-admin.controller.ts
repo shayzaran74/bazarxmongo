@@ -1,13 +1,15 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Param } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { ListAdminOrdersQuery }
   from '../application/queries/list-admin-orders.query';
+import { GetAdminOrderQuery }
+  from '../application/queries/get-admin-order.query';
 
 @ApiTags('Order Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/orders')
 export class OrderAdminController {
@@ -37,6 +39,26 @@ export class OrderAdminController {
         page: result.page,
         limit: result.limit
       }
+    };
+  }
+
+  @ApiOperation({ summary: 'Get order details for admin' })
+  @Get(':id')
+  async getOrder(@Param('id') id: string) {
+    const order = await this.queryBus.execute(
+      new GetAdminOrderQuery(id)
+    );
+    
+    if (!order) {
+      return {
+        success: false,
+        message: 'Order not found'
+      };
+    }
+
+    return {
+      success: true,
+      data: order
     };
   }
 }

@@ -30,7 +30,7 @@ export class EcosystemController {
 
   @ApiOperation({ summary: 'Create new ecosystem' })
   @Post('create')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   async createEcosystem(@Body() body: any, @CurrentUser() user: any) {
     const data = await this.commandBus.execute(
       new CreateEcosystemCommand(user.id, body)

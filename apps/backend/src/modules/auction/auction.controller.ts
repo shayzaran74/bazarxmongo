@@ -42,7 +42,7 @@ export class AuctionController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @Post('draw')
   @ApiOperation({ summary: 'Draw a lottery' })
   async drawLottery(@Body() dto: DrawLotteryDto) {

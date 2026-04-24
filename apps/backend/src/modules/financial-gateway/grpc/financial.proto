@@ -15,6 +15,8 @@ service FinancialService {
   rpc RequestWithdrawal (WithdrawalRequest) returns (WithdrawalResponse) {}
   rpc GetWithdrawals (GetWithdrawalsRequest) returns (GetWithdrawalsResponse) {}
   rpc GetWalletRequests (GetWalletRequestsRequest) returns (GetWalletRequestsResponse) {}
+  rpc ProcessWalletRequest (ProcessWalletRequestRequest) returns (ProcessWalletRequestResponse) {}
+  rpc ProcessWithdrawal (ProcessWithdrawalRequest) returns (ProcessWithdrawalResponse) {}
 }
 
 // ---- Mevcut Messages (değişmedi) ----
@@ -169,4 +171,28 @@ message GetWalletRequestsRequest {
 message GetWalletRequestsResponse {
   repeated WalletRequest items = 1;
   int32 total = 2;
+}
+
+message ProcessWalletRequestRequest {
+  string requestId = 1;
+  string action = 2;         // approve, reject
+  string adminId = 3;
+  string reason = 4;
+}
+
+message ProcessWalletRequestResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message ProcessWithdrawalRequest {
+  string withdrawalId = 1;
+  string action = 2;         // approve, reject
+  string adminId = 3;
+  string reason = 4;
+}
+
+message ProcessWithdrawalResponse {
+  bool success = 1;
+  string error = 2;
 }

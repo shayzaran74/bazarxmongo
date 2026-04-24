@@ -26,12 +26,24 @@ export class CatalogProductController {
       new GetListingsQuery({ page: 1, limit: 8 })
     );
     // Homepage behaves similarly to previous implementation, assigning same list to three slots
+    // Categorize best sellers by category for HomeCategoryHighlights
+    const bestSellersByCategory: Record<string, any[]> = {};
+    result.items.forEach((item: any) => {
+      if (item.categoryId) {
+        if (!bestSellersByCategory[item.categoryId]) {
+          bestSellersByCategory[item.categoryId] = [];
+        }
+        bestSellersByCategory[item.categoryId].push(item);
+      }
+    });
+
     return {
       success: true,
       data: {
         featured: result.items,
         newArrivals: result.items,
-        bestSellers: result.items
+        bestSellers: result.items,
+        bestSellersByCategory
       }
     };
   }
@@ -58,7 +70,11 @@ export class CatalogProductController {
         limit: Number(query.limit) || 20
       })
     );
-    return { success: true, ...result };
+    return { 
+      success: true, 
+      data: result.items,
+      meta: result.meta 
+    };
   }
 
   @Public()
@@ -77,7 +93,7 @@ export class CatalogProductController {
   @ApiBody({ type: CreateCatalogProductDto })
   @ApiResponse({ status: 201 })
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@Body() dto: CreateCatalogProductDto) {
     return this.commandBus.execute(new CreateCatalogProductCommand(dto));

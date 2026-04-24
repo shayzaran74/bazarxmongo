@@ -9,11 +9,19 @@ export class ListAdminProductsHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: ListAdminProductsQuery) {
-    const { search, page = 1, limit = 50 } = query.filters;
+    const { search, status, page = 1, limit = 50 } = query.filters;
+    console.log('[AdminProducts] Filters:', { search, status, page, limit });
     const skip = Math.max(0, (page - 1) * limit);
-    const where = search
-      ? { name: { contains: search, mode: 'insensitive' as const } }
-      : {};
+    
+    const where: any = {};
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' as const };
+    }
+    if (status) {
+      where.listings = {
+        some: { status: status }
+      };
+    }
 
     const [rawItems, total] = await Promise.all([
       this.prisma.catalogProduct.findMany({
@@ -21,7 +29,18 @@ export class ListAdminProductsHandler
         include: {
           category: true,
           media: { orderBy: { sortOrder: 'asc' } },
-          listings: { take: 1, orderBy: { price: 'asc' } },
+          listings: { 
+            take: 1, 
+            orderBy: { price: 'asc' },
+            include: { 
+              vendor: { 
+                include: { 
+                  company: true, 
+                  profile: true 
+                } 
+              } 
+            } 
+          },
           brands: true
         },
         skip,
@@ -36,6 +55,8 @@ export class ListAdminProductsHandler
       return {
         ...item,
         Brand: item.brands?.[0] ?? null,
+        Category: item.category ?? null,
+        Vendor: listing?.vendor ?? null,
         image: item.media?.[0]?.url ?? null,
         images: item.media?.map(m => m.url) ?? [],
         price: listing ? listing.price : 0,

@@ -2,6 +2,7 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { PrismaModule } from '@barterborsa/shared-persistence';
 import { CommerceModule } from '../commerce/commerce.module';
 import { CompanyController } from './presentation/company.controller';
 import { VendorController } from './presentation/vendor.controller';
@@ -93,6 +94,7 @@ const Repositories = [
   imports: [
     CqrsModule,
     CommerceModule,
+    PrismaModule,
   ],
   controllers: [
     CompanyController, 

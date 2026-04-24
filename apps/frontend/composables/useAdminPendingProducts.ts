@@ -1,30 +1,48 @@
+import { ref, reactive, onMounted } from 'vue'
+import { useApi } from './useApi'
+import { useNuxtApp } from '#app'
+
 export const useAdminPendingProducts = () => {
   const { $api } = useApi()
   const { $toast } = useNuxtApp() as any
 
   const products = ref<any[]>([])
   const loading = ref(false)
+  const error = ref<string | null>(null)
   const selectedProduct = ref<any>(null)
-  const showDetailModal = ref(false)
+  const showModal = ref(false)
+  const approvedToday = ref(0)
+  const rejectedToday = ref(0)
 
-  const stats = reactive({
+  const pagination = reactive({
     total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0,
+    page: 1,
+    limit: 50,
+    pages: 1
   })
 
   const fetchPendingProducts = async () => {
     loading.value = true
+    error.value = null
     try {
       const res = await $api<any>('/api/admin/products', {
         query: { status: 'PENDING', limit: 100 }
       })
-      products.value = res.data?.items || []
-      stats.pending = products.value.length
-      stats.total = res.pagination?.total || products.value.length
-    } catch {
-      $toast.error('Ürünler yüklenemedi')
+      
+      const data = res.data || []
+      products.value = data
+      
+      if (res.pagination) {
+        pagination.total = res.pagination.total
+        pagination.page = res.pagination.page
+        pagination.limit = res.pagination.limit
+        pagination.pages = Math.ceil(res.pagination.total / res.pagination.limit)
+      } else {
+        pagination.total = data.length
+      }
+    } catch (err: any) {
+      error.value = 'Ürünler yüklenemedi'
+      $toast.error(error.value)
     } finally {
       loading.value = false
     }
@@ -34,9 +52,14 @@ export const useAdminPendingProducts = () => {
     try {
       await $api(`/api/admin/products/${id}`, {
         method: 'PUT',
-        body: { status: 'ACTIVE' }
+        body: { 
+          status: 'ACTIVE',
+          isFeatured: true,
+          isSpecialOffer: true
+        }
       })
       $toast.success('Ürün onaylandı')
+      approvedToday.value++
       fetchPendingProducts()
     } catch {
       $toast.error('Onaylanamadı')
@@ -50,14 +73,20 @@ export const useAdminPendingProducts = () => {
         body: { status: 'REJECTED', rejectionReason: reason }
       })
       $toast.success('Ürün reddedildi')
+      rejectedToday.value++
       fetchPendingProducts()
     } catch {
       $toast.error('Reddedilemedi')
     }
   }
 
+  onMounted(() => {
+    fetchPendingProducts()
+  })
+
   return {
-    products, loading, selectedProduct, showDetailModal, stats,
+    products, loading, error, pagination, approvedToday, rejectedToday,
+    showModal, selectedProduct,
     fetchPendingProducts, approveProduct, rejectProduct,
   }
 }

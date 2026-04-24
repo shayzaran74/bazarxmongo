@@ -7,12 +7,15 @@ import { Money } from '../../domain/value-objects/money.vo';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { NotFoundException } from '@barterborsa/shared-core';
 import { Inject } from '@nestjs/common';
+import { IGeneralLedgerRepository } from '../../../ledger/domain/repositories/general-ledger.repository.interface';
 
 @CommandHandler(TopUpWalletCommand)
 export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
   constructor(
     @Inject('IWalletRepository')
-    private readonly walletRepository: IWalletRepository
+    private readonly walletRepository: IWalletRepository,
+    @Inject('IGeneralLedgerRepository')
+    private readonly ledgerRepository: IGeneralLedgerRepository,
   ) {}
 
   async execute(command: TopUpWalletCommand): Promise<void> {
@@ -21,7 +24,6 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
     let wallet = await this.walletRepository.findByUserId(userId);
 
     if (!wallet) {
-      // Cüzdan yoksa oluştur (Auto-provisioning)
       wallet = Wallet.create(userId);
     }
 
@@ -30,11 +32,23 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
     if (currency === 'TRY') {
       wallet.topUpTL(moneyToAdd);
     } else {
-      // Diğer para birimleri için mantık eklenebilir
       throw new Error(`${currency} için bakiye yükleme henüz desteklenmiyor.`);
     }
 
+    // Record in General Ledger
+    const { GeneralLedgerEntry } = await import('../../../ledger/domain/entities/general-ledger-entry.entity');
+    const ledgerEntry = GeneralLedgerEntry.create({
+      type: 'DEPOSIT',
+      debitAccountId: 'SYSTEM_BANK_ACCOUNT',
+      creditAccountId: userId,
+      amount: amount,
+      referenceId: command.idempotencyKey || `topup-${Date.now()}`,
+      refType: 'TOPUP',
+      note: `Cüzdan bakiye yükleme (${currency})`,
+    });
+
     await this.walletRepository.save(wallet);
+    await this.ledgerRepository.save(ledgerEntry);
   }
 }
 // Note: Wallet model was imported implicitly, need to add it or fix.

@@ -5,20 +5,20 @@
     </h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="space-y-2">
-        <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Telefon *</label>
-        <input v-model="form.phone" type="tel" class="input-premium" placeholder="+90 5XX XXX XX XX" required>
+        <label for="contact-phone" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Telefon *</label>
+        <input id="contact-phone" v-model="form.phone" type="tel" class="input-premium" placeholder="+90 5XX XXX XX XX" required>
       </div>
       <div class="space-y-2">
-        <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">E-posta Adresi *</label>
-        <input v-model="form.email" type="email" class="input-premium" placeholder="INFO@MAGAZANIZ.COM" required>
+        <label for="contact-email" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">E-posta Adresi *</label>
+        <input id="contact-email" v-model="form.email" type="email" class="input-premium" placeholder="INFO@MAGAZANIZ.COM" required>
       </div>
       <div class="md:col-span-2 space-y-2">
-        <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Açık Adres *</label>
-        <textarea v-model="form.address" rows="3" class="input-premium resize-none" placeholder="MAHALLE, SOKAK, NO..." />
+        <label for="contact-address" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Açık Adres *</label>
+        <textarea id="contact-address" v-model="form.address" rows="3" class="input-premium resize-none" placeholder="MAHALLE, SOKAK, NO..." />
       </div>
       <div class="space-y-2">
-        <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Şehir *</label>
-        <select v-model="form.city" class="input-premium appearance-none" required @change="form.district = ''">
+        <label for="contact-city" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Şehir *</label>
+        <select id="contact-city" v-model="form.city" class="input-premium appearance-none" required @change="form.district = ''">
           <option value="">SEÇİN</option>
           <option v-for="(districts, city) in iller" :key="city" :value="city">{{ city }}</option>
         </select>

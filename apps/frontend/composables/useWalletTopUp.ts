@@ -84,31 +84,26 @@ export const useWalletTopUp = (props: any, emit: any) => {
     success.value = false
 
     try {
-      const userId = props.userId || authStore.user?.id
-      if (!userId) throw new Error('Kullanıcı oturumu bulunamadı')
+      const reference = `WLTRX-${Date.now()}`
 
       if (selectedPaymentMethod.value === 'CREDIT_CARD') {
-        const reference = `WLTRX-${Date.now()}`
-        const redirectUrl = `/payment/credit-card?amount=${amount.value}&reference=${reference}`
-        await navigateTo(redirectUrl)
+        await navigateTo(`/payment/credit-card?amount=${amount.value}&reference=${reference}`)
         loading.value = false
         return
       }
 
-      const response: any = await $api('/api/wallet/topup', {
-        method: 'POST',
-        body: {
-          amount: amount.value,
-          paymentMethod: selectedPaymentMethod.value === 'EFT' ? 'BANK_TRANSFER' : selectedPaymentMethod.value
-        }
-      })
-
-      if (response.success) {
-        success.value = true
-        toast.success('Talebiniz alınmıştır.')
-        emit('success')
-        clearMessages()
+      if (selectedPaymentMethod.value === 'BANK_TRANSFER') {
+        await navigateTo(`/payment/bank-transfer?amount=${amount.value}&reference=${reference}`)
+        loading.value = false
+        return
       }
+
+      if (selectedPaymentMethod.value === 'EFT') {
+        await navigateTo(`/payment/eft?amount=${amount.value}&reference=${reference}`)
+        loading.value = false
+        return
+      }
+
     } catch (err: any) {
       error.value = err.message || 'Sistem hatası.'
       toast.error(error.value || 'Hata')

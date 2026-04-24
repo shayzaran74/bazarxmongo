@@ -65,7 +65,14 @@ export class GetCartHandler implements IQueryHandler<GetCartQuery> {
 
     return {
       items,
-      summary: { total, subtotal: total, tax: 0, shipping: 0 }
+      summary: { 
+        total, 
+        subtotal: total, 
+        tax: 0, 
+        shipping: 0,
+        totalPrice: total,
+        totalItems: items.reduce((acc, item) => acc + item.quantity, 0)
+      }
     };
   }
 }

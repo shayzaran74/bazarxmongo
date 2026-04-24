@@ -99,15 +99,28 @@ export const useAuctionStore = defineStore('auction', {
       this.loading = true
       this.error = null
       try {
+        console.log('AuctionStore: Fetching auctions...', params)
         const { $api } = useApi()
-        const res = await $api<any>('/api/auctions', {
-          query: params
-        })
-        const items = Array.isArray(res.data?.items) ? res.data.items : (Array.isArray(res.data) ? res.data : [])
+        const res = await $api<any>('/api/auctions', { query: params })
+        console.log('AuctionStore: Response received', res)
+
+        if (!res) throw new Error('Sunucudan yanıt alınamadı')
+
+        let items: any[] = []
+        if (res.data) {
+          if (Array.isArray(res.data.items)) {
+            items = res.data.items
+          } else if (Array.isArray(res.data)) {
+            items = res.data
+          }
+        }
+
         this.auctions = items.map(mapAuction)
         this.total = res.data?.total || this.auctions.length
+        console.log('AuctionStore: Auctions mapped', this.auctions.length)
       } catch (e: any) {
-        this.error = e?.data?.message || 'Açık artırmalar yüklenemedi'
+        console.error('AuctionStore Error:', e)
+        this.error = e?.data?.message || e?.message || 'Açık artırmalar yüklenemedi'
       } finally {
         this.loading = false
       }

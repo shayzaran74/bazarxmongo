@@ -2,6 +2,7 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { PrismaModule } from '@barterborsa/shared-persistence';
 import { ListingController } from './presentation/listing.controller';
 import { SurplusController } from './presentation/surplus.controller';
 import { CreateCategoryHandler } from './application/commands/create-category.handler';
@@ -42,6 +43,8 @@ import { BulkUpdateAdminProductsHandler } from './application/commands/bulk-upda
 import { UpdateAdminProductHandler } from './application/commands/update-admin-product.handler';
 import { ListAdminBrandsHandler } from './application/queries/list-admin-brands/list-admin-brands.handler';
 import { ListAdminReviewsHandler } from './application/queries/list-admin-reviews/list-admin-reviews.handler';
+import { DeleteListingHandler } from './application/commands/delete-listing.handler';
+import { UpdateListingHandler } from './application/commands/update-listing.handler';
 import { PRODUCT_REPO } from './domain/repositories/product.repository.interface';
 import { PrismaProductRepository } from './infrastructure/persistence/prisma-product.repository';
 
@@ -53,6 +56,8 @@ const CommandHandlers = [
   BulkDeleteAdminProductsHandler,
   BulkUpdateAdminProductsHandler,
   UpdateAdminProductHandler,
+  DeleteListingHandler,
+  UpdateListingHandler,
 ];
 
 const QueryHandlers = [
@@ -80,7 +85,7 @@ const Repositories = [
 ];
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, PrismaModule],
   controllers: [
     ListingController, 
     SurplusController,

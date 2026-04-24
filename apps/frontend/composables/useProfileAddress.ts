@@ -45,5 +45,5 @@ export const useProfileAddress = () => {
     if (res?.success) toast.success(t('profile.addressDeletedSuccess'))
   }
 
-  return { showAddressModal, isEditingAddress, addressForm, openAddressModal, saveAddress, deleteAddress }
+  return { addressStore, showAddressModal, isEditingAddress, addressForm, openAddressModal, saveAddress, deleteAddress }
 }

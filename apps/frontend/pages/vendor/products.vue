@@ -193,7 +193,15 @@ const { data: listingData, pending, refresh } = await useAsyncData('vendor-produ
   })
 )
 
-const products = computed(() => listingData.value?.data?.items || [])
+watchEffect(() => {
+  console.log('[ProductsPage] listingData changed:', listingData.value)
+})
+
+const products = computed(() => {
+  const items = listingData.value?.data?.items || []
+  console.log('[ProductsPage] computed products:', items)
+  return items
+})
 
 const formatPrice = (value: number) => {
   return new Intl.NumberFormat('tr-TR', {
@@ -202,14 +210,25 @@ const formatPrice = (value: number) => {
   }).format(value || 0)
 }
 
+const { $api } = useApi()
+const toast = useNuxtApp().$toast
+
 const deleteProduct = async (id: string) => {
   if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return
   try {
-    // Listing update/delete logic could be added to VendorService
-    // For now we just refresh
-    refresh()
-  } catch (err) {
-    console.error(err)
+    const res = await $api(`/api/listings/${id}`, {
+      method: 'DELETE'
+    })
+    
+    if (res.success) {
+      toast.success('Ürün başarıyla silindi')
+      refresh()
+    } else {
+      toast.error(res.error || 'Silme işlemi başarısız oldu')
+    }
+  } catch (err: any) {
+    console.error('Delete error:', err)
+    toast.error(err.data?.message || 'Bir hata oluştu')
   }
 }
 

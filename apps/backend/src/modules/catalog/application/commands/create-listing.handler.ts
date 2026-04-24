@@ -37,7 +37,7 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
 
     // 3. Fiyat VO
     const priceResult = Price.create(dto.price);
-    if (isErr(priceResult)) {
+    if (!priceResult.success) {
       throw priceResult.error;
     }
 

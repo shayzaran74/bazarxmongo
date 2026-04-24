@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ClientsModule } from '@nestjs/microservices';
+import { PrismaModule } from '@barterborsa/shared-persistence';
 import { financialGrpcClientOptions } from './grpc/financial-grpc.client';
 import { WalletGrpcService } from './grpc/wallet-grpc.service';
 import { EscrowGrpcService } from './grpc/escrow-grpc.service';
@@ -17,6 +18,7 @@ import { GetWalletRequestsHandler } from './application/queries/get-wallet-reque
 // Command Handlers
 import { TopUpWalletHandler } from './application/commands/top-up-wallet.handler';
 import { RequestWithdrawalHandler } from './application/commands/request-withdrawal.handler';
+import { ProcessWalletRequestHandler } from './application/commands/process-wallet-request.handler';
 
 const QueryHandlers = [
   GetWalletBalanceHandler,
@@ -28,6 +30,7 @@ const QueryHandlers = [
 const CommandHandlers = [
   TopUpWalletHandler,
   RequestWithdrawalHandler,
+  ProcessWalletRequestHandler,
 ];
 
 @Global()
@@ -35,6 +38,7 @@ const CommandHandlers = [
   imports: [
     CqrsModule,
     ClientsModule.register(financialGrpcClientOptions),
+    PrismaModule,
   ],
   controllers: [WalletController, WalletAdminController],
   providers: [

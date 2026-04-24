@@ -23,10 +23,17 @@ export const useNotifications = () => {
     if (!authStore.isLoggedIn || notifSocket?.connected) return
 
     const config = useRuntimeConfig()
-    notifSocket = io(`${config.public.apiBase}/notifications`, {
+
+    const socketBase = (config.public.socketUrl as string) ||
+      (process.client ? window.location.origin : config.public.apiBase as string)
+
+    notifSocket = io(socketBase, {
+      path: '/socket.io/',
       withCredentials: true,
       transports: ['polling', 'websocket'],
-      auth: { token: authStore.token || useCookie('access_token').value }
+      auth: { token: authStore.token || useCookie('access_token').value },
+      reconnection: true,
+      reconnectionAttempts: 5,
     })
 
     notifSocket.on('notification', (data: Notification) => {

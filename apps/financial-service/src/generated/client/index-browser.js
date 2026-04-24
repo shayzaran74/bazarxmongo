@@ -536,6 +536,7 @@ exports.HoldStatus = exports.$Enums.HoldStatus = {
 exports.PaymentMethod = exports.$Enums.PaymentMethod = {
   IYZICO: 'IYZICO',
   BANK_TRANSFER: 'BANK_TRANSFER',
+  EFT: 'EFT',
   WALLET: 'WALLET',
   BARTER: 'BARTER',
   GIFT_CARD: 'GIFT_CARD',

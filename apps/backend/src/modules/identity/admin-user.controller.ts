@@ -5,7 +5,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Admin Users')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/users')
 export class AdminUserController {

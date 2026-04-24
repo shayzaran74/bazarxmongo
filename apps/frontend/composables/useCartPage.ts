@@ -3,19 +3,34 @@ export const useCartPage = () => {
   const { $toast } = useNuxtApp() as any
   const cartStore = useCartStore ? useCartStore() : null
 
-  const cartItems = ref<any[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const cartItems = computed(() => cartStore?.items || [])
+  const loading = computed(() => cartStore?.loading || false)
+  const error = computed(() => cartStore?.error || null)
   const bestSellers = ref<any[]>([])
   const bestSellersLoading = ref(false)
-  const applicableEscrowCoupons = ref<any[]>([])
+  const applicableEscrowCoupons = computed(() => cartStore?.availableEscrowCoupons || [])
   const appliedEscrowCoupon = ref<any>(null)
 
   const cartSummary = computed(() => {
+    if (cartStore?.summary) {
+      return {
+        ...cartStore.summary,
+        totalPrice: cartStore.summary.totalPrice || cartStore.summary.total || cartStore.summary.subtotal || 0,
+        totalItems: cartStore.summary.totalItems || cartStore.count || 0
+      }
+    }
+    const totalItems = cartItems.value.reduce((acc, item) => acc + item.quantity, 0)
     const subtotal = cartItems.value.reduce(
-      (sum, item) => sum + Number(item.price) * item.quantity, 0
+      (sum, item) => sum + Number(item.price || item.Product?.price || 0) * item.quantity, 0
     )
-    return { subtotal, total: subtotal, tax: 0, shipping: 0 }
+    return { 
+      subtotal, 
+      total: subtotal, 
+      totalPrice: subtotal, 
+      totalItems,
+      tax: 0, 
+      shipping: 0 
+    }
   })
 
   const subtitleText = computed(() =>
@@ -25,16 +40,8 @@ export const useCartPage = () => {
   )
 
   const fetchCart = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await $api<{ success: boolean; data: any }>('/api/cart')
-      const resAny = res as any
-      cartItems.value = resAny.data?.items || resAny.data || resAny || []
-    } catch (e: any) {
-      error.value = 'Sepet yüklenemedi'
-    } finally {
-      loading.value = false
+    if (cartStore) {
+      await cartStore.fetchCart()
     }
   }
 
@@ -52,36 +59,34 @@ export const useCartPage = () => {
     }
   }
 
-  const updateQuantity = async (itemId: string, quantity: number) => {
-    try {
-      await $api(`/api/cart/${itemId}`, {
-        method: 'PATCH',
-        body: { quantity }
-      })
-      await fetchCart()
-    } catch {
-      $toast.error('Güncelleme başarısız')
+  const updateQuantity = async (payload: { id: string; quantity: number }) => {
+    if (cartStore) {
+      const res = await cartStore.updateQuantity(payload.id, payload.quantity)
+      if (!res.success) {
+        $toast.error('Güncelleme başarısız')
+      }
     }
   }
 
   const removeItem = async (itemId: string) => {
-    try {
-      await $api(`/api/cart/${itemId}`, { method: 'DELETE' })
-      cartItems.value = cartItems.value.filter(i => i.id !== itemId)
+    if (cartStore) {
+      await cartStore.removeItem(itemId)
       $toast.success('Ürün sepetten kaldırıldı')
-    } catch {
-      $toast.error('Kaldırma başarısız')
     }
   }
 
   const applyEscrowCoupon = async (couponId: string) => {
-    appliedEscrowCoupon.value = applicableEscrowCoupons.value.find(
-      c => c.id === couponId
-    ) || null
+    if (cartStore) {
+      await cartStore.applyEscrowCoupon(couponId)
+      appliedEscrowCoupon.value = cartStore.appliedEscrowCoupon
+    }
   }
 
-  const removeEscrowCoupon = () => {
-    appliedEscrowCoupon.value = null
+  const removeEscrowCoupon = async () => {
+    if (cartStore) {
+      await cartStore.removeEscrowCoupon()
+      appliedEscrowCoupon.value = null
+    }
   }
 
   const checkout = () => navigateTo('/checkout')
@@ -89,7 +94,11 @@ export const useCartPage = () => {
   const quickCheckout = async () => navigateTo('/checkout')
 
   const init = async () => {
-    await Promise.all([fetchCart(), fetchBestSellers()])
+    await Promise.all([
+      fetchCart(), 
+      fetchBestSellers(),
+      cartStore?.fetchEscrowCoupons()
+    ])
   }
 
   return {

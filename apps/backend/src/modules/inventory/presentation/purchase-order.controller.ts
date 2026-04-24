@@ -8,7 +8,7 @@ import { CurrentUser } from '@barterborsa/shared-nest';
 @ApiBearerAuth()
 @Controller('vendors/purchase-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('VENDOR', 'ADMIN')
+@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 export class PurchaseOrderController {
   constructor(private readonly prisma: PrismaService) {}
 

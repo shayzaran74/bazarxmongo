@@ -17,9 +17,25 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   /**
+   * Request nesnesini bağlama göre (HTTP, Ws, RPC) döner.
+   */
+  getRequest(context: ExecutionContext) {
+    if (context.getType() === 'ws') {
+      return context.switchToWs().getClient().handshake;
+    }
+    return context.switchToHttp().getRequest();
+  }
+
+  /**
    * Request'in işlenip işlenmeyeceğine karar verir.
    */
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+    // Sadece HTTP isteklerini bu guard ile koru. 
+    // WebSocket ve RPC için özel auth mantığı kullanılmalıdır.
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

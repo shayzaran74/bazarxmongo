@@ -20,7 +20,16 @@ export class GetWalletBalanceHandler
       availableBalance: parseFloat(balance.availableBalance),
       blockedBalance: parseFloat(balance.blockedBalance),
       currency: 'TRY',
-      accounts: [],
+      accounts: [
+        {
+          id: 'main-account',
+          type: 'MAIN',
+          balance: parseFloat(balance.balance),
+          availableBalance: parseFloat(balance.availableBalance),
+          blockedBalance: parseFloat(balance.blockedBalance),
+          currency: 'TRY'
+        }
+      ],
       cards: [],
       requests: []
     };

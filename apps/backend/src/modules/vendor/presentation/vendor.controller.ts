@@ -39,7 +39,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor orders', description: 'Satıcının kendi siparişlerini listeler.' })
   @Get('orders')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getVendorOrders(@CurrentUser() user: any, @Query() query: any) {
     const data = await this.queryBus.execute(
@@ -55,7 +55,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor pending orders count', description: 'Satıcının bekleyen sipariş sayısını döner.' })
   @Get('orders/pending-count')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getPendingOrderCount(@CurrentUser() user: any) {
     const count = await this.queryBus.execute(
@@ -67,7 +67,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor dashboard stats' })
   @Get('me/dashboard')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getDashboard(@CurrentUser() user: any) {
     const data = await this.queryBus.execute(
@@ -109,7 +109,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor transfers' })
   @Get('transfers')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getTransfers(@CurrentUser() user: any) {
     const data = await this.queryBus.execute(
@@ -121,7 +121,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor invoices' })
   @Get('invoices')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getInvoices(
     @CurrentUser() user: any,
@@ -151,7 +151,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get vendor products list' })
   @Get('products')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getProducts(@CurrentUser() user: any, @Query() query: any) {
     const data = await this.queryBus.execute(
@@ -167,7 +167,7 @@ export class VendorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update product stock' })
   @Patch('products/:id/stock')
-  @Roles('VENDOR', 'ADMIN')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async updateStock(
     @Param('id') id: string,

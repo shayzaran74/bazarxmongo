@@ -158,5 +158,6 @@ export interface AdminOrder {
   notes?: string;
   User?: AdminUser;
   Vendor?: AdminVendor;
+  orderItems?: AdminOrderItem[];
   OrderItem?: AdminOrderItem[];
 }

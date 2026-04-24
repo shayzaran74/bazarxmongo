@@ -16,7 +16,7 @@ import { CreateNotificationCommand } from '../application/commands/create-notifi
 
 @ApiTags('Communication Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/communication')
 export class CommunicationAdminController {
@@ -48,7 +48,7 @@ export class CommunicationAdminController {
 
 @ApiTags('Chat Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/chats')
 export class ChatAdminController {

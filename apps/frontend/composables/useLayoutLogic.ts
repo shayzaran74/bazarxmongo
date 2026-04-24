@@ -186,7 +186,9 @@ export const useLayoutLogic = () => {
     // Fetch categories for layout
     try {
       const res: any = await $api('/api/categories', { query: { all: true } })
-      if (res.success) layoutCategories.value = res.data
+      if (res.success && res.data) {
+        layoutCategories.value = Array.isArray(res.data.items) ? res.data.items : (Array.isArray(res.data) ? res.data : [])
+      }
     } catch { /* ignore */ }
 
     if (authStore.isLoggedIn) {

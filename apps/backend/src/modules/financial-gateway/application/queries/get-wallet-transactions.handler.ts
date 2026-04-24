@@ -15,7 +15,8 @@ export class GetWalletTransactionsHandler
       query.userId,
       query.accountType,
       query.page,
-      query.limit
+      query.limit,
+      query.accountId
     );
   }
 }

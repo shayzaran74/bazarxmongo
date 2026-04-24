@@ -11,6 +11,9 @@ export class UpdateAdminProductCommand {
       status?: string;
       price?: number | string;
       stock?: number | string;
+      isFeatured?: boolean;
+      isSpecialOffer?: boolean;
+      isFlashSale?: boolean;
     }
   ) {}
 }

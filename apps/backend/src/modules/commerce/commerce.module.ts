@@ -18,9 +18,11 @@ import { ClearCartHandler } from './application/commands/clear-cart.handler';
 import { GenerateInvoiceHandler } from './application/commands/generate-invoice.handler';
 import { GetCartHandler } from './application/queries/get-cart.handler';
 import { ListAdminOrdersHandler } from './application/queries/list-admin-orders.handler';
+import { GetAdminOrderHandler } from './application/queries/get-admin-order.handler';
 import { PrismaCartRepository } from './infrastructure/persistence/prisma-cart.repository';
 import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
 import { PrismaInvoiceRepository } from './infrastructure/persistence/prisma-invoice.repository';
+import { PrismaModule } from '@barterborsa/shared-persistence';
 import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
 import { CatalogModule } from '../catalog/catalog.module';
 
@@ -35,6 +37,7 @@ const CommandHandlers = [
 const QueryHandlers = [
   GetCartHandler,
   ListAdminOrdersHandler,
+  GetAdminOrderHandler,
 ];
 const Repositories = [
   { provide: 'ICartRepository', useClass: PrismaCartRepository },
@@ -42,13 +45,16 @@ const Repositories = [
   { provide: 'IInvoiceRepository', useClass: PrismaInvoiceRepository },
 ];
 
+import { OrderController } from './presentation/order.controller';
+
 @Module({
   imports: [
     CqrsModule,
     FinancialGatewayModule,
     CatalogModule,
+    PrismaModule,
   ],
-  controllers: [CartController, CheckoutController, PaymentController, OrderAdminController],
+  controllers: [CartController, CheckoutController, PaymentController, OrderAdminController, OrderController],
   providers: [
     PricingService,
     CheckoutService,

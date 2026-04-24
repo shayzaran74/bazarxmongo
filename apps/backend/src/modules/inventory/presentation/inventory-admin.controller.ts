@@ -7,7 +7,7 @@ import * as XLSX from 'xlsx';
 
 @ApiTags('Inventory Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
 export class InventoryAdminController {

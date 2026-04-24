@@ -53,16 +53,16 @@
               <div class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{{ formatDate(req.createdAt) }}</div>
             </td>
             <td class="px-8 py-6 text-right">
-              <div v-if="req.status.toLowerCase() === 'pending'" class="flex items-center justify-end gap-2">
+              <div v-if="req.status?.toLowerCase() === 'pending'" class="flex items-center justify-end gap-2">
                 <button 
-                  :disabled="processing.has(req.id)"
+                  :disabled="processing?.includes(req.id)"
                   class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50"
                   @click="$emit('approve', req)"
                 >
                   <CheckIcon class="h-4 w-4" />
                 </button>
                 <button 
-                  :disabled="processing.has(req.id)"
+                  :disabled="processing?.includes(req.id)"
                   class="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                   @click="$emit('reject', req)"
                 >
@@ -109,11 +109,13 @@ const getUserName = (user) => {
 }
 
 const getStatusLabel = (status) => {
+  if (!status) return 'Bilinmiyor'
   const map = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Onaylandı', processed: 'Onaylandı', rejected: 'Reddedildi' }
   return map[status.toLowerCase()] || status
 }
 
 const getStatusClass = (status) => {
+  if (!status) return 'bg-gray-50 text-gray-400 border-gray-100'
   const s = status.toLowerCase()
   if (s === 'pending') return 'bg-amber-50 text-amber-600 border-amber-100'
   if (['approved', 'completed', 'processed'].includes(s)) return 'bg-emerald-50 text-emerald-600 border-emerald-100'

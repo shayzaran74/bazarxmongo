@@ -1,19 +1,24 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
+import { Controller, Get, Query, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { QueryBus, CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { Roles } from '@barterborsa/shared-nest';
+import { Roles, CurrentUser } from '@barterborsa/shared-nest';
 import { GetWithdrawalsQuery } from '../application/queries/get-withdrawals.query';
 import { GetWalletRequestsQuery } from '../application/queries/get-wallet-requests.query';
 import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-transactions.query';
 
+import { ProcessWalletRequestCommand } from '../application/commands/process-wallet-request.command';
+
 @ApiTags('Wallet Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/wallet')
 export class WalletAdminController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
+  ) {}
 
   @ApiOperation({ summary: 'Get all wallet requests' })
   @Get('requests')
@@ -36,6 +41,28 @@ export class WalletAdminController {
     } catch {
       return { success: true, data: { items: [], total: 0 } };
     }
+  }
+
+  @ApiOperation({ summary: 'Approve wallet request' })
+  @Post('requests/:id/approve')
+  async approveRequest(@Param('id') id: string, @CurrentUser() admin: any) {
+    await this.commandBus.execute(
+      new ProcessWalletRequestCommand(id, 'approve', admin.id)
+    );
+    return { success: true, message: 'Talep onaylandı' };
+  }
+
+  @ApiOperation({ summary: 'Reject wallet request' })
+  @Post('requests/:id/reject')
+  async rejectRequest(
+    @Param('id') id: string, 
+    @Body() body: { reason?: string },
+    @CurrentUser() admin: any
+  ) {
+    await this.commandBus.execute(
+      new ProcessWalletRequestCommand(id, 'reject', admin.id, body.reason)
+    );
+    return { success: true, message: 'Talep reddedildi' };
   }
 
   @ApiOperation({ summary: 'Get all withdrawals' })

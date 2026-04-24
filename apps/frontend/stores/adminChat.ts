@@ -47,10 +47,15 @@ export const useAdminChatStore = defineStore('adminChat', {
             const config = useRuntimeConfig();
             const authStore = useAuthStore();
 
-            socket = io(config.public.apiBase as string, {
+            const socketBase = (config.public.socketUrl as string) ||
+                (process.client ? window.location.origin : config.public.apiBase as string);
+
+            socket = io(socketBase, {
+                path: '/socket.io/',
                 auth: { token: authStore.token },
-                path: '/socket.io/admin',
-                transports: ['websocket', 'polling']
+                transports: ['polling', 'websocket'],
+                reconnection: true,
+                reconnectionAttempts: 5,
             });
 
             socket.on('connect', () => {

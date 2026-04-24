@@ -15,7 +15,9 @@ export const useApi = () => {
     
     const headers: Record<string, string> = { ...(options.headers || {}) }
 
-    if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`
+    // Token'ı önce store'dan, yoksa doğrudan cookie'den oku
+    const token = authStore.token || useCookie('access_token').value
+    if (token) headers['Authorization'] = `Bearer ${token}`
     if (authStore.csrfToken && options.method && options.method !== 'GET') {
       headers['X-CSRF-Token'] = authStore.csrfToken
     }

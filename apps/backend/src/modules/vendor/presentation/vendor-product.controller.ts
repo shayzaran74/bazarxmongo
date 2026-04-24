@@ -27,7 +27,7 @@ import { ListVendorProductsQuery } from '../application/queries/list-vendor-prod
 @Controller('vendors/products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('VENDOR', 'ADMIN')
+@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 export class VendorProductController {
   private readonly logger = new Logger(VendorProductController.name);
 

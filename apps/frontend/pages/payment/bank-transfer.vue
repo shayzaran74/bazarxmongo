@@ -250,6 +250,8 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter, useHead, useNuxtApp } from '#imports'
 import { usePaymentConfirmService } from '~/services/api/PaymentService'
 import {
   ArrowLeftIcon,
@@ -339,12 +341,13 @@ const confirmPayment = async () => {
 }
 
 const downloadInstructions = () => {
+  const orderInfo = orderNumber.value ? `Sipariş No: ${orderNumber.value}` : ''
   const instructions = `
 BANKA HAVALESİ TALİMATLARI
 ========================
 
 Ödenecek Tutar: ${formatPrice(amount.value)}
-${orderNumber.value ? `Sipariş No: ${orderNumber.value}` : ''}
+${orderInfo}
 
 BANKA BİLGİLERİ:
 Banka: Türkiye İş Bankası A.Ş.

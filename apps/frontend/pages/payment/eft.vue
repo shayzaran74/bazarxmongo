@@ -275,6 +275,8 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter, useHead, useNuxtApp } from '#imports'
 import { usePaymentConfirmService } from '~/services/api/PaymentService'
 import {
   ArrowLeftIcon,
@@ -367,6 +369,7 @@ const confirmPayment = async () => {
 }
 
 const downloadInstructions = () => {
+  const orderInfo = orderNumber.value ? `Sipariş No: ${orderNumber.value}` : ''
   const instructions = `
 EFT ÖDEMESİ TALİMATLARI
 ======================
@@ -374,7 +377,7 @@ EFT ÖDEMESİ TALİMATLARI
 Ödenecek Tutar: ${formatPrice(amount.value)}
 EFT Ücreti: ${formatPrice(eftFee.value)}
 Toplam Tutar: ${formatPrice(totalAmount.value)}
-${orderNumber.value ? `Sipariş No: ${orderNumber.value}` : ''}
+${orderInfo}
 
 HESAP BİLGİLERİ:
 Banka: Türkiye İş Bankası

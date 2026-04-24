@@ -58,6 +58,7 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useAdminWallet } from '~/composables/useAdminWallet'
 import AdminWalletStats from '~/components/admin/wallet/AdminWalletStats.vue'
 import AdminWalletFilters from '~/components/admin/wallet/AdminWalletFilters.vue'
@@ -72,16 +73,16 @@ const {
 } = useAdminWallet()
 
 // Formatter Helpers
-const formatPrice = (p) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p)
-const formatDate = (d) => new Date(d).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const formatPrice = (p) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p || 0)
+const formatDate = (d) => d ? new Date(d).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'
 
 const resetFilters = () => {
-  filters.value = { status: '', user: '', minAmount: '' }
+  filters.value = { status: '', search: '', minAmount: '' }
   fetchRequests()
 }
 
 const handleApprove = async (req) => {
-  if (confirm(`${req.user?.email} kullanıcısının ${formatPrice(req.amount)} tutarlı talebini onaylıyor musunuz?`)) {
+  if (confirm(`${req.user?.email || 'Bu kullanıcı'}'nın ${formatPrice(req.amount)} tutarlı talebini onaylıyor musunuz?`)) {
     await processRequest(req.id, 'approve')
   }
 }

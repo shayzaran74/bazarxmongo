@@ -16,7 +16,7 @@ export class GetVendorBySlugHandler implements IQueryHandler<GetVendorBySlugQuer
 
   async execute(query: GetVendorBySlugQuery): Promise<any> {
     const slugResult = VendorSlug.create(query.slug);
-    if (isErr(slugResult)) {
+    if (!slugResult.success) {
       throw slugResult.error;
     }
 

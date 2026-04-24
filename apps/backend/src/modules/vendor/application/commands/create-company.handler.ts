@@ -20,7 +20,7 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
     const { dto } = command;
 
     const taxNumberResult = TaxNumber.create(dto.taxNumber);
-    if (isErr(taxNumberResult)) {
+    if (!taxNumberResult.success) {
       throw taxNumberResult.error;
     }
 
