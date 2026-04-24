@@ -73,7 +73,7 @@ export class CheckoutController {
     };
     const mappedPaymentMethod = paymentMethodMap[dto.paymentMethod?.toLowerCase()] || 'BANK_TRANSFER';
 
-    return this.commandBus.execute(
+    const orders = await this.commandBus.execute(
       new CheckoutCommand(
         user.id,
         shippingAddress,
@@ -83,5 +83,14 @@ export class CheckoutController {
         dto.useWallet
       )
     );
+
+    const orderArray = Array.isArray(orders) ? orders : [orders];
+    const firstOrder = orderArray[0];
+    return {
+      success: true,
+      data: orderArray,
+      orderId: firstOrder?.id || null,
+      orderNumber: firstOrder?.getProps?.()?.orderNumber?.value || null,
+    };
   }
 }

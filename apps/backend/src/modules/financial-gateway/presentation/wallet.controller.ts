@@ -56,9 +56,6 @@ export class WalletController {
     @Query('limit') limit: string = '20'
   ) {
     try {
-      // For now, we can reuse the same query but maybe with accountId filter
-      // If the financial-service supports it. 
-      // Let's check GetWalletTransactionsQuery definition.
       const data = await this.queryBus.execute(
         new GetWalletTransactionsQuery(
           req.user.id,
@@ -71,6 +68,29 @@ export class WalletController {
       return { success: true, data };
     } catch (err: any) {
       return { success: false, message: 'Hesap hareketleri alınamadı.' };
+    }
+  }
+
+  @Get('ledger')
+  async getLedger(
+    @Req() req: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '50'
+  ) {
+    try {
+      // Reuse getTransactions but fetch from generalLedger (no accountId = ledger mode)
+      const data = await this.queryBus.execute(
+        new GetWalletTransactionsQuery(
+          req.user.id,
+          undefined,
+          parseInt(page, 10) || 1,
+          parseInt(limit, 10) || 50,
+          undefined // no accountId = ledger mode in handler
+        )
+      );
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, message: 'Ledger hareketleri alınamadı.' };
     }
   }
 

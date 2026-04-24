@@ -158,6 +158,7 @@ export const useWallet = () => {
     formatPrice, fetchWallet,
     registerForBarter, topUpBarter, withdrawBarter, redeemGiftCard, isCardWinner,
     fetchTransactions: walletService.getTransactions,
-    fetchAccountTransactions: walletService.getAccountTransactions
+    fetchAccountTransactions: walletService.getAccountTransactions,
+    fetchLedger: walletService.getLedger,
   }
 }

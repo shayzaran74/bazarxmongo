@@ -199,11 +199,15 @@ export const useCheckout = () => {
         }
       })
       
-      const orders = Array.isArray(res) ? res : (res.data || [])
-      const orderId = orders[0]?.id || res.id
-      
-      if (orderId || res.success) {
-        return { success: true, type: 'wallet', data: { id: orderId } }
+      // Backend artık { success, data: [...], orderId } döndürüyor
+      if (res?.success && res?.orderId) {
+        return { success: true, type: 'wallet', orderId: res.orderId, data: res.data }
+      }
+      // Fallback: eski format
+      const orders = Array.isArray(res) ? res : (res?.data || [])
+      const orderId = res?.orderId || orders[0]?.id || res?.id
+      if (orderId || res?.success) {
+        return { success: true, type: 'wallet', orderId, data: { id: orderId } }
       }
       return { success: false, error: 'Ödeme işlemi tamamlanamadı' }
     } catch (e: any) {

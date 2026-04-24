@@ -148,10 +148,9 @@ const applyCoupon = async (code: string) => {
 const onSubmitPayment = async () => {
   const res = await handlePayment()
   if (res.success) {
-    if (res.type === 'wallet') {
-      if ($toast) $toast.success('Ödeme başarıyla gerçekleşti.')
-      navigateTo(`/payment-success?status=succeeded&type=wallet&orderId=${res.orderId}`)
-    }
+    if ($toast) $toast.success('Ödeme başarıyla gerçekleşti.')
+    const orderId = res.orderId || (res.data as any)?.id || (Array.isArray(res.data) ? (res.data as any[])[0]?.id : null)
+    navigateTo(`/payment-success?status=succeeded&type=wallet${orderId ? `&orderId=${orderId}` : ''}`)
   } else if (res.error && $toast) {
     $toast.error(res.error)
   }
