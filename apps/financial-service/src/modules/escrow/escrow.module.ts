@@ -5,6 +5,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaEscrowRepository } from './infrastructure/persistence/prisma-escrow.repository';
 import { EscrowMapper } from './infrastructure/persistence/mappers/escrow.mapper';
 import { CreateEscrowHandler } from './application/commands/create-escrow.handler';
+import { ReleaseEscrowHandler } from './application/commands/release-escrow.handler';
+import { RefundEscrowHandler } from './application/commands/refund-escrow.handler';
 import { EscrowConsumer } from './infrastructure/messaging/escrow.consumer';
 
 import { WalletModule } from '../wallet/wallet.module';
@@ -17,6 +19,8 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
   controllers: [EscrowGrpcController],
   providers: [
     CreateEscrowHandler,
+    ReleaseEscrowHandler,
+    RefundEscrowHandler,
     EscrowConsumer,
     EscrowMapper,
     PrismaService,

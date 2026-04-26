@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { DomainException } from '@barterborsa/shared-core';
 
 interface FinancialService {
+  getWallet(data: { userId: string }): any;
   getBalance(data: { userId: string; accountType: string }): any;
   getTransactions(data: {
     userId: string;
@@ -64,6 +65,16 @@ export class WalletGrpcService implements OnModuleInit {
         this.financialService.getBalance({ userId, accountType })
       );
       return response;
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+
+  async getWallet(userId: string) {
+    try {
+      return await firstValueFrom(
+        this.financialService.getWallet({ userId })
+      );
     } catch (error: any) {
       throw new DomainException(`Financial Service Error: ${error.message}`);
     }

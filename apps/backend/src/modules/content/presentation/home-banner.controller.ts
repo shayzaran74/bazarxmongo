@@ -14,7 +14,10 @@ export class HomeBannerController {
   @ApiQuery({ name: 'platform', required: false, type: String, example: 'BAZARX' })
   @ApiResponse({ status: 200, description: 'Banner listesi.' })
   @Get()
-  async getBanners(@Query('platform') platform: string = 'BAZARX') {
-    return this.queryBus.execute(new GetHomeBannersQuery(platform));
+  async getBanners(
+    @Query('platform') platform: string = 'BAZARX',
+    @Query('tag') tag?: string
+  ) {
+    return this.queryBus.execute(new GetHomeBannersQuery(platform, tag));
   }
 }

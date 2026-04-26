@@ -33,11 +33,12 @@ export class PrismaHomeBannerRepository implements IHomeBannerRepository {
     await this.prisma.homeBanner.delete({ where: { id } });
   }
 
-  async findAllActive(platform: string): Promise<HomeBanner[]> {
+  async findAllActive(platform: string, tag?: string): Promise<HomeBanner[]> {
     const now = new Date();
     const raws = await this.prisma.homeBanner.findMany({
       where: {
         platform: platform as any,
+        tag: tag || undefined,
         isActive: true,
         OR: [
           { startDate: null },

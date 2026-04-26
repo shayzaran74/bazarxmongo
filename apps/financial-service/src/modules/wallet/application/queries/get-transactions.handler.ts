@@ -11,69 +11,86 @@ export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuer
     const { userId, page, limit, accountId } = query;
     const skip = (page - 1) * limit;
 
-    // Kullanıcının tüm hesaplarını bul
-    const userAccounts = await this.prisma.account.findMany({
-      where: { userId },
-      select: { id: true, type: true }
-    });
-    const accountIds = userAccounts.map(a => a.id);
+    try {
+      // 1. Get user accounts
+      const userAccounts = await this.prisma.account.findMany({
+        where: { userId },
+        select: { id: true, type: true }
+      });
+      const accountIds = userAccounts.map(a => a.id);
 
-    let items: any[] = [];
-    let total = 0;
-
-    if (accountId && accountId !== '') {
-      // Belirli bir hesabın hareketleri
-      [items, total] = await Promise.all([
+      // 2. Fetch from both tables (AccountTransaction and GeneralLedger)
+      const [accTx, genLedger] = await Promise.all([
         this.prisma.accountTransaction.findMany({
-          where: { accountId },
+          where: accountId ? { accountId } : { accountId: { in: accountIds } },
           include: { account: true },
           orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
+          take: limit * 2, // Take extra to merge
         }),
-        this.prisma.accountTransaction.count({ where: { accountId } })
-      ]);
-    } else {
-      // Tüm hesapların hareketleri (AccountTransaction tablosu)
-      if (accountIds.length === 0) {
-        return { items: [], total: 0, page, limit };
-      }
-      [items, total] = await Promise.all([
-        this.prisma.accountTransaction.findMany({
-          where: { accountId: { in: accountIds } },
-          include: { account: true },
+        this.prisma.generalLedger.findMany({
+          where: {
+            OR: [
+              { debitAccountId: userId },
+              { creditAccountId: userId },
+              { debitAccountId: { in: accountIds } },
+              { creditAccountId: { in: accountIds } }
+            ]
+          },
           orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-        this.prisma.accountTransaction.count({
-          where: { accountId: { in: accountIds } }
+          take: limit * 2,
         })
       ]);
-    }
 
-    return {
-      items: items.map((item: any) => {
-        const account = item.account || userAccounts.find(a => a.id === item.accountId);
-        const isDebit = item.direction === 'DEBIT';
+      // 3. Map and Merge
+      const mappedAccTx = accTx.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount.toString(),
+        direction: tx.direction,
+        description: tx.description || '',
+        referenceId: tx.referenceId || '',
+        referenceType: tx.referenceType || '',
+        accountType: tx.account?.type || 'MAIN',
+        createdAt: tx.createdAt,
+        source: 'account_tx'
+      }));
 
+      const mappedGenLedger = genLedger.map(gl => {
+        const isDebit = gl.debitAccountId === userId || accountIds.includes(gl.debitAccountId || '');
         return {
-          id: item.id,
-          type: item.type || (isDebit ? 'WITHDRAWAL' : 'DEPOSIT'),
-          amount: item.amount?.toString() || '0',
-          status: item.status || 'COMPLETED',
-          direction: item.direction || (isDebit ? 'DEBIT' : 'CREDIT'),
-          description: item.description || '',
-          referenceId: item.referenceId || '',
-          referenceType: item.referenceType || item.refType || '',
-          accountType: account?.type || 'MAIN',
-          account: account ? { id: account.id, type: account.type } : null,
-          createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : item.createdAt,
+          id: gl.id,
+          type: gl.type,
+          amount: gl.amount?.toString() || '0',
+          direction: isDebit ? 'DEBIT' : 'CREDIT',
+          description: gl.note || '',
+          referenceId: gl.referenceId || '',
+          referenceType: gl.refType || '',
+          accountType: 'SYSTEM', // General Ledger entries are global
+          createdAt: gl.createdAt,
+          source: 'general_ledger'
         };
-      }),
-      total,
-      page,
-      limit
-    };
+      });
+
+      // Combine, Deduplicate by referenceId if needed, and Sort
+      const combined = [...mappedAccTx, ...mappedGenLedger]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(skip, skip + limit);
+
+      const total = accTx.length + genLedger.length; // Approximate for pagination
+
+      return {
+        items: combined.map(item => ({
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+          status: 'COMPLETED'
+        })),
+        total,
+        page,
+        limit
+      };
+    } catch (error: any) {
+      console.error('[GetTransactionsHandler] Error:', error);
+      throw error;
+    }
   }
 }

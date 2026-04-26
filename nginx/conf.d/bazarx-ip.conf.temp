@@ -1,0 +1,52 @@
+# nginx/conf.d/bazarx-ip.conf
+# Temporary IP-based config for testing (No SSL)
+
+upstream backend_api {
+    server backend:3001;
+}
+
+upstream frontend_app {
+    server frontend:3000;
+}
+
+upstream minio_storage {
+    server minio:9000;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _; # Listen to all requests (IP)
+
+    client_max_body_size 50M;
+
+    location /socket.io/ {
+        proxy_pass http://backend_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+    }
+
+    location /api/ {
+        proxy_pass http://backend_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://frontend_app;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -5,6 +5,7 @@ import { GetWalletBalanceQuery } from '../application/queries/get-wallet-balance
 import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-transactions.query';
 import { TopUpWalletCommand } from '../application/commands/top-up-wallet.command';
 import { RequestWithdrawalCommand } from '../application/commands/request-withdrawal.command';
+import { FinancialGatewayService } from '../financial-gateway.service';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
@@ -12,16 +13,18 @@ export class WalletController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly financialGateway: FinancialGatewayService,
   ) {}
 
   @Get()
   async getMyWallet(@Req() req: any) {
     try {
-      const data = await this.queryBus.execute(
-        new GetWalletBalanceQuery(req.user.id, 'MAIN')
-      );
+      console.log(`[WalletController] Fetching wallet for user: ${req.user.id}`);
+      const data: any = await this.financialGateway.getWallet(req.user.id);
+      console.log(`[WalletController] Received wallet data. Accounts: ${data.accounts?.length || 0}`);
       return { success: true, data };
     } catch (err: any) {
+      console.error(`[WalletController] Error fetching wallet:`, err);
       return { success: false, message: 'Cüzdan bilgileri alınamadı.' };
     }
   }
@@ -29,22 +32,26 @@ export class WalletController {
   @Get('transactions')
   async getTransactions(
     @Req() req: any,
+    @Query('accountType') accountType?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
-    @Query('accountType') accountType?: string
+    @Query('accountId') accountId?: string
   ) {
     try {
+      console.log('[WalletController] Getting transactions for user:', req.user?.id);
       const data = await this.queryBus.execute(
         new GetWalletTransactionsQuery(
           req.user.id,
           accountType,
           parseInt(page, 10) || 1,
-          parseInt(limit, 10) || 20
+          parseInt(limit, 10) || 20,
+          accountId
         )
       );
       return { success: true, data };
     } catch (err: any) {
-      return { success: false, message: 'İşlem geçmişi alınamadı.' };
+      console.error('[WalletController] Error:', err);
+      return { success: false, message: 'İşlemler alınamadı.' };
     }
   }
 

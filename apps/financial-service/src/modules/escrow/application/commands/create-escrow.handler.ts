@@ -26,63 +26,86 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
   async execute(command: CreateEscrowCommand): Promise<Escrow> {
     const { orderId, buyerId, sellerId, amount } = command;
 
-    // 1. Mükerrer kontrolü
-    const existing = await this.escrowRepository.findByOrderId(orderId);
-    if (existing) return existing;
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Idempotency Check (Mükerrer kontrolü)
+      const existingEscrow = await tx.escrow.findUnique({
+        where: { orderId }
+      });
+      if (existingEscrow) {
+        return Escrow.fromPersistence(existingEscrow);
+      }
 
-    // 2. Cüzdan kontrolü ve bakiye düşümü
-    const wallet = await this.walletRepository.findByUserId(buyerId);
-    if (!wallet) throw new Error('Kullanıcı cüzdanı bulunamadı.');
-    
-    // Money VO kullanarak bakiye düş
-    const orderMoney = { amount: new Decimal(amount), currency: 'TRY' } as any; 
-    wallet.withdrawTL(orderMoney); 
+      // 2. Atomic Read (Transaction içinde okuma - TOCTOU önlemi)
+      const [walletRecord, mainAccount] = await Promise.all([
+        tx.wallet.findUnique({ where: { userId: buyerId } }),
+        tx.account.findFirst({ where: { userId: buyerId, type: 'MAIN' } })
+      ]);
 
-    // 3. Emanet kaydı oluştur
-    const escrow = Escrow.create({
-      orderId,
-      buyerId,
-      sellerId,
-      amount: new Decimal(amount),
-    });
+      if (!walletRecord) throw new Error('Kullanıcı cüzdanı bulunamadı.');
+      if (!mainAccount) throw new Error('Kullanıcının ana (MAIN) hesabı bulunamadı.');
 
-    // 4. Muhasebe kaydı (Defter-i Kebir)
-    const ledgerEntry = GeneralLedgerEntry.create({
-      type: 'ESCROW_FUND',
-      debitAccountId: buyerId,
-      creditAccountId: 'SYSTEM_ESCROW_ACCOUNT',
-      amount: new Decimal(amount),
-      referenceId: orderId,
-      refType: 'ORDER',
-      note: `Order ${orderId} için bakiye rezerve edildi.`,
-    });
+      const amountDec = new Decimal(amount);
+      if (walletRecord.balanceTL.lessThan(amountDec)) {
+        throw new Error('Yersiz bakiye.');
+      }
 
-    // 5. Cüzdan Hareketi (AccountTransaction)
-    // Kullanıcının MAIN hesabını bul
-    const mainAccount = await this.prisma.account.findFirst({
-      where: { userId: buyerId, type: 'MAIN' }
-    });
+      // 3. Update Database (Atomic and Consistent)
+      // a. Update Legacy Wallet
+      const updatedWallet = await tx.wallet.update({
+        where: { userId: buyerId },
+        data: {
+          balanceTL: { decrement: amountDec }
+        }
+      });
 
-    if (mainAccount) {
-      await this.prisma.accountTransaction.create({
+      // b. Update Modern Account Table (Sync with legacy)
+      await tx.account.update({
+        where: { id: mainAccount.id },
+        data: {
+          balance: { decrement: amountDec },
+          availableBalance: { decrement: amountDec }
+        }
+      });
+
+      // c. Create Escrow Record
+      const escrow = await tx.escrow.create({
+        data: {
+          orderId,
+          buyerId,
+          sellerId,
+          amount: amountDec,
+          status: 'FUNDED'
+        }
+      });
+
+      // d. Create Ledger Entry (Muhasebe)
+      await tx.generalLedger.create({
+        data: {
+          type: 'ESCROW_FUND',
+          debitAccountId: buyerId,
+          creditAccountId: 'SYSTEM_ESCROW_ACCOUNT',
+          amount: amountDec,
+          referenceId: orderId,
+          refType: 'ORDER',
+          note: `Order ${orderId} için bakiye rezerve edildi.`,
+        }
+      });
+
+      // e. Create Account Transaction (Kullanıcı ekstresi için)
+      await tx.accountTransaction.create({
         data: {
           accountId: mainAccount.id,
           type: 'PAYMENT',
           direction: 'DEBIT',
-          amount: new Decimal(amount),
+          amount: amountDec,
           description: `Sipariş #${orderId} için ödeme (Emanet)`,
           referenceId: orderId,
           referenceType: 'ORDER',
           status: 'COMPLETED'
         }
       });
-    }
 
-    // 6. Atomik kayıt
-    await this.walletRepository.save(wallet);
-    await this.escrowRepository.save(escrow);
-    await this.ledgerRepository.save(ledgerEntry); 
-
-    return escrow;
+      return Escrow.fromPersistence(escrow);
+    });
   }
 }

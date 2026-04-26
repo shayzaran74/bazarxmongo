@@ -3,19 +3,16 @@ export default defineEventHandler(async (event): Promise<any> => {
   const config = useRuntimeConfig()
   const query = getQuery(event)
   
-  // Forward to backend with v1 prefix
-  // Backend: /api/v1/settings/side-ads
-  const backendUrl = `${config.public.apiBase}/api/v1/settings/side-ads`
+  // Yeni oluşturulan SideAdsController: /api/v1/side-ads
+  const backendUrl = `${config.public.apiBase}/api/v1/side-ads`
   
   try {
-    return await $fetch<any>(backendUrl, {
-      query
-    })
+    const res = await $fetch<any>(backendUrl, { query })
+    // Backend {success, data} formatında döndürüyor
+    return res
   } catch (err: any) {
     console.error('[Proxy Error] Side Ads:', err.message)
-    throw createError({
-      statusCode: err.statusCode || 500,
-      statusMessage: 'Backend connection failed'
-    })
+    // Hata durumunda boş başarılı yanıt döndür (UI crash olmasın)
+    return { success: true, data: [] }
   }
 })

@@ -4,6 +4,7 @@ package financial;
 
 service FinancialService {
   // Mevcut — değişmedi
+  rpc GetWallet (GetWalletRequest) returns (GetWalletResponse) {}
   rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse) {}
   rpc HoldFunds (HoldFundsRequest) returns (HoldFundsResponse) {}
   rpc ReleaseFunds (ReleaseFundsRequest) returns (ReleaseFundsResponse) {}
@@ -20,6 +21,25 @@ service FinancialService {
 }
 
 // ---- Mevcut Messages (değişmedi) ----
+
+message GetWalletRequest {
+  string userId = 1;
+}
+
+message Account {
+  string id = 1;
+  string type = 2;
+  string balance = 3;
+  string availableBalance = 4;
+  string blockedBalance = 5;
+  string currency = 6;
+}
+
+message GetWalletResponse {
+  repeated Account accounts = 1;
+  repeated WalletRequest requests = 2;
+  repeated WithdrawalRecord withdrawalRequests = 3;
+}
 
 message GetBalanceRequest {
   string userId = 1;
@@ -71,6 +91,11 @@ message RefundFundsResponse {
 
 // ---- YENİ Messages ----
 
+message AccountInfo {
+  string id = 1;
+  string type = 2;
+}
+
 message Transaction {
   string id = 1;
   string type = 2;           // TOPUP, HOLD, RELEASE, REFUND, WITHDRAWAL, TRANSFER
@@ -82,6 +107,7 @@ message Transaction {
   string referenceType = 8;
   string accountType = 9;    // MAIN, XP, ESCROW
   string createdAt = 10;     // ISO 8601 string
+  AccountInfo account = 11;
 }
 
 message GetTransactionsRequest {
@@ -89,6 +115,7 @@ message GetTransactionsRequest {
   string accountType = 2;   // MAIN, XP, ESCROW — boş ise tümü
   int32 page = 3;
   int32 limit = 4;
+  string accountId = 5;
 }
 
 message GetTransactionsResponse {

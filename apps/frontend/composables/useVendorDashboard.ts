@@ -163,7 +163,20 @@ export const useVendorDashboard = () => {
   const fetchXPStats = async () => {
     try {
       const res = await $api<any>('/api/wallet')
-      if (res.success) {
+      if (res.success && res.data?.accounts) {
+        // Yeni birleşik yapıda hesapları bul
+        const accounts = res.data.accounts
+        const main = accounts.find((a: any) => a.type === 'MAIN')
+        const barter = accounts.find((a: any) => a.type === 'BARTER')
+        const xpAds = accounts.find((a: any) => a.type === 'XP_ADS')
+        const xpComm = accounts.find((a: any) => a.type === 'XP_COMMISSION')
+        
+        xpStats.commissionXP = Number(xpComm?.availableBalance || 0)
+        xpStats.adXP = Number(xpAds?.availableBalance || 0)
+        xpStats.serviceXP = 0 // Veya ilgili hesap tipi
+        xpStats.barterBalance = Number(barter?.availableBalance || 0)
+      } else if (res.success) {
+        // Fallback
         xpStats.commissionXP = res.data?.commissionXP || 0
         xpStats.adXP = res.data?.adXP || 0
         xpStats.serviceXP = res.data?.serviceXP || 0

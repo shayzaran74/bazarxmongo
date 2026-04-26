@@ -1,61 +1,208 @@
+import { ref, reactive, computed } from 'vue'
+import { cities as cityList, districts as districtMap } from '@/data/turkey_locations'
+
 export const useAdminBanners = () => {
   const { $api } = useApi()
   const { $toast } = useNuxtApp() as any
 
   const banners = ref<any[]>([])
   const loading = ref(false)
-  const selectedBanner = ref<any>(null)
-  const showFormModal = ref(false)
+  const saving = ref(false)
+  const deleting = ref(false)
+  const uploading = ref(false)
+  const showModal = ref(false)
+  const showDeleteModal = ref(false)
+  const isEditing = ref(false)
+  const imagePreview = ref<string | null>(null)
+
+  const formData = reactive({
+    id: '',
+    title: '',
+    description: '',
+    imageUrl: '',
+    linkUrl: '',
+    order: 0,
+    isActive: true,
+    position: 'home_top',
+    startDate: '',
+    endDate: '',
+    locationTags: {
+      city: '',
+      district: ''
+    }
+  })
+
+  const districtList = computed(() => {
+    if (!formData.locationTags.city) return []
+    return (districtMap as any)[formData.locationTags.city] || []
+  })
+
+  // Backend'den gelen veriyi frontend formatına dönüştürür
+  const mapBannerData = (banner: any) => ({
+    ...banner,
+    imageUrl: banner.image,
+    linkUrl: banner.link,
+    position: banner.tag || (banner.platform === 'BAZARX' ? 'home_top' : 'home_middle'),
+    startDate: banner.startDate ? new Date(banner.startDate).toISOString().split('T')[0] : '',
+    endDate: banner.endDate ? new Date(banner.endDate).toISOString().split('T')[0] : ''
+  })
 
   const fetchBanners = async () => {
     loading.value = true
     try {
       const res = await $api<any>('/api/admin/banners')
-      banners.value = res.data || []
+      banners.value = (res.data || []).map(mapBannerData)
     } catch {
-      $toast.error('Banner\'lar yüklenemedi')
+      $toast.error('Bannerlar yüklenemedi')
     } finally {
       loading.value = false
     }
   }
 
-  const saveBanner = async (data: any) => {
+  const openCreateModal = () => {
+    isEditing.value = false
+    imagePreview.value = null
+    Object.assign(formData, {
+      id: '',
+      title: '',
+      description: '',
+      imageUrl: '',
+      linkUrl: '',
+      order: 0,
+      isActive: true,
+      position: 'home_top',
+      startDate: '',
+      endDate: '',
+      locationTags: {
+        city: '',
+        district: ''
+      }
+    })
+    showModal.value = true
+  }
+
+  const editBanner = (banner: any) => {
+    isEditing.value = true
+    const mapped = mapBannerData(banner)
+    imagePreview.value = mapped.imageUrl
+    Object.assign(formData, mapped)
+    showModal.value = true
+  }
+
+  const handleUpload = async (file: File) => {
+    if (!file) return
+    uploading.value = true
+
     try {
-      if (data.id) {
-        await $api(`/api/admin/banners/${data.id}`, {
-          method: 'PUT', body: data
+      const config = useRuntimeConfig()
+      const authStore = useAuthStore()
+      const token = authStore.token || useCookie('access_token').value
+
+      const body = new FormData()
+      body.append('file', file)
+
+      // Nuxt Nitro proxy multipart/form-data isteklerini bozuyor.
+      // Bu yüzden upload isteği proxy'yi atlayarak doğrudan backend'e gönderilir.
+      const backendUrl = config.public.apiBase || 'http://localhost:3001'
+      const res = await fetch(`${backendUrl}/api/v1/upload?subPath=banners`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || `Upload failed: ${res.status}`)
+      }
+
+      const json = await res.json()
+      const url = json?.data?.url
+      if (url) {
+        formData.imageUrl = url
+        imagePreview.value = url
+        $toast.success('Görsel yüklendi')
+      } else {
+        throw new Error('URL döndürülmedi')
+      }
+    } catch (e: any) {
+      $toast.error(e?.message || 'Görsel yüklenemedi')
+    } finally {
+      uploading.value = false
+    }
+  }
+
+  const saveBanner = async () => {
+    if (saving.value) return
+    saving.value = true
+    
+    try {
+      const payload = {
+        ...formData,
+        image: formData.imageUrl,
+        link: formData.linkUrl,
+        platform: 'BAZARX', // Ensure platform is BAZARX for homepage
+        tag: formData.position, // Save position into tag field
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null
+      }
+
+      if (isEditing.value) {
+        await $api(`/api/admin/banners/${formData.id}`, {
+          method: 'PUT',
+          body: payload
         })
       } else {
         await $api('/api/admin/banners', {
-          method: 'POST', body: data
+          method: 'POST',
+          body: payload
         })
       }
-      $toast.success('Banner kaydedildi')
-      showFormModal.value = false
+
+      $toast.success('Banner başarıyla kaydedildi')
+      showModal.value = false
       fetchBanners()
-    } catch {
-      $toast.error('Kaydedilemedi')
+    } catch (err: any) {
+      $toast.error(err.data?.message || 'Banner kaydedilemedi')
+    } finally {
+      saving.value = false
     }
   }
 
   const deleteBanner = async (id: string) => {
-    if (!confirm('Banner silinsin mi?')) return
+    if (deleting.value) return
+    deleting.value = true
     try {
       await $api(`/api/admin/banners/${id}`, { method: 'DELETE' })
       $toast.success('Banner silindi')
+      showDeleteModal.value = false
       fetchBanners()
     } catch {
-      $toast.error('Silinemedi')
+      $toast.error('Banner silinemedi')
+    } finally {
+      deleting.value = false
     }
   }
 
-  const editBanner = (banner: any) => {
-    selectedBanner.value = { ...banner }
-    showFormModal.value = true
+  const toggleStatus = async (banner: any) => {
+    try {
+      await $api(`/api/admin/banners/${banner.id}`, {
+        method: 'PUT',
+        body: { isActive: !banner.isActive }
+      })
+      $toast.success('Banner durumu güncellendi')
+      fetchBanners()
+    } catch {
+      $toast.error('Durum güncellenemedi')
+    }
   }
 
   return {
-    banners, loading, selectedBanner, showFormModal,
-    fetchBanners, saveBanner, deleteBanner, editBanner
+    banners, loading, saving, deleting, uploading,
+    showModal, showDeleteModal, isEditing, formData,
+    imagePreview, cityList, districtList,
+    fetchBanners, saveBanner, deleteBanner, toggleStatus, handleUpload,
+    openCreateModal, editBanner
   }
 }

@@ -4,5 +4,5 @@ import { IRepository } from '@barterborsa/shared-core';
 import { HomeBanner } from '../entities/home-banner.entity';
 
 export interface IHomeBannerRepository extends IRepository<HomeBanner> {
-  findAllActive(platform: string): Promise<HomeBanner[]>;
+  findAllActive(platform: string, tag?: string): Promise<HomeBanner[]>;
 }

@@ -16,7 +16,12 @@ import { ISeoMetadataRepository } from '../../domain/repositories/seo-metadata.r
 export class GetHomeBannersHandler implements IQueryHandler<qry.GetHomeBannersQuery> {
   constructor(@Inject('IHomeBannerRepository') private readonly repository: IHomeBannerRepository) {}
   async execute(query: qry.GetHomeBannersQuery) {
-    return this.repository.findAllActive(query.platform);
+    const banners = await this.repository.findAllActive(query.platform, query.tag);
+    // Entity class'larının protected props'larını serialize edebilmek için düz objeye çeviriyoruz
+    return banners.map(b => ({
+      id: b.id,
+      ...b.getProps(),
+    }));
   }
 }
 

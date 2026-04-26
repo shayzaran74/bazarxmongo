@@ -40,7 +40,7 @@
           <input ref="fileInput" type="file" class="hidden" accept="image/*" @change="e => $emit('upload', e.target.files[0])">
         </div>
 
-        <!-- Targeting Grid -->
+        <!-- Targeting & Dates Grid -->
         <div class="grid grid-cols-2 gap-6">
           <div class="space-y-2">
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pozisyon</label>
@@ -52,6 +52,17 @@
           <div class="space-y-2">
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sıralama</label>
             <input v-model.number="form.order" type="number" class="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 text-sm font-black focus:border-indigo-500 outline-none uppercase italic">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Başlangıç Tarihi</label>
+            <input v-model="form.startDate" type="date" class="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 text-sm font-black focus:border-indigo-500 outline-none uppercase italic">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Bitiş Tarihi</label>
+            <input v-model="form.endDate" type="date" class="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 text-sm font-black focus:border-indigo-500 outline-none uppercase italic">
           </div>
         </div>
 

@@ -14,6 +14,10 @@ export class FinancialGatewayService {
     return this.walletService.getBalance(userId, accountType);
   }
 
+  async getWallet(userId: string) {
+    return this.walletService.getWallet(userId);
+  }
+
   // Escrow Methods
   async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string, sellerId: string = '') {
     return this.escrowService.holdFunds(userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId);

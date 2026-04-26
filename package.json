@@ -4,11 +4,26 @@
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "turbo dev",
+
+    "env:local": "cp apps/frontend/.env.development apps/frontend/.env && cp apps/backend/.env.development apps/backend/.env",
+    "env:server": "cp apps/frontend/.env.production apps/frontend/.env && cp apps/backend/.env.production apps/backend/.env",
+    "env:ngrok": "cp apps/frontend/.env.ngrok apps/frontend/.env",
+
+    "prisma:studio": "cd apps/backend && npx prisma studio",
+    "prisma:migrate": "cd apps/backend && npx prisma migrate dev",
+    "prisma:generate": "cd apps/backend && npx prisma generate",
+
+    "ngrok:backend": "ngrok http 3001",
+    "ngrok:frontend": "ngrok http 3002",
+
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",
+
     "docker:up": "docker-compose -f infra/docker-compose.yml up -d",
-    "docker:down": "docker-compose -f infra/docker-compose.yml down"
+    "docker:down": "docker-compose -f infra/docker-compose.yml down",
+    "docker:logs": "docker-compose -f infra/docker-compose.yml logs -f",
+    "docker:status": "docker-compose -f infra/docker-compose.yml ps"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

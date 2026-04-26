@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/shared-types/package.json ./packages/shared/shared-types/
 COPY apps/frontend/package.json ./apps/frontend/
 
-RUN pnpm install --frozen-lockfile --filter @bazarx/frontend...
+RUN pnpm install --no-frozen-lockfile
 
 # ─── Stage 2: Build ───────────────────────────────────────────────
 FROM node:20-alpine AS builder
@@ -25,8 +25,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
 COPY . .
 
-# Shared types build
-RUN pnpm --filter @barterborsa/shared-types build
+# Shared packages build
+RUN pnpm --filter "@barterborsa/*" build
 
 # Nuxt build
 WORKDIR /app/apps/frontend

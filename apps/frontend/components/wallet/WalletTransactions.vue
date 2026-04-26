@@ -75,15 +75,10 @@
             </td>
             <td class="px-6 py-5">
               <span
-                v-if="!tx.account"
-                class="text-[9px] font-black text-gray-300 uppercase"
-              >Bilinmeyen</span>
-              <span
-                v-else
                 class="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border"
-                :class="getAccountBadgeClass(tx.account.type)"
+                :class="getAccountBadgeClass(tx.account?.type || tx.accountType)"
               >
-                {{ tx.account.type }}
+                {{ getAccountLabel(tx.account?.type || tx.accountType) }}
               </span>
             </td>
             <td
@@ -121,16 +116,19 @@ defineEmits(['switch-account', 'refresh'])
 const getAccountLabel = (type) => {
   if (type === 'MAIN') return 'Nakit'
   if (type === 'BARTER') return 'Barter'
-  if (type.includes('XP_COMMISSION')) return 'XP İndirim'
-  if (type.includes('XP_AD')) return 'XP Reklam'
-  if (type.includes('XP_SERVICE')) return 'XP Servis'
-  return 'XP'
+  if (type === 'SYSTEM') return 'Sistem'
+  if (type && type.includes('XP_COMMISSION')) return 'XP İndirim'
+  if (type && type.includes('XP_AD')) return 'XP Reklam'
+  if (type && type.includes('XP_SERVICE')) return 'XP Servis'
+  if (type && type.includes('XP')) return 'XP'
+  return 'Genel'
 }
 
 const getAccountBadgeClass = (type) => {
   if (type === 'MAIN') return 'bg-blue-50 text-blue-700 border-blue-100'
   if (type === 'BARTER') return 'bg-orange-50 text-orange-700 border-orange-100'
-  if (type.includes('XP')) return 'bg-purple-50 text-purple-700 border-purple-100'
+  if (type === 'SYSTEM') return 'bg-gray-100 text-gray-700 border-gray-200'
+  if (type && type.includes('XP')) return 'bg-purple-50 text-purple-700 border-purple-100'
   return 'bg-gray-50 text-gray-700 border-gray-100'
 }
 </script>

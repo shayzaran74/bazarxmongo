@@ -122,7 +122,14 @@ export const useCheckout = () => {
     walletLoading.value = true
     try {
       const res: any = await $api('/api/wallet')
-      walletBalance.value = res.data?.availableBalance || 0
+      if (res.success && res.data?.accounts) {
+        // Yeni birleşik yapıda MAIN hesabı bul
+        const mainAccount = res.data.accounts.find((a: any) => a.type === 'MAIN')
+        walletBalance.value = Number(mainAccount?.availableBalance || 0)
+      } else {
+        // Fallback veya eski yapı
+        walletBalance.value = Number(res.data?.availableBalance || 0)
+      }
     } catch { /* ignore */ } finally {
       walletLoading.value = false
     }

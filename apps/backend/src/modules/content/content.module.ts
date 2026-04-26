@@ -13,6 +13,8 @@ import { LegalController } from './presentation/legal.controller';
 import { BannersAdminController } from './presentation/banners-admin.controller';
 import { DynamicContentAdminController } from './presentation/dynamic-admin.controller';
 import { HelpAdminController } from './presentation/help-admin.controller';
+import { SideAdsAdminController } from './presentation/side-ads-admin.controller';
+import { SideAdsController } from './presentation/side-ads.controller';
 
 import { CreateHomeBannerHandler } from './application/commands/create-home-banner.handler';
 import { CreateQuadCardHandler } from './application/commands/create-quad-card.handler';
@@ -96,7 +98,9 @@ import { SettingsAdminController } from './presentation/settings-admin.controlle
     SettingsAdminController,
     BannersAdminController,
     DynamicContentAdminController,
-    HelpAdminController
+    HelpAdminController,
+    SideAdsAdminController,
+    SideAdsController,
   ],
   providers: [
     ...CommandHandlers,

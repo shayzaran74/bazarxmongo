@@ -173,16 +173,19 @@ const fetchBanners = async () => {
         const params = new URLSearchParams()
         if (props.ecosystem) params.append('ecosystem', props.ecosystem)
         if (city) params.append('city', city)
+        params.append('platform', props.ecosystem || 'BAZARX')
+        params.append('tag', 'home_top')
         params.append('locale', locale.value)
-        params.append('position', 'home_top')
         const query = params.toString() ? `?${params.toString()}` : ''
 
         const data = await $api(`/api/banners${query}`)
-        if (data.success) {
-            banners.value = data.data
-            // Varsayılan altyazı desteği yoksa, Premium bir görünüm için rastgele subtitle ekle (Eğer API'den gelmiyorsa)
-            banners.value = banners.value.map((b, i) => ({
+        // Backend raw array döndürüyor (wrapper yok)
+        const rawBanners = Array.isArray(data) ? data : (data?.data || [])
+        if (rawBanners.length > 0) {
+            banners.value = rawBanners.map((b, i) => ({
                 ...b,
+                imageUrl: b.image || b.imageUrl,
+                linkUrl: b.link || b.linkUrl,
                 subtitle: b.subtitle || (i === 0 ? 'ÖZEL SEÇİM' : 'YENİ FIRSAT')
             }))
             if (banners.value.length > 1) {

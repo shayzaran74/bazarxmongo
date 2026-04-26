@@ -43,6 +43,7 @@ export class BannersAdminController {
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
         platform: dto.platform || 'BAZARX',
+        tag: dto.tag || dto.position,
       }
     });
     return { success: true, data: item };
@@ -59,9 +60,11 @@ export class BannersAdminController {
     if (dto.link !== undefined) updateData.link = dto.link;
     if (dto.order !== undefined) updateData.order = dto.order;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
-    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
-    if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+    if (dto.startDate !== undefined) updateData.startDate = dto.startDate ? new Date(dto.startDate) : null;
+    if (dto.endDate !== undefined) updateData.endDate = dto.endDate ? new Date(dto.endDate) : null;
     if (dto.platform) updateData.platform = dto.platform;
+    if (dto.tag !== undefined) updateData.tag = dto.tag;
+    if (dto.position !== undefined) updateData.tag = dto.position;
 
     const item = await this.prisma.homeBanner.update({
       where: { id },

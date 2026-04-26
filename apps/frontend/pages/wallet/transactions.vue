@@ -264,7 +264,7 @@ const loadData = async () => {
                 const res = await fetchTransactions({ limit: 100 })
                 if (res.success) {
                     // Backend { success, data: { items, total } } veya { success, data: [] } dönebilir
-                    const rawData = (res as any).data
+                    const rawData = (res).data
                     transactions.value = Array.isArray(rawData) 
                         ? rawData 
                         : (rawData?.items || [])
@@ -274,7 +274,7 @@ const loadData = async () => {
             if (ledgerEntries.value.length === 0) {
                 const res = await fetchLedger({ limit: 100 })
                 if (res.success) {
-                    const rawData = (res as any).data
+                    const rawData = (res).data
                     ledgerEntries.value = Array.isArray(rawData) 
                         ? rawData 
                         : (rawData?.items || [])

@@ -25,6 +25,10 @@
   },
   "dependencies": {
     "@barterborsa/domain-identity": "workspace:*",
+    "@barterborsa/shared-core": "workspace:*",
+    "@barterborsa/shared-messaging": "workspace:*",
+    "@barterborsa/shared-nest": "workspace:*",
+    "@barterborsa/shared-observability": "workspace:*",
     "@barterborsa/shared-persistence": "workspace:*",
     "@barterborsa/shared-security": "workspace:*",
     "@barterborsa/shared-types": "workspace:*",

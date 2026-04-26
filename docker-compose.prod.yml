@@ -27,8 +27,8 @@ services:
   # ─── Frontend (Nuxt 3 SPA) ───────────────────────────────────────
   frontend:
     build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: apps/frontend/Dockerfile.prod
     container_name: bazarx_frontend
     restart: unless-stopped
     environment:
@@ -43,8 +43,8 @@ services:
   # ─── Backend (NestJS) ────────────────────────────────────────────
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: apps/backend/Dockerfile.prod
     container_name: bazarx_backend
     restart: unless-stopped
     environment:
@@ -75,8 +75,8 @@ services:
   # ─── Financial Service (gRPC) ────────────────────────────────────
   financial-service:
     build:
-      context: ./apps/financial-service
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: apps/financial-service/Dockerfile.prod
     container_name: bazarx_financial
     restart: unless-stopped
     environment:
@@ -171,6 +171,21 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - bazarx_net
+
+  # ─── Ngrok (Remote Access) ───────────────────────────────────────
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: bazarx_ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "nginx:80"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    depends_on:
+      - nginx
     networks:
       - bazarx_net
 

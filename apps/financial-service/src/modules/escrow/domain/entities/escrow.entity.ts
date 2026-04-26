@@ -39,7 +39,9 @@ export class Escrow extends AggregateRoot<EscrowProps> {
   }
 
   release(): void {
-    if (this.props.status !== 'FUNDED') throw new Error('Yalnızca FUNDED durumdaki fonlar çözülebilir.');
+    if (this.props.status !== 'FUNDED') {
+       throw new Error('Yalnızca FUNDED durumdaki fonlar çözülebilir.');
+    }
     this.props.status = 'RELEASED';
     this.props.releasedAmount = this.props.amount;
     this.props.releasedAt = new Date();
@@ -62,5 +64,20 @@ export class Escrow extends AggregateRoot<EscrowProps> {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  static fromPersistence(raw: any): Escrow {
+    return new Escrow({
+      orderId: raw.orderId,
+      buyerId: raw.buyerId,
+      sellerId: raw.sellerId,
+      amount: new Decimal(raw.amount),
+      releasedAmount: new Decimal(raw.releasedAmount || 0),
+      status: raw.status as any,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+      releasedAt: raw.releasedAt || undefined,
+      payoutLog: raw.payoutLog,
+    }, raw.id);
   }
 }

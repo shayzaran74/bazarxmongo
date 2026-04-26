@@ -1,21 +1,17 @@
 <template>
   <div
-    v-if="ads && ads.length > 0"
+    v-if="displayedAds && displayedAds.length > 0"
     :class="[
-      'hidden xl:flex flex-col gap-5 w-56 shrink-0 py-6 transition-all duration-700',
+      'hidden xl:flex flex-col gap-4 w-56 shrink-0 py-6 transition-all duration-700',
       side === 'left' ? 'pl-4 pr-2' : 'pr-4 pl-2'
     ]"
   >
-    <!-- Ad Cards - rotates every 30 seconds -->
-    <TransitionGroup
-      :name="side === 'left' ? 'slide-left' : 'slide-right'"
-      tag="div"
-      class="relative"
-    >
+    <!-- Tüm reklamlar görünür — 10s'de bir en alt en üste gelir -->
+    <TransitionGroup name="conveyor" tag="div" class="flex flex-col gap-4">
       <div
-        v-for="(ad, index) in visibleAds"
-        :key="ad.id || `ad-${rotationKey}-${index}`"
-        class="relative w-full h-[560px] mb-4 last:mb-0"
+        v-for="ad in displayedAds"
+        :key="ad.id"
+        class="relative w-full h-[560px] flex-shrink-0"
       >
         <div
           :class="[
@@ -25,30 +21,9 @@
         >
           <!-- Premium Badge -->
           <div class="absolute top-3 left-3 z-20">
-            <span
-              class="px-2.5 py-1 bg-gray-900/10 dark:bg-white/10 backdrop-blur-md rounded-lg text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest border border-white/20"
-            >
+            <span class="px-2.5 py-1 bg-gray-900/10 dark:bg-white/10 backdrop-blur-md rounded-lg text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest border border-white/20">
               {{ ad.category || 'SPONSORLU' }}
             </span>
-          </div>
-
-          <!-- Rotation Indicator -->
-          <div
-            v-if="ads.length > maxVisible"
-            class="absolute top-3 right-3 z-20"
-          >
-            <div class="flex items-center gap-1">
-              <div
-                v-for="dot in totalPages"
-                :key="'dot-' + dot"
-                :class="[
-                  'w-1.5 h-1.5 rounded-full transition-all duration-500',
-                  dot === currentPage
-                    ? 'bg-white/90 scale-125 shadow-sm'
-                    : 'bg-white/30'
-                ]"
-              />
-            </div>
           </div>
 
           <!-- Image Area -->
@@ -66,25 +41,19 @@
             >
               {{ ad.emoji || '🎁' }}
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"
-            />
+            <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
           </div>
 
           <!-- Content -->
-          <div class="absolute bottom-0 inset-x-0 p-5 text-white z-20">
-            <h4 class="text-base font-black leading-tight mb-2 line-clamp-2 drop-shadow-lg">
+          <div class="absolute bottom-0 inset-x-0 p-4 text-white z-20">
+            <h4 class="text-sm font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-lg">
               {{ ad.title }}
             </h4>
-            <p
-              v-if="ad.subtitle"
-              class="text-[11px] opacity-90 mb-4 line-clamp-1 italic drop-shadow-md"
-            >
-              {{
-                ad.subtitle }}
+            <p v-if="ad.subtitle" class="text-[10px] opacity-90 mb-3 line-clamp-1 italic drop-shadow-md">
+              {{ ad.subtitle }}
             </p>
             <button
-              class="w-full py-3 bg-white text-gray-900 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-xl active:scale-95"
+              class="w-full py-2.5 bg-white text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-xl active:scale-95"
               @click="handleClick(ad.link)"
             >
               İncele
@@ -97,132 +66,98 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, useAppImage, navigateTo } from '#imports'
+import { ref, watch, onMounted, onUnmounted, useAppImage, navigateTo } from '#imports'
 
 const props = defineProps({
-    side: {
-        type: String,
-        default: 'right'
-    },
-    ads: {
-        type: Array,
-        default: () => []
-    }
+  side: { type: String, default: 'right' },
+  ads: { type: Array, default: () => [] }
 })
 
 const { resolveImageUrl } = useAppImage()
 
-// Rotation logic
-const maxVisible = 2 // Show max 2 ads at a time per side
-const rotationOffset = ref(0)
-const rotationKey = ref(0)
+// Tüm reklamlar gösterilir — sınır yok, footer'a kadar uzar
+const displayedAds = ref([])
+
+watch(() => props.ads, (newAds) => {
+  displayedAds.value = [...newAds]
+}, { immediate: true, deep: true })
+
 let rotationTimer = null
 
-const totalPages = computed(() => {
-    if (!props.ads || props.ads.length <= maxVisible) return 1
-    return Math.ceil(props.ads.length / maxVisible)
-})
-
-const currentPage = computed(() => {
-    if (totalPages.value <= 1) return 1
-    return (rotationOffset.value % totalPages.value) + 1
-})
-
-const visibleAds = computed(() => {
-    if (!props.ads || props.ads.length === 0) return []
-    if (props.ads.length <= maxVisible) return props.ads
-
-    const startIdx = (rotationOffset.value * maxVisible) % props.ads.length
-    const result = []
-    for (let i = 0; i < maxVisible; i++) {
-        const idx = (startIdx + i) % props.ads.length
-        result.push(props.ads[idx])
-    }
-    return result
-})
-
-const startRotation = () => {
-    if (rotationTimer) clearInterval(rotationTimer)
-
-    rotationTimer = setInterval(() => {
-        if (props.ads && props.ads.length > maxVisible) {
-            rotationOffset.value++
-            rotationKey.value++
-        }
-    }, 30000) // 30 seconds
+// 10s'de bir: en alttaki reklam en üste gelir
+const rotateUp = () => {
+  if (displayedAds.value.length <= 1) return
+  const last = displayedAds.value[displayedAds.value.length - 1]
+  displayedAds.value = [last, ...displayedAds.value.slice(0, -1)]
 }
 
-onMounted(() => {
-    startRotation()
-})
+const startRotation = () => {
+  stopRotation()
+  if (displayedAds.value.length > 1) {
+    rotationTimer = setInterval(rotateUp, 10000)
+  }
+}
 
-onUnmounted(() => {
-    if (rotationTimer) {
-        clearInterval(rotationTimer)
-        rotationTimer = null
-    }
-})
+const stopRotation = () => {
+  if (rotationTimer) {
+    clearInterval(rotationTimer)
+    rotationTimer = null
+  }
+}
 
-// Restart rotation when ads change
 watch(() => props.ads, () => {
-    rotationOffset.value = 0
-    rotationKey.value++
-    startRotation()
+  startRotation()
 }, { deep: true })
 
+onMounted(startRotation)
+onUnmounted(stopRotation)
+
 const handleClick = (link) => {
-    if (link) {
-        navigateTo(link)
-    }
+  if (link) navigateTo(link)
 }
 </script>
 
 <style scoped>
+/* En alttaki kart yukarı kayarak listenin başına geçer */
+.conveyor-move {
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.conveyor-enter-active {
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.conveyor-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+}
+
+/* Yeni gelen (en üste çıkan) kart aşağıdan yukarı kayar */
+.conveyor-enter-from {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+/* Giden (en alttan çıkan) kart aşağıya doğru kaybolur */
+.conveyor-leave-to {
+  opacity: 0;
+  transform: translateY(60px) scale(0.95);
+}
+
 .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Slide transitions for left side */
-.slide-left-enter-active,
-.slide-left-leave-active {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-left-enter-from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-}
-
-.slide-left-leave-to {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.95);
-}
-
-/* Slide transitions for right side */
-.slide-right-enter-active,
-.slide-right-leave-active {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-right-enter-from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-}
-
-.slide-right-leave-to {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.95);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
