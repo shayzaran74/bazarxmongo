@@ -37,9 +37,8 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
         media: data.productImages ? {
           create: data.productImages.map((url: string, index: number) => ({
             url,
-            mediaType: 'IMAGE',
-            sortOrder: index,
-            isMain: index === 0
+            type: 'IMAGE',
+            sortOrder: index
           }))
         } : undefined,
         // Brand ilişkisi varsa bağlayalım

@@ -215,21 +215,32 @@ export const useAdminProducts = () => {
     loading.value = true
     try {
       if (editingId.value) {
-        await $api(`/api/admin/products/${editingId.value}`, {
+        const res = await $api<any>(`/api/admin/products/${editingId.value}`, {
           method: 'PUT',
           body: formData.value
         })
-        $toast.success('Ürün güncellendi')
+        if (res.success) {
+          $toast.success('Ürün güncellendi')
+          showForm.value = false
+          resetForm()
+          fetchProducts(pagination.page)
+        } else {
+          $toast.error(res.error || 'Güncelleme sırasında bir hata oluştu')
+        }
       } else {
-        await $api('/api/admin/products', {
+        const res = await $api<any>('/api/admin/products', {
           method: 'POST',
           body: formData.value
         })
-        $toast.success('Ürün eklendi')
+        if (res.success) {
+          $toast.success('Ürün eklendi')
+          showForm.value = false
+          resetForm()
+          fetchProducts(pagination.page)
+        } else {
+          $toast.error(res.error || 'Ekleme sırasında bir hata oluştu')
+        }
       }
-      showForm.value = false
-      resetForm()
-      fetchProducts(pagination.page)
       fetchProductStats()
     } catch {
       $toast.error('İşlem başarısız')
