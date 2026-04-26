@@ -29,7 +29,7 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
         brand: data.brandName || 'Genel',
         description: data.description || name,
         gtin: data.gtin || data.barcode,
-        categoryId: data.categoryId,
+        categoryId: (data.categoryId && data.categoryId !== '') ? data.categoryId : null,
         status: data.status || 'ACTIVE',
         isFeatured: data.isFeatured || false,
         isSpecialOffer: data.isSpecialOffer || false,
