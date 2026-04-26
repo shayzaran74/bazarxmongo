@@ -38,12 +38,20 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
     const updatedListing = await this.prisma.listing.update({
       where: { id },
       data: {
-        title: dto.title,
+        title: dto.title || dto.name, // Frontend sends 'name' in form
+        description: dto.description,
         price: dto.price !== undefined ? Number(dto.price) : undefined,
         stock: dto.stock !== undefined ? Number(dto.stock) : undefined,
         status: dto.status,
         sku: dto.sku,
-        // Diğer alanlar buraya eklenebilir
+        visibility: dto.visibility,
+        minMarketPrice: dto.minMarketPrice !== undefined ? Number(dto.minMarketPrice) : undefined,
+        maxPurchasePerMember: dto.maxPurchasePerMember !== undefined ? Number(dto.maxPurchasePerMember) : undefined,
+        originalPrice: dto.compareAtPrice !== undefined ? Number(dto.compareAtPrice) : undefined,
+        weight: dto.weight !== undefined ? Number(dto.weight) : undefined,
+        volume: dto.volume !== undefined ? Number(dto.volume) : undefined,
+        isDigital: dto.isDigital,
+        isB2BOnly: dto.isB2BOnly,
       }
     });
 

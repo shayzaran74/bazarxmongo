@@ -9,8 +9,10 @@ export class GetListingBySlugHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetListingBySlugQuery) {
-    const listing = await this.prisma.listing.findUnique({
-      where: { slug: query.slug },
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.slug) || /^c[^\s-]{8,}$/i.test(query.slug);
+
+    const listing = await this.prisma.listing.findFirst({
+      where: isId ? { id: query.slug } : { slug: query.slug },
       include: {
         catalogProduct: {
           include: {

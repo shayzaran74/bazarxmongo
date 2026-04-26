@@ -11,14 +11,14 @@ export const useProductForm = (params: { productId?: string | null; initialData?
   const foundCatalogProduct = ref<any>(null)
   
   const form = reactive({
-    name: initialData?.name || '',
+    name: initialData?.name || initialData?.title || '',
     barcode: initialData?.barcode || '',
     modelCode: initialData?.modelCode || '',
     brand: initialData?.brand || '',
     productType: initialData?.productType || '',
     description: initialData?.description || '',
     price: initialData?.price || 0,
-    compareAtPrice: initialData?.compareAtPrice || 0,
+    compareAtPrice: initialData?.compareAtPrice || initialData?.originalPrice || 0,
     costPerItem: initialData?.costPerItem || 0,
     stock: initialData?.stock || 0,
     sku: initialData?.sku || '',
