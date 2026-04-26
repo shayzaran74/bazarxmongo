@@ -177,6 +177,37 @@ export const useAdminProducts = () => {
       productImages: product.images || [],
       hasVariants: false,
     }
+
+    // Kategori hiyerarşisini çöz ve UI'da seçili göster
+    selectedMainCategory.value = ''
+    selectedSubCategory1.value = ''
+    selectedSubCategory2.value = ''
+    subCategories1.value = []
+    subCategories2.value = []
+
+    if (product.categoryId && categories.value.length > 0) {
+      let currentCat = categories.value.find((c: any) => c.id === product.categoryId)
+      if (currentCat) {
+        const path = []
+        while(currentCat) {
+          path.unshift(currentCat)
+          currentCat = categories.value.find((c: any) => c.id === currentCat?.parentId)
+        }
+        
+        if (path.length > 0) {
+          selectedMainCategory.value = path[0].id
+          subCategories1.value = categories.value.filter((c: any) => c.parentId === path[0].id)
+        }
+        if (path.length > 1) {
+          selectedSubCategory1.value = path[1].id
+          subCategories2.value = categories.value.filter((c: any) => c.parentId === path[1].id)
+        }
+        if (path.length > 2) {
+          selectedSubCategory2.value = path[2].id
+        }
+      }
+    }
+
     showForm.value = true
   }
 
