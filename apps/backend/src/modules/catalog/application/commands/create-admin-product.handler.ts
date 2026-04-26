@@ -15,10 +15,19 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
     }
 
     // Katalog Ürününü oluştur
+    // Slug oluştur
+    const name = data.name || data.title;
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+
+    // Katalog Ürününü oluştur
     const catalogProduct = await this.prisma.catalogProduct.create({
       data: {
-        name: data.name || data.title,
-        description: data.description,
+        name: name,
+        slug: slug,
+        brand: data.brandName || 'Genel',
+        description: data.description || name,
         gtin: data.gtin || data.barcode,
         categoryId: data.categoryId,
         status: data.status || 'ACTIVE',
@@ -32,28 +41,29 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
             sortOrder: index,
             isMain: index === 0
           }))
+        } : undefined,
+        // Brand ilişkisi varsa bağlayalım
+        brands: data.brandId ? {
+          connect: { id: data.brandId }
         } : undefined
       }
     });
 
     // Eğer adminin kendisine ait bir satıcı hesabı yoksa BazarX genel vendor'unu bulalım
-    // Veya sadece satıcı yoksa Listing oluşturmayabiliriz.
     let vendor = await this.prisma.vendor.findUnique({
       where: { userId: adminId }
     });
 
     if (!vendor) {
-      // Admin için bir dummy vendor oluştur veya sistem vendorunu bul
       vendor = await this.prisma.vendor.findFirst({
         where: { profile: { storeName: 'BazarX Sistem' } }
       });
       
       if (!vendor) {
-        // Fallback: İlk admin olmayan aktif vendoru da seçebilir ama en iyisi admin için sistem vendor oluşturmaktır
         vendor = await this.prisma.vendor.create({
           data: {
             userId: adminId,
-            status: 'ACTIVE',
+            status: 'APPROVED',
             profile: {
               create: {
                 storeName: 'BazarX Sistem',
