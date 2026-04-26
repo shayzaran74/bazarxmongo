@@ -48,6 +48,8 @@ import { UpdateListingHandler } from './application/commands/update-listing.hand
 import { PRODUCT_REPO } from './domain/repositories/product.repository.interface';
 import { PrismaProductRepository } from './infrastructure/persistence/prisma-product.repository';
 
+import { CreateAdminProductHandler } from './application/commands/create-admin-product.handler';
+
 const CommandHandlers = [
   CreateCategoryHandler, 
   CreateListingHandler, 
@@ -58,6 +60,7 @@ const CommandHandlers = [
   UpdateAdminProductHandler,
   DeleteListingHandler,
   UpdateListingHandler,
+  CreateAdminProductHandler,
 ];
 
 const QueryHandlers = [

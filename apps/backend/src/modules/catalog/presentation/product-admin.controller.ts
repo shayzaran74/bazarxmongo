@@ -8,12 +8,11 @@ import { ListAdminProductsQuery }
   from '../application/queries/list-admin-products/list-admin-products.query';
 import { DeleteAdminProductCommand }
   from '../application/commands/delete-admin-product.command';
-import { BulkDeleteAdminProductsCommand }
-  from '../application/commands/bulk-delete-admin-products.command';
-import { BulkUpdateAdminProductsCommand }
-  from '../application/commands/bulk-update-admin-products.command';
-import { UpdateAdminProductCommand }
-  from '../application/commands/update-admin-product.command';
+import { BulkDeleteAdminProductsCommand } from '../application/commands/bulk-delete-admin-products.command';
+import { BulkUpdateAdminProductsCommand } from '../application/commands/bulk-update-admin-products.command';
+import { UpdateAdminProductCommand } from '../application/commands/update-admin-product.command';
+import { CreateAdminProductCommand } from '../application/commands/create-admin-product.command';
+import { CurrentUser } from '@barterborsa/shared-nest';
 
 @ApiTags('Product Admin')
 @ApiBearerAuth()
@@ -40,6 +39,21 @@ export class ProductAdminController {
       success: true,
       data: { total, active, pending }
     };
+  }
+
+  @ApiOperation({ summary: 'Create a product' })
+  @Post()
+  async createProduct(@Body() data: any, @CurrentUser() user: any) {
+    try {
+      return await this.commandBus.execute(
+        new CreateAdminProductCommand(data, user.id)
+      );
+    } catch (error: any) {
+      return {
+        success: false,
+        error: 'Ekleme sırasında hata: ' + error.message
+      };
+    }
   }
 
   @ApiOperation({ summary: 'List all products for admin' })
