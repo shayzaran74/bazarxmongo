@@ -100,11 +100,20 @@ const productService = useProductService()
 const categoryService = useCategoryService()
 
 // Reactive Filter State from Query
-const currentFilters = computed(() => ({
-  categorySlug: route.query.categorySlug as string || undefined,
-  page: Number(route.query.page) || 1,
-  sort: route.query.sort as string || undefined
-}))
+const currentFilters = computed(() => {
+  const filters: Record<string, any> = {
+    categorySlug: route.query.categorySlug || route.query.category || undefined,
+    page: Number(route.query.page) || 1,
+    sort: route.query.sort as string || undefined,
+    search: route.query.search as string || undefined,
+    brand: route.query.brand as string || undefined,
+  }
+  if (route.query.minPrice) filters.minPrice = Number(route.query.minPrice)
+  if (route.query.maxPrice) filters.maxPrice = Number(route.query.maxPrice)
+  
+  // Clean undefined
+  return Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined))
+})
 
 // SSR Data Fetch
 const { data: categoriesData } = await useAsyncData('categories', () => categoryService.getCategories())

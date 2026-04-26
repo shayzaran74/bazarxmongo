@@ -46,11 +46,17 @@ export class PrismaProductRepository implements IProductRepository {
   }
 
   async findAll(filter: ListingsFilter): Promise<PaginatedResult<ProductListingItem>> {
-    const { categoryId, minPrice, maxPrice, page = 1, limit = 20 } = filter;
+    const { categoryId, search, minPrice, maxPrice, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
     const where: any = { status: 'ACTIVE' }; // isActive yerine status
     if (categoryId) where.categoryId = categoryId;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     
     // Not: CatalogProduct'ta price alanı yoksa şimdilik fiyat filtresini atlıyoruz.
     // İleride 'Listing' tablosuyla join yapılarak bu eklenebilir.

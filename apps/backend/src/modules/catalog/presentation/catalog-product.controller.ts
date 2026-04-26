@@ -62,7 +62,10 @@ export class CatalogProductController {
     const result = await this.queryBus.execute(
       new GetCatalogProductsQuery({
         search: query.q || query.search,
-        categoryId: query.categoryId,
+        categoryId: query.categoryId || query.categorySlug || query.category,
+        brandId: query.brandId || query.brand,
+        minPrice: query.minPrice !== undefined ? Number(query.minPrice) : undefined,
+        maxPrice: query.maxPrice !== undefined ? Number(query.maxPrice) : undefined,
         isFeatured: query.isFeatured === 'true',
         isSpecialOffer: query.isSpecialOffer === 'true',
         isFlashSale: query.isFlashSale === 'true',

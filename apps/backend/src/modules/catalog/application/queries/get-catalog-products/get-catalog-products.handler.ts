@@ -20,9 +20,28 @@ export class GetCatalogProductsHandler
     const where: any = { status: 'ACTIVE' };
 
     if (search) {
-      where.name = { contains: search, mode: 'insensitive' };
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
     }
-    if (categoryId) where.categoryId = categoryId;
+    if (categoryId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+      if (isUuid) {
+        where.categoryId = categoryId;
+      } else {
+        where.category = { slug: categoryId };
+      }
+    }
+    if (query.filters.brandId) {
+      where.brands = { some: { id: query.filters.brandId } };
+    }
+    if (query.filters.minPrice !== undefined || query.filters.maxPrice !== undefined) {
+      where.listings = { some: { price: {} } };
+      if (query.filters.minPrice !== undefined) where.listings.some.price.gte = query.filters.minPrice;
+      if (query.filters.maxPrice !== undefined) where.listings.some.price.lte = query.filters.maxPrice;
+    }
+    
     if (isFeatured === true) where.isFeatured = true;
     if (isSpecialOffer === true) where.isSpecialOffer = true;
     if (isFlashSale === true) where.isFlashSale = true;

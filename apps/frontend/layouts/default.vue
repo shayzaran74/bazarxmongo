@@ -54,10 +54,10 @@
 
     <!-- Search Overlay -->
     <Transition name="fade">
-      <div v-if="showAdvancedSearch" class="fixed inset-0 z-[200] flex items-start justify-center pt-24 p-4">
+      <div v-if="showAdvancedSearch" class="fixed inset-0 z-[999] flex items-start justify-center pt-24 p-4">
         <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showAdvancedSearch = false" />
         <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up p-8">
-          <ProductAdvancedSearch @filter="showAdvancedSearch = false" />
+          <ProductAdvancedSearch :categories="categories" @filter="handleSearchFilter" />
         </div>
       </div>
     </Transition>
@@ -79,6 +79,14 @@ const {
 } = useLayoutLogic()
 
 const handleSaveLocation = () => saveLocation(selectedCity.value || detectedCity.value)
+
+const handleSearchFilter = (filters: any) => {
+  showAdvancedSearch.value = false
+  navigateTo({
+    path: '/products',
+    query: filters
+  })
+}
 
 onMounted(initLayout)
 onUnmounted(disconnect)

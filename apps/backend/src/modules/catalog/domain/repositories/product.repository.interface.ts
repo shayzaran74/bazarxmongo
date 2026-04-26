@@ -4,6 +4,8 @@ import { Product, ProductListingItem } from '../entities/product.model';
 export const PRODUCT_REPO = 'IProductRepository';
 
 export interface ListingsFilter {
+  search?: string;
+  brandId?: string;
   categoryId?: string;
   minPrice?: number;
   maxPrice?: number;
