@@ -188,7 +188,7 @@ export const useAdminProducts = () => {
     if (product.categoryId && categories.value.length > 0) {
       let currentCat = categories.value.find((c: any) => c.id === product.categoryId)
       if (currentCat) {
-        const path = []
+        const path: any[] = []
         while(currentCat) {
           path.unshift(currentCat)
           currentCat = categories.value.find((c: any) => c.id === currentCat?.parentId)
