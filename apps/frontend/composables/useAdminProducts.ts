@@ -93,9 +93,22 @@ export const useAdminProducts = () => {
   const fetchCategories = async () => {
     try {
       const res = await $api<any>('/api/listings/categories')
-      const allCats = res.data || []
-      categories.value = allCats
-      mainCategories.value = allCats.filter((c: any) => !c.parentId)
+      const tree = res.data || []
+      
+      // Ağacı düzleştir (Flatten)
+      const flat: any[] = []
+      const flatten = (items: any[]) => {
+        items.forEach(item => {
+          flat.push(item)
+          if (item.children && item.children.length > 0) {
+            flatten(item.children)
+          }
+        })
+      }
+      flatten(tree)
+      
+      categories.value = flat
+      mainCategories.value = tree // Kök kategoriler zaten tree'nin en üstünde
     } catch { /* sessizce geç */ }
   }
 
@@ -129,26 +142,27 @@ export const useAdminProducts = () => {
 
   // ─── Kategori Seçimi Yönetimi ───────────────────────────────────────────────
   const handleMainCategoryChange = () => {
-    subCategories1.value = categories.value.filter(
-      (c: any) => c.parentId === selectedMainCategory.value
-    )
+    const mainCat = categories.value.find((c: any) => c.id === selectedMainCategory.value)
+    subCategories1.value = mainCat ? (mainCat.children || []) : []
+    
     selectedSubCategory1.value = ''
     selectedSubCategory2.value = ''
     subCategories2.value = []
-    formData.value.categoryId = selectedMainCategory.value
+    
+    formData.value.categoryId = selectedMainCategory.value || ''
   }
 
   const handleSubCategory1Change = () => {
-    subCategories2.value = categories.value.filter(
-      (c: any) => c.parentId === selectedSubCategory1.value
-    )
+    const subCat1 = subCategories1.value.find((c: any) => c.id === selectedSubCategory1.value)
+    subCategories2.value = subCat1 ? (subCat1.children || []) : []
+    
     selectedSubCategory2.value = ''
-    formData.value.categoryId = selectedSubCategory1.value || selectedMainCategory.value
+    formData.value.categoryId = selectedSubCategory1.value || selectedMainCategory.value || ''
   }
 
   const handleSubCategory2Change = () => {
     formData.value.categoryId =
-      selectedSubCategory2.value || selectedSubCategory1.value || selectedMainCategory.value
+      selectedSubCategory2.value || selectedSubCategory1.value || selectedMainCategory.value || ''
   }
 
   // ─── Form İşlemleri ────────────────────────────────────────────────────────
@@ -212,6 +226,10 @@ export const useAdminProducts = () => {
   }
 
   const submitForm = async () => {
+    if (!formData.value.categoryId) {
+      $toast.error('Lütfen bir kategori seçin')
+      return
+    }
     loading.value = true
     try {
       if (editingId.value) {
