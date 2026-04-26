@@ -115,9 +115,63 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     form.productImages.forEach((img: any, i: number) => img.isMain = i === index)
   }
 
-  const handleMainCategoryChange = async () => { /* Load subs */ }
-  const handleSubCategory1Change = async () => { /* Load subs */ }
-  const handleSubCategory2Change = async () => { /* Load subs */ }
+  const allCategories = ref<any[]>([])
+
+  const fetchCategories = async () => {
+    try {
+      const res = await $api<any>('/api/listings/categories')
+      const cats = res.data || []
+      allCategories.value = cats
+      mainCategories.value = cats.filter((c: any) => !c.parentId)
+
+      // Resolve initial hierarchy
+      if (form.categoryId) {
+        let currentCat = cats.find((c: any) => c.id === form.categoryId)
+        if (currentCat) {
+          const path: any[] = []
+          while(currentCat) {
+            path.unshift(currentCat)
+            currentCat = cats.find((c: any) => c.id === currentCat?.parentId)
+          }
+          if (path.length > 0) {
+            selectedMainCategory.value = path[0].id
+            subCategories1.value = cats.filter((c: any) => c.parentId === path[0].id)
+          }
+          if (path.length > 1) {
+            selectedSubCategory1.value = path[1].id
+            subCategories2.value = cats.filter((c: any) => c.parentId === path[1].id)
+          }
+          if (path.length > 2) {
+            selectedSubCategory2.value = path[2].id
+          }
+        }
+      }
+    } catch {
+      console.error('Kategoriler yüklenemedi')
+    }
+  }
+
+  onMounted(() => {
+    fetchCategories()
+  })
+
+  const handleMainCategoryChange = async () => {
+    subCategories1.value = allCategories.value.filter((c: any) => c.parentId === selectedMainCategory.value)
+    selectedSubCategory1.value = ''
+    selectedSubCategory2.value = ''
+    subCategories2.value = []
+    form.categoryId = selectedMainCategory.value
+  }
+
+  const handleSubCategory1Change = async () => {
+    subCategories2.value = allCategories.value.filter((c: any) => c.parentId === selectedSubCategory1.value)
+    selectedSubCategory2.value = ''
+    form.categoryId = selectedSubCategory1.value || selectedMainCategory.value
+  }
+
+  const handleSubCategory2Change = async () => {
+    form.categoryId = selectedSubCategory2.value || selectedSubCategory1.value || selectedMainCategory.value
+  }
 
   const validateForm = () => {
     if (!form.name) {

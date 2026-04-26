@@ -55,6 +55,19 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
       }
     });
 
+    // CatalogProduct güncellemesi (Kategori, isim vb. için)
+    if (listing.catalogProductId && (dto.categoryId || dto.name || dto.title || dto.description)) {
+      const catalogData: any = {};
+      if (dto.categoryId) catalogData.categoryId = dto.categoryId;
+      if (dto.name || dto.title) catalogData.name = dto.name || dto.title;
+      if (dto.description) catalogData.description = dto.description;
+
+      await this.prisma.catalogProduct.update({
+        where: { id: listing.catalogProductId },
+        data: catalogData
+      });
+    }
+
     return updatedListing;
   }
 }
