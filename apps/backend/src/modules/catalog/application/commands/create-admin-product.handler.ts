@@ -60,10 +60,28 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
       });
       
       if (!vendor) {
+        // Sistem Şirketi oluştur veya bul
+        let company = await this.prisma.company.findFirst({
+          where: { name: 'BazarX Sistem' }
+        });
+
+        if (!company) {
+          company = await this.prisma.company.create({
+            data: {
+              name: 'BazarX Sistem',
+              status: 'APPROVED',
+              vatRate: 20
+            }
+          });
+        }
+
+        // Sistem Satıcısı (Vendor) oluştur
         vendor = await this.prisma.vendor.create({
           data: {
             userId: adminId,
+            companyId: company.id,
             status: 'APPROVED',
+            slug: 'bazarx-sistem-' + Math.random().toString(36).substring(2, 7),
             profile: {
               create: {
                 storeName: 'BazarX Sistem',
