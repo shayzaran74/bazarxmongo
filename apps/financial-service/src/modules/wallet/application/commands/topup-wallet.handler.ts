@@ -49,6 +49,26 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
 
     await this.walletRepository.save(wallet);
     await this.ledgerRepository.save(ledgerEntry);
+
+    // Sync Prisma Account table
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    // Find MAIN account
+    const mainAcc = await prisma.account.findFirst({
+      where: { userId, type: 'MAIN' }
+    });
+    
+    if (mainAcc) {
+      await prisma.account.update({
+        where: { id: mainAcc.id },
+        data: {
+          balance: { increment: amount },
+          availableBalance: { increment: amount }
+        }
+      });
+    }
+    await prisma.$disconnect();
   }
 }
 // Note: Wallet model was imported implicitly, need to add it or fix.

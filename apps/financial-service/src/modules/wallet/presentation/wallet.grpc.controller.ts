@@ -62,10 +62,26 @@ export class WalletGrpcController {
     }
 
     // 2. Get Account records (Source of truth for account IDs and types)
-    const [accounts, topupRequests, withdrawalRequests] = await Promise.all([
-      this.prisma.account.findMany({
+    let accounts = await this.prisma.account.findMany({
+      where: { userId: data.userId }
+    });
+
+    if (accounts.length === 0) {
+      console.log(`[FinancialService] No accounts found for ${data.userId}, creating default accounts...`);
+      await this.prisma.account.createMany({
+        data: [
+          { userId: data.userId, type: 'MAIN', currency: 'TRY' },
+          { userId: data.userId, type: 'BARTER', currency: 'BARTER' },
+          { userId: data.userId, type: 'XP_COMMISSION', currency: 'TRY' },
+          { userId: data.userId, type: 'XP_ADS', currency: 'TRY' },
+        ]
+      });
+      accounts = await this.prisma.account.findMany({
         where: { userId: data.userId }
-      }),
+      });
+    }
+
+    const [topupRequests, withdrawalRequests] = await Promise.all([
       this.prisma.accountTopUpRequest.findMany({
         where: { userId: data.userId },
         orderBy: { createdAt: 'desc' },
@@ -88,15 +104,11 @@ export class WalletGrpcController {
 
         if (acc.type === 'MAIN') {
           balance = walletEntity.balanceTL.amount.toString();
-          // Fix: If availableBalance is 0 in DB but balance is > 0, sync them
-          available = (acc.availableBalance.isZero() && !walletEntity.balanceTL.amount.isZero()) 
-            ? balance 
-            : available;
+          // Doğru Kullanılabilir Bakiye = Toplam Bakiye - Blokeli Bakiye
+          available = walletEntity.balanceTL.amount.minus(new Decimal(acc.blockedBalance.toString())).toString();
         } else if (acc.type === 'BARTER') {
           balance = walletEntity.barterBalance.amount.toString();
-          available = (acc.availableBalance.isZero() && !walletEntity.barterBalance.amount.isZero()) 
-            ? balance 
-            : available;
+          available = walletEntity.barterBalance.amount.minus(new Decimal(acc.blockedBalance.toString())).toString();
         }
 
         console.log(` - Account: ${acc.type}, Sync Balance: ${balance}, Available: ${available}`);
