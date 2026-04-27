@@ -33,9 +33,10 @@ export const useAuthService = () => {
         body: data
       })
     },
-    async logout(): Promise<ApiResponse<void>> {
+    async logout(refreshToken?: string): Promise<ApiResponse<void>> {
       return await $api<void>('/api/auth/logout', {
-        method: 'POST'
+        method: 'POST',
+        body: { refreshToken }
       })
     },
     async getProfile(): Promise<ApiResponse<UserDTO>> {

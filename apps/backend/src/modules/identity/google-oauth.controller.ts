@@ -25,7 +25,9 @@ export class GoogleOAuthController {
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Req() req: any, @Res() res: any) {
     const user = req.user;
-    const result = await this.authService.googleLogin(user);
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const result = await this.authService.googleLogin(user, userAgent, ipAddress);
     
     // Frontend'e tokenları ve kullanıcı bilgilerini gönder
     const frontendUrl = process.env.FRONTEND_URL || 'http://192.168.1.102:3000';

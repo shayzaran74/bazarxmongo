@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean
   loading: boolean
   error: string | null
+  isInitialized: boolean
 }
 
 let refreshPromise: Promise<boolean> | null = null
@@ -21,6 +22,7 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: false,
     loading: false,
     error: null,
+    isInitialized: false,
   }),
 
   getters: {
@@ -41,29 +43,16 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async init() {
-      if (this.isAuthenticated) return
+      if (this.isInitialized) return
+      
       const token = useCookie('access_token').value
-      const csrf = useCookie('csrf_token').value
       if (token) {
         this.token = token
-        this.csrfToken = csrf || null
         this.isAuthenticated = true
         await this.fetchUser(true)
-      } else {
-        await this.fetchCsrf()
       }
-    },
-    async fetchCsrf() {
-      const { $api } = useApi()
-      try {
-        const res = await $api<{ csrfToken: string }>('/api/auth/csrf')
-        if (res.csrfToken) {
-          this.csrfToken = res.csrfToken
-          useCookie('csrf_token').value = res.csrfToken
-        }
-      } catch (e) {
-        console.warn('CSRF token could not be fetched', e)
-      }
+      
+      this.isInitialized = true
     },
     async login(credentials: any) {
       this.loading = true
@@ -132,7 +121,13 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       const { $api } = useApi()
-      try { await $api('/api/auth/logout', { method: 'POST' }) } catch (e) { }
+      const refreshToken = useCookie('refresh_token').value
+      try { 
+        await $api('/api/auth/logout', { 
+          method: 'POST', 
+          body: { refreshToken } 
+        }) 
+      } catch (e) { }
       this.reset()
       useCookie('access_token').value = null
       useCookie('refresh_token').value = null

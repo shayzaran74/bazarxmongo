@@ -16,12 +16,18 @@ import { RolesGuard } from './auth/roles.guard';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: process.env.JWT_ACCESS_SECRET || 'default-access-secret-key-123',
-        signOptions: { 
-          expiresIn: '15m' // Access Token ömrü 15 dakika
-        },
-      }),
+      useFactory: () => {
+        const secret = process.env.JWT_ACCESS_SECRET;
+        if (!secret) {
+          throw new Error('JWT_ACCESS_SECRET is required but not defined in environment variables');
+        }
+        return {
+          secret,
+          signOptions: { 
+            expiresIn: '15m'
+          },
+        };
+      },
     }),
   ],
   providers: [

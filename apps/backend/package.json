@@ -46,6 +46,7 @@
     "@nestjs/platform-express": "^11.1.19",
     "@nestjs/platform-fastify": "^10.3.7",
     "@nestjs/swagger": "^11.3.0",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.12.0",
     "bcrypt": "^5.1.1",
     "ioredis": "^5.4.1",

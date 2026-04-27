@@ -275,7 +275,7 @@ const handleLogin = async () => {
     if (authStore.isLoggedIn) {
       const toast = useNuxtApp().$toast
       toast.success(t('auth.loginSuccess'))
-      window.location.href = '/'
+      await router.push('/')
     }
   } catch (error) {
     console.error('Login error:', error)

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule, PrismaService } from '@barterborsa/shared-persistence';
 import { 
@@ -41,7 +41,7 @@ import { GoogleOAuthController } from './google-oauth.controller';
 import { ProfileController } from './profile.controller';
 import { AddressController } from './address.controller';
 import { UserController } from './user.controller';
-import { AdminUserController } from './admin-user.controller';
+import { AdminUserController } from './presentation/admin-user.controller';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { TokenService } from './infrastructure/auth/token.service';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
@@ -115,11 +115,18 @@ const Handlers = [
     },
     {
       provide: 'IEventBus',
-      useValue: { publish: async (topic: string, data: any) => console.log(`[EventBus] ${topic}`, data) }, 
+      useFactory: () => ({
+        publish: async (topic: string, data: any) => {
+          const logger = new Logger('EventBusMock');
+          if (process.env.NODE_ENV === 'production') {
+            logger.error(`CRITICAL: EventBus mock called in production! Topic: ${topic}`);
+            throw new Error(`EventBus mock is not allowed in production. Attempted to publish to: ${topic}`);
+          }
+          logger.log(`[Mock Publish] ${topic}: ${JSON.stringify(data)}`);
+        }
+      }),
     }
   ],
   exports: [AuthService, TokenService],
 })
-export class IdentityModule {
-  constructor(private readonly googleStrategy: GoogleOAuthStrategy) {}
-}
+export class IdentityModule {}

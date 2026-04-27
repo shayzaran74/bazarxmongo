@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -21,22 +22,13 @@ import { Public } from '@barterborsa/shared-security';
 
 @ApiTags('Auth')
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly authService: AuthService
   ) {}
-
-  @Public()
-  @ApiOperation({ summary: 'Get CSRF token', description: 'Güvenlik için CSRF token döner.' })
-  @Get('csrf')
-  async getCsrf() {
-    return {
-      success: true,
-      csrfToken: 'dummy-csrf-token-for-dev'
-    };
-  }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
@@ -80,9 +72,12 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Giriş başarılı.' })
   @ApiResponse({ status: 401, description: 'Hatalı e-posta veya şifre.' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  async login(@Body() input: any) {
-    const authData = await this.authService.login(input);
+  async login(@Body() input: any, @Req() req: any) {
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const authData = await this.authService.login(input, userAgent, ipAddress);
 
     return {
       success: true,
@@ -104,6 +99,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Token yenileme başarılı.' })
   @ApiResponse({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' })
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('refresh')
   async refresh(@Body('refreshToken') refreshToken: string) {
     const tokens = await this.authService.refresh(refreshToken);
@@ -117,8 +113,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user', description: 'Kullanıcı oturumunu sonlandırır ve refresh token\'ı geçersiz kılar.' })
   @ApiResponse({ status: 200, description: 'Çıkış yapıldı.' })
   @Post('logout')
-  async logout(@Req() req: any) {
-    await this.authService.logout(req.user.id);
+  async logout(@Req() req: any, @Body('refreshToken') refreshToken?: string) {
+    await this.authService.logout(req.user.id, refreshToken);
     return {
       success: true,
       message: 'Çıkış yapıldı.',

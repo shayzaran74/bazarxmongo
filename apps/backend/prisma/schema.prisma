@@ -57,6 +57,8 @@ model UserProfile {
   district  String?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([firstName])
+  @@index([lastName])
   @@map("user_profiles")
 }
 
@@ -100,10 +102,12 @@ model Session {
   userId       String   @map("user_id")
   userAgent    String?  @map("user_agent")
   ipAddress    String?  @map("ip_address")
+  tokenHash    String?  @map("token_hash")
   lastActiveAt DateTime @default(now()) @map("last_active_at")
   createdAt    DateTime @default(now()) @map("created_at")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tokenHash])
   @@map("sessions")
 }
 

@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { IdentityModule } from './modules/identity/identity.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
@@ -19,6 +20,7 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { RabbitMQModule } from '@barterborsa/shared-messaging';
 
 @Module({
   imports: [
@@ -26,6 +28,11 @@ import { InventoryModule } from './modules/inventory/inventory.module';
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
+    RabbitMQModule,
     SharedSecurityModule, // Global güvenlik altyapısı
     IdentityModule,
     CatalogModule,

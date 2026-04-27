@@ -2,12 +2,13 @@
 
 import { Global, Module } from '@nestjs/common';
 import { RabbitMQModule as gM } from '@golevelup/nestjs-rabbitmq';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQService } from './rabbitmq.service';
 
 @Global()
 @Module({
   imports: [
+    ConfigModule,
     gM.forRootAsync({
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('RABBITMQ_URL') || config.get<string>('RABBITMQ_URI') || 'amqp://localhost:5672',
