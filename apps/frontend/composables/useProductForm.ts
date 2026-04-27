@@ -96,13 +96,61 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     return true
   }
 
-  const handleFileUpload = async (files: FileList) => {
+  const handleFileUpload = async (event: any) => {
+    const files = event.target?.files || event
+    if (!files || files.length === 0) return
+    
     $toast.info('Görsel yükleniyor...')
+    const uploadLimit = Math.min(files.length, 5 - (form.productImages?.length || 0))
+    
+    const config = useRuntimeConfig()
+    const backendUrl = config.public.apiBase || 'http://localhost:3001'
+    const authStore = useAuthStore()
+    const token = authStore.token || useCookie('access_token').value
+    
+    for (let i = 0; i < uploadLimit; i++) {
+      const file = files[i]
+      if (file.size > 5 * 1024 * 1024) {
+        $toast.error(`${file.name} 5MB'dan büyük olduğu için atlandı.`)
+        continue
+      }
+
+      const body = new FormData()
+      body.append('file', file)
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/upload?subPath=products`, {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body
+        })
+
+        if (!res.ok) throw new Error('Upload failed')
+        
+        const json = await res.json()
+        if (json.success && json.data) {
+          const url = json.data.url || json.data
+          if (!form.productImages) form.productImages = []
+          form.productImages.push(url)
+          
+          if (!form.image) form.image = url
+          $toast.success(`${file.name} yüklendi`)
+        }
+      } catch (error) {
+        $toast.error(`${file.name} yüklenirken hata oluştu`)
+      }
+    }
+    // Reset input
+    if (event.target) event.target.value = ''
   }
 
   const addImageUrl = () => {
     if (newImageUrl.value) {
-      form.productImages.push({ url: newImageUrl.value, isMain: form.productImages.length === 0 })
+      if (!form.productImages) form.productImages = []
+      form.productImages.push(newImageUrl.value)
+      if (!form.image) form.image = newImageUrl.value
       newImageUrl.value = ''
     }
   }

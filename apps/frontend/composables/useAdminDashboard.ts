@@ -29,12 +29,12 @@ export const useAdminDashboard = () => {
   const fetchStats = async () => {
     loading.value = true
     try {
-      const [products, users, orders, auctions, lotteries] = await Promise.allSettled([
+      const [products, users, orders] = await Promise.allSettled([
         $api<any>('/api/admin/products', { query: { limit: 1 } }),
         $api<any>('/api/admin/users', { query: { limit: 1 } }),
         $api<any>('/api/admin/orders', { query: { limit: 1 } }),
-        $api<any>('/api/admin/auctions', { query: { limit: 1 } }),
-        $api<any>('/api/admin/lotteries', { query: { limit: 1 } }),
+        // $api<any>('/api/admin/auctions', { query: { limit: 1 } }),
+        // $api<any>('/api/admin/lotteries', { query: { limit: 1 } }),
       ])
 
       if (products.status === 'fulfilled')
@@ -43,10 +43,10 @@ export const useAdminDashboard = () => {
         stats.users = users.value?.pagination?.total || 0
       if (orders.status === 'fulfilled')
         stats.orders = orders.value?.data?.total || 0
-      if (auctions.status === 'fulfilled')
-        stats.auctions = (auctions.value?.data || []).length
-      if (lotteries.status === 'fulfilled')
-        stats.lotteries = (lotteries.value?.data?.items || []).length
+   //   if (auctions.status === 'fulfilled')
+   //     stats.auctions = (auctions.value?.data || []).length
+  //    if (lotteries.status === 'fulfilled')
+  //      stats.lotteries = (lotteries.value?.data?.items || []).length
     } catch { /* ignore */ } finally {
       loading.value = false
     }

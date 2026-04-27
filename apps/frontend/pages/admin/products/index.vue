@@ -367,47 +367,13 @@ const {
   mainCategories, subCategories1, subCategories2, isAllSelected,
   fetchInitialData, fetchProducts, fetchProductStats, fetchCategoryAttributes, resetForm, submitForm,
   deleteProduct, approveProduct, bulkApprove, bulkDelete, executeBulkUpdate,
-  editProduct, toggleSelectAll
+  editProduct, toggleSelectAll, handleFileUpload
 } = useAdminProducts()
 
 const newImageUrl = ref('')
 
 
 
-const handleFileUpload = async (event) => {
-  const files = Array.from(event.target.files)
-  if (files.length === 0) return
-  const remainingSlots = 5 - (formData.value.productImages?.length || 0)
-  if (remainingSlots <= 0) {
-    toast.error('En fazla 5 görsel yükleyebilirsiniz')
-    return
-  }
-  const uploadLimit = Math.min(files.length, remainingSlots)
-  for (let i = 0; i < uploadLimit; i++) {
-    const file = files[i]
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(`${file.name} çok büyük (Sınır: 5MB)`)
-      continue
-    }
-    const data = new FormData()
-    data.append('file', file)
-    try {
-      const uploadUrl = '/api/upload'
-      const response = await $api(uploadUrl, {
-        method: 'POST',
-        body: data
-      })
-      if (response.success && response.data) {
-        const url = response.data.url || response.data
-        if (!formData.value.productImages) formData.value.productImages = []
-        formData.value.productImages.push(url)
-        if (!formData.value.image) formData.value.image = url
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-    }
-  }
-}
 
 const removeImage = (index) => {
   const removedUrl = formData.value.productImages[index]

@@ -5,7 +5,7 @@ import { CreateCategoryCommand } from './create-category.command';
 import { ICategoryRepository } from '../../domain/repositories/category.repository.interface';
 import { Category } from '../../domain/entities/category.entity';
 import { Slug } from '../../domain/value-objects/slug.vo';
-import { ConflictException, isErr } from '@barterborsa/shared-core';
+import { ConflictException, isErr, Result, Ok } from '@barterborsa/shared-core';
 import { Inject } from '@nestjs/common';
 
 @CommandHandler(CreateCategoryCommand)
@@ -18,7 +18,13 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
   async execute(command: CreateCategoryCommand): Promise<string> {
     const { dto } = command;
 
-    const slugResult = Slug.create(dto.slug);
+    let slugResult: Result<Slug>;
+    if (!dto.slug || dto.slug.trim() === '') {
+      slugResult = Ok(Slug.fromText(dto.name));
+    } else {
+      slugResult = Slug.create(dto.slug);
+    }
+
     if (!slugResult.success) {
       throw slugResult.error;
     }

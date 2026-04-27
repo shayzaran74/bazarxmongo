@@ -44,6 +44,9 @@ export class ProductAdminController {
   @ApiOperation({ summary: 'Create a product' })
   @Post()
   async createProduct(@Body() data: any, @CurrentUser() user: any) {
+    console.log('--- YENI URUN EKLEME ISTEGI ---');
+    console.log('Tüm Body Data:', JSON.stringify(data, null, 2));
+    console.log('Gelen Category ID:', data.categoryId);
     try {
       return await this.commandBus.execute(
         new CreateAdminProductCommand(data, user.id)

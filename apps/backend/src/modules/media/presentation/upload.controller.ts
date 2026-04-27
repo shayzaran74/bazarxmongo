@@ -16,9 +16,15 @@ import { extname } from 'path';
 import { ApiTags, ApiConsumes, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { IMediaService, MEDIA_SERVICE } from '../domain/media.service.interface';
 
+import { existsSync, mkdirSync } from 'fs';
+
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const TEMP_UPLOAD_DIR = './public/uploads/temp';
+
+if (!existsSync(TEMP_UPLOAD_DIR)) {
+  mkdirSync(TEMP_UPLOAD_DIR, { recursive: true });
+}
 
 @ApiTags('Media')
 @Controller('upload')

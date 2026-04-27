@@ -14,6 +14,8 @@ export class UpdateAdminProductCommand {
       isFeatured?: boolean;
       isSpecialOffer?: boolean;
       isFlashSale?: boolean;
+      productImages?: string[];
+      image?: string;
     }
   ) {}
 }

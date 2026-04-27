@@ -48,9 +48,25 @@ export const useAdminCategories = () => {
     reader.onload = (e) => (imagePreview.value = e.target?.result as string)
     reader.readAsDataURL(file)
 
-    // Upload logic usually goes here or in save
-    // For now we set image name or handle in saveCategory
-    categoryForm.value.image = file.name
+    // Upload
+    $toast.info('Kategori görseli yükleniyor...')
+    const data = new FormData()
+    data.append('file', file)
+    
+    try {
+      const res = await $api<any>('/api/upload?subPath=categories', {
+        method: 'POST',
+        body: data
+      })
+      
+      if (res.success && res.data) {
+        const url = res.data.url || res.data
+        categoryForm.value.image = url
+        $toast.success('Görsel yüklendi')
+      }
+    } catch {
+      $toast.error('Görsel yüklenemedi')
+    }
   }
 
   const resetForm = () => {
