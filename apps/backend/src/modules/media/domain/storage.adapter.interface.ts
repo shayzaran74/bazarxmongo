@@ -2,6 +2,7 @@
 export interface StorageUploadResult {
   mediaId: string;
   publicUrl: string;
+  blurhash: string | null;
 }
 
 export const STORAGE_ADAPTER = 'IStorageAdapter';

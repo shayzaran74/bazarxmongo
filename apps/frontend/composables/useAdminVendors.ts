@@ -61,9 +61,16 @@ export const useAdminVendors = () => {
   const approveVendor = async (vendor?: any) => {
     const target = vendor || selectedVendor.value
     if (!target) return
+
+    const vendorId = typeof target === 'string' ? target : target.id
+    if (!vendorId) {
+      console.error('Vendor ID not found', target)
+      return
+    }
+
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${target.id}/approve`, { method: 'PUT' })
+      await $api(`/api/admin/vendors/${vendorId}/approve`, { method: 'PUT' })
       $toast.success('Satıcı onaylandı')
       closeVendorDetail()
       fetchVendors()
@@ -74,11 +81,16 @@ export const useAdminVendors = () => {
     }
   }
 
-  const rejectVendor = async () => {
-    if (!selectedVendor.value) return
+  const rejectVendor = async (vendor?: any) => {
+    const target = vendor || selectedVendor.value
+    if (!target) return
+
+    const vendorId = typeof target === 'string' ? target : target.id
+    if (!vendorId) return
+
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${selectedVendor.value.id}/reject`, {
+      await $api(`/api/admin/vendors/${vendorId}/reject`, {
         method: 'PUT',
         body: { rejectionReason: rejectionReason.value }
       })
@@ -92,28 +104,38 @@ export const useAdminVendors = () => {
     }
   }
 
-  const toggleFeatured = async (isFeatured: boolean) => {
-    if (!selectedVendor.value) return
+  const toggleFeatured = async (vendorOrFeatured: any) => {
+    const target = typeof vendorOrFeatured === 'object' ? vendorOrFeatured : selectedVendor.value
+    if (!target) return
+
+    const isFeatured = typeof vendorOrFeatured === 'boolean' 
+      ? vendorOrFeatured 
+      : !target.profile?.isFeatured
+
     try {
-      await $api(`/api/admin/vendors/${selectedVendor.value.id}`, {
+      await $api(`/api/admin/vendors/${target.id}`, {
         method: 'PUT',
         body: { isFeatured }
       })
       $toast.success('Güncellendi')
-      if (selectedVendor.value.profile) {
-        selectedVendor.value.profile.isFeatured = isFeatured
+      if (target.profile) {
+        target.profile.isFeatured = isFeatured
       }
     } catch {
       $toast.error('Güncellenemedi')
     }
   }
 
-  const saveB2BSettings = async (data: any) => {
-    if (!selectedVendor.value) return
+  const saveB2BSettings = async (vendorOrData: any) => {
+    const target = (vendorOrData && vendorOrData.id) ? vendorOrData : selectedVendor.value
+    if (!target) return
+
+    const b2bData = (vendorOrData && vendorOrData.b2bData) ? vendorOrData.b2bData : vendorOrData
+
     try {
-      await $api(`/api/admin/vendors/${selectedVendor.value.id}`, {
+      await $api(`/api/admin/vendors/${target.id}`, {
         method: 'PUT',
-        body: data
+        body: { b2bData }
       })
       $toast.success('B2B ayarları kaydedildi')
     } catch {
@@ -121,11 +143,15 @@ export const useAdminVendors = () => {
     }
   }
 
-  const addCategory = async () => {
-    if (!selectedVendor.value || !selectedCategoryId.value) return
+  const addCategory = async (vendor?: any) => {
+    const target = vendor || selectedVendor.value
+    if (!target || !selectedCategoryId.value) return
+    
+    const vendorId = typeof target === 'string' ? target : target.id
+
     try {
       await $api(
-        `/api/admin/vendors/${selectedVendor.value.id}/categories`,
+        `/api/admin/vendors/${vendorId}/categories`,
         { method: 'POST', body: { categoryId: selectedCategoryId.value } }
       )
       $toast.success('Kategori eklendi')
@@ -136,11 +162,23 @@ export const useAdminVendors = () => {
     }
   }
 
-  const removeCategory = async (categoryId: string) => {
-    if (!selectedVendor.value) return
+  const removeCategory = async (vendorIdOrCategoryId: string, categoryId?: string) => {
+    let vId: string | undefined
+    let cId: string | undefined
+
+    if (categoryId) {
+      vId = vendorIdOrCategoryId
+      cId = categoryId
+    } else {
+      vId = selectedVendor.value?.id
+      cId = vendorIdOrCategoryId
+    }
+
+    if (!vId || !cId) return
+
     try {
       await $api(
-        `/api/admin/vendors/${selectedVendor.value.id}/categories/${categoryId}`,
+        `/api/admin/vendors/${vId}/categories/${cId}`,
         { method: 'DELETE' }
       )
       $toast.success('Kategori kaldırıldı')

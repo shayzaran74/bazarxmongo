@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import { GetMessagesQuery } from './get-messages.query';
 import { IChatMessageRepository } from '../../domain/repositories/chat-message.repository.interface';
 import { IChatRoomRepository } from '../../domain/repositories/chat-room.repository.interface';
-import { MessageResponseDto } from '../dtos/chat.dtos';
+import { MessageResponseDto } from '../dtos/message-response.dto';
 import { DomainException } from '@barterborsa/shared-core';
 
 @QueryHandler(GetMessagesQuery)

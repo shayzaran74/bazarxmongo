@@ -13,7 +13,7 @@ import { Server, Socket } from 'socket.io';
 import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { SendMessageCommand } from '../../application/commands/send-message.command';
-import { SendMessageDto } from '../../application/dtos/chat.dtos';
+import { SendMessageDto } from '../../application/dtos/send-message.dto';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
 import { Public } from '@barterborsa/shared-security';

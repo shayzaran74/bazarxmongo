@@ -10,8 +10,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Workspace manifest'leri kopyala
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/shared/shared-types/package.json ./packages/shared/shared-types/
-COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/ ./packages/
+COPY apps/ ./apps/
 
 RUN pnpm install --no-frozen-lockfile
 
@@ -23,14 +23,14 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps/frontend/node_modules ./apps/frontend/node_modules
 COPY . .
 
 # Shared packages build
-RUN pnpm --filter "@barterborsa/*" build
+RUN pnpm --filter "@barterborsa/shared-*" build
 
-# Nuxt build
-WORKDIR /app/apps/frontend
-RUN pnpm build
+# Nuxt build (root'tan çalıştır - nuxt binary /app/node_modules/.bin altında)
+RUN pnpm --filter ecommerce-frontend build
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────
 FROM node:20-alpine AS runner

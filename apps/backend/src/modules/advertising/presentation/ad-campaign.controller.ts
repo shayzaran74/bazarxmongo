@@ -8,7 +8,7 @@ import {
   ApiParam 
 } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import { GetAdsForSlotQuery } from '../application/queries/advertising.queries';
+import { GetAdsForSlotQuery } from '../application/queries/get-ads-for-slot.query';
 import { AdSlotType } from '../domain/enums/advertising.enums';
 
 @ApiTags('Ad Campaigns')

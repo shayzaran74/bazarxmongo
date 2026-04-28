@@ -4,15 +4,15 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@barterborsa/shared-persistence';
 
-import { TrackingController, AnalyticsAdminController, VendorAnalyticsController } from './presentation/analytics.controllers';
+import { TrackingController } from './presentation/tracking.controller';
+import { AnalyticsAdminController } from './presentation/analytics-admin.controller';
+import { VendorAnalyticsController } from './presentation/vendor-analytics.controller';
 import { AdminDashboardController } from './admin-dashboard.controller';
 
 import { TrackEventHandler } from './application/handlers/track-event.handler';
-import { 
-  GetDashboardStatsHandler, 
-  GetAdminStatsHandler, 
-  GetVendorStatsHandler 
-} from './application/handlers/analytics-query.handlers';
+import { GetDashboardStatsHandler } from './application/handlers/get-dashboard-stats.handler';
+import { GetAdminStatsHandler } from './application/handlers/get-admin-stats.handler';
+import { GetVendorStatsHandler } from './application/handlers/get-vendor-stats.handler';
 
 import { PrismaAnalyticsRepository } from './infrastructure/persistence/prisma-analytics.repositories';
 

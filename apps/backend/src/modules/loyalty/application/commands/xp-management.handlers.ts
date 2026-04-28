@@ -2,7 +2,8 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { EarnXpCommand, SpendXpCommand } from './loyalty.commands';
+import { EarnXpCommand } from './earn-xp.command';
+import { SpendXpCommand } from './spend-xp.command';
 import { 
   IUserLevelRepository, 
   IXpTransactionRepository, 

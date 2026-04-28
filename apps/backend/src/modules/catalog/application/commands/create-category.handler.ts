@@ -7,12 +7,15 @@ import { Category } from '../../domain/entities/category.entity';
 import { Slug } from '../../domain/value-objects/slug.vo';
 import { ConflictException, isErr, Result, Ok } from '@barterborsa/shared-core';
 import { Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @CommandHandler(CreateCategoryCommand)
 export class CreateCategoryHandler implements ICommandHandler<CreateCategoryCommand> {
   constructor(
     @Inject('ICategoryRepository')
     private readonly categoryRepository: ICategoryRepository,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   async execute(command: CreateCategoryCommand): Promise<string> {
@@ -47,6 +50,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     });
 
     await this.categoryRepository.save(category);
+    await this.cacheManager.del('category-tree');
 
     return category.id;
   }

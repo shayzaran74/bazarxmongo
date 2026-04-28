@@ -1,11 +1,14 @@
-// apps/backend/src/app.module.ts
-
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { IdentityModule } from './modules/identity/identity.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+
 import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security';
+import { RabbitMQModule } from '@barterborsa/shared-messaging';
+import { SharedQueueModule } from '@barterborsa/shared-queue';
+
+import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { FinancialGatewayModule } from './modules/financial-gateway/financial-gateway.module';
@@ -20,7 +23,6 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { RabbitMQModule } from '@barterborsa/shared-messaging';
 
 @Module({
   imports: [
@@ -28,12 +30,59 @@ import { RabbitMQModule } from '@barterborsa/shared-messaging';
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+
+    // ─── Rate Limiting ─────────────────────────────────────────────
+    // İki kural: 'auth' (sıkı) ve 'api' (gevşek)
+    // Controller'da @Throttle({ auth: {} }) ile auth kuralı uygulanır
+    ThrottlerModule.forRoot([
+      {
+        name: 'auth',
+        ttl: 60_000,
+        limit: 5,
+      },
+      {
+        name: 'api',
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
+
+    // ─── Cache (Redis) ─────────────────────────────────────────────
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (config: ConfigService) => {
+        const isProd = config.get('NODE_ENV') === 'production';
+        const redisUrl = config.get<string>('REDIS_URL');
+        
+        // Redis için (gerektiğinde yorumdan çıkarın):
+        /*
+        if (isProd && redisUrl) {
+          const { redisStore } = require('cache-manager-ioredis-yet');
+          return {
+            store: await redisStore({
+              url: redisUrl,
+              password: config.get<string>('REDIS_PASSWORD'),
+              ttl: 300,
+            }),
+          };
+        }
+        */
+
+        // Dev ortamı veya Redis kapalıyken — in-memory
+        return {
+          ttl: isProd ? 300_000 : 30_000, // 5 dk prod, 30 sn dev
+          max: 1000,
+        };
+      },
+      inject: [ConfigService],
+    }),
+
     RabbitMQModule,
-    SharedSecurityModule, // Global güvenlik altyapısı
+    SharedQueueModule,
+    SharedSecurityModule,
+
+    // ─── Feature Modules ───────────────────────────────────────────
     IdentityModule,
     CatalogModule,
     MarketingModule,
@@ -42,8 +91,7 @@ import { RabbitMQModule } from '@barterborsa/shared-messaging';
     CommerceModule,
     BarterModule,
     AuctionModule,
-    // SUPPORT MODULES
-    CommunicationModule, 
+    CommunicationModule,
     ContentModule,
     AdvertisingModule,
     LoyaltyModule,
@@ -54,7 +102,7 @@ import { RabbitMQModule } from '@barterborsa/shared-messaging';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard, // Tüm uygulamayı varsayılan olarak kilitle
+      useClass: JwtAuthGuard,
     },
   ],
 })

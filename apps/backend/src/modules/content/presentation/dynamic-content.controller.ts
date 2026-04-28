@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import { GetAnnouncementsQuery } from '../application/queries/content.queries';
+import { GetAnnouncementsQuery } from '../application/queries/get-announcements.query';
 
 @ApiTags('Dynamic Content')
 @Controller('dynamic')

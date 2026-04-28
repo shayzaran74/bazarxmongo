@@ -1,12 +1,10 @@
-import { Controller, Get, Post, Body, Query,
-         UseGuards, Param } from '@nestjs/common';
+// apps/backend/src/modules/catalog/presentation/catalog-product.controller.ts
+import { Controller, Get, Post, Body, Query, UseGuards, Param } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse,
-         ApiQuery, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CreateCatalogProductDto } from '../application/dtos/create-catalog-product.dto';
 import { CreateCatalogProductCommand } from '../application/commands/create-catalog-product.command';
-import { GetListingsQuery } from '../application/queries/get-listings/get-listings.query';
 import { GetCatalogProductsQuery } from '../application/queries/get-catalog-products/get-catalog-products.query';
 import { GetCatalogProductBySlugQuery } from '../application/queries/get-catalog-product-by-slug/get-catalog-product-by-slug.query';
 
@@ -23,10 +21,9 @@ export class CatalogProductController {
   @Get('homepage-bulk')
   async getHomepageBulk() {
     const result = await this.queryBus.execute(
-      new GetListingsQuery({ page: 1, limit: 8 })
+      new GetCatalogProductsQuery({ page: 1, limit: 8 })
     );
-    // Homepage behaves similarly to previous implementation, assigning same list to three slots
-    // Categorize best sellers by category for HomeCategoryHighlights
+
     const bestSellersByCategory: Record<string, any[]> = {};
     result.items.forEach((item: any) => {
       if (item.categoryId) {
@@ -43,14 +40,19 @@ export class CatalogProductController {
         featured: result.items,
         newArrivals: result.items,
         bestSellers: result.items,
-        bestSellersByCategory
-      }
+        bestSellersByCategory,
+      },
     };
   }
 
   @Public()
   @ApiOperation({ summary: 'List catalog products' })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'q', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
+  @ApiQuery({ name: 'brandId', required: false })
+  @ApiQuery({ name: 'minPrice', required: false, type: Number })
+  @ApiQuery({ name: 'maxPrice', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'isFeatured', required: false, type: Boolean })
@@ -70,13 +72,13 @@ export class CatalogProductController {
         isSpecialOffer: query.isSpecialOffer === 'true',
         isFlashSale: query.isFlashSale === 'true',
         page: Number(query.page) || 1,
-        limit: Number(query.limit) || 20
+        limit: Number(query.limit) || 20,
       })
     );
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: result.items,
-      meta: result.meta 
+      meta: result.meta,
     };
   }
 

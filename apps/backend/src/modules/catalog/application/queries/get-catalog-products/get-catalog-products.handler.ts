@@ -37,9 +37,16 @@ export class GetCatalogProductsHandler
       where.brands = { some: { id: query.filters.brandId } };
     }
     if (query.filters.minPrice !== undefined || query.filters.maxPrice !== undefined) {
-      where.listings = { some: { price: {} } };
-      if (query.filters.minPrice !== undefined) where.listings.some.price.gte = query.filters.minPrice;
-      if (query.filters.maxPrice !== undefined) where.listings.some.price.lte = query.filters.maxPrice;
+      const { minPrice, maxPrice } = query.filters;
+      where.listings = {
+        some: {
+          status: 'ACTIVE',
+          price: {
+            ...(minPrice !== undefined && { gte: Number(minPrice) }),
+            ...(maxPrice !== undefined && { lte: Number(maxPrice) })
+          }
+        }
+      };
     }
     
     if (isFeatured === true) where.isFeatured = true;

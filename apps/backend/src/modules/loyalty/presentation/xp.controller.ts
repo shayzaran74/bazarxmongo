@@ -10,8 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, Roles } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { GetXpBalanceQuery, GetXpHistoryQuery } from '../application/queries/loyalty.queries';
-import { EarnXpCommand } from '../application/commands/loyalty.commands';
+import { GetXpBalanceQuery } from '../application/queries/get-xp-balance.query';
+import { GetXpHistoryQuery } from '../application/queries/get-xp-history.query';
+import { EarnXpCommand } from '../application/commands/earn-xp.command';
 import { XpSourceType } from '../domain/enums/loyalty.enums';
 
 @ApiTags('XP & Loyalty')

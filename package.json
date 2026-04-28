@@ -26,14 +26,18 @@
     "docker:status": "docker-compose -f infra/docker-compose.yml ps"
   },
   "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
     "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
     "eslint": "^8.57.0",
     "jest": "^30.3.0",
     "prettier": "^3.2.0",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.1",
     "turbo": "^1.13.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "prisma": "5.12.0"
   },
   "pnpm": {
     "overrides": {

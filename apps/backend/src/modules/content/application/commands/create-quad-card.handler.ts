@@ -2,7 +2,7 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CreateQuadCardCommand } from './create-content.commands';
+import { CreateQuadCardCommand } from './create-quad-card.command';
 import { IHomeQuadCardRepository } from '../../domain/repositories/home-quad-card.repository.interface';
 import { HomeQuadCard } from '../../domain/entities/home-quad-card.entity';
 import { HomeQuadCardItem } from '../../domain/entities/home-quad-card-item.entity';

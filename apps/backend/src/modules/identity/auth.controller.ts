@@ -43,6 +43,7 @@ export class AuthController {
   @ApiBody({ type: RegisterUserDto })
   @ApiResponse({ status: 201, description: 'Kullanıcı başarıyla oluşturuldu.' })
   @ApiResponse({ status: 400, description: 'Geçersiz veri veya e-posta zaten kullanımda.' })
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() dto: RegisterUserDto) {
     const result = await this.commandBus.execute(new RegisterUserCommand(dto));
@@ -72,7 +73,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Giriş başarılı.' })
   @ApiResponse({ status: 401, description: 'Hatalı e-posta veya şifre.' })
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('login')
   async login(@Body() input: any, @Req() req: any) {
     const userAgent = req.headers['user-agent'];
@@ -99,7 +100,6 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Token yenileme başarılı.' })
   @ApiResponse({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' })
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('refresh')
   async refresh(@Body('refreshToken') refreshToken: string) {
     const tokens = await this.authService.refresh(refreshToken);
@@ -125,6 +125,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset link', description: 'Şifre sıfırlama bağlantısı talep eder.' })
   @ApiBody({ type: ForgotPasswordDto })
   @ApiResponse({ status: 200, description: 'Bağlantı başarıyla gönderildi.' })
+  @Throttle({ auth: { limit: 3, ttl: 60_000 } })
   @Post('forgot-password')
   async forgotPassword(@Body() dto: any) {
     await this.commandBus.execute(new ForgotPasswordCommand(dto));

@@ -1,8 +1,13 @@
 // packages/shared/shared-core/src/types/result.type.ts
 
-export type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+export type Result<T, E = Error> = {
+  success: boolean;
+  data?: T;
+  error?: E;
+} & (
+  | { success: true; data: T; error?: never }
+  | { success: false; data?: never; error: E }
+);
 
 export const Ok = <T>(data: T): Result<T, never> => ({
   success: true,

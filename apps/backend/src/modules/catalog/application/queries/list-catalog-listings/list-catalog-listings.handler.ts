@@ -10,21 +10,16 @@ export class ListCatalogListingsHandler
 
   async execute(query: ListCatalogListingsQuery) {
     const { userId, userRole, filters } = query;
-    console.log('[ListCatalogListingsHandler] Executing for:', { userId, userRole, filters });
     
     const { search, page = 1, limit = 50 } = filters;
     const skip = (page - 1) * limit;
 
     // VENDOR kendi ilanlarını görür, ADMIN tümünü görür
     const where: any = {};
-    console.log('[ListCatalogListingsHandler] Initial where:', where);
 
     const isVendor = userRole === 'VENDOR' || (Array.isArray(userRole) && userRole.includes('VENDOR'));
     const isAdmin = userRole === 'ADMIN' || (Array.isArray(userRole) && userRole.includes('ADMIN'));
     
-    const dbTotal = await this.prisma.listing.count();
-    console.log('[ListCatalogListingsHandler] Absolute total in DB:', dbTotal);
-
     if (isVendor && !isAdmin) {
       const vendor = await this.prisma.vendor.findUnique({
         where: { userId }
@@ -74,8 +69,6 @@ export class ListCatalogListingsHandler
       category: l.catalogProduct?.category?.name,
       vendorName: l.vendor?.company?.name || 'Bilinmeyen Satıcı'
     }));
-
-    console.log('[ListCatalogListingsHandler] Found items count:', items.length, 'Total:', total);
 
     return {
       items: mappedItems,

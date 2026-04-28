@@ -9,6 +9,10 @@
     "class-validator": "^0.14.1",
     "class-transformer": "^0.5.1"
   },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
   "scripts": {
     "build": "tsc"
   }

@@ -8,7 +8,8 @@ import { PrismaService, PrismaModule } from '@barterborsa/shared-persistence';
 import { ChatController } from './presentation/chat.controller';
 import { NotificationController } from './presentation/notification.controller';
 import { ComplaintController } from './presentation/complaint.controller';
-import { CommunicationAdminController, ChatAdminController } from './presentation/communication-admin.controller';
+import { CommunicationAdminController } from './presentation/communication-admin.controller';
+import { ChatAdminController } from './presentation/chat-admin.controller';
 
 import { CreateChatRoomHandler } from './application/commands/create-chat-room.handler';
 import { SendMessageHandler } from './application/commands/send-message.handler';

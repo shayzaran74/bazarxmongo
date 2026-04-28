@@ -80,57 +80,57 @@ test.describe('Auction & Bid Placement Flow', () => {
     })
 
     // Auth mock'ları
-    await page.route('**/api/v1/auth/csrf', route =>
+    await page.route('**/api/auth/csrf', route =>
       route.fulfill({ json: { csrfToken: 'mock-csrf' } })
     )
-    await page.route('**/api/v1/auth/me', route =>
+    await page.route('**/api/auth/me', route =>
       route.fulfill({ json: { success: true, data: { id: 'user-001', email: 'test@bazarx.com.tr', role: 'USER', profile: { firstName: 'Test', lastName: 'User' } } } })
     )
-    await page.route('**/api/v1/auth/refresh', route =>
+    await page.route('**/api/auth/refresh', route =>
       route.fulfill({ json: { success: true, data: { accessToken: 'mock-user-token' } } })
     )
 
     // Kategori mock
-    await page.route('**/api/v1/listings/categories', route =>
+    await page.route('**/api/listings/categories', route =>
       route.fulfill({ json: { success: true, data: [{ id: 'cat-1', name: 'Elektronik' }] } })
     )
-    await page.route('**/api/v1/categories**', route =>
+    await page.route('**/api/categories**', route =>
       route.fulfill({ json: { success: true, data: [{ id: 'cat-1', name: 'Elektronik' }] } })
     )
 
     // Side-ads / settings mock
-    await page.route('**/api/v1/settings/**', route =>
+    await page.route('**/api/settings/**', route =>
       route.fulfill({ json: { success: true, data: [] } })
     )
 
     // Cart & wishlist mock
-    await page.route('**/api/v1/cart**', route =>
+    await page.route('**/api/cart**', route =>
       route.fulfill({ json: { success: true, data: { items: [], summary: { subtotal: 0, total: 0, shipping: 0, tax: 0 } } } })
     )
-    await page.route('**/api/v1/wishlist**', route =>
+    await page.route('**/api/wishlist**', route =>
       route.fulfill({ json: { success: true, data: [] } })
     )
 
     // Companies mock
-    await page.route('**/api/v1/companies/me', route =>
+    await page.route('**/api/companies/me', route =>
       route.fulfill({ json: { success: true, data: null }, status: 200 })
     )
 
     // ── Auction route'ları — sıralı ve çakışmasız ──
     // 1) Bids endpoint
-    await page.route('**/api/v1/auctions/auction-test-001/bids**', route =>
+    await page.route('**/api/auctions/auction-test-001/bids**', route =>
       route.fulfill({ json: MOCK_BIDS })
     )
     // 2) Participation endpoint
-    await page.route('**/api/v1/auctions/auction-test-001/participation**', route =>
+    await page.route('**/api/auctions/auction-test-001/participation**', route =>
       route.fulfill({ json: MOCK_NO_PARTICIPATION })
     )
     // 3) Detay endpoint (liste mock'u çakışmasın diye ID'li olanlar önce)
-    await page.route('**/api/v1/auctions/auction-test-001**', route =>
+    await page.route('**/api/auctions/auction-test-001**', route =>
       route.fulfill({ json: MOCK_DETAIL })
     )
     // 4) LİSTE endpoint
-    await page.route('**/api/v1/auctions**', async (route) => {
+    await page.route('**/api/auctions**', async (route) => {
       const url = route.request().url()
       // ID'li route'lar yukarıdaki handler'larda zaten karşılandı; yine de güvenlik filtresi:
       if (url.includes('auction-test-001')) {
@@ -203,11 +203,11 @@ test.describe('Auction & Bid Placement Flow', () => {
 
   test('başarılı katılım → onay mesajı gösterilir', async ({ page }) => {
     // Katılım endpoint'ini başarılı olacak şekilde override et
-    await page.route('**/api/v1/auctions/auction-test-001/participate**', route =>
+    await page.route('**/api/auctions/auction-test-001/participate**', route =>
       route.fulfill({ json: MOCK_PARTICIPATION })
     )
     // Katılım durumunu güncelle
-    await page.route('**/api/v1/auctions/auction-test-001/participation**', route =>
+    await page.route('**/api/auctions/auction-test-001/participation**', route =>
       route.fulfill({ json: MOCK_PARTICIPATION })
     )
 
@@ -224,11 +224,11 @@ test.describe('Auction & Bid Placement Flow', () => {
 
   test('başarılı teklif → fiyat güncellenir', async ({ page }) => {
     // Katılmış durum
-    await page.route('**/api/v1/auctions/auction-test-001/participation**', route =>
+    await page.route('**/api/auctions/auction-test-001/participation**', route =>
       route.fulfill({ json: MOCK_PARTICIPATION })
     )
     // Başarılı bid
-    await page.route('**/api/v1/auctions/auction-test-001/bid**', route =>
+    await page.route('**/api/auctions/auction-test-001/bid**', route =>
       route.fulfill({ json: MOCK_BID_SUCCESS })
     )
 
@@ -248,7 +248,7 @@ test.describe('Auction & Bid Placement Flow', () => {
 
   test('bitmiş artırmada teklif formu görünmez', async ({ page }) => {
     // ENDED auction detail override
-    await page.route('**/api/v1/auctions/auction-test-001**', route => {
+    await page.route('**/api/auctions/auction-test-001**', route => {
       const url = route.request().url()
       if (url.includes('/bids')) return route.fulfill({ json: MOCK_BIDS })
       if (url.includes('/participation')) return route.fulfill({ json: MOCK_NO_PARTICIPATION })

@@ -2,7 +2,7 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CreateHomeBannerCommand } from './create-content.commands';
+import { CreateHomeBannerCommand } from './create-home-banner.command';
 import { IHomeBannerRepository } from '../../domain/repositories/home-banner.repository.interface';
 import { HomeBanner } from '../../domain/entities/home-banner.entity';
 

@@ -55,6 +55,7 @@ model UserProfile {
   gender    String?
   city      String?
   district  String?
+  phone     String?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([firstName])
@@ -82,6 +83,7 @@ model UserAddress {
   deletedAt    DateTime? @map("deleted_at")
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("user_addresses")
 }
 
@@ -94,6 +96,7 @@ model RefreshToken {
   createdAt DateTime  @default(now()) @map("created_at")
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("refresh_tokens")
 }
 
@@ -108,6 +111,7 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -121,6 +125,7 @@ model LoginHistory {
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("login_history")
 }
 
@@ -133,6 +138,7 @@ model VerificationToken {
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("verification_tokens")
 }
 
@@ -147,6 +153,7 @@ model SSOToken {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
+  @@index([userId])
   @@map("sso_tokens")
 }
 
@@ -173,7 +180,7 @@ model Company {
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
   deletedAt           DateTime?     @map("deleted_at")
-  companyUsers        CompanyUser[]
+  users               CompanyUser[]
   subscription        Subscription?
   surplusItems        SurplusItem[]
   givenOffers         TradeOffer[]  @relation("GivenOffers")
@@ -212,6 +219,7 @@ model Vendor {
   updatedAt         DateTime            @updatedAt @map("updated_at")
   userId            String              @unique @map("user_id")
   verifiedAt        DateTime?           @map("verified_at")
+  barterEnabled     Boolean             @default(false) @map("barter_enabled")
   adCampaigns       AdCampaign[]
   brandEcosystem    BrandEcosystem?     @relation("EcosystemOwner")
   brands            Brand[]
@@ -340,6 +348,7 @@ model VendorBanner {
   vendorId        String   @map("vendor_id")
   vendor          Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
+  @@index([vendorId])
   @@map("vendor_banners")
 }
 
@@ -379,6 +388,8 @@ model VendorCategory {
   vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@id([vendorId, categoryId])
+  @@index([categoryId])
+  @@index([vendorId])
   @@map("vendor_categories")
 }
 
@@ -454,6 +465,7 @@ model CatalogModel {
 
   @@index([modelCode])
   @@index([slug])
+  @@index([categoryId])
   @@map("catalog_models")
 }
 
@@ -488,6 +500,7 @@ model CatalogProduct {
   reviews        Review[]
   brands         Brand[]        @relation("BrandToCatalogProduct")
 
+  @@index([categoryId])
   @@map("catalog_products")
 }
 
@@ -522,6 +535,7 @@ model Category {
   children          Category[]          @relation("CategoryHierarchy")
   attributes        CategoryAttribute[]
   vendorCategories  VendorCategory[]
+  listings          Listing[]           @relation("ListingCategory")
 
   @@index([order])
   @@index([parentId])
@@ -557,6 +571,7 @@ model Brand {
   vendor           Vendor?          @relation(fields: [vendorId], references: [id])
   catalog_products CatalogProduct[] @relation("BrandToCatalogProduct")
 
+  @@index([vendorId])
   @@map("brands")
 }
 
@@ -602,6 +617,7 @@ model Listing {
   id                   String                @id @default(cuid())
   vendorId             String                @map("vendor_id")
   catalogProductId     String                @map("catalog_product_id")
+  categoryId           String?               @map("category_id")
   title                String
   description          String?
   price                Decimal               @db.Decimal(18, 2)
@@ -617,6 +633,7 @@ model Listing {
   wholesalePrice       Decimal?              @map("wholesale_price") @db.Decimal(18, 2)
   minWholesaleQty      Int?                  @map("min_wholesale_qty")
   sku                  String?
+  barcode              String?               @unique
   isDigital            Boolean               @default(false) @map("is_digital")
   isB2BOnly            Boolean               @default(false) @map("is_b2b_only")
   b2bDiscount          Decimal?              @map("b2b_discount") @db.Decimal(5, 2)
@@ -658,6 +675,7 @@ model Listing {
   priceHistory         ListingPriceHistory[]
   stats                ListingStats?
   catalogProduct       CatalogProduct        @relation(fields: [catalogProductId], references: [id])
+  category             Category?             @relation("ListingCategory", fields: [categoryId], references: [id])
   ecosystem            BrandEcosystem?       @relation(fields: [ecosystemId], references: [id])
   vendor               Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   lotteries            Lottery[]
@@ -681,6 +699,7 @@ model ListingImage {
   createdAt DateTime @default(now()) @map("created_at")
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("listing_images")
 }
 
@@ -752,6 +771,7 @@ model Review {
 
   @@unique([userId, catalogProductId])
   @@index([catalogProductId])
+  @@index([orderId])
   @@map("reviews")
 }
 
@@ -844,6 +864,7 @@ model GroupBuy {
   status          String   @default("ACTIVE")
   createdAt       DateTime @default(now()) @map("created_at")
 
+  @@index([listingId])
   @@map("group_buys")
 }
 
@@ -890,6 +911,7 @@ model StockReservation {
   stock      Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@index([stockId])
+  @@index([orderId])
   @@map("stock_reservations")
 }
 
@@ -920,6 +942,7 @@ model PurchaseOrderItem {
   listing         Listing       @relation(fields: [listingId], references: [id])
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("purchase_order_items")
 }
 
@@ -948,6 +971,7 @@ model TransferItem {
   listing    Listing  @relation(fields: [listingId], references: [id])
   transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("transfer_items")
 }
 
@@ -1045,8 +1069,9 @@ model Cart {
   id        String     @id @default(cuid())
   userId    String     @unique @map("user_id")
   createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  items     CartItem[]
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  items         CartItem[]
+  escrowCoupons EscrowCoupon[]
 
   @@map("carts")
 }
@@ -1076,6 +1101,8 @@ model OrderStatusHistory {
   updatedAt DateTime    @updatedAt @map("updated_at")
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([orderId])
+  @@index([userId])
   @@map("order_status_history")
 }
 
@@ -1090,6 +1117,7 @@ model OrderReturn {
   updatedAt    DateTime @updatedAt @map("updated_at")
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([orderId])
   @@map("order_returns")
 }
 
@@ -1111,6 +1139,8 @@ model Dispute {
   vendor         Vendor        @relation(fields: [vendorId], references: [id])
 
   @@index([status])
+  @@index([userId])
+  @@index([vendorId])
   @@map("disputes")
 }
 
@@ -1167,6 +1197,7 @@ model SurplusItem {
 
   @@index([city])
   @@index([city, status])
+  @@index([companyId])
   @@map("surplus_items")
 }
 
@@ -1261,6 +1292,8 @@ model TradeOffer {
   toCompany         Company?         @relation("ReceivedOffers", fields: [toCompanyId], references: [id])
   reviews           TradeReview[]
 
+  @@index([fromCompanyId])
+  @@index([toCompanyId])
   @@map("trade_offers")
 }
 
@@ -1275,6 +1308,7 @@ model TradeOfferItem {
   offeredAt        TradeOffer? @relation("OfferedItems", fields: [offeredOfferId], references: [id])
   requestedAt      TradeOffer? @relation("RequestedItems", fields: [requestedOfferId], references: [id])
 
+  @@index([listingId])
   @@map("trade_offer_items")
 }
 
@@ -1305,6 +1339,7 @@ model SwapSession {
   parts                 BarterPart[]
   tradeOffer            TradeOffer        @relation(fields: [tradeOfferId], references: [id])
 
+  @@index([receiverId])
   @@map("barter_swap_sessions")
 }
 
@@ -1327,6 +1362,7 @@ model BarterPart {
   session             SwapSession      @relation(fields: [swapSessionId], references: [id])
 
   @@unique([swapSessionId, partNumber])
+  @@index([senderId])
   @@map("barter_parts")
 }
 
@@ -1405,6 +1441,7 @@ model BarterDisputeLog {
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
+  @@index([tradeOfferId])
   @@map("barter_dispute_logs")
 }
 
@@ -1433,6 +1470,7 @@ model Auction {
 
   @@index([status, endTime])
   @@index([listingId])
+  @@index([userId])
   @@map("auctions")
 }
 
@@ -1503,6 +1541,7 @@ model Lottery {
 
   @@index([endTime])
   @@index([status])
+  @@index([listingId])
   @@map("lotteries")
 }
 
@@ -1566,6 +1605,7 @@ model HomeQuadCardItem {
   quadCard   HomeQuadCard @relation(fields: [quadCardId], references: [id], onDelete: Cascade)
 
   @@index([quadCardId, order])
+  @@index([productId])
   @@map("home_quad_card_items")
 }
 
@@ -1720,6 +1760,7 @@ model AdCampaign {
   @@index([adStatus])
   @@index([adType])
   @@index([platform])
+  @@index([vendorId])
   @@map("ad_campaigns")
 }
 
@@ -2017,6 +2058,9 @@ model AnalyticsEvent {
   @@index([userId])
   @@index([sessionId])
   @@index([timestamp])
+  @@index([categoryId])
+  @@index([listingId])
+  @@index([vendorId])
   @@map("analytics_events")
 }
 
@@ -2033,6 +2077,7 @@ model ProductActivity {
   @@index([catalogProductId])
   @@index([type])
   @@index([createdAt])
+  @@index([userId])
   @@map("product_activities")
 }
 
@@ -2109,6 +2154,40 @@ model UserComplaint {
   @@index([subjectId])
   @@index([status])
   @@map("user_complaints")
+}
+
+model EscrowCoupon {
+  id         String   @id @default(cuid())
+  cartId     String   @map("cart_id")
+  userId     String   @map("user_id")
+  code       String
+  discount   Float    @default(0) // indirim tutarı (TL)
+  percentage Float?   @map("percentage") // yüzdelik indirim (opsiyonel)
+  minAmount  Float?   @map("min_amount") // minimum sepet tutarı
+  expiresAt  DateTime? @map("expires_at")
+  isActive   Boolean  @default(true) @map("is_active")
+  appliedAt  DateTime @default(now()) @map("applied_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([cartId], map: "idx_escrow_coupons_cart_id")
+  @@index([userId], map: "idx_escrow_coupons_user_id")
+  @@map("escrow_coupons")
+}
+
+model Coupon {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  discountAmount     Float?   @map("discount_amount")
+  discountPercentage Float?   @map("discount_percentage")
+  minOrderAmount     Float?   @map("min_order_amount")
+  expiresAt          DateTime? @map("expires_at")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("coupons")
 }
 
 enum UserRole {
@@ -2510,4 +2589,32 @@ enum InvoiceStatus {
   SENT
   PAID
   CANCELLED
+}
+// ─── schema.prisma'ya EKLENECEK BLOK ─────────────────────────────────────────
+// Mevcut schema.prisma dosyanızın sonuna yapıştırın,
+// ardından: npx prisma migrate dev --name add-import-job
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImportJob {
+  id          String          @id @default(uuid())
+  adminId     String
+  status      ImportJobStatus @default(PENDING)
+  totalRows   Int
+  processedRows Int           @default(0)
+  createdRows Int             @default(0)
+  failedRows  Int             @default(0)
+  errors      Json?           // String[] — ilk 20 hata satırı
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([adminId])
+  @@index([status])
 }

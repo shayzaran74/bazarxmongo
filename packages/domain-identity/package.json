@@ -14,12 +14,16 @@
     "@barterborsa/shared-core": "workspace:*",
     "@barterborsa/shared-types": "workspace:*",
     "@barterborsa/shared-security": "workspace:*",
-    "@prisma/client": "^5.12.0",
+    "@prisma/client": "5.12.0",
+    "@nestjs/common": "^10.0.0",
     "@nestjs/cqrs": "^10.0.0",
+    "@nestjs/passport": "^10.0.3",
+    "class-validator": "^0.14.1",
+    "bcrypt": "^5.1.1",
     "passport-local": "^1.0.0"
   },
   "devDependencies": {
-    "prisma": "^5.12.0",
+    "prisma": "5.12.0",
     "@types/passport-local": "^1.0.38"
   }
 }

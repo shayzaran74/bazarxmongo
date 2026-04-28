@@ -1,14 +1,12 @@
+// apps/backend/src/modules/content/presentation/help.controller.ts
+
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiQuery, 
-  ApiParam 
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import * as qry from '../application/queries/content.queries';
+import { GetHelpCategoriesQuery } from '../application/queries/get-help-categories.query';
+import { GetHelpArticleQuery } from '../application/queries/get-help-article.query';
+import { SearchHelpArticlesQuery } from '../application/queries/search-help-articles.query';
 
 @ApiTags('Help Center')
 @Controller('help')
@@ -16,48 +14,37 @@ export class HelpController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Public()
-  @ApiOperation({ summary: 'List help categories', description: 'Yardım merkezi kategorilerini (SSS, Ödeme, Teslimat vb.) listeler.' })
-  @ApiQuery({ name: 'platform', required: false, type: String, example: 'BAZARX' })
-  @ApiQuery({ name: 'lang', required: false, type: String, example: 'tr' })
-  @ApiResponse({ status: 200, description: 'Kategori listesi.' })
+  @ApiOperation({ summary: 'List help categories' })
+  @ApiQuery({ name: 'platform', required: false, example: 'BAZARX' })
+  @ApiQuery({ name: 'lang', required: false, example: 'tr' })
+  @ApiResponse({ status: 200 })
   @Get('categories')
-  async getCategories(
-    @Query('platform') platform: string = 'BAZARX',
-    @Query('lang') lang: string = 'tr'
-  ) {
-    return this.queryBus.execute(new qry.GetHelpCategoriesQuery(platform, lang));
+  async getCategories(@Query('platform') platform = 'BAZARX', @Query('lang') lang = 'tr') {
+    return this.queryBus.execute(new GetHelpCategoriesQuery(platform, lang));
   }
 
   @Public()
-  @ApiOperation({ summary: 'List popular help articles', description: 'En çok tıklanan yardım makalelerini döner.' })
+  @ApiOperation({ summary: 'List popular help articles' })
   @Get('popular')
-  async getPopular() {
-    // Şimdilik boş liste döner, stabilizasyon için 404'ü keser
-    return { success: true, data: [] };
-  }
+  async getPopular() { return { success: true, data: [] }; }
 
   @Public()
-  @ApiOperation({ summary: 'Get help article by slug', description: 'URL slug bilgisi verilen yardım makalesinin içeriğini döner.' })
-  @ApiParam({ name: 'slug', description: 'Makale slug (örn: nasil-siparis-verilir)' })
-  @ApiResponse({ status: 200, description: 'Makale detayları.' })
-  @ApiResponse({ status: 404, description: 'Makale bulunamadı.' })
+  @ApiOperation({ summary: 'Get help article by slug' })
+  @ApiParam({ name: 'slug' })
+  @ApiResponse({ status: 200 })
   @Get('articles/:slug')
   async getArticle(@Param('slug') slug: string) {
-    return this.queryBus.execute(new qry.GetHelpArticleQuery(slug));
+    return this.queryBus.execute(new GetHelpArticleQuery(slug));
   }
 
   @Public()
-  @ApiOperation({ summary: 'Search help articles', description: 'Yardım merkezi makaleleri içinde metin bazlı arama yapar.' })
-  @ApiQuery({ name: 'q', required: true, type: String, description: 'Arama terimi' })
-  @ApiQuery({ name: 'platform', required: false, type: String })
-  @ApiQuery({ name: 'lang', required: false, type: String })
-  @ApiResponse({ status: 200, description: 'Arama sonuçları.' })
+  @ApiOperation({ summary: 'Search help articles' })
+  @ApiQuery({ name: 'q', required: true })
+  @ApiQuery({ name: 'platform', required: false })
+  @ApiQuery({ name: 'lang', required: false })
+  @ApiResponse({ status: 200 })
   @Get('search')
-  async search(
-    @Query('q') q: string,
-    @Query('platform') platform: string = 'BAZARX',
-    @Query('lang') lang: string = 'tr'
-  ) {
-    return this.queryBus.execute(new qry.SearchHelpArticlesQuery(q, platform, lang));
+  async search(@Query('q') q: string, @Query('platform') platform = 'BAZARX', @Query('lang') lang = 'tr') {
+    return this.queryBus.execute(new SearchHelpArticlesQuery(q, platform, lang));
   }
 }

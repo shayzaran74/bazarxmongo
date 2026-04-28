@@ -17,103 +17,97 @@ export class UpdateAdminProductHandler
     });
     if (!existing) throw new NotFoundException('Ürün bulunamadı');
 
-    // ─── CatalogProduct güncellemesi ────────────────────────────────────────
-    // DÜZELTİLDİ: Prisma'da undefined gelen alan güncellenmez,
-    // ama `categoryId: undefined` bazı sürümlerde null yazar.
-    // Bu yüzden her alanı açıkça kontrol edip sadece gelen değerleri set ediyoruz.
-    const productUpdate: Record<string, any> = {
-      updatedAt: new Date(),
-    }
+    return await this.prisma.$transaction(async (tx) => {
+      // ─── CatalogProduct güncellemesi ────────────────────────────────────────
+      const productUpdate: Record<string, any> = {
+        updatedAt: new Date(),
+      }
 
-    if (data.name || data.title)
-      productUpdate.name = data.name || data.title
+      if (data.name || data.title)
+        productUpdate.name = data.name || data.title
 
-    if (data.description !== undefined)
-      productUpdate.description = data.description
+      if (data.description !== undefined)
+        productUpdate.description = data.description
 
-    if (data.gtin !== undefined || data.barcode !== undefined)
-      productUpdate.gtin = data.gtin || data.barcode
+      if (data.gtin !== undefined || data.barcode !== undefined)
+        productUpdate.gtin = data.gtin || data.barcode
 
-    // DÜZELTİLDİ: categoryId sadece form tarafından açıkça gönderildiğinde güncellenir.
-    // Boş string gelirse null yaz (kategori kaldırıldı), undefined gelirse dokunma.
-    if (data.categoryId !== undefined) {
-      productUpdate.categoryId = (data.categoryId && data.categoryId !== '')
-        ? data.categoryId
-        : null
-    }
+      if (data.categoryId !== undefined) {
+        productUpdate.categoryId = (data.categoryId && data.categoryId !== '')
+          ? data.categoryId
+          : null
+      }
 
-    if (data.status !== undefined)
-      productUpdate.status = data.status
+      if (data.status !== undefined)
+        productUpdate.status = data.status
 
-    if (data.isFeatured !== undefined)
-      productUpdate.isFeatured = data.isFeatured
+      if (data.isFeatured !== undefined)
+        productUpdate.isFeatured = data.isFeatured
 
-    if (data.isSpecialOffer !== undefined)
-      productUpdate.isSpecialOffer = data.isSpecialOffer
+      if (data.isSpecialOffer !== undefined)
+        productUpdate.isSpecialOffer = data.isSpecialOffer
 
-    if (data.isFlashSale !== undefined)
-      productUpdate.isFlashSale = data.isFlashSale
+      if (data.isFlashSale !== undefined)
+        productUpdate.isFlashSale = data.isFlashSale
 
-    await this.prisma.catalogProduct.update({
-      where: { id: productId },
-      data: productUpdate,
-    });
-
-    // ─── Media güncellemesi ───────────────────────────────────────────────
-    if (data.productImages && Array.isArray(data.productImages)) {
-      // Mevcut medyaları sil
-      await this.prisma.productMedia.deleteMany({
-        where: { productId }
+      await tx.catalogProduct.update({
+        where: { id: productId },
+        data: productUpdate,
       });
 
-      // Yenileri ekle
-      if (data.productImages.length > 0) {
-        await this.prisma.productMedia.createMany({
-          data: data.productImages.map((url: string, index: number) => ({
-            productId,
-            url,
-            type: 'IMAGE',
-            sortOrder: index
-          }))
+      // ─── Media güncellemesi ───────────────────────────────────────────────
+      if (data.productImages && Array.isArray(data.productImages)) {
+        await tx.productMedia.deleteMany({
+          where: { productId }
+        });
+
+        if (data.productImages.length > 0) {
+          await tx.productMedia.createMany({
+            data: data.productImages.map((url: string, index: number) => ({
+              productId,
+              url,
+              type: 'IMAGE',
+              sortOrder: index
+            }))
+          });
+        }
+      }
+
+      // ─── Listing güncellemesi ───────────────────────────────────────────────
+      const listingUpdate: Record<string, any> = {}
+
+      if (data.price !== undefined)
+        listingUpdate.price = parseFloat(String(data.price))
+
+      if (data.stock !== undefined)
+        listingUpdate.stock = parseInt(String(data.stock), 10)
+
+      if (data.name || data.title)
+        listingUpdate.title = data.name || data.title
+
+      if (data.description !== undefined)
+        listingUpdate.description = data.description
+
+      if (data.status !== undefined)
+        listingUpdate.status = data.status
+
+      if (data.isFeatured !== undefined)
+        listingUpdate.isFeatured = data.isFeatured
+
+      if (data.isSpecialOffer !== undefined)
+        listingUpdate.isSpecialOffer = data.isSpecialOffer
+
+      if (data.isFlashSale !== undefined)
+        listingUpdate.isFlashSale = data.isFlashSale
+
+      if (Object.keys(listingUpdate).length > 0) {
+        await tx.listing.updateMany({
+          where: { catalogProductId: productId },
+          data: listingUpdate,
         });
       }
-    }
 
-    // ─── Listing güncellemesi ───────────────────────────────────────────────
-    const listingUpdate: Record<string, any> = {}
-
-    if (data.price !== undefined)
-      listingUpdate.price = parseFloat(String(data.price))
-
-    if (data.stock !== undefined)
-      listingUpdate.stock = parseInt(String(data.stock), 10)
-
-    if (data.name || data.title)
-      listingUpdate.title = data.name || data.title
-
-    if (data.description !== undefined)
-      listingUpdate.description = data.description
-
-    if (data.status !== undefined)
-      listingUpdate.status = data.status
-
-    if (data.isFeatured !== undefined)
-      listingUpdate.isFeatured = data.isFeatured
-
-    if (data.isSpecialOffer !== undefined)
-      listingUpdate.isSpecialOffer = data.isSpecialOffer
-
-    if (data.isFlashSale !== undefined)
-      listingUpdate.isFlashSale = data.isFlashSale
-
-    // Güncellenecek alan yoksa listing sorgusunu atla
-    if (Object.keys(listingUpdate).length > 0) {
-      await this.prisma.listing.updateMany({
-        where: { catalogProductId: productId },
-        data: listingUpdate,
-      });
-    }
-
-    return { success: true, message: 'Ürün başarıyla güncellendi' };
+      return { success: true, message: 'Ürün başarıyla güncellendi' };
+    });
   }
 }

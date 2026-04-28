@@ -1,6 +1,8 @@
 // apps/backend/src/modules/catalog/application/queries/get-category-tree/get-category-tree.handler.ts
 
 import { Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetCategoryTreeQuery } from './get-category-tree.query';
 import { ICategoryRepository } from '../../../domain/repositories/category.repository.interface';
@@ -20,9 +22,17 @@ export class GetCategoryTreeHandler implements IQueryHandler<GetCategoryTreeQuer
   constructor(
     @Inject('ICategoryRepository')
     private readonly categoryRepository: ICategoryRepository,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   async execute(query: GetCategoryTreeQuery): Promise<CategoryTreeDto[]> {
+    const cacheKey = 'category-tree';
+    const cachedTree = await this.cacheManager.get<CategoryTreeDto[]>(cacheKey);
+    
+    if (cachedTree) {
+      return cachedTree;
+    }
+
     const allCategories = await this.categoryRepository.findAll();
     
     // Build tree
@@ -51,6 +61,7 @@ export class GetCategoryTreeHandler implements IQueryHandler<GetCategoryTreeQuer
       }
     });
 
+    await this.cacheManager.set(cacheKey, rootCategories, 300000); // 5 min in ms
     return rootCategories;
   }
 }

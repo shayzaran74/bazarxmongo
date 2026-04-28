@@ -12,11 +12,11 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService
   ) {
-    this.accessSecret = process.env.JWT_ACCESS_SECRET!;
+    this.accessSecret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET!;
     this.refreshSecret = process.env.JWT_REFRESH_SECRET!;
 
     if (!this.accessSecret) {
-      throw new Error('JWT_ACCESS_SECRET is required but not defined in environment variables');
+      throw new Error('JWT_SECRET (or JWT_ACCESS_SECRET) is required but not defined in environment variables');
     }
     if (!this.refreshSecret) {
       throw new Error('JWT_REFRESH_SECRET is required but not defined in environment variables');

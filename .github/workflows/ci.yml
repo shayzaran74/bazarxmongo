@@ -1,0 +1,149 @@
+# .github/workflows/ci.yml
+# PR açılınca ve main/develop'a push'ta çalışır.
+# Backend: build + unit test + type-check
+# Frontend: build + lint
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  # ─── Backend: Build + Type-check + Unit Tests ──────────────────────
+  backend:
+    name: Backend (build + test)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: bazarx_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/bazarx_test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_SECRET: ci-test-secret-minimum-32-chars-long
+      JWT_REFRESH_SECRET: ci-test-refresh-secret-min-32-chars
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @bazarx/backend prisma:generate
+
+      - name: Type-check
+        run: pnpm --filter @bazarx/backend build
+        # build = tsc → hem compile hem type-check
+
+      - name: Unit tests
+        run: pnpm --filter @bazarx/backend test --passWithNoTests --forceExit
+        # --passWithNoTests: yeni modüller için spec yoksa geçer
+        # --forceExit: async test'lerde asılı kalan handle'ları kapat
+
+      - name: Coverage report
+        run: pnpm --filter @bazarx/backend test:cov --passWithNoTests --forceExit
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          directory: apps/backend/coverage
+          flags: backend
+          fail_ci_if_error: false
+
+  # ─── Frontend: Build + Lint ────────────────────────────────────────
+  frontend:
+    name: Frontend (build + lint)
+    runs-on: ubuntu-latest
+
+    env:
+      NUXT_PUBLIC_API_BASE: http://localhost:3001/api
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @bazarx/ecommerce-frontend build
+
+  # ─── Shared packages: type-check ──────────────────────────────────
+  packages:
+    name: Shared packages (type-check)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm build --filter './packages/**'

@@ -2,7 +2,8 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { PrismaModule } from '@barterborsa/shared-persistence';
+
 import { PlaceBidHandler } from './application/commands/place-bid.handler';
 import { DrawLotteryHandler } from './application/commands/draw-lottery.handler';
 import { PrismaAuctionRepository } from './infrastructure/persistence/prisma-auction.repository';
@@ -13,22 +14,15 @@ import { AuctionController } from './auction.controller';
 import { LotteryController } from './lottery.controller';
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, PrismaModule],
   controllers: [AuctionController, LotteryController],
   providers: [
     PlaceBidHandler,
     DrawLotteryHandler,
-    PrismaService,
     AuctionMapper,
     LotteryMapper,
-    {
-      provide: 'IAuctionRepository',
-      useClass: PrismaAuctionRepository,
-    },
-    {
-      provide: 'ILotteryRepository',
-      useClass: PrismaLotteryRepository,
-    }
+    { provide: 'IAuctionRepository', useClass: PrismaAuctionRepository },
+    { provide: 'ILotteryRepository', useClass: PrismaLotteryRepository },
   ],
 })
 export class AuctionModule {}

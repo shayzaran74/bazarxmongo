@@ -39,9 +39,7 @@ export class MediaService implements IMediaService {
   ): Promise<Result<UploadedMediaResult>> {
     try {
       const subPath = (metadata?.subPath as string) ?? 'products';
-      const { mediaId, publicUrl } = await this.storage.upload(file, subPath);
-
-      const blurhash = await this.generateBlurhash(publicUrl);
+      const { mediaId, publicUrl, blurhash } = await this.storage.upload(file, subPath);
 
       return Ok({
         mediaId,

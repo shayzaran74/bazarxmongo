@@ -1,10 +1,12 @@
 // apps/backend/src/modules/catalog/application/dtos/catalog-response.dtos.ts
-import { ProductCondition } from '../../domain/entities/product.model';
+
+// ProductCondition artık product.model.ts'den gelmiyor — inline tanım
+export type ProductCondition = 'new' | 'used' | 'refurbished';
 
 // ---- GetProductDetails DTO ----
 
 export interface ProductImageDto {
-  url: string;       // çözümlenmiş URL (MediaService'ten gelir)
+  url: string;
   altText?: string;
   isPrimary: boolean;
 }
@@ -18,8 +20,8 @@ export interface ProductDetailsDto {
   currency: string;
   condition: ProductCondition;
   categoryId: string;
-  mainImage: string;   // 'medium' boyutlu, çözümlenmiş URL
-  thumbnail: string;   // 'thumb' boyutlu, çözümlenmiş URL
+  mainImage: string;
+  thumbnail: string;
   gallery: ProductImageDto[];
   sellerId: string;
   createdAt: Date;
@@ -35,7 +37,7 @@ export interface ProductListingItemDto {
   price: number;
   currency: string;
   condition: ProductCondition;
-  thumbnail: string;   // 'thumb' boyutlu, çözümlenmiş URL
+  thumbnail: string;
   categoryId: string;
   createdAt: Date;
 }

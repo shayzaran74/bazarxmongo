@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import { GetSideAdsQuery } from '../application/queries/advertising.queries';
+import { GetSideAdsQuery } from '../application/queries/get-side-ads.query';
 
 @ApiTags('Settings')
 @Controller('settings')

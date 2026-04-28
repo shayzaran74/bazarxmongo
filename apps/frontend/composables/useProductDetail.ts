@@ -69,7 +69,7 @@ export const useProductDetail = () => {
     loading.value = true
     error.value = null
     try {
-      const res = await $api<any>(`/api/catalog/products/slug/${slug.value}`)
+      const res = await $api<any>(`/api/products/slug/${slug.value}`)
       if (res.success && res.data) {
         product.value = res.data
         listing.value = res.data.listings?.[0] || null
@@ -88,7 +88,7 @@ export const useProductDetail = () => {
   const fetchRelated = async () => {
     if (!product.value) return
     try {
-      const res = await $api<any>('/api/catalog/products', {
+      const res = await $api<any>('/api/products', {
         query: { categoryId: product.value?.categoryId, limit: 4 }
       })
       relatedProducts.value = res.data?.items || res.data || []

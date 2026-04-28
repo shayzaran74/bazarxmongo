@@ -2,7 +2,8 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CreateHelpCategoryCommand, CreateHelpArticleCommand } from './create-content.commands';
+import { CreateHelpCategoryCommand } from './create-help-category.command';
+import { CreateHelpArticleCommand } from './create-help-article.command';
 import { IHelpCategoryRepository } from '../../domain/repositories/help-category.repository.interface';
 import { IHelpArticleRepository } from '../../domain/repositories/help-article.repository.interface';
 import { HelpCategory } from '../../domain/entities/help-category.entity';

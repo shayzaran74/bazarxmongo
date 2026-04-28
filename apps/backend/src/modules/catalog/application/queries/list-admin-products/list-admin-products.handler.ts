@@ -10,7 +10,6 @@ export class ListAdminProductsHandler
 
   async execute(query: ListAdminProductsQuery) {
     const { search, status, page = 1, limit = 50 } = query.filters;
-    console.log('[AdminProducts] Filters:', { search, status, page, limit });
     const skip = Math.max(0, (page - 1) * limit);
     
     const where: any = {};

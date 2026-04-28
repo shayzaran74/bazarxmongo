@@ -76,11 +76,14 @@ typings/
 .yarn-integrity
 
 # dotenv environment variable files
+# Tüm .env* dosyaları git'e girmemeli
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+# İstisnalar (şablon dosyaları — secret içermez)
+!.env.example
+!.env.*.example
+!apps/backend/.env.example
+!apps/frontend/.env.example
 
 # next.js build output
 .next

@@ -2,7 +2,16 @@
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import * as qry from './content.queries';
+import { GetHomeBannersQuery } from './get-home-banners.query';
+import { GetHomeQuadCardsQuery } from './get-home-quad-cards.query';
+import { GetHelpCategoriesQuery } from './get-help-categories.query';
+import { GetHelpArticleQuery } from './get-help-article.query';
+import { SearchHelpArticlesQuery } from './search-help-articles.query';
+import { GetAnnouncementsQuery } from './get-announcements.query';
+import { GetPoliciesQuery } from './get-policies.query';
+import { GetPolicyBySlugQuery } from './get-policy-by-slug.query';
+import { GetDynamicContentQuery } from './get-dynamic-content.query';
+import { GetSeoMetadataQuery } from './get-seo-metadata.query';
 import { IHomeBannerRepository } from '../../domain/repositories/home-banner.repository.interface';
 import { IHomeQuadCardRepository } from '../../domain/repositories/home-quad-card.repository.interface';
 import { IHelpCategoryRepository } from '../../domain/repositories/help-category.repository.interface';
@@ -12,101 +21,76 @@ import { IPolicyRepository } from '../../domain/repositories/policy.repository.i
 import { IDynamicContentRepository } from '../../domain/repositories/dynamic-content.repository.interface';
 import { ISeoMetadataRepository } from '../../domain/repositories/seo-metadata.repository.interface';
 
-@QueryHandler(qry.GetHomeBannersQuery)
-export class GetHomeBannersHandler implements IQueryHandler<qry.GetHomeBannersQuery> {
+@QueryHandler(GetHomeBannersQuery)
+export class GetHomeBannersHandler implements IQueryHandler<GetHomeBannersQuery> {
   constructor(@Inject('IHomeBannerRepository') private readonly repository: IHomeBannerRepository) {}
-  async execute(query: qry.GetHomeBannersQuery) {
+  async execute(query: GetHomeBannersQuery) {
     const banners = await this.repository.findAllActive(query.platform, query.tag);
-    // Entity class'larının protected props'larını serialize edebilmek için düz objeye çeviriyoruz
-    return banners.map(b => ({
-      id: b.id,
-      ...b.getProps(),
-    }));
+    return banners.map(b => ({ id: b.id, ...b.getProps() }));
   }
 }
 
-@QueryHandler(qry.GetHomeQuadCardsQuery)
-export class GetHomeQuadCardsHandler implements IQueryHandler<qry.GetHomeQuadCardsQuery> {
+@QueryHandler(GetHomeQuadCardsQuery)
+export class GetHomeQuadCardsHandler implements IQueryHandler<GetHomeQuadCardsQuery> {
   constructor(@Inject('IHomeQuadCardRepository') private readonly repository: IHomeQuadCardRepository) {}
-  async execute(query: qry.GetHomeQuadCardsQuery) {
-    return this.repository.findAllActive(query.platform);
-  }
+  async execute(query: GetHomeQuadCardsQuery) { return this.repository.findAllActive(query.platform); }
 }
 
-@QueryHandler(qry.GetHelpCategoriesQuery)
-export class GetHelpCategoriesHandler implements IQueryHandler<qry.GetHelpCategoriesQuery> {
+@QueryHandler(GetHelpCategoriesQuery)
+export class GetHelpCategoriesHandler implements IQueryHandler<GetHelpCategoriesQuery> {
   constructor(@Inject('IHelpCategoryRepository') private readonly repository: IHelpCategoryRepository) {}
-  async execute(query: qry.GetHelpCategoriesQuery) {
-    return this.repository.findAllRoots(query.platform, query.language);
-  }
+  async execute(query: GetHelpCategoriesQuery) { return this.repository.findAllRoots(query.platform, query.language); }
 }
 
-@QueryHandler(qry.GetHelpArticleQuery)
-export class GetHelpArticleHandler implements IQueryHandler<qry.GetHelpArticleQuery> {
+@QueryHandler(GetHelpArticleQuery)
+export class GetHelpArticleHandler implements IQueryHandler<GetHelpArticleQuery> {
   constructor(@Inject('IHelpArticleRepository') private readonly repository: IHelpArticleRepository) {}
-  async execute(query: qry.GetHelpArticleQuery) {
+  async execute(query: GetHelpArticleQuery) {
     const article = await this.repository.findBySlug(query.slug);
-    if (article) {
-      article.incrementViewCount();
-      await this.repository.save(article);
-    }
+    if (article) { article.incrementViewCount(); await this.repository.save(article); }
     return article;
   }
 }
 
-@QueryHandler(qry.SearchHelpArticlesQuery)
-export class SearchHelpArticlesHandler implements IQueryHandler<qry.SearchHelpArticlesQuery> {
+@QueryHandler(SearchHelpArticlesQuery)
+export class SearchHelpArticlesHandler implements IQueryHandler<SearchHelpArticlesQuery> {
   constructor(@Inject('IHelpArticleRepository') private readonly repository: IHelpArticleRepository) {}
-  async execute(query: qry.SearchHelpArticlesQuery) {
-    return this.repository.search(query.text, query.platform, query.language);
-  }
+  async execute(query: SearchHelpArticlesQuery) { return this.repository.search(query.text, query.platform, query.language); }
 }
 
-@QueryHandler(qry.GetAnnouncementsQuery)
-export class GetAnnouncementsHandler implements IQueryHandler<qry.GetAnnouncementsQuery> {
+@QueryHandler(GetAnnouncementsQuery)
+export class GetAnnouncementsHandler implements IQueryHandler<GetAnnouncementsQuery> {
   constructor(@Inject('IAnnouncementRepository') private readonly repository: IAnnouncementRepository) {}
-  async execute() {
-    return this.repository.findAllActive();
-  }
+  async execute() { return this.repository.findAllActive(); }
 }
 
-@QueryHandler(qry.GetPoliciesQuery)
-export class GetPoliciesHandler implements IQueryHandler<qry.GetPoliciesQuery> {
+@QueryHandler(GetPoliciesQuery)
+export class GetPoliciesHandler implements IQueryHandler<GetPoliciesQuery> {
   constructor(@Inject('IPolicyRepository') private readonly repository: IPolicyRepository) {}
   async execute() {
     const policies = await this.repository.findAllActive();
-    return policies.map(p => ({
-      id: p.id.toString(),
-      ...p.getProps()
-    }));
+    return policies.map(p => ({ id: p.id.toString(), ...p.getProps() }));
   }
 }
 
-@QueryHandler(qry.GetPolicyBySlugQuery)
-export class GetPolicyBySlugHandler implements IQueryHandler<qry.GetPolicyBySlugQuery> {
+@QueryHandler(GetPolicyBySlugQuery)
+export class GetPolicyBySlugHandler implements IQueryHandler<GetPolicyBySlugQuery> {
   constructor(@Inject('IPolicyRepository') private readonly repository: IPolicyRepository) {}
-  async execute(query: qry.GetPolicyBySlugQuery) {
+  async execute(query: GetPolicyBySlugQuery) {
     const policy = await this.repository.findBySlug(query.slug);
     if (!policy) return null;
-    return {
-      id: policy.id.toString(),
-      ...policy.getProps()
-    };
+    return { id: policy.id.toString(), ...policy.getProps() };
   }
 }
 
-@QueryHandler(qry.GetDynamicContentQuery)
-export class GetDynamicContentHandler implements IQueryHandler<qry.GetDynamicContentQuery> {
+@QueryHandler(GetDynamicContentQuery)
+export class GetDynamicContentHandler implements IQueryHandler<GetDynamicContentQuery> {
   constructor(@Inject('IDynamicContentRepository') private readonly repository: IDynamicContentRepository) {}
-  async execute(query: qry.GetDynamicContentQuery) {
-    return this.repository.findByKey(query.key);
-  }
+  async execute(query: GetDynamicContentQuery) { return this.repository.findByKey(query.key); }
 }
 
-@QueryHandler(qry.GetSeoMetadataQuery)
-export class GetSeoMetadataHandler implements IQueryHandler<qry.GetSeoMetadataQuery> {
+@QueryHandler(GetSeoMetadataQuery)
+export class GetSeoMetadataHandler implements IQueryHandler<GetSeoMetadataQuery> {
   constructor(@Inject('ISeoMetadataRepository') private readonly repository: ISeoMetadataRepository) {}
-  async execute(query: qry.GetSeoMetadataQuery) {
-    return this.repository.findByPath(query.path, query.platform);
-  }
+  async execute(query: GetSeoMetadataQuery) { return this.repository.findByPath(query.path, query.platform); }
 }

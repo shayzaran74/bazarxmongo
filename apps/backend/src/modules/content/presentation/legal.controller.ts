@@ -2,7 +2,8 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
 import { QueryBus } from '@nestjs/cqrs';
-import { GetPoliciesQuery, GetPolicyBySlugQuery } from '../application/queries/content.queries';
+import { GetPoliciesQuery } from '../application/queries/get-policies.query';
+import { GetPolicyBySlugQuery } from '../application/queries/get-policy-by-slug.query';
 
 @ApiTags('Legal')
 @Controller('legal')

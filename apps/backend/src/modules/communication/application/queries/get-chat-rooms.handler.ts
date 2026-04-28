@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import { GetChatRoomsQuery } from './get-chat-rooms.query';
 import { IChatRoomRepository } from '../../domain/repositories/chat-room.repository.interface';
 import { IChatMessageRepository } from '../../domain/repositories/chat-message.repository.interface';
-import { ChatRoomResponseDto } from '../dtos/chat.dtos';
+import { ChatRoomResponseDto } from '../dtos/chat-room-response.dto';
 
 @QueryHandler(GetChatRoomsQuery)
 export class GetChatRoomsHandler implements IQueryHandler<GetChatRoomsQuery> {

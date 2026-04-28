@@ -2,7 +2,7 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CreateAdCampaignCommand } from './advertising.commands';
+import { CreateAdCampaignCommand } from './create-ad-campaign.command';
 import { IAdCampaignRepository } from '../../domain/repositories/ad-campaign.repository.interface';
 import { AdCampaign } from '../../domain/entities/ad-campaign.entity';
 

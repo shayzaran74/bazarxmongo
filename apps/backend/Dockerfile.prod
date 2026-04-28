@@ -9,7 +9,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ ./packages/
-COPY apps/backend/package.json ./apps/backend/
+COPY apps/ ./apps/
 
 RUN pnpm install --no-frozen-lockfile
 
@@ -21,20 +21,29 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY . .
 
+# Prisma client generate
+RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
+
+# Üretilen client'ı diğer paketlerin görebileceği yerlere kopyala
+RUN mkdir -p node_modules/.prisma packages/domain-identity/node_modules/.prisma packages/shared/shared-persistence/node_modules/.prisma && \
+    cp -r apps/backend/node_modules/.prisma/* node_modules/.prisma/ 2>/dev/null || true && \
+    cp -r apps/backend/node_modules/.prisma/* packages/domain-identity/node_modules/.prisma/ 2>/dev/null || true && \
+    cp -r apps/backend/node_modules/.prisma/* packages/shared/shared-persistence/node_modules/.prisma/ 2>/dev/null || true
+
 # Shared packages build
-RUN pnpm --filter "@barterborsa/*" build
+RUN pnpm --filter "@barterborsa/shared-*" build
 
 # Backend build
 RUN pnpm --filter @bazarx/backend build
 
-# Prisma client generate
-RUN cd apps/backend && npx prisma generate
-
 # ─── Stage 3: Runtime ─────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 
@@ -42,18 +51,16 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
 # Production node_modules
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/prisma ./prisma
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 
-# Prisma client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma client'ı zaten node_modules kopyalaması ile geliyor
 
 USER nestjs
 
 EXPOSE 3001
 
 # Prisma migrate + app başlat
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma@5.12.0 migrate deploy && node dist/main.js"]

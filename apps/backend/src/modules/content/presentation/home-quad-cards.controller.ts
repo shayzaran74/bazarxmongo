@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import { GetHomeQuadCardsQuery } from '../application/queries/content.queries';
+import { GetHomeQuadCardsQuery } from '../application/queries/get-home-quad-cards.query';
 
 @ApiTags('Home Content')
 @Controller('home-quad-cards')

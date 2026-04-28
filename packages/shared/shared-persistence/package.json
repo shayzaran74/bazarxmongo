@@ -6,14 +6,19 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
+    "@barterborsa/shared-core": "workspace:*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
-    "@prisma/client": "^5.12.0",
-    "prisma": "^5.12.0",
+    "@prisma/client": "5.12.0",
+    "prisma": "5.12.0",
     "mongoose": "^8.0.0",
     "@nestjs/mongoose": "^10.0.0",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
   "scripts": {
     "build": "tsc"

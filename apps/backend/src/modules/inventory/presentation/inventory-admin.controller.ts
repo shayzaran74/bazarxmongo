@@ -9,7 +9,7 @@ import * as XLSX from 'xlsx';
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('admin')
+@Controller('admin/inventory')
 export class InventoryAdminController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -108,7 +108,7 @@ export class InventoryAdminController {
           const stockStr     = row['Envanter Miktar'];
 
           const safeSlug = this.slugify(
-            `${rawName}-${barcode || Math.random().toString(36).substring(7)}`
+            `${rawName}-${barcode || require('crypto').randomBytes(4).toString('hex')}`
           );
 
           // 1. Marka

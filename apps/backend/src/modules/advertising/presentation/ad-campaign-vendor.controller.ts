@@ -9,8 +9,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { GetVendorCampaignsQuery } from '../application/queries/advertising.queries';
-import { CreateAdCampaignCommand } from '../application/commands/advertising.commands';
+import { GetVendorCampaignsQuery } from '../application/queries/get-vendor-campaigns.query';
+import { CreateAdCampaignCommand } from '../application/commands/create-ad-campaign.command';
 
 @ApiTags('Ad Campaigns')
 @ApiBearerAuth()

@@ -19,9 +19,7 @@ export class WalletController {
   @Get()
   async getMyWallet(@Req() req: any) {
     try {
-      console.log(`[WalletController] Fetching wallet for user: ${req.user.id}`);
       const data: any = await this.financialGateway.getWallet(req.user.id);
-      console.log(`[WalletController] Received wallet data. Accounts: ${data.accounts?.length || 0}`);
       return { success: true, data };
     } catch (err: any) {
       console.error(`[WalletController] Error fetching wallet:`, err);
@@ -38,7 +36,6 @@ export class WalletController {
     @Query('accountId') accountId?: string
   ) {
     try {
-      console.log('[WalletController] Getting transactions for user:', req.user?.id);
       const data = await this.queryBus.execute(
         new GetWalletTransactionsQuery(
           req.user.id,

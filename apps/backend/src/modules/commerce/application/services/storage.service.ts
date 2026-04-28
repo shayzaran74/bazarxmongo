@@ -1,6 +1,11 @@
+// apps/backend/src/modules/commerce/application/services/storage.service.ts
+// Fatura PDF'lerini MinIO'ya yükler.
+// Eski versiyon lokal FS kullanıyordu — container restart'ta dosyalar kayboluyordu.
+// MinIO bucket: MINIO_INVOICE_BUCKET (default: bazarx-invoices)
+
 import { Injectable, Logger } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { ConfigService } from '@nestjs/config';
+import * as Minio from 'minio';
 
 export interface StorageUploadResult {
   url: string;
@@ -10,36 +15,78 @@ export interface StorageUploadResult {
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly uploadDir = process.env.STORAGE_PATH || './uploads/invoices';
+  private readonly client: Minio.Client;
+  private readonly bucket: string;
+  private readonly publicUrl: string;
+
+  constructor(private readonly config: ConfigService) {
+    this.bucket = config.get<string>('MINIO_INVOICE_BUCKET', 'bazarx-invoices');
+    this.publicUrl = config.get<string>('MINIO_CDN_BASE', 'https://storage.bazarx.com');
+
+    this.client = new Minio.Client({
+      endPoint: config.get<string>('MINIO_ENDPOINT', 'minio'),
+      port: parseInt(config.get<string>('MINIO_PORT', '9000'), 10),
+      useSSL: config.get<string>('MINIO_USE_SSL', 'false') === 'true',
+      accessKey: config.get<string>('MINIO_ACCESS_KEY', ''),
+      secretKey: config.get<string>('MINIO_SECRET_KEY', ''),
+    });
+
+    this.ensureBucket();
+  }
+
+  private async ensureBucket(): Promise<void> {
+    try {
+      const exists = await this.client.bucketExists(this.bucket);
+      if (!exists) {
+        await this.client.makeBucket(this.bucket, 'eu-central-1');
+        this.logger.log(`Bucket oluşturuldu: ${this.bucket}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`Bucket kontrol hatası: ${err.message}`);
+    }
+  }
 
   async upload(
     buffer: Buffer,
     key: string,
-    mimeType: string = 'application/pdf'
+    mimeType = 'application/pdf',
   ): Promise<StorageUploadResult> {
-    // TODO: S3 entegrasyonu eklendiğinde bu metot override edilecek
-    // Şu an local filesystem kullanıyor
+    await this.client.putObject(
+      this.bucket,
+      key,
+      buffer,
+      buffer.length,
+      {
+        'Content-Type': mimeType,
+        'Cache-Control': 'private, max-age=86400',
+      },
+    );
 
-    const fullPath = path.join(this.uploadDir, key);
-    const dir = path.dirname(fullPath);
+    this.logger.log(`Dosya MinIO'ya yüklendi: ${this.bucket}/${key}`);
 
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFileSync(fullPath, buffer);
-    this.logger.log(`File saved: ${fullPath}`);
-
-    const baseUrl = process.env.STORAGE_BASE_URL || 'http://localhost:3001';
     return {
-      url: `${baseUrl}/invoices/${key}`,
+      url: `${this.publicUrl}/${this.bucket}/${key}`,
       key,
     };
   }
 
   async getBuffer(key: string): Promise<Buffer | null> {
-    const fullPath = path.join(this.uploadDir, key);
-    if (!fs.existsSync(fullPath)) return null;
-    return fs.readFileSync(fullPath);
+    try {
+      const stream = await this.client.getObject(this.bucket, key);
+      return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', reject);
+      });
+    } catch (err: any) {
+      if (err.code === 'NoSuchKey') return null;
+      throw err;
+    }
+  }
+
+  /** Geçici imzalı URL üret (private invoice'lar için) */
+  async getPresignedUrl(key: string, expirySeconds = 3600): Promise<string> {
+    return this.client.presignedGetObject(this.bucket, key, expirySeconds);
   }
 }

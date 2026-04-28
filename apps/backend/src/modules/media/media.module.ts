@@ -1,9 +1,9 @@
 // apps/backend/src/modules/media/media.module.ts
+
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MediaService } from './application/services/media.service';
-import { MediaController } from './presentation/media.controller';
-import { UploadController } from './presentation/upload.controller';
+import { MediaController, UploadController } from './presentation/media.controller';
 import { LocalStorageAdapter } from './infrastructure/local-storage.adapter';
 import { MinioStorageAdapter } from './infrastructure/minio-storage.adapter';
 import { STORAGE_ADAPTER } from './domain/storage.adapter.interface';

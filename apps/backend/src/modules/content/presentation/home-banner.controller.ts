@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
-import { GetHomeBannersQuery } from '../application/queries/content.queries';
+import { GetHomeBannersQuery } from '../application/queries/get-home-banners.query';
 
 @ApiTags('Home Banners')
 @Controller('banners')

@@ -49,7 +49,7 @@ export const useCartPage = () => {
     bestSellersLoading.value = true
     try {
       const res = await $api<{ success: boolean; data: any }>(
-        '/api/catalog/products',
+        '/api/products',
         { query: { limit: 4 } }
       )
       const resAny = res as any

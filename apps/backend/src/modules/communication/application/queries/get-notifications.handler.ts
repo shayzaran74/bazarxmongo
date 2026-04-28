@@ -4,7 +4,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetNotificationsQuery } from './get-notifications.query';
 import { INotificationRepository } from '../../domain/repositories/notification.repository.interface';
-import { NotificationResponseDto } from '../dtos/notification-complaint.dtos';
+import { NotificationResponseDto } from '../dtos/notification-response.dto';
 
 @QueryHandler(GetNotificationsQuery)
 export class GetNotificationsHandler implements IQueryHandler<GetNotificationsQuery> {

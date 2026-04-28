@@ -9,7 +9,7 @@ import { GetAdminStatsQuery } from './application/commands-queries/analytics.bus
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('admin')
+@Controller('admin/analytics')
 export class AdminDashboardController {
   constructor(private readonly queryBus: QueryBus) {}
 

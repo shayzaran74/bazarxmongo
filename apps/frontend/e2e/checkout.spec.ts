@@ -15,17 +15,17 @@ test.describe('Checkout Flow', () => {
     checkoutPage = new CheckoutPage(page)
 
     // Global catch-all FIRST
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/**', async (route) => {
       await route.fulfill({ json: { success: true, data: {} } })
     })
 
     // Auth mock
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/auth/me', async (route) => {
       await route.fulfill({ json: { success: true, data: { id: 'user-001', role: 'USER' } } })
     })
 
     // Cart mock
-    await page.route('**/api/v1/cart', async (route) => {
+    await page.route('**/api/cart', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ json: mockCart })
       } else {
@@ -34,22 +34,22 @@ test.describe('Checkout Flow', () => {
     })
 
     // Addresses mock
-    await page.route('**/api/v1/addresses', async (route) => {
+    await page.route('**/api/addresses', async (route) => {
       await route.fulfill({ json: mockAddresses })
     })
 
     // Wallet mock
-    await page.route('**/api/v1/wallet', async (route) => {
+    await page.route('**/api/wallet', async (route) => {
       await route.fulfill({ json: mockWallet })
     })
 
     // Checkout result mock
-    await page.route('**/api/v1/checkout', async (route) => {
+    await page.route('**/api/checkout', async (route) => {
       await route.fulfill({ json: mockCheckoutResult })
     })
 
     // Coupons mock
-    await page.route('**/api/v1/coupons/validate', async (route) => {
+    await page.route('**/api/coupons/validate', async (route) => {
       await route.fulfill({ json: { success: true, data: { code: 'TEST10', discountAmount: 25 } } })
     })
   })
@@ -67,7 +67,7 @@ test.describe('Checkout Flow', () => {
 
   test('boş sepette ödemeye geç butonu görünmez', async ({ page }) => {
     // Boş sepet mock'u
-    await page.route('**/api/v1/cart', async (route) => {
+    await page.route('**/api/cart', async (route) => {
       await route.fulfill({
         json: { success: true, data: { items: [] } }
       })
@@ -119,7 +119,7 @@ test.describe('Checkout Flow', () => {
 
   test('kupon kodu uygulanır ve indirim görünür', async ({ page }) => {
     // Kupon API mock'u
-    await page.route('**/api/v1/coupons/validate', async (route) => {
+    await page.route('**/api/coupons/validate', async (route) => {
       await route.fulfill({
         json: {
           success: true,
@@ -140,7 +140,7 @@ test.describe('Checkout Flow', () => {
   })
 
   test('geçersiz kupon kodu hata gösterir', async ({ page }) => {
-    await page.route('**/api/v1/coupons/validate', async (route) => {
+    await page.route('**/api/coupons/validate', async (route) => {
       await route.fulfill({
         status: 400,
         json: { success: false, message: 'Kupon geçersiz veya süresi dolmuş' }
@@ -156,7 +156,7 @@ test.describe('Checkout Flow', () => {
 
   test('adres seçilmeden siparişi tamamla butonu devre dışı veya hata verir', async ({ page }) => {
     // Adresi boş döndür
-    await page.route('**/api/v1/identity/addresses', async (route) => {
+    await page.route('**/api/identity/addresses', async (route) => {
       await route.fulfill({ json: { success: true, data: [] } })
     })
 

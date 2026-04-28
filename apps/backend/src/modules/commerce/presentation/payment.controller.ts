@@ -29,7 +29,6 @@ export class PaymentController {
   @ApiOperation({ summary: 'Process credit card payment', description: 'Kredi kartı ödemesini işler.' })
   @Post('credit-card/process')
   async processCreditCard(@CurrentUser() user: any, @Body() dto: any) {
-    console.log(`[PaymentController] Processing credit card for user ${user.id}`, dto);
     // If it's a wallet top-up (no orderNumber)
     if (!dto.orderNumber) {
       await this.commandBus.execute(
@@ -51,7 +50,6 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @Post('bank-transfer/confirm')
   async confirmBankTransfer(@CurrentUser() user: any, @Body() dto: any) {
-    console.log(`[PaymentController] Bank transfer confirmation from user ${user.id}`, dto);
     
     await this.commandBus.execute(
       new TopUpWalletCommand(user.id, Number(dto.amount), 'BANK_TRANSFER')
@@ -67,7 +65,6 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @Post('eft/confirm')
   async confirmEft(@CurrentUser() user: any, @Body() dto: any) {
-    console.log(`[PaymentController] EFT confirmation from user ${user.id}`, dto);
 
     await this.commandBus.execute(
       new TopUpWalletCommand(user.id, Number(dto.amount), 'EFT')

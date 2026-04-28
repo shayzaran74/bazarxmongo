@@ -2,7 +2,8 @@
 
 import { EventsHandler, IEventHandler, CommandBus } from '@nestjs/cqrs';
 import { XpCalculatorService } from '../services/xp-calculator.service';
-import { EarnXpCommand, CheckMilestonesCommand } from '../commands/loyalty.commands';
+import { EarnXpCommand } from '../commands/earn-xp.command';
+import { CheckMilestonesCommand } from '../commands/check-milestones.command';
 import { XpSourceType } from '../../domain/enums/loyalty.enums';
 
 // Bunlar genelde Integration Event'ler olacak ama burada basitlik için temsil ediliyor

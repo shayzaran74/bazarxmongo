@@ -46,6 +46,7 @@ export class LocalStorageAdapter implements IStorageAdapter {
     return {
       mediaId: `${subPath}/${mediaId}`,
       publicUrl: `${this.baseUrl}/uploads/${subPath}/${mediaId}`,
+      blurhash: null,
     };
   }
 

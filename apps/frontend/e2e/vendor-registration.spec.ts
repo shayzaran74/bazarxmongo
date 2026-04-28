@@ -11,7 +11,7 @@ test.describe('Vendor Registration Flow', () => {
     vendorPage = new VendorRegistrationPage(page)
 
     // Vendor apply endpoint mock'u
-    await page.route('**/api/v1/vendors/apply-atomic', async (route) => {
+    await page.route('**/api/vendors/apply-atomic', async (route) => {
       if (route.request().method() === 'POST') {
         await route.fulfill({ json: mockVendorApply })
       } else {
@@ -20,7 +20,7 @@ test.describe('Vendor Registration Flow', () => {
     })
 
     // Zaten vendor değil
-    await page.route('**/api/v1/vendors/profile/me', async (route) => {
+    await page.route('**/api/vendors/profile/me', async (route) => {
       await route.fulfill({
         status: 404,
         json: { success: false, message: 'Vendor bulunamadı' }
@@ -28,7 +28,7 @@ test.describe('Vendor Registration Flow', () => {
     })
 
     // Kategoriler
-    await page.route('**/api/v1/listings/categories', async (route) => {
+    await page.route('**/api/listings/categories', async (route) => {
       await route.fulfill({
         json: {
           success: true,
@@ -119,7 +119,7 @@ test.describe('Vendor Registration Flow', () => {
 
   test('zaten satıcı olan kullanıcı başvuru yerine durum sayfası görür', async ({ page }) => {
     // Mevcut vendor mock'u
-    await page.route('**/api/v1/vendors/profile/me', async (route) => {
+    await page.route('**/api/vendors/profile/me', async (route) => {
       await route.fulfill({
         json: {
           success: true,
@@ -137,7 +137,7 @@ test.describe('Vendor Registration Flow', () => {
   })
 
   test('backend hatası kullanıcıya bildirilir', async ({ page }) => {
-    await page.route('**/api/v1/vendors/apply-atomic', async (route) => {
+    await page.route('**/api/vendors/apply-atomic', async (route) => {
       await route.fulfill({
         status: 422,
         json: {

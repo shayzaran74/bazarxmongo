@@ -137,7 +137,6 @@ export class VendorInventoryController {
     try {
       const vendor = await this.prisma.vendor.findUnique({ where: { userId: user.id } });
       if (!vendor) return { success: false, error: 'Vendor not found' };
-      console.log('[VendorInventoryImport] Importing for vendor:', vendor.id, 'userId:', user.id);
 
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Simplify to first sheet
@@ -147,7 +146,6 @@ export class VendorInventoryController {
       let failedCount = 0;
       const errors: string[] = [];
 
-      console.log('[Import] Available Columns:', Object.keys(rows[0] || {}));
       for (const row of rows) {
         try {
           const rawName = row['Başlık'] || row['Ürün Adı'] || row['Stok Kartı Adı'];
@@ -168,10 +166,8 @@ export class VendorInventoryController {
             }
           });
           
-          console.log(`[Import] Product: ${rawName}, Auto-detected Images:`, images.length);
-          if (images.length > 0) console.log(`[Import] Sample URL: ${images[0]}`);
 
-          const slug = this.slugify(`${rawName}-${barcode || Math.random().toString(36).substring(5)}`);
+          const slug = this.slugify(`${rawName}-${barcode || require('crypto').randomBytes(4).toString('hex')}`);
 
           const category = await this.prisma.category.upsert({
             where: { slug: this.slugify(categoryName) },
