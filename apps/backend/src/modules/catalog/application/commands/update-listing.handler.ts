@@ -66,6 +66,26 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
         where: { id: listing.catalogProductId },
         data: catalogData
       });
+
+      // Medya (Resim) Güncellemesi
+      if (dto.productImages && Array.isArray(dto.productImages)) {
+        // Önce eskileri sil (veya senkronize et)
+        await this.prisma.productMedia.deleteMany({
+          where: { productId: listing.catalogProductId }
+        });
+
+        // Yenileri ekle
+        if (dto.productImages.length > 0) {
+          await this.prisma.productMedia.createMany({
+            data: dto.productImages.map((url: string, index: number) => ({
+              productId: listing.catalogProductId!,
+              url,
+              type: 'IMAGE',
+              sortOrder: index
+            }))
+          });
+        }
+      }
     }
 
     return updatedListing;

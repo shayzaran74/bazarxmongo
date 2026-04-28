@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MediaModule } from '../media/media.module';
 
 // Controllers
 import { ListingController } from './presentation/listing.controller';
@@ -83,6 +84,7 @@ const QueryHandlers = [
   imports: [
     CqrsModule,
     PrismaModule,
+    MediaModule,
   ],
   controllers: [
     ListingController,

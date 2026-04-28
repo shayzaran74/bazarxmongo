@@ -17,6 +17,7 @@ import { MediaHealthIndicator } from './presentation/media-health.indicator';
     MinioStorageAdapter,
     LocalStorageAdapter,
     MediaHealthIndicator,
+    MediaService,
     {
       provide: STORAGE_ADAPTER,
       useFactory: (config: ConfigService, minio: MinioStorageAdapter, local: LocalStorageAdapter) => {
@@ -30,6 +31,6 @@ import { MediaHealthIndicator } from './presentation/media-health.indicator';
       useClass: MediaService,
     },
   ],
-  exports: [MEDIA_SERVICE, MediaHealthIndicator],
+  exports: [MEDIA_SERVICE, MediaService, MediaHealthIndicator],
 })
 export class MediaModule {}

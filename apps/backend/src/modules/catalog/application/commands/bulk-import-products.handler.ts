@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { MediaService } from '../../../media/application/services/media.service';
 import { ListingStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
@@ -69,6 +70,7 @@ export class BulkImportProductsHandler
   constructor(
     private readonly prisma: PrismaService,
     private readonly systemVendorService: SystemVendorService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async execute(command: BulkImportProductsCommand) {
@@ -178,24 +180,56 @@ export class BulkImportProductsHandler
         results.created += createdProducts.length;
         results.failed += prepared.length - createdProducts.length;
 
-        // ── 4c. Media kayıtları ───────────────────────────────────────────────
-        const mediaData: {
-          productId: string;
-          url: string;
-          type: string;
-          sortOrder: number;
-        }[] = [];
-
+        // ── 4c. Media kayıtları (Download & Upload to MinIO) ───────────────────
         for (const { row, slug } of prepared) {
           const productId = slugToId.get(slug);
           if (!productId || !row.productImages?.length) continue;
-          row.productImages.forEach((url, idx) => {
-            mediaData.push({ productId, url, type: 'IMAGE', sortOrder: idx });
-          });
-        }
 
-        if (mediaData.length > 0) {
-          await tx.productMedia.createMany({ data: mediaData });
+          for (let idx = 0; idx < row.productImages.length; idx++) {
+            const imageUrl = row.productImages[idx];
+            if (!imageUrl || !imageUrl.startsWith('http')) continue;
+
+            try {
+              // 1. Resmi indir
+              const response = await fetch(imageUrl);
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              
+              const arrayBuffer = await response.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              const contentType = response.headers.get('content-type') || 'image/jpeg';
+              const extension = contentType.split('/')[1] || 'jpg';
+
+              // 2. Mock Multer file objesi oluştur
+              const mockFile = {
+                buffer,
+                mimetype: contentType,
+                originalname: `import-${productId}-${idx}.${extension}`,
+                size: buffer.length,
+              };
+
+              // 3. MediaService ile MinIO'ya yükle
+              const uploadResult = await this.mediaService.processAndUpload(mockFile, {
+                subPath: 'catalog/products',
+              });
+
+              if (uploadResult.success && uploadResult.data) {
+                const media = uploadResult.data;
+                await tx.productMedia.create({
+                  data: {
+                    productId,
+                    url: media.url,
+                    blurhash: media.blurhash,
+                    type: 'IMAGE',
+                    sortOrder: idx,
+                  },
+                });
+              } else {
+                this.logger.warn(`Resim yükleme hatası (${imageUrl}): ${uploadResult.error?.message}`);
+              }
+            } catch (err: any) {
+              this.logger.warn(`Ürün ${productId} için resim indirilemedi: ${imageUrl} — ${err.message}`);
+            }
+          }
         }
 
         // ── 4d. Listing kayıtları (fiyat veya stok olan satırlar) ─────────────
