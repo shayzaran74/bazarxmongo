@@ -93,6 +93,10 @@ export const useAdminBanners = () => {
     if (!file) return
     uploading.value = true
 
+    // Adım 1: Yükleme bitmeden anlık yerel önizleme göster
+    const localPreview = URL.createObjectURL(file)
+    imagePreview.value = localPreview
+
     try {
       const config = useRuntimeConfig()
       const authStore = useAuthStore()
@@ -102,7 +106,7 @@ export const useAdminBanners = () => {
       body.append('file', file)
 
       // Nuxt Nitro proxy multipart/form-data isteklerini bozuyor.
-      // Bu yüzden upload isteği proxy'yi atlayarak doğrudan backend'e gönderilir.
+      // /api/v1 yoktu — /api/upload kullanılmalı.
       const backendUrl = config.public.apiBase || 'http://localhost:3001'
       const res = await fetch(`${backendUrl}/api/v1/upload?subPath=banners`, {
         method: 'POST',
@@ -114,19 +118,22 @@ export const useAdminBanners = () => {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err?.message || `Upload failed: ${res.status}`)
+        throw new Error(err?.message || `Upload başarısız: ${res.status}`)
       }
 
       const json = await res.json()
       const url = json?.data?.url
       if (url) {
         formData.imageUrl = url
+        // Adım 2: Gerçek URL'e geç, yerel blob'u serbest bırak
+        URL.revokeObjectURL(localPreview)
         imagePreview.value = url
         $toast.success('Görsel yüklendi')
       } else {
-        throw new Error('URL döndürülmedi')
+        throw new Error('Sunucu URL döndürmedi')
       }
     } catch (e: any) {
+      // Hata durumunda önizleme yerel dosyadan devam eder
       $toast.error(e?.message || 'Görsel yüklenemedi')
     } finally {
       uploading.value = false
