@@ -23,6 +23,11 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { MenuModule } from './modules/menu/menu.module';
+import { BarterBorsaModule } from './modules/barterborsa/barterborsa.module';
+import { TaxModule } from './modules/tax/tax.module';
 
 @Module({
   imports: [
@@ -82,7 +87,14 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     SharedQueueModule,
     SharedSecurityModule,
 
+    // ─── Audit (Global) ────────────────────────────────────────────
+    AuditModule,
+
     // ─── Feature Modules ───────────────────────────────────────────
+    SubscriptionModule,
+    MenuModule,
+    BarterBorsaModule,
+    TaxModule,
     IdentityModule,
     CatalogModule,
     MarketingModule,

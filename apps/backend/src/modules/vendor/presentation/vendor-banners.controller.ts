@@ -2,38 +2,42 @@
 
 import {
   Controller, Get, Post, Put, Delete,
-  Body, Param, UseGuards, NotFoundException,
+  Body, Param, UseGuards,
   HttpCode, HttpStatus,
 } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
   ApiParam, ApiBody,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ListVendorBannersQuery } from '../application/queries/list-vendor-banners.query';
+import { CreateBannerCommand } from '../application/commands/create-banner.command';
+import { UpdateBannerCommand } from '../application/commands/update-banner.command';
+import { DeleteBannerCommand } from '../application/commands/delete-banner.command';
+
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
 
 @ApiTags('Vendor Content')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 @Controller('vendor-banners')
 export class VendorBannersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @ApiOperation({ summary: 'Satıcının bannerlarını listele' })
   @ApiResponse({ status: 200 })
   @Get()
-  async findAll(@CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) return { success: true, data: [] };
-
-    const data = await this.prisma.vendorBanner.findMany({
-      where: { vendorId: vendor.id },
-      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-    });
+  async findAll(@CurrentUser() user: AuthenticatedUser) {
+    const data = await this.queryBus.execute(new ListVendorBannersQuery(user.id));
     return { success: true, data };
   }
 
@@ -55,62 +59,38 @@ export class VendorBannersController {
   })
   @ApiResponse({ status: 201 })
   @Post()
-  async create(@CurrentUser() user: any, @Body() body: any) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
-
-    const banner = await this.prisma.vendorBanner.create({
-      data: {
-        vendorId:        vendor.id,
-        imageUrl:        body.imageUrl,
-        linkUrl:         body.linkUrl,
-        type:            body.type ?? 1,
-        template:        body.template ?? 'A',
-        order:           body.order ?? 0,
-        targetCities:    body.targetCities ?? [],
-        targetDistricts: body.targetDistricts ?? [],
-        status:          'PENDING',
-        isActive:        false,
-      },
-    });
-    return { success: true, data: banner };
+  async create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: {
+      imageUrl: string;
+      linkUrl?: string;
+      type?: number;
+      template?: string;
+      order?: number;
+      targetCities?: string[];
+      targetDistricts?: string[];
+    },
+  ) {
+    return this.commandBus.execute(new CreateBannerCommand(user.id, body));
   }
 
   @ApiOperation({ summary: 'Banner güncelle' })
   @ApiParam({ name: 'id' })
   @Put(':id')
   async update(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: any,
+    @Body() body: {
+      imageUrl?: string;
+      linkUrl?: string;
+      type?: number;
+      template?: string;
+      order?: number;
+      targetCities?: string[];
+      targetDistricts?: string[];
+    },
   ) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
-
-    const existing = await this.prisma.vendorBanner.findFirst({
-      where: { id, vendorId: vendor.id },
-    });
-    if (!existing) throw new NotFoundException('Banner bulunamadı');
-
-    const updated = await this.prisma.vendorBanner.update({
-      where: { id },
-      data: {
-        ...(body.imageUrl        !== undefined && { imageUrl: body.imageUrl }),
-        ...(body.linkUrl         !== undefined && { linkUrl: body.linkUrl }),
-        ...(body.type            !== undefined && { type: body.type }),
-        ...(body.template        !== undefined && { template: body.template }),
-        ...(body.order           !== undefined && { order: body.order }),
-        ...(body.targetCities    !== undefined && { targetCities: body.targetCities }),
-        ...(body.targetDistricts !== undefined && { targetDistricts: body.targetDistricts }),
-      },
-    });
-    return { success: true, data: updated };
+    return this.commandBus.execute(new UpdateBannerCommand(user.id, id, body));
   }
 
   @ApiOperation({ summary: 'Banner sil' })
@@ -118,19 +98,7 @@ export class VendorBannersController {
   @ApiResponse({ status: 204 })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@CurrentUser() user: any, @Param('id') id: string) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
-
-    const existing = await this.prisma.vendorBanner.findFirst({
-      where: { id, vendorId: vendor.id },
-    });
-    if (!existing) throw new NotFoundException('Banner bulunamadı');
-
-    await this.prisma.vendorBanner.delete({ where: { id } });
-    return { success: true };
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.commandBus.execute(new DeleteBannerCommand(user.id, id));
   }
 }

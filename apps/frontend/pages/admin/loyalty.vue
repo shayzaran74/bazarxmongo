@@ -256,6 +256,8 @@
 </template>
 
 <script setup>
+definePageMeta({ middleware: ['auth', 'admin'] })
+
 import { ref, onMounted } from 'vue'
 const { $api } = useApi()
 const toast = useNuxtApp().$toast

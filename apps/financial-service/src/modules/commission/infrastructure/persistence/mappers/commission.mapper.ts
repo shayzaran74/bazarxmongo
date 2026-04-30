@@ -15,14 +15,14 @@ export class CommissionMapper {
       baseAmount: raw.baseAmount,
       commissionRate: raw.commissionRate,
       commissionAmount: raw.commissionAmount,
-      commissionType: raw.commissionType as any,
-      status: raw.status as any,
+      commissionType: raw.commissionType as 'CASH' | 'BARTER',
+      status: raw.status as 'CALCULATED' | 'COLLECTED' | 'FAILED',
       createdAt: raw.createdAt,
       collectedAt: raw.collectedAt || undefined,
     }, raw.id);
   }
 
-  toPersistence(entity: CommissionRecord): any {
+  toPersistence(entity: CommissionRecord) {
     return {
       orderId: entity.orderId,
       tradeOfferId: entity.tradeOfferId,

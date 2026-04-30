@@ -199,6 +199,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ middleware: ['auth', 'admin'] })
+
 import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {

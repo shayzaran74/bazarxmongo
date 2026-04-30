@@ -1,15 +1,22 @@
-import { Controller, Get, Post, Body, Req, Query, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Param, Logger } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
-import { GetWalletBalanceQuery } from '../application/queries/get-wallet-balance.query';
+import { CurrentUser } from '@barterborsa/shared-nest';
 import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-transactions.query';
 import { TopUpWalletCommand } from '../application/commands/top-up-wallet.command';
 import { RequestWithdrawalCommand } from '../application/commands/request-withdrawal.command';
 import { FinancialGatewayService } from '../financial-gateway.service';
 
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
 export class WalletController {
+  private readonly logger = new Logger(WalletController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
@@ -17,125 +24,87 @@ export class WalletController {
   ) {}
 
   @Get()
-  async getMyWallet(@Req() req: any) {
-    try {
-      const data: any = await this.financialGateway.getWallet(req.user.id);
-      return { success: true, data };
-    } catch (err: any) {
-      console.error(`[WalletController] Error fetching wallet:`, err);
-      return { success: false, message: 'Cüzdan bilgileri alınamadı.' };
-    }
+  async getMyWallet(@CurrentUser() user: AuthenticatedUser) {
+    const data = await this.financialGateway.getWallet(user.id);
+    return { success: true, data };
   }
 
   @Get('transactions')
   async getTransactions(
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('accountType') accountType?: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '20',
-    @Query('accountId') accountId?: string
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('accountId') accountId?: string,
   ) {
-    try {
-      const data = await this.queryBus.execute(
-        new GetWalletTransactionsQuery(
-          req.user.id,
-          accountType,
-          parseInt(page, 10) || 1,
-          parseInt(limit, 10) || 20,
-          accountId
-        )
-      );
-      return { success: true, data };
-    } catch (err: any) {
-      console.error('[WalletController] Error:', err);
-      return { success: false, message: 'İşlemler alınamadı.' };
-    }
+    const data = await this.queryBus.execute(
+      new GetWalletTransactionsQuery(
+        user.id,
+        accountType,
+        parseInt(page, 10) || 1,
+        parseInt(limit, 10) || 20,
+        accountId,
+      ),
+    );
+    return { success: true, data };
   }
 
   @Get('accounts/:accountId/transactions')
   async getAccountTransactions(
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('accountId') accountId: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '20'
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
   ) {
-    try {
-      const data = await this.queryBus.execute(
-        new GetWalletTransactionsQuery(
-          req.user.id,
-          undefined, // accountType
-          parseInt(page, 10) || 1,
-          parseInt(limit, 10) || 20,
-          accountId
-        )
-      );
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, message: 'Hesap hareketleri alınamadı.' };
-    }
+    const data = await this.queryBus.execute(
+      new GetWalletTransactionsQuery(
+        user.id,
+        undefined,
+        parseInt(page, 10) || 1,
+        parseInt(limit, 10) || 20,
+        accountId,
+      ),
+    );
+    return { success: true, data };
   }
 
   @Get('ledger')
   async getLedger(
-    @Req() req: any,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '50'
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page') page = '1',
+    @Query('limit') limit = '50',
   ) {
-    try {
-      // Reuse getTransactions but fetch from generalLedger (no accountId = ledger mode)
-      const data = await this.queryBus.execute(
-        new GetWalletTransactionsQuery(
-          req.user.id,
-          undefined,
-          parseInt(page, 10) || 1,
-          parseInt(limit, 10) || 50,
-          undefined // no accountId = ledger mode in handler
-        )
-      );
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, message: 'Ledger hareketleri alınamadı.' };
-    }
+    const data = await this.queryBus.execute(
+      new GetWalletTransactionsQuery(
+        user.id,
+        undefined,
+        parseInt(page, 10) || 1,
+        parseInt(limit, 10) || 50,
+        undefined,
+      ),
+    );
+    return { success: true, data };
   }
 
   @Post('topup')
   async topUp(
-    @Req() req: any,
-    @Body() dto: { amount: number; paymentMethod: string }
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: { amount: number; paymentMethod: string },
   ) {
-    try {
-      const data = await this.commandBus.execute(
-        new TopUpWalletCommand(req.user.id, dto.amount, dto.paymentMethod)
-      );
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, message: 'Bakiye yükleme başarısız.' };
-    }
+    const data = await this.commandBus.execute(
+      new TopUpWalletCommand(user.id, dto.amount, dto.paymentMethod),
+    );
+    return { success: true, data };
   }
 
   @Post('withdraw')
   async withdraw(
-    @Req() req: any,
-    @Body() dto: {
-      amount: number;
-      iban: string;
-      accountHolder: string;
-      bankName: string
-    }
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: { amount: number; iban: string; accountHolder: string; bankName: string },
   ) {
-    try {
-      const data = await this.commandBus.execute(
-        new RequestWithdrawalCommand(
-          req.user.id,
-          dto.amount,
-          dto.iban,
-          dto.accountHolder,
-          dto.bankName
-        )
-      );
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, message: 'Para çekme talebi başarısız.' };
-    }
+    const data = await this.commandBus.execute(
+      new RequestWithdrawalCommand(user.id, dto.amount, dto.iban, dto.accountHolder, dto.bankName),
+    );
+    return { success: true, data };
   }
 }

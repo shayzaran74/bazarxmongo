@@ -19,7 +19,7 @@ export class WalletMapper {
     }, raw.id);
   }
 
-  toPersistence(entity: Wallet): any {
+  toPersistence(entity: Wallet) {
     return {
       userId: entity.userId,
       balanceTL: entity.balanceTL.amount,

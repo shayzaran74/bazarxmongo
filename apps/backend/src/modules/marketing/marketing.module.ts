@@ -1,6 +1,7 @@
 // apps/backend/src/modules/marketing/marketing.module.ts
 
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@barterborsa/shared-persistence';
 
 import { BannerController } from './presentation/banner.controller';
@@ -9,9 +10,13 @@ import { GroupBuyController } from './presentation/group-buy.controller';
 import { GiftCardAdminController } from './presentation/gift-card-admin.controller';
 import { CouponAdminController } from './presentation/coupon-admin.controller';
 import { PublicCouponController } from './presentation/public-coupon.controller';
+import { MarketingAdminController } from './presentation/marketing-admin.controller';
+import { IssueGiftVoucherHandler } from './application/commands/issue-gift-voucher.handler';
+import { RedeemGiftVoucherHandler } from './application/commands/redeem-gift-voucher.handler';
+import { GiftVoucherSchedulerService } from './application/services/gift-voucher-scheduler.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [CqrsModule, PrismaModule],
   controllers: [
     BannerController,
     CampaignController,
@@ -19,6 +24,13 @@ import { PublicCouponController } from './presentation/public-coupon.controller'
     GiftCardAdminController,
     CouponAdminController,
     PublicCouponController,
+    MarketingAdminController,
   ],
+  providers: [
+    IssueGiftVoucherHandler,
+    RedeemGiftVoucherHandler,
+    GiftVoucherSchedulerService,
+  ],
+  exports: [IssueGiftVoucherHandler],
 })
 export class MarketingModule {}

@@ -1,6 +1,6 @@
 // apps/backend/src/modules/commerce/application/dtos/checkout.dto.ts
 
-import { IsString, IsOptional, ValidateNested, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, ValidateNested, IsBoolean, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class AddressDto {
@@ -44,4 +44,9 @@ export class CheckoutDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // Ağ hatası sonrası retry'larda aynı siparişin iki kez oluşmasını önler
+  @IsOptional()
+  @IsUUID('4')
+  clientMutationId?: string;
 }

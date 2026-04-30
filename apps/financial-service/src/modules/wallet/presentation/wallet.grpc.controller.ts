@@ -1,20 +1,36 @@
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { QueryBus, CommandBus } from '@nestjs/cqrs';
 import { GetBalanceQuery } from '../application/queries/get-balance.query';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TopUpWalletCommand } from '../application/commands/topup-wallet.command';
 import { Decimal } from 'decimal.js';
+import { PaymentMethod, TopUpStatus, WithdrawalStatus } from '../../../generated/client';
 
 import { ApproveTopUpCommand } from '../application/commands/approve-topup.command';
 import { RejectTopUpCommand } from '../application/commands/reject-topup.command';
-
 import { GetTransactionsQuery } from '../application/queries/get-transactions.query';
 import { Wallet } from '../domain/entities/wallet.entity';
 import { IWalletRepository } from '../domain/repositories/wallet.repository.interface';
 
+interface TopUpRequestFilter {
+  userId?: string;
+  status?: TopUpStatus;
+}
+
+interface WithdrawalRequestFilter {
+  userId?: string;
+  status?: WithdrawalStatus;
+}
+
+function extractError(error: unknown): string {
+  return error instanceof Error ? error.message : 'Bilinmeyen hata oluştu.';
+}
+
 @Controller()
 export class WalletGrpcController {
+  private readonly logger = new Logger(WalletGrpcController.name);
+
   constructor(
     private readonly queryBus: QueryBus,
     private readonly commandBus: CommandBus,
@@ -24,60 +40,76 @@ export class WalletGrpcController {
   ) {}
 
   @GrpcMethod('FinancialService', 'GetTransactions')
-  async getTransactions(data: { userId: string; accountType?: string; page?: number; limit?: number; accountId?: string }) {
+  async getTransactions(data: {
+    userId: string;
+    accountType?: string;
+    page?: number;
+    limit?: number;
+    accountId?: string;
+  }) {
     return this.queryBus.execute(
       new GetTransactionsQuery(
         data.userId,
         data.accountType,
         data.page || 1,
         data.limit || 20,
-        data.accountId
-      )
+        data.accountId,
+      ),
     );
   }
 
   @GrpcMethod('FinancialService', 'ProcessWalletRequest')
-  async processWalletRequest(data: { requestId: string; action: string; adminId: string; reason?: string }) {
+  async processWalletRequest(data: {
+    requestId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
     try {
       if (data.action === 'approve') {
         await this.commandBus.execute(new ApproveTopUpCommand(data.requestId, data.adminId));
       } else {
-        await this.commandBus.execute(new RejectTopUpCommand(data.requestId, data.adminId, data.reason || ''));
+        await this.commandBus.execute(
+          new RejectTopUpCommand(data.requestId, data.adminId, data.reason || ''),
+        );
       }
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error?.message || 'Unknown error' };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
     }
   }
 
   @GrpcMethod('FinancialService', 'GetWallet')
   async getWallet(data: { userId: string }) {
-    console.log(`[FinancialService] GetWallet called for userId: ${data.userId}`);
-    
-    // 1. Get Wallet entity (Source of truth for legacy balance)
+    this.logger.log({ userId: data.userId }, '[GetWallet] İstek alındı.');
+
+    // 1. Cüzdan entity'si — bakiye için kaynak
     let walletEntity = await this.walletRepository.findByUserId(data.userId);
     if (!walletEntity) {
       walletEntity = Wallet.create(data.userId);
       await this.walletRepository.save(walletEntity);
     }
 
-    // 2. Get Account records (Source of truth for account IDs and types)
+    // 2. Account kayıtları — hesap ID ve tipleri için kaynak
     let accounts = await this.prisma.account.findMany({
-      where: { userId: data.userId }
+      where: { userId: data.userId },
     });
 
     if (accounts.length === 0) {
-      console.log(`[FinancialService] No accounts found for ${data.userId}, creating default accounts...`);
+      this.logger.log(
+        { userId: data.userId },
+        '[GetWallet] Hesap bulunamadı, varsayılan hesaplar oluşturuluyor.',
+      );
       await this.prisma.account.createMany({
         data: [
           { userId: data.userId, type: 'MAIN', currency: 'TRY' },
           { userId: data.userId, type: 'BARTER', currency: 'BARTER' },
           { userId: data.userId, type: 'XP_COMMISSION', currency: 'TRY' },
           { userId: data.userId, type: 'XP_ADS', currency: 'TRY' },
-        ]
+        ],
       });
       accounts = await this.prisma.account.findMany({
-        where: { userId: data.userId }
+        where: { userId: data.userId },
       });
     }
 
@@ -85,41 +117,45 @@ export class WalletGrpcController {
       this.prisma.accountTopUpRequest.findMany({
         where: { userId: data.userId },
         orderBy: { createdAt: 'desc' },
-        take: 10
+        take: 10,
       }),
       this.prisma.accountWithdrawalRequest.findMany({
         where: { userId: data.userId },
         orderBy: { createdAt: 'desc' },
-        take: 10
-      })
+        take: 10,
+      }),
     ]);
 
-    console.log(`[FinancialService] Found ${accounts.length} accounts. Wallet Balance: ${walletEntity.balanceTL.amount}`);
-    
+    this.logger.log(
+      { userId: data.userId, accountCount: accounts.length, balanceTL: walletEntity.balanceTL.amount.toString() },
+      '[GetWallet] Hesap verileri hazırlandı.',
+    );
+
     return {
       accounts: accounts.map(acc => {
-        // Map account balance from Wallet entity if it's MAIN or BARTER
+        // MAIN ve BARTER hesapları için bakiye Wallet entity'den alınır
         let balance = acc.balance.toString();
         let available = acc.availableBalance.toString();
 
         if (acc.type === 'MAIN') {
           balance = walletEntity.balanceTL.amount.toString();
-          // Doğru Kullanılabilir Bakiye = Toplam Bakiye - Blokeli Bakiye
-          available = walletEntity.balanceTL.amount.minus(new Decimal(acc.blockedBalance.toString())).toString();
+          available = walletEntity.balanceTL.amount
+            .minus(new Decimal(acc.blockedBalance.toString()))
+            .toString();
         } else if (acc.type === 'BARTER') {
           balance = walletEntity.barterBalance.amount.toString();
-          available = walletEntity.barterBalance.amount.minus(new Decimal(acc.blockedBalance.toString())).toString();
+          available = walletEntity.barterBalance.amount
+            .minus(new Decimal(acc.blockedBalance.toString()))
+            .toString();
         }
 
-        console.log(` - Account: ${acc.type}, Sync Balance: ${balance}, Available: ${available}`);
-        
         return {
           id: acc.id,
           type: acc.type,
           balance,
           availableBalance: available,
           blockedBalance: acc.blockedBalance.toString(),
-          currency: acc.currency
+          currency: acc.currency,
         };
       }),
       requests: topupRequests.map(req => ({
@@ -128,7 +164,7 @@ export class WalletGrpcController {
         type: 'TOPUP',
         amount: req.amount.toString(),
         status: req.status,
-        createdAt: req.createdAt.toISOString()
+        createdAt: req.createdAt.toISOString(),
       })),
       withdrawalRequests: withdrawalRequests.map(req => ({
         id: req.id,
@@ -140,15 +176,15 @@ export class WalletGrpcController {
         bankName: req.bankName || '',
         createdAt: req.createdAt.toISOString(),
         processedAt: req.processedAt ? req.processedAt.toISOString() : '',
-        rejectionReason: req.rejectionReason || ''
-      }))
+        rejectionReason: req.rejectionReason || '',
+      })),
     };
   }
 
   @GrpcMethod('FinancialService', 'GetBalance')
   async getBalance(data: { userId: string; accountType: string }) {
     const result = await this.queryBus.execute(
-      new GetBalanceQuery(data.userId, data.accountType)
+      new GetBalanceQuery(data.userId, data.accountType),
     );
 
     return {
@@ -159,46 +195,62 @@ export class WalletGrpcController {
   }
 
   @GrpcMethod('FinancialService', 'TopUpWallet')
-  async topUpWallet(data: { userId: string; amount: string; paymentMethod: string; idempotencyKey: string }) {
-    // If it's Bank Transfer or EFT, create a request instead of instant top-up
+  async topUpWallet(data: {
+    userId: string;
+    amount: string;
+    paymentMethod: string;
+    idempotencyKey: string;
+  }) {
+    // Tutar doğrulama
+    const amount = new Decimal(data.amount);
+    if (!amount.isPositive()) {
+      return { success: false, error: 'Yükleme tutarı sıfırdan büyük olmalıdır.' };
+    }
+
+    // Banka transferi / EFT: anında işlem yerine onay bekleyen istek oluştur
     if (data.paymentMethod === 'BANK_TRANSFER' || data.paymentMethod === 'EFT') {
       const request = await this.prisma.accountTopUpRequest.create({
         data: {
           userId: data.userId,
-          amount: new Decimal(data.amount),
-          paymentMethod: data.paymentMethod as any,
+          amount,
+          paymentMethod: data.paymentMethod as PaymentMethod,
           status: 'PENDING',
-          notes: `Topup request via ${data.paymentMethod}`
-        }
+          notes: `${data.paymentMethod} ile yükleme isteği`,
+        },
       });
       return { success: true, data: { requestId: request.id } };
     }
 
-    // For other methods (like Credit Card), process instantly
+    // Kredi kartı vb.: anında işle
     try {
       await this.commandBus.execute(
         new TopUpWalletCommand(
-          data.userId, 
-          new Decimal(data.amount), 
+          data.userId,
+          amount,
           'TRY',
-          data.idempotencyKey || `CC-${Date.now()}`
-        )
+          data.idempotencyKey || `CC-${Date.now()}`,
+        ),
       );
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error?.message || 'Unknown error' };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
     }
   }
 
   @GrpcMethod('FinancialService', 'GetWalletRequests')
-  async getWalletRequests(data: { userId?: string; status?: string; page?: number; limit?: number }) {
+  async getWalletRequests(data: {
+    userId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const page = data.page || 1;
     const limit = data.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (data.userId && data.userId !== '') where.userId = data.userId;
-    if (data.status && data.status !== '') where.status = data.status;
+    const where: TopUpRequestFilter = {};
+    if (data.userId) where.userId = data.userId;
+    if (data.status) where.status = data.status as TopUpStatus;
 
     const [items, total] = await Promise.all([
       this.prisma.accountTopUpRequest.findMany({
@@ -211,7 +263,7 @@ export class WalletGrpcController {
     ]);
 
     return {
-      items: items.map((item: any) => ({
+      items: items.map(item => ({
         id: item.id,
         userId: item.userId,
         type: 'TOPUP',
@@ -224,14 +276,19 @@ export class WalletGrpcController {
   }
 
   @GrpcMethod('FinancialService', 'GetWithdrawals')
-  async getWithdrawals(data: { userId?: string; status?: string; page?: number; limit?: number }) {
+  async getWithdrawals(data: {
+    userId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const page = data.page || 1;
     const limit = data.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (data.userId && data.userId !== '') where.userId = data.userId;
-    if (data.status && data.status !== '') where.status = data.status;
+    const where: WithdrawalRequestFilter = {};
+    if (data.userId) where.userId = data.userId;
+    if (data.status) where.status = data.status as WithdrawalStatus;
 
     const [items, total] = await Promise.all([
       this.prisma.accountWithdrawalRequest.findMany({
@@ -244,7 +301,7 @@ export class WalletGrpcController {
     ]);
 
     return {
-      items: items.map((item: any) => ({
+      items: items.map(item => ({
         id: item.id,
         userId: item.userId,
         amount: item.amount.toString(),

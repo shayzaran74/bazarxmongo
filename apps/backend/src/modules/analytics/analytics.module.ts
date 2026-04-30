@@ -7,7 +7,6 @@ import { PrismaModule } from '@barterborsa/shared-persistence';
 import { TrackingController } from './presentation/tracking.controller';
 import { AnalyticsAdminController } from './presentation/analytics-admin.controller';
 import { VendorAnalyticsController } from './presentation/vendor-analytics.controller';
-import { AdminDashboardController } from './admin-dashboard.controller';
 
 import { TrackEventHandler } from './application/handlers/track-event.handler';
 import { GetDashboardStatsHandler } from './application/handlers/get-dashboard-stats.handler';
@@ -19,10 +18,9 @@ import { PrismaAnalyticsRepository } from './infrastructure/persistence/prisma-a
 @Module({
   imports: [CqrsModule, PrismaModule],
   controllers: [
-    TrackingController, 
-    AnalyticsAdminController, 
+    TrackingController,
+    AnalyticsAdminController,
     VendorAnalyticsController,
-    AdminDashboardController
   ],
   providers: [
     TrackEventHandler,

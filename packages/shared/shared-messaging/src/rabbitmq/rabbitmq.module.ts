@@ -21,6 +21,8 @@ import { RabbitMQService } from './rabbitmq.service';
           { name: 'auction.events', type: 'topic' },
           { name: 'order.events', type: 'topic' },
           { name: 'inventory.events', type: 'topic' },
+          // İşlenemez mesajların yönlendirildiği dead-letter exchange'leri
+          { name: 'financial.dead-letter', type: 'topic' },
         ],
         connectionInitOptions: { wait: true },
       }),

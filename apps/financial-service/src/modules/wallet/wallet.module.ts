@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaWalletRepository } from './infrastructure/persistence/prisma-wallet.repository';
-import { LedgerModule } from '../ledger/ledger.module';
 import { WalletMapper } from './infrastructure/persistence/mappers/wallet.mapper';
 import { TopUpWalletHandler } from './application/commands/topup-wallet.handler';
 import { ApproveTopUpHandler } from './application/commands/approve-topup.handler';
@@ -21,7 +20,7 @@ const Repositories = [
 ];
 
 @Module({
-  imports: [CqrsModule, LedgerModule],
+  imports: [CqrsModule],
   controllers: [WalletGrpcController],
   providers: [
     ...CommandHandlers,

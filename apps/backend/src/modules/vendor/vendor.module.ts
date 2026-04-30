@@ -30,6 +30,13 @@ import { RejectVendorHandler } from './application/commands/reject-vendor.handle
 import { UpdateAdminVendorHandler } from './application/commands/update-admin-vendor.handler';
 import { AddVendorCategoryHandler } from './application/commands/add-vendor-category.handler';
 import { RemoveVendorCategoryHandler } from './application/commands/remove-vendor-category.handler';
+import { BulkImportVendorProductsHandler } from './application/commands/bulk-import-vendor-products.handler';
+import { ApplyBrandHandler } from './application/commands/apply-brand.handler';
+import { UpdateBrandHandler } from './application/commands/update-brand.handler';
+import { DeleteBrandHandler } from './application/commands/delete-brand.handler';
+import { CreateBannerHandler } from './application/commands/create-banner.handler';
+import { UpdateBannerHandler } from './application/commands/update-banner.handler';
+import { DeleteBannerHandler } from './application/commands/delete-banner.handler';
 
 // Query handlers
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -49,6 +56,10 @@ import { GetVendorPendingOrderCountHandler } from './application/queries/get-ven
 import { GetVendorTransfersHandler } from './application/queries/get-vendor-transfers.handler';
 import { GetVendorInvoicesHandler } from './application/queries/get-vendor-invoices.handler';
 import { GetInvoiceDownloadUrlHandler } from './application/queries/get-invoice-download-url.handler';
+import { ListVendorBrandsHandler } from './application/queries/list-vendor-brands.handler';
+import { ListVendorBannersHandler } from './application/queries/list-vendor-banners.handler';
+import { GetVendorAnalyticsHandler } from './application/queries/get-vendor-analytics.handler';
+import { GetVendorUsersHandler } from './application/queries/get-vendor-users.handler';
 
 // Repositories — sadece token olarak kayıtlı, sınıf tekrarı yok
 import { PrismaCompanyRepository } from './infrastructure/persistence/prisma-company.repository';
@@ -58,6 +69,9 @@ import { PrismaVendorSettingsRepository } from './infrastructure/persistence/pri
 
 // Services
 import { VendorRegistrationService } from './application/services/vendor-registration.service';
+import { FileParserService } from './application/services/file-parser.service';
+import { CommissionEngineService } from './application/services/commission-engine.service';
+import { CommissionController } from './presentation/commission.controller';
 
 const CommandHandlers = [
   CreateCompanyHandler,
@@ -73,6 +87,13 @@ const CommandHandlers = [
   UpdateAdminVendorHandler,
   AddVendorCategoryHandler,
   RemoveVendorCategoryHandler,
+  BulkImportVendorProductsHandler,
+  ApplyBrandHandler,
+  UpdateBrandHandler,
+  DeleteBrandHandler,
+  CreateBannerHandler,
+  UpdateBannerHandler,
+  DeleteBannerHandler,
 ];
 
 const QueryHandlers = [
@@ -93,6 +114,10 @@ const QueryHandlers = [
   GetVendorTransfersHandler,
   GetVendorInvoicesHandler,
   GetInvoiceDownloadUrlHandler,
+  ListVendorBrandsHandler,
+  ListVendorBannersHandler,
+  GetVendorAnalyticsHandler,
+  GetVendorUsersHandler,
 ];
 
 const Repositories = [
@@ -118,12 +143,16 @@ const Repositories = [
     VendorBrandsController,
     AdsController,
     VendorAdsController,
+    CommissionController,
   ],
   providers: [
     VendorRegistrationService,
+    FileParserService,
+    CommissionEngineService,
     ...CommandHandlers,
     ...QueryHandlers,
     ...Repositories,
   ],
+  exports: [CommissionEngineService],
 })
 export class VendorModule {}

@@ -18,6 +18,7 @@ import { PricingService } from './application/services/pricing.service';
 import { CheckoutService } from './application/services/checkout.service';
 import { StorageService } from './application/services/storage.service';
 import { InvoicePdfService } from './application/services/invoice-pdf.service';
+import { OrderExpiryService } from './application/services/order-expiry.service';
 
 // Command handlers
 import { CheckoutHandler } from './application/commands/checkout.handler';
@@ -79,6 +80,7 @@ const Repositories = [
     CheckoutService,
     StorageService,
     InvoicePdfService,
+    OrderExpiryService,
     ...CommandHandlers,
     ...QueryHandlers,
     ...Repositories,

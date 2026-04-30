@@ -8,14 +8,11 @@ import { CreateEscrowHandler } from './application/commands/create-escrow.handle
 import { ReleaseEscrowHandler } from './application/commands/release-escrow.handler';
 import { RefundEscrowHandler } from './application/commands/refund-escrow.handler';
 import { EscrowConsumer } from './infrastructure/messaging/escrow.consumer';
-
-import { WalletModule } from '../wallet/wallet.module';
-import { LedgerModule } from '../ledger/ledger.module';
 import { EscrowGrpcController } from './presentation/escrow.grpc.controller';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 @Module({
-  imports: [CqrsModule, WalletModule, LedgerModule],
+  imports: [CqrsModule],
   controllers: [EscrowGrpcController],
   providers: [
     CreateEscrowHandler,

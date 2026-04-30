@@ -3,17 +3,40 @@
 import { AggregateRoot } from '@barterborsa/shared-core';
 import { Decimal } from 'decimal.js';
 
+export type EscrowStatus =
+  | 'PENDING'
+  | 'FUNDED'
+  | 'RELEASED'
+  | 'REFUNDED'
+  | 'DISPUTED'
+  | 'CANCELLED';
+
 interface EscrowProps {
   orderId: string;
   buyerId: string;
   sellerId: string;
   amount: Decimal;
   releasedAmount: Decimal;
-  status: 'PENDING' | 'FUNDED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED' | 'CANCELLED';
+  status: EscrowStatus;
   createdAt: Date;
   updatedAt: Date;
   releasedAt?: Date;
-  payoutLog?: any;
+  payoutLog?: Record<string, unknown>;
+}
+
+// Prisma tablosundan gelen ham kayıt yapısı (infrastructure tipi domain'e sızmadan)
+interface PrismaEscrowRecord {
+  id: string;
+  orderId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: Decimal;
+  releasedAmount: Decimal;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  releasedAt: Date | null;
+  payoutLog: unknown;
 }
 
 export class Escrow extends AggregateRoot<EscrowProps> {
@@ -26,11 +49,11 @@ export class Escrow extends AggregateRoot<EscrowProps> {
   get sellerId(): string { return this.props.sellerId; }
   get amount(): Decimal { return this.props.amount; }
   get releasedAmount(): Decimal { return this.props.releasedAmount; }
-  get status(): string { return this.props.status; }
+  get status(): EscrowStatus { return this.props.status; }
   get createdAt(): Date { return this.props.createdAt; }
   get updatedAt(): Date { return this.props.updatedAt; }
   get releasedAt(): Date | undefined { return this.props.releasedAt; }
-  get payoutLog(): any { return this.props.payoutLog; }
+  get payoutLog(): Record<string, unknown> | undefined { return this.props.payoutLog; }
 
   fund(): void {
     if (this.props.status !== 'PENDING') throw new Error('Yalnızca PENDING durumdaki kayıtlar fonlanabilir.');
@@ -40,7 +63,7 @@ export class Escrow extends AggregateRoot<EscrowProps> {
 
   release(): void {
     if (this.props.status !== 'FUNDED') {
-       throw new Error('Yalnızca FUNDED durumdaki fonlar çözülebilir.');
+      throw new Error('Yalnızca FUNDED durumdaki fonlar çözülebilir.');
     }
     this.props.status = 'RELEASED';
     this.props.releasedAmount = this.props.amount;
@@ -66,18 +89,18 @@ export class Escrow extends AggregateRoot<EscrowProps> {
     });
   }
 
-  static fromPersistence(raw: any): Escrow {
+  static fromPersistence(raw: PrismaEscrowRecord): Escrow {
     return new Escrow({
       orderId: raw.orderId,
       buyerId: raw.buyerId,
       sellerId: raw.sellerId,
       amount: new Decimal(raw.amount),
       releasedAmount: new Decimal(raw.releasedAmount || 0),
-      status: raw.status as any,
+      status: raw.status as EscrowStatus,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
       releasedAt: raw.releasedAt || undefined,
-      payoutLog: raw.payoutLog,
+      payoutLog: (raw.payoutLog as Record<string, unknown>) || undefined,
     }, raw.id);
   }
 }

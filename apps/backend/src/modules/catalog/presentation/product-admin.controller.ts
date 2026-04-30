@@ -18,6 +18,11 @@ import { UpdateAdminProductCommand } from '../application/commands/update-admin-
 import { CreateAdminProductCommand } from '../application/commands/create-admin-product.command';
 import { QueueImportProductsCommand } from '../application/commands/queue-import-products.command';
 
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
 @ApiTags('Product Admin')
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
@@ -86,16 +91,12 @@ export class ProductAdminController {
     },
   })
   @Post('bulk-import')
-  async bulkImport(@Body('rows') rows: any[], @CurrentUser() user: any) {
+  async bulkImport(@Body('rows') rows: unknown[], @CurrentUser() user: AuthenticatedUser) {
     if (!Array.isArray(rows)) {
       throw new BadRequestException('rows alanı bir dizi olmalıdır');
     }
-
     this.logger.log(`Bulk import isteği: ${rows.length} satır — admin: ${user.id}`);
-
-    return this.commandBus.execute(
-      new QueueImportProductsCommand(rows, user.id),
-    );
+    return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id));
   }
 
   // ─── Import Job Durumu (Polling endpoint) ───────────────────────────────────
@@ -110,7 +111,7 @@ export class ProductAdminController {
   @Get('import-jobs/:jobId')
   async getImportJobStatus(
     @Param('jobId') jobId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
@@ -129,12 +130,7 @@ export class ProductAdminController {
       },
     });
 
-    if (!job) {
-      throw new NotFoundException('Import job bulunamadı');
-    }
-
-    // Güvenlik: admin sadece kendi job'larını görebilir
-    if (job.adminId !== user.id) {
+    if (!job || job.adminId !== user.id) {
       throw new NotFoundException('Import job bulunamadı');
     }
 
@@ -143,7 +139,6 @@ export class ProductAdminController {
         ? Math.round((job.processedRows / job.totalRows) * 100)
         : 0;
 
-    // Geçen süre (saniye)
     const elapsedSeconds = job.startedAt
       ? Math.round(
           ((job.completedAt ?? new Date()).getTime() - job.startedAt.getTime()) / 1000,
@@ -168,7 +163,6 @@ export class ProductAdminController {
           completedAt: job.completedAt,
           elapsedSeconds,
         },
-        // Frontend polling'i ne zaman durdurmalı:
         isDone: job.status === 'COMPLETED' || job.status === 'FAILED',
       },
     };
@@ -179,9 +173,9 @@ export class ProductAdminController {
   @ApiOperation({ summary: 'List import jobs for current admin' })
   @Get('import-jobs')
   async listImportJobs(
-    @CurrentUser() user: any,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
   ) {
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -212,30 +206,29 @@ export class ProductAdminController {
     };
   }
 
-  // ─── Mevcut endpoint'ler ────────────────────────────────────────────────────
+  // ─── CRUD endpointleri ──────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Create a single product' })
   @Post()
-  async createProduct(@Body() data: any, @CurrentUser() user: any) {
-    try {
-      return await this.commandBus.execute(
-        new CreateAdminProductCommand(data, user.id),
-      );
-    } catch (error: any) {
-      return { success: false, error: 'Ekleme sırasında hata: ' + error.message };
-    }
+  async createProduct(@Body() data: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) {
+    return this.commandBus.execute(new CreateAdminProductCommand(data, user.id));
   }
 
   @ApiOperation({ summary: 'List all products for admin' })
   @Get()
   async getProducts(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 50,
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
     @Query('q') search?: string,
     @Query('status') status?: string,
   ) {
     const result = await this.queryBus.execute(
-      new ListAdminProductsQuery({ search, status, page: Number(page) || 1, limit: Number(limit) || 50 }),
+      new ListAdminProductsQuery({
+        search,
+        status,
+        page: Number(page) || 1,
+        limit: Number(limit) || 50,
+      }),
     );
     return {
       success: true,
@@ -252,42 +245,32 @@ export class ProductAdminController {
   @ApiOperation({ summary: 'Delete a product' })
   @Delete(':id')
   async deleteProduct(@Param('id') id: string) {
-    try {
-      return await this.commandBus.execute(new DeleteAdminProductCommand(id));
-    } catch (error: any) {
-      return { success: false, error: 'Sipariş geçmişine sahip olabilir, pasife alın.' };
-    }
+    return this.commandBus.execute(new DeleteAdminProductCommand(id));
   }
 
   @ApiOperation({ summary: 'Bulk delete products' })
   @Post('bulk-delete')
   async bulkDelete(@Body('ids') ids: string[]) {
-    try {
-      return await this.commandBus.execute(new BulkDeleteAdminProductsCommand(ids));
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new BadRequestException('ids alanı boş bir dizi olamaz');
     }
+    return this.commandBus.execute(new BulkDeleteAdminProductsCommand(ids));
   }
 
   @ApiOperation({ summary: 'Bulk update products' })
   @Put('bulk-update')
-  async bulkUpdate(@Body() body: { ids: string[]; updates: any }) {
-    try {
-      return await this.commandBus.execute(
-        new BulkUpdateAdminProductsCommand(body.ids, body.updates),
-      );
-    } catch (error: any) {
-      return { success: false, error: 'Toplu güncelleme sırasında hata: ' + error.message };
+  async bulkUpdate(@Body() body: { ids: string[]; updates: Record<string, unknown> }) {
+    if (!Array.isArray(body.ids) || body.ids.length === 0) {
+      throw new BadRequestException('ids alanı boş bir dizi olamaz');
     }
+    return this.commandBus.execute(
+      new BulkUpdateAdminProductsCommand(body.ids, body.updates),
+    );
   }
 
   @ApiOperation({ summary: 'Update a product' })
   @Put(':id')
-  async updateProduct(@Param('id') id: string, @Body() data: any) {
-    try {
-      return await this.commandBus.execute(new UpdateAdminProductCommand(id, data));
-    } catch (error: any) {
-      return { success: false, error: 'Güncelleme sırasında hata: ' + error.message };
-    }
+  async updateProduct(@Param('id') id: string, @Body() data: Record<string, unknown>) {
+    return this.commandBus.execute(new UpdateAdminProductCommand(id, data));
   }
 }

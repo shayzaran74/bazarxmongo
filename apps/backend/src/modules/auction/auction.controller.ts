@@ -31,7 +31,7 @@ export class AuctionController {
     const limit = parseInt(query.limit, 10) || 20;
     const skip  = (page - 1) * limit;
 
-    const statusFilter = query.status || 'ACTIVE';
+    const statusFilter = (query.status || 'ACTIVE').toUpperCase();
     const now = new Date();
 
     const where: any =

@@ -14,10 +14,11 @@ export class LevelCalculatorService {
   }
 
   determineTier(lifetimeXp: number): LoyaltyTier {
-    if (lifetimeXp >= 100000) return LoyaltyTier.DIAMOND;
-    if (lifetimeXp >= 25000) return LoyaltyTier.PLATINUM;
-    if (lifetimeXp >= 5000) return LoyaltyTier.GOLD;
-    if (lifetimeXp >= 1000) return LoyaltyTier.SILVER;
+    // XP başarı seviyesi (abonelik tier'ından bağımsız)
+    if (lifetimeXp >= 100_000) return LoyaltyTier.DIAMOND;
+    if (lifetimeXp >= 25_000)  return LoyaltyTier.PLATINUM;
+    if (lifetimeXp >= 5_000)   return LoyaltyTier.GOLD;
+    if (lifetimeXp >= 1_000)   return LoyaltyTier.SILVER;
     return LoyaltyTier.BRONZE;
   }
 }

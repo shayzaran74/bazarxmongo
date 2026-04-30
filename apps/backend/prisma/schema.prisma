@@ -25,6 +25,7 @@ model User {
   lastLoginAt        DateTime?           @map("last_login_at")
   lastSeenAt         DateTime?           @map("last_seen_at")
   referredById       String?             @map("referred_by_id")
+  referralCode       String?             @unique @map("referral_code")  // kişisel davet kodu
   loginHistory       LoginHistory[]
   refreshTokens      RefreshToken[]
   sessions           Session[]
@@ -41,6 +42,7 @@ model User {
   @@index([phoneNumber])
   @@index([role])
   @@index([status])
+  @@index([role, status])
   @@map("users")
 }
 
@@ -563,6 +565,7 @@ model Brand {
   rejectionReason  String?          @map("rejection_reason")
   reviewedBy       String?          @map("reviewed_by")
   submittedAt      DateTime?        @map("submitted_at")
+  documentUrl      String?          @map("document_url")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
   vendorId         String?          @map("vendor_id")
@@ -684,6 +687,7 @@ model Listing {
   stocks               Stock[]
   transferItems        TransferItem[]
   campaigns            Campaign[]            @relation("CampaignListings")
+  blindPoolEntries     BlindPoolEntry[]
 
   @@index([vendorId])
   @@index([catalogProductId])
@@ -1032,6 +1036,8 @@ model Order {
   escrowReleaseAt   DateTime?            @map("escrow_release_at")
   payoutEligibleAt  DateTime?            @map("payout_eligible_at")
   shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(18, 2)
+  expiresAt         DateTime?            @map("expires_at")
+  idempotencyKey    String?              @map("idempotency_key")
   dispute           Dispute?
   orderItems        OrderItem[]
   returns           OrderReturn[]
@@ -1044,6 +1050,10 @@ model Order {
   @@index([userId])
   @@index([vendorId])
   @@index([status])
+  @@index([expiresAt])
+  @@index([userId, idempotencyKey])
+  @@index([vendorId, status, createdAt])
+  @@index([status, createdAt])
   @@map("orders")
 }
 
@@ -1885,18 +1895,21 @@ model UserLevel {
 }
 
 model XpTransaction {
-  id            String   @default(cuid())
-  userId        String   @map("user_id")
+  id            String    @default(cuid())
+  userId        String    @map("user_id")
   amount        Int
-  type          String   @map("type")
+  type          String    @map("type")
   description   String?
-  referenceId   String?  @map("reference_id")
-  referenceType String?  @map("reference_type")
+  referenceId   String?   @map("reference_id")
+  referenceType String?   @map("reference_type")
   metadata      Json?
-  createdAt     DateTime @default(now()) @map("created_at")
+  expiresAt     DateTime? @map("expires_at")  // 6 ay TTL, her ay %10 erir
+  erodedAt      DateTime? @map("eroded_at")   // son erozyon tarihi
+  createdAt     DateTime  @default(now())     @map("created_at")
 
   @@id([id, createdAt])
   @@index([userId])
+  @@index([expiresAt])
   @@map("xp_transactions")
 }
 
@@ -2217,11 +2230,13 @@ enum VendorStatus {
   SUSPENDED
 }
 
+// Master Plan v4.3 — TicariTakas B2B üyelik seviyeleri
+// Migration: PLUS→PRIME, PREMIUM→ELITE(old)→rename, ELITE→APEX
 enum VendorTier {
-  CORE
-  PLUS
-  PREMIUM
-  ELITE
+  CORE   // 12.000₺/yıl — %12 komisyon
+  PRIME  // 48.000₺/yıl — %10 komisyon
+  ELITE  // 120.000₺/yıl — %8 komisyon
+  APEX   // 300.000₺/yıl — %6 komisyon
 }
 
 enum B2BTier {
@@ -2617,4 +2632,334 @@ model ImportJob {
 
   @@index([adminId])
   @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MASTER PLAN v4.3 — FAZ 0 MODELLERİ
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── B2C Abonelik Sistemi ──────────────────────────────────────────────
+
+// 8 kademe abonelik planı tanımı (seed data ile doldurulur)
+model MembershipPlan {
+  id            String           @id @default(cuid())
+  tier          SubscriptionTier @unique
+  monthlyFee    Decimal          @map("monthly_fee")     @db.Decimal(18, 2)
+  annualFee     Decimal?         @map("annual_fee")      @db.Decimal(18, 2) // 10 ay fiyatına 12 ay
+  menuCredit    Decimal          @map("menu_credit")     @db.Decimal(18, 2) // 2× aylık aidat
+  breakeven     Decimal          @map("breakeven")       @db.Decimal(18, 2) // aylık breakeven ciro
+  benefits      Json?
+  isActive      Boolean          @default(true)          @map("is_active")
+  createdAt     DateTime         @default(now())         @map("created_at")
+  updatedAt     DateTime         @updatedAt              @map("updated_at")
+  subscriptions UserSubscription[]
+
+  @@map("membership_plans")
+}
+
+// Kullanıcı başına aktif abonelik
+model UserSubscription {
+  id                      String             @id @default(cuid())
+  userId                  String             @unique @map("user_id")
+  planId                  String             @map("plan_id")
+  status                  SubscriptionStatus @default(TRIAL)
+  startDate               DateTime           @map("start_date")
+  endDate                 DateTime           @map("end_date")
+  autoRenew               Boolean            @default(true) @map("auto_renew")
+  nextBillingDate         DateTime?          @map("next_billing_date")
+  cancelledAt             DateTime?          @map("cancelled_at")
+  downgradeProtectedUntil DateTime?          @map("downgrade_protected_until") // 30 gün menü hakkı devam eder
+  referralDiscountPct     Decimal            @default(0) @map("referral_discount_pct") @db.Decimal(5, 2) // 3. referans: %20
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+  plan                    MembershipPlan     @relation(fields: [planId], references: [id])
+  menuUsages              MenuUsage[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("user_subscriptions")
+}
+
+// Aylık menü hakkı kullanım takibi
+model MenuUsage {
+  id             String           @id @default(cuid())
+  subscriptionId String           @map("subscription_id")
+  month          Int
+  year           Int
+  usedCredit     Decimal          @default(0) @map("used_credit") @db.Decimal(18, 2)
+  totalCredit    Decimal          @map("total_credit")             @db.Decimal(18, 2) // 2× aidat
+  subscription   UserSubscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([subscriptionId, month, year])
+  @@map("menu_usages")
+}
+
+// ─── BazarX Menü Sistemi ──────────────────────────────────────────────
+
+// Anlaşmalı restoran / işletme
+model Restaurant {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  vendorId      String?        @map("vendor_id")
+  address       String?
+  city          String
+  district      String?
+  category      String?
+  imageUrl      String?        @map("image_url")
+  averageMenuPrice Decimal?    @map("average_menu_price") @db.Decimal(18, 2)
+  isActive      Boolean        @default(true)             @map("is_active")
+  createdAt     DateTime       @default(now())            @map("created_at")
+  updatedAt     DateTime       @updatedAt                 @map("updated_at")
+  menus         BazarXMenu[]
+  launchPartner LaunchPartner?
+
+  @@index([city])
+  @@index([category])
+  @@map("restaurants")
+}
+
+// Restoran menü kartı
+model BazarXMenu {
+  id              String        @id @default(cuid())
+  restaurantId    String        @map("restaurant_id")
+  title           String
+  description     String?
+  originalPrice   Decimal       @map("original_price")   @db.Decimal(18, 2)
+  discountedPrice Decimal       @map("discounted_price") @db.Decimal(18, 2) // %50 indirimli
+  imageUrl        String?       @map("image_url")
+  isActive        Boolean       @default(true)           @map("is_active")
+  validFrom       DateTime?     @map("valid_from")
+  validUntil      DateTime?     @map("valid_until")
+  dailyLimit      Int?          @map("daily_limit")
+  createdAt       DateTime      @default(now())          @map("created_at")
+  updatedAt       DateTime      @updatedAt               @map("updated_at")
+  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id])
+  purchases       MenuPurchase[]
+
+  @@index([restaurantId])
+  @@map("bazarx_menus")
+}
+
+// Kullanıcının satın aldığı menü + QR kodlar
+model MenuPurchase {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  menuId             String             @map("menu_id")
+  subscriptionId     String?            @map("subscription_id")
+  paidAmount         Decimal            @map("paid_amount")  @db.Decimal(18, 2) // discounted + %8 + KDV
+  serviceFee         Decimal            @map("service_fee")  @db.Decimal(18, 2) // discounted × %8
+  vatAmount          Decimal            @map("vat_amount")   @db.Decimal(18, 2) // serviceFee × %20
+  qrCode             String             @unique              @map("qr_code")
+  qrExpiresAt        DateTime           @map("qr_expires_at")
+  oneFreeQrCode      String?            @unique @map("one_free_qr_code")
+  oneFreeActivatedAt DateTime?          @map("one_free_activated_at")
+  oneFreeUsedAt      DateTime?          @map("one_free_used_at")
+  status             MenuPurchaseStatus @default(ACTIVE)
+  xpEarned           Int                @default(0)          @map("xp_earned") // 5 XP/kullanım
+  createdAt          DateTime           @default(now())      @map("created_at")
+  updatedAt          DateTime           @updatedAt           @map("updated_at")
+  menu               BazarXMenu         @relation(fields: [menuId], references: [id])
+  redemptions        MenuRedemption[]
+
+  @@index([userId])
+  @@index([menuId])
+  @@index([status])
+  @@map("menu_purchases")
+}
+
+// Menü kullanım kaydı (restoran QR tarama)
+model MenuRedemption {
+  id             String       @id @default(cuid())
+  purchaseId     String       @map("purchase_id")
+  isOneFree      Boolean      @default(false)  @map("is_one_free")
+  redeemedAt     DateTime     @default(now())  @map("redeemed_at")
+  scannedByStaff String?      @map("scanned_by_staff")
+  purchase       MenuPurchase @relation(fields: [purchaseId], references: [id])
+
+  @@index([purchaseId])
+  @@map("menu_redemptions")
+}
+
+// ─── Hediye Çeki ─────────────────────────────────────────────────────
+
+model GiftVoucher {
+  id         String           @id @default(cuid())
+  userId     String           @map("user_id")
+  code       String           @unique
+  amount     Decimal          @db.Decimal(18, 2)
+  type       GiftVoucherType
+  validUntil DateTime         @map("valid_until")
+  redeemedAt DateTime?        @map("redeemed_at")
+  orderId    String?          @map("order_id")
+  issuedBy   String?          @map("issued_by")  // 'SYSTEM' veya admin ID
+  createdAt  DateTime         @default(now())    @map("created_at")
+
+  @@index([userId])
+  @@index([code])
+  @@map("gift_vouchers")
+}
+
+// ─── Referans Sistemi ────────────────────────────────────────────────
+
+// Tek katmanlı referans — zincirleme yapı yok
+model Referral {
+  id               String    @id @default(cuid())
+  referrerId       String    @map("referrer_id")
+  refereeId        String    @unique @map("referee_id")
+  referralCode     String    @map("referral_code")
+  xpGranted        Int       @default(0)  @map("xp_granted")
+  bonusGranted     Boolean   @default(false) @map("bonus_granted") // 3. referans bonusu
+  rewardGrantedAt  DateTime? @map("reward_granted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([referrerId])
+  @@map("referrals")
+}
+
+// ─── Lansman Ortağı ──────────────────────────────────────────────────
+
+model LaunchPartner {
+  id               String             @id @default(cuid())
+  restaurantId     String             @unique           @map("restaurant_id")
+  phase            LaunchPartnerPhase @default(PHASE_1)
+  pledgedMenuCount Int                @default(60)      @map("pledged_menu_count")
+  distributedCount Int                @default(0)       @map("distributed_count")
+  freeAdMonths     Int                @default(1)       @map("free_ad_months")
+  adMonthsUsed     Int                @default(0)       @map("ad_months_used")
+  startDate        DateTime           @default(now())   @map("start_date")
+  phase2StartDate  DateTime?          @map("phase2_start_date")
+  phase3StartDate  DateTime?          @map("phase3_start_date")
+  notes            String?
+  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id])
+
+  @@map("launch_partners")
+}
+
+// ─── TrustScore (TicariTakas B2B) ────────────────────────────────────
+
+model TrustScore {
+  id                 String   @id @default(cuid())
+  vendorId           String   @unique @map("vendor_id")
+  score              Decimal  @default(100) @db.Decimal(5, 2)
+  tradingPerformance Decimal  @default(100) @map("trading_performance") @db.Decimal(5, 2) // ağırlık %40
+  xpLoyalty          Decimal  @default(100) @map("xp_loyalty")          @db.Decimal(5, 2) // ağırlık %30
+  compliance         Decimal  @default(100) @db.Decimal(5, 2)                              // ağırlık %30
+  lastCalculatedAt   DateTime @default(now()) @map("last_calculated_at")
+  isFrozen           Boolean  @default(false) @map("is_frozen")
+  violationCount     Int      @default(0)  @map("violation_count")
+  inactiveDays       Int      @default(0)  @map("inactive_days")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("trust_scores")
+}
+
+// ─── BarterBorsa — Blind Pool ─────────────────────────────────────────
+
+model BlindPool {
+  id             String           @id @default(cuid())
+  groupId        String           @map("group_id")  // BarterBorsa ecosystem grubu
+  name           String
+  totalStock     Decimal          @map("total_stock")     @db.Decimal(18, 2)
+  availableStock Decimal          @map("available_stock") @db.Decimal(18, 2)
+  smartCapPct    Decimal          @default(25) @map("smart_cap_pct") @db.Decimal(5, 2) // tek işlemde max %25
+  isActive       Boolean          @default(true) @map("is_active")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  entries        BlindPoolEntry[]
+
+  @@index([groupId])
+  @@map("blind_pools")
+}
+
+// Kör havuz girişi — bayi kimliği gizlidir
+model BlindPoolEntry {
+  id         String    @id @default(cuid())
+  poolId     String    @map("pool_id")
+  vendorId   String    @map("vendor_id")   // diğer bayilere gösterilmez
+  listingId  String    @map("listing_id")
+  quantity   Decimal   @db.Decimal(18, 2)
+  isReserved Boolean   @default(false) @map("is_reserved")
+  createdAt  DateTime  @default(now())   @map("created_at")
+  pool       BlindPool @relation(fields: [poolId], references: [id])
+  listing    Listing   @relation(fields: [listingId], references: [id])
+
+  @@index([poolId])
+  @@index([listingId])
+  @@map("blind_pool_entries")
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FAZ 0 ENUM'LARI
+// ═══════════════════════════════════════════════════════════════════════
+
+enum SubscriptionTier {
+  BRONZE_P1
+  BRONZE_P2
+  SILVER_P1
+  SILVER_P2
+  GOLD_P1
+  GOLD_P2
+  DIAMOND_P1
+  DIAMOND_P2
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum MenuPurchaseStatus {
+  ACTIVE
+  REDEEMED
+  PARTIALLY_REDEEMED  // 1. menü kullanıldı, 1+1 henüz değil
+  EXPIRED
+  CANCELLED
+}
+
+enum GiftVoucherType {
+  BIRTHDAY
+  ANNIVERSARY
+  THREE_MONTH
+  REFERRAL_BONUS
+  ADMIN_MANUAL
+}
+
+enum LaunchPartnerPhase {
+  PHASE_1   // Ay 1: 60 menü taahhüdü + ücretsiz profil
+  PHASE_2   // Ay 2-3: ücretsiz reklam + QR desteği
+  PHASE_3   // Ay 4+: ücretli B2B üyelik
+}
+
+// Sistem genelinde admin işlemlerini izler (vendor approve, role değişimi, ayar güncelleme vb.)
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String   @map("actor_id")
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  oldValue     Json?    @map("old_value")
+  newValue     Json?    @map("new_value")
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Komisyon oranı, maintenance mode gibi dinamik sistem ayarları
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }

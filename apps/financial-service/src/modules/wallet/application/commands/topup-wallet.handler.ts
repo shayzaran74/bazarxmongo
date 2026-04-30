@@ -2,73 +2,77 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { TopUpWalletCommand } from './topup-wallet.command';
-import { IWalletRepository } from '../../domain/repositories/wallet.repository.interface';
-import { Money } from '../../domain/value-objects/money.vo';
-import { Wallet } from '../../domain/entities/wallet.entity';
-import { NotFoundException } from '@barterborsa/shared-core';
-import { Inject } from '@nestjs/common';
-import { IGeneralLedgerRepository } from '../../../ledger/domain/repositories/general-ledger.repository.interface';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 @CommandHandler(TopUpWalletCommand)
 export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
   constructor(
-    @Inject('IWalletRepository')
-    private readonly walletRepository: IWalletRepository,
-    @Inject('IGeneralLedgerRepository')
-    private readonly ledgerRepository: IGeneralLedgerRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(command: TopUpWalletCommand): Promise<void> {
-    const { userId, amount, currency } = command;
+    const { userId, amount, currency, idempotencyKey } = command;
 
-    let wallet = await this.walletRepository.findByUserId(userId);
-
-    if (!wallet) {
-      wallet = Wallet.create(userId);
+    // Giriş doğrulama
+    if (!amount.isPositive()) {
+      throw new Error('Yükleme tutarı sıfırdan büyük olmalıdır.');
     }
 
-    const moneyToAdd = Money.fromDecimal(amount, currency);
-    
-    if (currency === 'TRY') {
-      wallet.topUpTL(moneyToAdd);
-    } else {
+    if (currency !== 'TRY') {
       throw new Error(`${currency} için bakiye yükleme henüz desteklenmiyor.`);
     }
 
-    // Record in General Ledger
-    const { GeneralLedgerEntry } = await import('../../../ledger/domain/entities/general-ledger-entry.entity');
-    const ledgerEntry = GeneralLedgerEntry.create({
-      type: 'DEPOSIT',
-      debitAccountId: 'SYSTEM_BANK_ACCOUNT',
-      creditAccountId: userId,
-      amount: amount,
-      referenceId: command.idempotencyKey || `topup-${Date.now()}`,
-      refType: 'TOPUP',
-      note: `Cüzdan bakiye yükleme (${currency})`,
-    });
+    const referenceId = idempotencyKey || `topup-${Date.now()}`;
 
-    await this.walletRepository.save(wallet);
-    await this.ledgerRepository.save(ledgerEntry);
-
-    // Sync Prisma Account table
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    // Find MAIN account
-    const mainAcc = await prisma.account.findFirst({
-      where: { userId, type: 'MAIN' }
-    });
-    
-    if (mainAcc) {
-      await prisma.account.update({
-        where: { id: mainAcc.id },
-        data: {
-          balance: { increment: amount },
-          availableBalance: { increment: amount }
-        }
+    // Tüm yazma işlemleri atomik: cüzdan + hesap + muhasebe aynı transaction içinde
+    await this.prisma.$transaction(async (tx) => {
+      // Mükerrer işlem kontrolü — aynı referenceId ile daha önce işlem yapıldıysa atla
+      const existing = await tx.generalLedger.findFirst({
+        where: { referenceId, refType: 'TOPUP' },
       });
-    }
-    await prisma.$disconnect();
+      if (existing) return;
+
+      // Cüzdanı güncelle veya sıfır bakiyeyle oluştur
+      await tx.wallet.upsert({
+        where: { userId },
+        update: { balanceTL: { increment: amount } },
+        create: {
+          userId,
+          balanceTL: amount,
+          barterBalance: 0,
+          xpPoints: 0,
+          xpAdsBalance: 0,
+          xpTradeBalance: 0,
+          xpCommissionBalance: 0,
+        },
+      });
+
+      // Modern Account tablosunu senkronize et (MAIN hesap)
+      const mainAccount = await tx.account.findFirst({
+        where: { userId, type: 'MAIN' },
+      });
+      if (mainAccount) {
+        await tx.account.update({
+          where: { id: mainAccount.id },
+          data: {
+            balance: { increment: amount },
+            availableBalance: { increment: amount },
+          },
+        });
+      }
+
+      // Muhasebe kaydı (General Ledger)
+      await tx.generalLedger.create({
+        data: {
+          type: 'DEPOSIT',
+          debitAccountId: 'SYSTEM_BANK_ACCOUNT',
+          creditAccountId: userId,
+          amount,
+          referenceId,
+          refType: 'TOPUP',
+          note: `Cüzdan bakiye yükleme (${currency})`,
+        },
+      });
+    });
   }
 }
-// Note: Wallet model was imported implicitly, need to add it or fix.

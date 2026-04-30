@@ -246,10 +246,9 @@ const startUpload = async () => {
         if (res.success) {
             progress.value = 100
             uploadStatus.value = 'completed'
-            report.value = res.report
+            report.value = res.data
         }
     } catch (err) {
-        console.error('Upload error:', err)
         useNuxtApp().$toast.error('Yükleme hatası: ' + (err.data?.error || err.message))
         uploadStatus.value = null
     } finally {

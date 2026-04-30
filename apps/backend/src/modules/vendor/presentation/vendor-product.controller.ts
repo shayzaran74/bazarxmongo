@@ -1,9 +1,8 @@
 // apps/backend/src/modules/vendor/presentation/vendor-product.controller.ts
-// Değişen kısım: bulkImport metodu — Excel/CSV parse eklendi
 
 import {
   Controller, Get, Post, Put, Delete,
-  Body, Param, Query, UseGuards, Logger,
+  Body, Param, Query, UseGuards,
   BadRequestException, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -17,8 +16,15 @@ import { CreateVendorProductCommand } from '../application/commands/create-vendo
 import { UpdateVendorProductCommand } from '../application/commands/update-vendor-product.command';
 import { DeleteVendorProductCommand } from '../application/commands/delete-vendor-product.command';
 import { ListVendorProductsQuery } from '../application/queries/list-vendor-products.query';
+import { BulkImportVendorProductsCommand } from '../application/commands/bulk-import-vendor-products.command';
+import { FileParserService } from '../application/services/file-parser.service';
 
-const XLSX_MIME = [
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
+const ACCEPTED_MIME = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
   'text/csv',
@@ -32,12 +38,11 @@ const MAX_ROWS = 5_000;
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 export class VendorProductController {
-  private readonly logger = new Logger(VendorProductController.name);
-
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly prisma: PrismaService,
+    private readonly fileParser: FileParserService,
   ) {}
 
   @ApiOperation({ summary: 'Excel/CSV dosyasından toplu ürün içe aktar' })
@@ -50,35 +55,45 @@ export class VendorProductController {
     },
   })
   @Post('bulk/import')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-    fileFilter: (_req, file, cb) => {
-      if (XLSX_MIME.includes(file.mimetype) ||
-          file.originalname.match(/\.(xlsx|xls|csv)$/i)) {
-        cb(null, true);
-      } else {
-        cb(new BadRequestException('Sadece Excel (.xlsx/.xls) ve CSV dosyaları kabul edilir'), false);
-      }
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (
+          ACCEPTED_MIME.includes(file.mimetype) ||
+          /\.(xlsx|xls|csv)$/i.test(file.originalname)
+        ) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              'Sadece Excel (.xlsx/.xls) ve CSV dosyaları kabul edilir',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
   async bulkImport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('Lütfen bir dosya yükleyin.');
 
-    this.logger.log(`Bulk import: user=${user.id}, file=${file.originalname}, size=${file.size}`);
+    // Vendor doğrulama (controller sorumluluğu: istek sahibinin kimliği)
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    if (!vendor) throw new BadRequestException('Satıcı hesabı bulunamadı');
 
-    // Excel / CSV parse
-    let rows: any[] = [];
-    const isCSV = file.originalname.match(/\.csv$/i) || file.mimetype === 'text/csv';
-
-    if (isCSV) {
-      rows = this.parseCSV(file.buffer.toString('utf-8'));
-    } else {
-      rows = await this.parseExcel(file.buffer);
-    }
+    // Dosya parse (controller sorumluluğu: ham dosyadan yapılandırılmış veriye)
+    const isCSV = /\.csv$/i.test(file.originalname) || file.mimetype === 'text/csv';
+    const rows = isCSV
+      ? this.fileParser.parseCSV(file.buffer.toString('utf-8'))
+      : await this.fileParser.parseExcel(file.buffer);
 
     if (rows.length === 0) {
       throw new BadRequestException('Dosyada işlenebilir satır bulunamadı');
@@ -89,152 +104,16 @@ export class VendorProductController {
       );
     }
 
-    // Vendor'ı bul
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) throw new BadRequestException('Satıcı hesabı bulunamadı');
-
-    // Satırları işle
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as string[] };
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      try {
-        const name = row['name'] || row['ürün adı'] || row['product_name'] || row['title'];
-        if (!name) {
-          results.errors.push(`Satır ${i + 2}: Ürün adı zorunlu`);
-          results.failed++;
-          continue;
-        }
-
-        const price = parseFloat(row['price'] || row['fiyat'] || '0');
-        const stock = parseInt(row['stock'] || row['stok'] || '0', 10);
-        const barcode = row['barcode'] || row['barkod'];
-        const categoryId = row['categoryId'] || row['category_id'];
-
-        // Barkod varsa güncelle, yoksa oluştur
-        if (barcode) {
-          const existing = await this.prisma.listing.findFirst({
-            where: { vendorId: vendor.id, barcode },
-          });
-
-          if (existing) {
-            await this.prisma.listing.update({
-              where: { id: existing.id },
-              data: {
-                ...(price > 0 && { price }),
-                ...(stock >= 0 && { stock }),
-              },
-            });
-            results.updated++;
-            continue;
-          }
-        }
-
-        // Katalog ürününü bul veya oluştur (Listing için zorunlu)
-        let catalogProduct = await this.prisma.catalogProduct.findFirst({
-          where: { name },
-        });
-
-        if (!catalogProduct) {
-          catalogProduct = await this.prisma.catalogProduct.create({
-            data: {
-              name,
-              slug:        this.toSlug(name) + '-cat',
-              brand:       row['brand'] || row['marka'] || 'Genel',
-              description: row['description'] || row['açıklama'] || name,
-              categoryId:  categoryId || null,
-            },
-          });
-        }
-
-        // Yeni listing oluştur
-        await this.prisma.listing.create({
-          data: {
-            vendorId:         vendor.id,
-            catalogProductId: catalogProduct.id,
-            categoryId:       categoryId || null,
-            title:            name,
-            price:            price || 0,
-            stock:            stock || 0,
-            barcode:          barcode || null,
-            status:           'ACTIVE',
-            slug:             this.toSlug(name),
-          },
-        });
-        results.created++;
-      } catch (err: any) {
-        results.failed++;
-        results.errors.push(`Satır ${i + 2}: ${err.message}`);
-      }
-    }
-
-    this.logger.log(
-      `Bulk import tamamlandı: created=${results.created}, updated=${results.updated}, failed=${results.failed}`,
+    // İş mantığı tamamen handler'a delege edildi
+    return this.commandBus.execute(
+      new BulkImportVendorProductsCommand(vendor.id, rows),
     );
-
-    return {
-      success: true,
-      message: `${results.created} oluşturuldu, ${results.updated} güncellendi${results.failed > 0 ? `, ${results.failed} hatalı` : ''}`,
-      data: results,
-    };
   }
-
-  // ─── Yardımcı metodlar ────────────────────────────────────────────────────
-
-  private parseCSV(content: string): any[] {
-    const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) return [];
-
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-    return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: any = {};
-      headers.forEach((h, i) => { row[h] = values[i] || ''; });
-      return row;
-    });
-  }
-
-  private async parseExcel(buffer: Buffer): Promise<any[]> {
-    try {
-      // xlsx paketi runtime'da yükleniyor — build-time bağımlılık değil
-      // pnpm add xlsx --filter @bazarx/backend ile kurulmalı
-      const XLSX = require('xlsx');
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      return rows.map((row: any) => {
-        // Türkçe header normalleştirme
-        const normalized: any = {};
-        Object.entries(row).forEach(([k, v]) => {
-          normalized[k.toLowerCase().trim()] = v;
-        });
-        return normalized;
-      });
-    } catch {
-      throw new BadRequestException(
-        'Excel dosyası işlenemedi. xlsx paketi kurulu olmalı: pnpm add xlsx --filter @bazarx/backend',
-      );
-    }
-  }
-
-  private toSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[ğ]/g, 'g').replace(/[ü]/g, 'u').replace(/[ş]/g, 's')
-      .replace(/[ı]/g, 'i').replace(/[ö]/g, 'o').replace(/[ç]/g, 'c')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') + '-' + Date.now();
-  }
-
-  // ─── Diğer endpoint'ler (değişmedi) ──────────────────────────────────────
 
   @ApiOperation({ summary: 'Satıcının ürünlerini listele' })
   @Get()
   async findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('page') page = '1',
     @Query('limit') limit = '50',
     @Query('q') search?: string,
@@ -251,19 +130,23 @@ export class VendorProductController {
 
   @ApiOperation({ summary: 'Yeni ürün/listing oluştur' })
   @Post()
-  async create(@CurrentUser() user: any, @Body() body: any) {
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: any) {
     return this.commandBus.execute(new CreateVendorProductCommand(user.id, body));
   }
 
   @ApiOperation({ summary: 'Ürün güncelle' })
   @Put(':id')
-  async update(@CurrentUser() user: any, @Param('id') id: string, @Body() body: any) {
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
     return this.commandBus.execute(new UpdateVendorProductCommand(user.id, id, body));
   }
 
   @ApiOperation({ summary: 'Ürün sil' })
   @Delete(':id')
-  async remove(@CurrentUser() user: any, @Param('id') id: string) {
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.commandBus.execute(new DeleteVendorProductCommand(user.id, id));
   }
 }

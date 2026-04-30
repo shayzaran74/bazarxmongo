@@ -241,6 +241,8 @@
 </template>
 
 <script setup>
+definePageMeta({ middleware: ['auth', 'admin'] })
+
 import { ref, computed, onMounted } from 'vue'
 import {
     ArrowPathIcon,

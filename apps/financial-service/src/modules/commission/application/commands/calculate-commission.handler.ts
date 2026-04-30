@@ -1,54 +1,87 @@
 // apps/financial-service/src/modules/commission/application/commands/calculate-commission.handler.ts
 
-import { CommandHandler, ICommandHandler, CommandBus } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CalculateCommissionCommand } from './calculate-commission.command';
 import { CommissionCalculatorService } from '../../domain/services/commission-calculator.service';
-import { ICommissionRepository } from '../../domain/repositories/commission.repository.interface';
-import { CommissionRecord } from '../../domain/entities/commission-record.entity';
-import { TopUpWalletCommand } from '../../../wallet/application/commands/topup-wallet.command';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 @CommandHandler(CalculateCommissionCommand)
 export class CalculateCommissionHandler implements ICommandHandler<CalculateCommissionCommand> {
   constructor(
     private readonly calculator: CommissionCalculatorService,
-    @Inject('ICommissionRepository')
-    private readonly commissionRepository: ICommissionRepository,
-    private readonly commandBus: CommandBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(command: CalculateCommissionCommand): Promise<void> {
     const { vendorId, vendorTier, amount, type, referenceId, referenceType } = command;
 
-    // 1. Hesapla
-    const { rate, commission } = this.calculator.calculate(amount, vendorTier);
+    // 1. Komisyon hesapla (saf domain mantığı — yan etkisiz)
+    const { rate, commission } = this.calculator.calculateSimple(amount, vendorTier);
 
-    // 2. Kaydet
-    const record = CommissionRecord.create({
-      vendorId,
-      vendorTier,
-      baseAmount: amount,
-      commissionRate: rate,
-      commissionAmount: commission,
-      commissionType: type,
-      orderId: referenceType === 'ORDER' ? referenceId : undefined,
-      tradeOfferId: referenceType === 'TRADE' ? referenceId : undefined,
+    const currency = type === 'CASH' ? 'TRY' : 'BARTER';
+
+    // Komisyon kaydı + platform cüzdan kredisi + muhasebe kaydı tek transaction içinde.
+    // Herhangi bir adım başarısız olursa komisyon kaydı da geri alınır.
+    await this.prisma.$transaction(async (tx) => {
+      // Mükerrer işlem kontrolü
+      const existing = await tx.commissionRecord.findFirst({
+        where: {
+          ...(referenceType === 'ORDER'
+            ? { orderId: referenceId }
+            : { tradeOfferId: referenceId }),
+          status: 'COLLECTED',
+        },
+      });
+      if (existing) return;
+
+      const now = new Date();
+
+      // 2. Komisyon kaydını oluştur ve direkt topla (CALCULATED→COLLECTED tek seferde)
+      await tx.commissionRecord.create({
+        data: {
+          vendorId,
+          vendorTier,
+          baseAmount: amount,
+          commissionRate: rate,
+          commissionAmount: commission,
+          commissionType: type,
+          orderId: referenceType === 'ORDER' ? referenceId : null,
+          tradeOfferId: referenceType === 'TRADE' ? referenceId : null,
+          status: 'COLLECTED',
+          createdAt: now,
+          collectedAt: now,
+        },
+      });
+
+      // 3. Platform komisyon cüzdanına yansıt (sadece TRY destekleniyor)
+      if (currency === 'TRY') {
+        await tx.wallet.upsert({
+          where: { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
+          update: { balanceTL: { increment: commission } },
+          create: {
+            userId: 'SYSTEM_PLATFORM_ACCOUNT',
+            balanceTL: commission,
+            barterBalance: 0,
+            xpPoints: 0,
+            xpAdsBalance: 0,
+            xpTradeBalance: 0,
+            xpCommissionBalance: 0,
+          },
+        });
+      }
+
+      // 4. Muhasebe kaydı (General Ledger)
+      await tx.generalLedger.create({
+        data: {
+          type: 'COMMISSION',
+          debitAccountId: vendorId,
+          creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT',
+          amount: commission,
+          referenceId: `commission_${referenceType}_${referenceId}`,
+          refType: referenceType,
+          note: `Komisyon tahsilatı — Tier: ${vendorTier}, Oran: %${rate}`,
+        },
+      });
     });
-
-    await this.commissionRepository.save(record);
-
-    // 3. Cüzdana işleme (Platform komisyon cüzdanına ekle)
-    // Gerçek senaryoda bu bir System UserIdsine (Platform) aktarılır.
-    await this.commandBus.execute(
-      new TopUpWalletCommand(
-        'SYSTEM_PLATFORM_ACCOUNT', // Platformun genel cüzdanı
-        commission,
-        type === 'CASH' ? 'TRY' : 'BARTER',
-        `commission_${record.id}`
-      )
-    );
-
-    record.markAsCollected();
-    await this.commissionRepository.save(record);
   }
 }

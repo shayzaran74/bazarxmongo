@@ -32,8 +32,9 @@ export interface OrderProps {
   escrowStatus?: string;
   escrowReleaseAt?: Date;
   payoutEligibleAt?: Date;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   couponCode?: string;
+  expiresAt?: Date;
   items?: OrderItem[];
 }
 
@@ -55,7 +56,8 @@ export class Order extends AggregateRoot<OrderProps> {
     billingAddress: ShippingAddress,
     paymentMethod: string,
     totals: OrderTotal,
-    couponCode?: string
+    couponCode?: string,
+    expiresAt?: Date,
   ): Order {
     const order = new Order({
       userId,
@@ -76,6 +78,7 @@ export class Order extends AggregateRoot<OrderProps> {
       paidWithXP: totals.paidWithXP,
       paidWithCash: totals.paidWithCash,
       couponCode,
+      expiresAt,
     });
 
     // Add Domain Event: OrderCreatedEvent here later

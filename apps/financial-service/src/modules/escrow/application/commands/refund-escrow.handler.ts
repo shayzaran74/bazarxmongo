@@ -1,24 +1,11 @@
-
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
 import { RefundEscrowCommand } from './refund-escrow.command';
-import { IEscrowRepository } from '../../domain/repositories/escrow.repository.interface';
-import { IWalletRepository } from '../../../wallet/domain/repositories/wallet.repository.interface';
-import { IGeneralLedgerRepository } from '../../../ledger/domain/repositories/general-ledger.repository.interface';
-import { GeneralLedgerEntry } from '../../../ledger/domain/entities/general-ledger-entry.entity';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { Money } from '../../../wallet/domain/value-objects/money.vo';
 import { Escrow } from '../../domain/entities/escrow.entity';
 
 @CommandHandler(RefundEscrowCommand)
 export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand> {
   constructor(
-    @Inject('IEscrowRepository')
-    private readonly escrowRepository: IEscrowRepository,
-    @Inject('IWalletRepository')
-    private readonly walletRepository: IWalletRepository,
-    @Inject('IGeneralLedgerRepository')
-    private readonly ledgerRepository: IGeneralLedgerRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -26,17 +13,15 @@ export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand>
     const { orderId, reason } = command;
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Atomic Read & Idempotency Check
-      const escrow = await tx.escrow.findUnique({
-        where: { orderId }
-      });
+      // 1. Atomik okuma ve mükerrer kontrol
+      const escrow = await tx.escrow.findUnique({ where: { orderId } });
 
-      if (!escrow) throw new Error(`Escrow record not found for order: ${orderId}`);
-      
-      // Idempotency: Zaten iade edilmişse başarılı say
+      if (!escrow) throw new Error(`Escrow kaydı bulunamadı: ${orderId}`);
+
+      // Ağ retry'ları için: zaten iade edilmişse başarılı say
       if (escrow.status === 'REFUNDED') return;
-      
-      // Semantik kontrol: Sadece FONLANMIŞ (FUNDED) para iade edilebilir
+
+      // Sadece FUNDED durumdaki escrow iade edilebilir
       if (escrow.status !== 'FUNDED') {
         throw new Error(`Escrow bu durumdan iade edilemez: ${escrow.status}`);
       }
@@ -44,36 +29,44 @@ export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand>
       const escrowEntity = Escrow.fromPersistence(escrow);
       escrowEntity.refund();
 
-      // 2. Fetch Buyer Wallet (Atomic Read)
-      const buyerWallet = await tx.wallet.findUnique({
-        where: { userId: escrow.buyerId }
-      });
-      if (!buyerWallet) throw new Error(`Buyer wallet not found: ${escrow.buyerId}`);
+      // 2. Alıcı cüzdanı — escrow oluşturulduğunda mevcuttu, yine de güvenli upsert
+      const buyerWallet = await tx.wallet.findUnique({ where: { userId: escrow.buyerId } });
+      if (!buyerWallet) throw new Error(`Alıcı cüzdanı bulunamadı: ${escrow.buyerId}`);
 
-      // 3. Find Buyer's MAIN Account
-      const buyerMainAccount = await tx.account.findFirst({
-        where: { userId: escrow.buyerId, type: 'MAIN' }
+      // 3. Alıcının MAIN hesabını bul; yoksa varsayılan hesapları aç
+      let buyerMainAccount = await tx.account.findFirst({
+        where: { userId: escrow.buyerId, type: 'MAIN' },
       });
 
-      // 4. Update Database (Atomic)
-      // a. Refund Legacy Wallet
+      if (!buyerMainAccount) {
+        await tx.account.createMany({
+          data: [
+            { userId: escrow.buyerId, type: 'MAIN', currency: 'TRY' },
+            { userId: escrow.buyerId, type: 'BARTER', currency: 'BARTER' },
+            { userId: escrow.buyerId, type: 'XP_COMMISSION', currency: 'TRY' },
+            { userId: escrow.buyerId, type: 'XP_ADS', currency: 'TRY' },
+          ],
+          skipDuplicates: true,
+        });
+        buyerMainAccount = await tx.account.findFirst({
+          where: { userId: escrow.buyerId, type: 'MAIN' },
+        });
+      }
+
+      // 4. Atomik yazma
+      // a. Legacy cüzdan iadesi
       await tx.wallet.update({
         where: { userId: escrow.buyerId },
-        data: {
-          balanceTL: { increment: escrow.amount }
-        }
+        data: { balanceTL: { increment: escrow.amount } },
       });
 
-      // b. Update Escrow Status
+      // b. Escrow durumu güncelle
       await tx.escrow.update({
         where: { orderId },
-        data: {
-          status: 'REFUNDED',
-          updatedAt: escrowEntity.updatedAt
-        }
+        data: { status: 'REFUNDED', updatedAt: escrowEntity.updatedAt },
       });
 
-      // c. General Ledger Entry
+      // c. Muhasebe kaydı
       await tx.generalLedger.create({
         data: {
           type: 'REFUND',
@@ -83,10 +76,10 @@ export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand>
           referenceId: orderId,
           refType: 'ORDER',
           note: `Order ${orderId} iadesi alıcıya aktarıldı. Sebep: ${reason || 'İptal'}`,
-        }
+        },
       });
 
-      // d. Account Transaction & Balance Sync (Modern)
+      // d. Account Transaction ve bakiye senkronizasyonu — hesap artık kesinlikle mevcut
       if (buyerMainAccount) {
         await tx.accountTransaction.create({
           data: {
@@ -97,16 +90,16 @@ export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand>
             description: `İade: Sipariş #${orderId} tutarı cüzdanınıza geri yüklendi.`,
             referenceId: orderId,
             referenceType: 'ORDER',
-            status: 'COMPLETED'
-          }
+            status: 'COMPLETED',
+          },
         });
-        
+
         await tx.account.update({
           where: { id: buyerMainAccount.id },
           data: {
             balance: { increment: escrow.amount },
-            availableBalance: { increment: escrow.amount }
-          }
+            availableBalance: { increment: escrow.amount },
+          },
         });
       }
     });

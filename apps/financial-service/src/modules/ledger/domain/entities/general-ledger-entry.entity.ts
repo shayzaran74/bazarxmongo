@@ -11,7 +11,7 @@ interface GeneralLedgerEntryProps {
   referenceId?: string;
   refType?: string;
   note?: string;
-  payload?: any;
+  payload?: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -27,7 +27,7 @@ export class GeneralLedgerEntry extends AggregateRoot<GeneralLedgerEntryProps> {
   get referenceId(): string | undefined { return this.props.referenceId; }
   get refType(): string | undefined { return this.props.refType; }
   get note(): string | undefined { return this.props.note; }
-  get payload(): any { return this.props.payload; }
+  get payload(): Record<string, unknown> | undefined { return this.props.payload; }
   get createdAt(): Date { return this.props.createdAt; }
 
   static create(props: Omit<GeneralLedgerEntryProps, 'createdAt'>): GeneralLedgerEntry {

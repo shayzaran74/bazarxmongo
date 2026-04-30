@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus as PrismaOrderStatus, PaymentMethod as PrismaPaymentMethod, PaymentStatus as PrismaPaymentStatus } from '@prisma/client';
 import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
 import { Order, OrderProps } from '../../domain/entities/order.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
@@ -8,13 +8,17 @@ import { OrderNumber } from '../../domain/value-objects/order-number.vo';
 import { ShippingAddress } from '../../domain/value-objects/shipping-address.vo';
 import { OrderStatus } from '../../domain/enums/order-status.enum';
 
+// Prisma'nın ürettiği tam tip - orderItems ilişkisiyle birlikte
+type OrderRecord = Prisma.OrderGetPayload<{ include: { orderItems: true } }>;
+type OrderItemRecord = OrderRecord['orderItems'][number];
+
 @Injectable()
 export class PrismaOrderRepository implements IOrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   // --- Mapper ---
-  private toDomain(record: any): Order {
-    const items = (record.orderItems || []).map((oi: any) =>
+  private toDomain(record: OrderRecord): Order {
+    const items = (record.orderItems || []).map((oi: OrderItemRecord) =>
       OrderItem.fromPersistence(
         {
           orderId: record.id,
@@ -57,8 +61,9 @@ export class PrismaOrderRepository implements IOrderRepository {
       escrowStatus: record.escrowStatus || undefined,
       escrowReleaseAt: record.escrowReleaseAt || undefined,
       payoutEligibleAt: record.payoutEligibleAt || undefined,
-      metadata: record.metadata || undefined,
+      metadata: record.metadata as Record<string, unknown> | undefined,
       couponCode: record.couponCode || undefined,
+      expiresAt: record.expiresAt || undefined,
       items,
     };
 
@@ -89,7 +94,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     const skip = (page - 1) * limit;
 
     const where: Prisma.OrderWhereInput = { userId };
-    if (status) where.status = status as any;
+    if (status) where.status = status as PrismaOrderStatus;
 
     const [records, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -113,7 +118,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     const skip = (page - 1) * limit;
 
     const where: Prisma.OrderWhereInput = { vendorId };
-    if (status) where.status = status as any;
+    if (status) where.status = status as PrismaOrderStatus;
 
     const [records, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -134,8 +139,8 @@ export class PrismaOrderRepository implements IOrderRepository {
     await this.prisma.order.update({
       where: { id: order.id },
       data: {
-        status: props.status as any,
-        paymentStatus: props.paymentStatus as any,
+        status: props.status as unknown as PrismaOrderStatus,
+        paymentStatus: props.paymentStatus as unknown as PrismaPaymentStatus,
         // vendorStatus/buyerStatus schema'da yok, update edilmeyecek
         paidAt: props.paidAt,
         trackingNumber: props.trackingNumber,

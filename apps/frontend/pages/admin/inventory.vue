@@ -187,7 +187,7 @@
               </div>
             </td>
             <td class="px-6 py-4 text-right text-sm text-gray-900">
-              ₺{{ product.price.toFixed(2) }}
+              ₺{{ Number(product.price || 0).toFixed(2) }}
             </td>
             <td class="px-6 py-4">
               <span

@@ -31,8 +31,8 @@
       >
         <component :is="tab.icon" class="w-4 h-4" />
         {{ tab.label }}
-        <span v-if="tab.key === 'pending' && brandStats.PENDING" class="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats.PENDING }}</span>
-        <span v-if="tab.key === 'violations' && brandStats.VIOLATIONS" class="bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats.VIOLATIONS }}</span>
+        <span v-if="tab.key === 'pending' && brandStats?.PENDING" class="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats?.PENDING }}</span>
+        <span v-if="tab.key === 'violations' && brandStats?.VIOLATIONS" class="bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{{ brandStats?.VIOLATIONS }}</span>
       </button>
     </div>
 
@@ -41,7 +41,7 @@
       <BrandTable
         v-model:current-page="currentPage"
         v-model:selected-letter="selectedLetter"
-        :brands="brands"
+        :brands="filteredBrands"
         :total-items="totalItems"
         :total-pages="totalPages"
         :search-query="searchQuery"
@@ -109,6 +109,13 @@ const {
   requestAdditionalDocs, rejectBrandApplication, saveBrand, deleteBrand,
   resolveViolationQuickly, openViolationModal, generateSlug, resolveImageUrl
 } = useAdminBrands()
+
+const filteredBrands = computed(() => {
+  if (currentTab.value === 'pending') {
+    return brands.value.filter(b => b.status === 'PENDING')
+  }
+  return brands.value
+})
 
 const tabs = [
   { key: 'pending',    label: 'Bekleyenler', icon: ClockIcon },

@@ -9,6 +9,11 @@ import { Response } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
 @ApiTags('Vendor Inventory')
 @ApiBearerAuth()
 @Controller('vendors/inventory')
@@ -19,7 +24,7 @@ export class VendorInventoryController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('stats')
-  async getStats(@CurrentUser() user: any) {
+  async getStats(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { userId: user.id }
     });
@@ -50,7 +55,7 @@ export class VendorInventoryController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('export')
-  async exportExcel(@CurrentUser() user: any, @Res() res: Response) {
+  async exportExcel(@CurrentUser() user: AuthenticatedUser, @Res() res: Response) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { userId: user.id }
     });
@@ -91,15 +96,19 @@ export class VendorInventoryController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('logs/:productId')
-  async getLogs(@Param('productId') productId: string, @CurrentUser() user: unknown) {
-    // Note: Stock logs typically need an InventoryLog or AuditLog table.
-    // If not exists, we return empty for now but route is ready.
-    // Assuming we might have an 'InventoryLog' table in prisma or similar.
+  async getLogs(@Param('productId') productId: string, @CurrentUser() user: AuthenticatedUser) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    if (!vendor) return { success: true, data: [] };
+
+    // Stok geçmişini vendorId + listingId ile güvenli çek
     try {
-      const logs = await (this.prisma as any).inventoryLog.findMany({
-        where: { productId },
+      const logs = await this.prisma.inventoryLog.findMany({
+        where: { listingId: productId, vendorId: vendor.id },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 50,
       });
       return { success: true, data: logs };
     } catch {
@@ -130,7 +139,7 @@ export class VendorInventoryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('file'))
   @Post('import-excel')
-  async importExcel(@UploadedFile() file: any, @CurrentUser() user: any) {
+  async importExcel(@UploadedFile() file: any, @CurrentUser() user: AuthenticatedUser) {
     // ... existing import logic remains same ...
     if (!file) return { success: false, error: 'Dosya yüklenmedi' };
     
@@ -206,21 +215,34 @@ export class VendorInventoryController {
             });
           }
 
-          await this.prisma.listing.upsert({
-            where: { slug },
-            update: { price, stock },
-            create: {
-              vendorId: vendor.id,
-              catalogProductId: catalogProduct.id,
-              title: rawName,
-              slug,
-              price,
-              stock,
-              sku: barcode,
-              status: 'PENDING',
-              listingType: 'SELL'
-            }
+          // Güvenli güncelleme: slug ile upsert yerine vendorId'ye göre eşleştir.
+          // Slug tabanlı upsert başka vendor'ın listing'ini ezebilir.
+          const existingListing = await this.prisma.listing.findFirst({
+            where: { vendorId: vendor.id, sku: barcode || undefined },
           });
+
+          if (existingListing) {
+            await this.prisma.listing.update({
+              where: { id: existingListing.id },
+              data: { price, stock },
+            });
+          } else {
+            // Çakışmayı önlemek için slug'a vendor prefix ekle
+            const safeSlug = `v${vendor.id.slice(0, 8)}-${slug}`;
+            await this.prisma.listing.create({
+              data: {
+                vendorId: vendor.id,
+                catalogProductId: catalogProduct.id,
+                title: rawName,
+                slug: safeSlug,
+                price,
+                stock,
+                sku: barcode,
+                status: 'PENDING',
+                listingType: 'SELL',
+              },
+            });
+          }
 
           successCount++;
         } catch (err: any) {

@@ -29,7 +29,7 @@ export class GetMyEcosystemHandler
     return {
       isOwner: !!vendor.brandEcosystem,
       ecosystem: vendor.brandEcosystem || vendor.memberOfEcosystem,
-      isApexPlus: vendor.tier === VendorTier.ELITE
+      isApexPlus: vendor.tier === VendorTier.APEX
     };
   }
 }

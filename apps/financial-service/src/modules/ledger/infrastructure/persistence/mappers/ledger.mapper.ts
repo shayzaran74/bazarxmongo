@@ -1,13 +1,20 @@
 // apps/financial-service/src/modules/ledger/infrastructure/persistence/mappers/ledger.mapper.ts
 
 import { Injectable } from '@nestjs/common';
-import { GeneralLedger as PrismaLedger } from '../../../../../generated/client';
+import { GeneralLedger as PrismaLedger, LedgerType, Prisma } from '../../../../../generated/client';
 import { GeneralLedgerEntry } from '../../../domain/entities/general-ledger-entry.entity';
-import { LedgerType } from '../../../../../generated/client';
 
 @Injectable()
 export class LedgerMapper {
   toDomain(raw: PrismaLedger): GeneralLedgerEntry {
+    // payload: JsonValue | null — sadece nesne olduğunda al, diğer durumlarda undefined
+    const payload =
+      raw.payload !== null &&
+      typeof raw.payload === 'object' &&
+      !Array.isArray(raw.payload)
+        ? (raw.payload as Record<string, unknown>)
+        : undefined;
+
     return new GeneralLedgerEntry({
       type: raw.type,
       debitAccountId: raw.debitAccountId || undefined,
@@ -16,12 +23,12 @@ export class LedgerMapper {
       referenceId: raw.referenceId || undefined,
       refType: raw.refType || undefined,
       note: raw.note || undefined,
-      payload: raw.payload,
+      payload,
       createdAt: raw.createdAt,
     }, raw.id);
   }
 
-  toPersistence(entity: GeneralLedgerEntry): any {
+  toPersistence(entity: GeneralLedgerEntry) {
     return {
       id: entity.id,
       type: entity.type as LedgerType,
@@ -31,7 +38,8 @@ export class LedgerMapper {
       referenceId: entity.referenceId,
       refType: entity.refType,
       note: entity.note,
-      payload: entity.payload,
+      // Record<string, unknown> → Prisma InputJsonValue dönüşümü için double cast
+      payload: entity.payload as unknown as Prisma.InputJsonValue | undefined,
       createdAt: entity.createdAt,
     };
   }

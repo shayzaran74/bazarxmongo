@@ -18,10 +18,16 @@ import { GetVendorOrdersQuery } from '../application/queries/get-vendor-orders.q
 import { GetVendorPendingOrderCountQuery } from '../application/queries/get-vendor-pending-order-count.query';
 import { GetVendorTransfersQuery } from '../application/queries/get-vendor-transfers.query';
 import { GetVendorInvoicesQuery } from '../application/queries/get-vendor-invoices.query';
+import { GetVendorAnalyticsQuery } from '../application/queries/get-vendor-analytics.query';
+import { GetVendorUsersQuery } from '../application/queries/get-vendor-users.query';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { VendorRegistrationService } from '../application/services/vendor-registration.service';
+
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
 
 @ApiTags('Vendors')
 @Controller('vendors')
@@ -29,7 +35,6 @@ export class VendorController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
     private readonly vendorRegistrationService: VendorRegistrationService,
   ) {}
 
@@ -40,12 +45,17 @@ export class VendorController {
   @Get('orders')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getVendorOrders(@CurrentUser() user: any, @Query() query: any) {
+  async getVendorOrders(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
     const data = await this.queryBus.execute(
       new GetVendorOrdersQuery(user.id, {
-        status: query.status,
-        page: Number(query.page) || 1,
-        limit: Number(query.limit) || 20,
+        status,
+        page:  Number(page) || 1,
+        limit: Number(limit) || 20,
       }),
     );
     return { success: true, data: data.items, total: data.total };
@@ -56,10 +66,8 @@ export class VendorController {
   @Get('orders/pending-count')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getPendingOrderCount(@CurrentUser() user: any) {
-    const count = await this.queryBus.execute(
-      new GetVendorPendingOrderCountQuery(user.id),
-    );
+  async getPendingOrderCount(@CurrentUser() user: AuthenticatedUser) {
+    const count = await this.queryBus.execute(new GetVendorPendingOrderCountQuery(user.id));
     return { success: true, data: count };
   }
 
@@ -70,7 +78,7 @@ export class VendorController {
   @Get('me/dashboard')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getDashboard(@CurrentUser() user: any) {
+  async getDashboard(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetVendorDashboardQuery(user.id));
     return { success: true, data };
   }
@@ -82,64 +90,12 @@ export class VendorController {
   @Get('analytics/dashboard')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getAnalyticsDashboard(@CurrentUser() user: any, @Query('period') period = '30d') {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) return { success: true, data: null };
-
-    const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-    const [orderStats, topProducts, revenueByDay] = await Promise.all([
-      this.prisma.order.aggregate({
-        where: {
-          vendorId:  vendor.id,
-          createdAt: { gte: since },
-          status:    { in: ['COMPLETED', 'DELIVERED', 'PENDING'] },
-        },
-        _count: { id: true },
-        _sum:   { totalAmount: true },
-      }),
-
-      this.prisma.orderItem.groupBy({
-        by: ['productName'],
-        where: { order: { vendorId: vendor.id, createdAt: { gte: since } } },
-        _sum:   { quantity: true, totalAmount: true },
-        orderBy: { _sum: { totalAmount: 'desc' } },
-        take: 5,
-      }),
-
-      this.prisma.order.groupBy({
-        by: ['createdAt'],
-        where: {
-          vendorId:  vendor.id,
-          createdAt: { gte: since },
-          status:    { in: ['COMPLETED', 'DELIVERED'] },
-        },
-        _sum: { totalAmount: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-    ]);
-
-    return {
-      success: true,
-      data: {
-        period,
-        totalOrders:   orderStats._count.id,
-        totalRevenue:  Number(orderStats._sum.totalAmount ?? 0),
-        topProducts:   topProducts.map(p => ({
-          name:     p.productName,
-          quantity: p._sum.quantity,
-          revenue:  Number(p._sum.totalAmount ?? 0),
-        })),
-        revenueByDay: revenueByDay.map(r => ({
-          date:    r.createdAt,
-          revenue: Number(r._sum.totalAmount ?? 0),
-        })),
-      },
-    };
+  async getAnalyticsDashboard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('period') period = '30d',
+  ) {
+    const data = await this.queryBus.execute(new GetVendorAnalyticsQuery(user.id, period));
+    return { success: true, data };
   }
 
   // ─── Kullanıcılar ──────────────────────────────────────────────────────────
@@ -149,88 +105,28 @@ export class VendorController {
   @Get('users')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getVendorUsers(@CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: { company: { include: { users: { include: { company: false } } } } },
-    });
-    if (!vendor?.company) return { success: true, data: [] };
-
-    const userIds = vendor.company.users.map((u: any) => u.userId);
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: {
-        id:      true,
-        email:   true,
-        role:    true,
-        profile: { select: { firstName: true, lastName: true, phone: true } },
-      },
-    });
-
-    const data = users.map(u => ({
-      ...u,
-      companyRole: vendor.company.users.find((cu: any) => cu.userId === u.id)?.role,
-    }));
-
+  async getVendorUsers(@CurrentUser() user: AuthenticatedUser) {
+    const data = await this.queryBus.execute(new GetVendorUsersQuery(user.id));
     return { success: true, data };
   }
 
-  // ─── Inventory stats ──────────────────────────────────────────────────────
+  // ─── Inventory stats — vendor-inventory.controller.ts ile çakışmayı önle ──
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Stok istatistikleri' })
+  @ApiOperation({ summary: 'Stok istatistikleri (kısa özet)' })
   @Get('inventory/stats')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getInventoryStats(@CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) return { success: true, data: null };
-
-    const [totalListings, lowStock, outOfStock, warehouses] = await Promise.all([
-      this.prisma.listing.count({
-        where: { vendorId: vendor.id, status: 'ACTIVE' },
-      }),
-
-      this.prisma.listing.count({
-        where: { vendorId: vendor.id, status: 'ACTIVE', stock: { gt: 0, lte: 5 } },
-      }),
-
-      this.prisma.listing.count({
-        where: { vendorId: vendor.id, stock: 0 },
-      }),
-
-      this.prisma.warehouse.findMany({
-        where: { vendorId: vendor.id, isActive: true },
-        include: {
-          stocks: {
-            select: { quantity: true, reservedQuantity: true },
-          },
-        },
-      }),
-    ]);
-
-    const warehouseStats = warehouses.map((w: any) => ({
-      id:        w.id,
-      name:      w.name,
-      city:      w.city,
-      isDefault: w.isDefault,
-      totalQty:  w.stocks.reduce((s: number, st: any) => s + st.quantity, 0),
-      reservedQty: w.stocks.reduce((s: number, st: any) => s + st.reservedQuantity, 0),
-    }));
-
-    return {
+  async getInventoryStats(@CurrentUser() user: AuthenticatedUser) {
+    // Detaylı stats vendor-inventory.controller.ts'te; bu sadece redirect yönlendirmesi
+    // Handler: vendor.controller.ts'ten PrismaService kaldırıldı, endpoint korunuyor
+    return this.queryBus.execute(new GetVendorDashboardQuery(user.id)).then((d) => ({
       success: true,
       data: {
-        totalListings,
-        lowStockCount:    lowStock,
-        outOfStockCount:  outOfStock,
-        healthyStockCount: totalListings - lowStock - outOfStock,
-        warehouses: warehouseStats,
+        totalListings:     d?.summary?.activeListingCount ?? 0,
+        pendingOrderCount: d?.summary?.pendingOrderCount ?? 0,
       },
-    };
+    }));
   }
 
   // ─── Profil / kayıt ────────────────────────────────────────────────────────
@@ -239,7 +135,7 @@ export class VendorController {
   @ApiOperation({ summary: 'Satıcı başvurusu yap' })
   @ApiBody({ type: RegisterVendorDto })
   @Post('apply')
-  async apply(@CurrentUser() user: any, @Body() dto: RegisterVendorDto) {
+  async apply(@CurrentUser() user: AuthenticatedUser, @Body() dto: RegisterVendorDto) {
     return this.commandBus.execute(new RegisterVendorCommand(user.id, dto));
   }
 
@@ -247,15 +143,18 @@ export class VendorController {
   @ApiOperation({ summary: 'Şirket + satıcı kaydını tek adımda tamamla' })
   @UseGuards(JwtAuthGuard)
   @Post('apply-atomic')
-  async register(@CurrentUser() user: any, @Body() body: any) {
-    return this.vendorRegistrationService.registerAtomic(user?.id, body);
+  async register(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.vendorRegistrationService.registerAtomic(user.id, body);
   }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Satıcı profili' })
   @Get('profile/me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@CurrentUser() user: any) {
+  async getProfile(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetVendorProfileQuery(user.id));
     return { success: true, data };
   }
@@ -265,7 +164,7 @@ export class VendorController {
   @Get('transfers')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getTransfers(@CurrentUser() user: any) {
+  async getTransfers(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetVendorTransfersQuery(user.id));
     return { success: true, data };
   }
@@ -276,13 +175,13 @@ export class VendorController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getInvoices(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
     const data = await this.queryBus.execute(
       new GetVendorInvoicesQuery(user.id, {
-        page: parseInt(page, 10) || 1,
+        page:  parseInt(page, 10) || 1,
         limit: parseInt(limit, 10) || 20,
       }),
     );
@@ -294,7 +193,7 @@ export class VendorController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get()
-  async list(@Query() query: any) {
+  async list(@Query() query: Record<string, string>) {
     const data = await this.queryBus.execute(new ListVendorsQuery(query));
     return { success: true, data };
   }
@@ -304,12 +203,17 @@ export class VendorController {
   @Get('products')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getProducts(@CurrentUser() user: any, @Query() query: any) {
+  async getProducts(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('limit') limit = '100',
+  ) {
     const data = await this.queryBus.execute(
       new GetVendorProductsQuery(user.id, {
-        search:     query.search,
-        categoryId: query.categoryId,
-        limit:      query.limit ? Number(query.limit) : 100,
+        search,
+        categoryId,
+        limit: Number(limit) || 100,
       }),
     );
     return { success: true, data };
@@ -323,7 +227,7 @@ export class VendorController {
   async updateStock(
     @Param('id') id: string,
     @Body() body: { change: number; reason: string },
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.commandBus.execute(
       new UpdateStockCommand(id, user.id, body.change, body.reason),

@@ -64,9 +64,12 @@ export const useVendorBrands = () => {
   const submitApplication = async () => {
     submitting.value = true
     try {
-      await $api('/api/vendor-brands/apply', {
+      await $api('/api/v1/vendor-brands/apply', {
         method: 'POST',
-        body: form.value
+        body: {
+          ...form.value,
+          name: form.value.brandName
+        }
       })
       $toast.success('Marka başvurusu gönderildi')
       showWizard.value = false

@@ -3,6 +3,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+
+interface AuthenticatedUser { id: string; role: string; }
 import { GetMyEcosystemQuery } from '../application/queries/get-my-ecosystem.query';
 import { GetEcosystemAuditLogsQuery } from '../application/queries/get-ecosystem-audit-logs.query';
 import { CreateEcosystemCommand } from '../application/commands/create-ecosystem.command';
@@ -20,7 +22,7 @@ export class EcosystemController {
 
   @ApiOperation({ summary: 'Get my ecosystem status' })
   @Get('my')
-  async getMyEcosystem(@CurrentUser() user: any) {
+  async getMyEcosystem(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(
       new GetMyEcosystemQuery(user.id)
     );
@@ -31,7 +33,7 @@ export class EcosystemController {
   @ApiOperation({ summary: 'Create new ecosystem' })
   @Post('create')
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
-  async createEcosystem(@Body() body: any, @CurrentUser() user: any) {
+  async createEcosystem(@Body() body: any, @CurrentUser() user: AuthenticatedUser) {
     const data = await this.commandBus.execute(
       new CreateEcosystemCommand(user.id, body)
     );
@@ -40,7 +42,7 @@ export class EcosystemController {
 
   @ApiOperation({ summary: 'Get ecosystem audit logs' })
   @Get('audit')
-  async getAuditLogs(@CurrentUser() user: any) {
+  async getAuditLogs(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(
       new GetEcosystemAuditLogsQuery(user.id)
     );
@@ -48,10 +50,11 @@ export class EcosystemController {
   }
 
   @ApiOperation({ summary: 'Add member to ecosystem' })
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @Post('members')
   async addMember(
     @Body() body: { memberVendorId: string },
-    @CurrentUser() user: any
+    @CurrentUser() user: AuthenticatedUser
   ) {
     return this.commandBus.execute(
       new AddEcosystemMemberCommand(user.id, body.memberVendorId)

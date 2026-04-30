@@ -80,7 +80,8 @@ export class CheckoutController {
         billingAddress,
         mappedPaymentMethod,
         dto.couponCode,
-        dto.useWallet
+        dto.useWallet,
+        dto.clientMutationId,
       )
     );
 

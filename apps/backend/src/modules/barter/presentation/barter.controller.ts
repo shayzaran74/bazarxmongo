@@ -12,6 +12,11 @@ import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { PrismaService } from '@barterborsa/shared-persistence';
 
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
 @ApiTags('Barter')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -23,13 +28,13 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Barter hesap bilgisi' })
   @Get('info')
-  async getInfo(@CurrentUser() user: any) {
+  async getInfo(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { userId: user.id },
       include: {
         company: { select: { id: true, name: true } },
         metrics: { select: { totalRevenue: true } },
-        stats:   { select: { rating: true, reviewCount: true } },
+        stats:   { select: { rating: true, reviewCount: true, loyaltyPoints: true, trustScore: true } },
       },
     });
 
@@ -40,8 +45,10 @@ export class BarterController {
         vendorId:     vendor?.id,
         companyId:    vendor?.company?.id,
         companyName:  vendor?.company?.name,
-        tier:         vendor?.tier || 'STANDARD',
+        tier:         vendor?.tier || 'CORE',
         rating:       Number(vendor?.stats?.rating || 0),
+        trustScore:   Number(vendor?.stats?.trustScore || 100),
+        loyaltyPoints: vendor?.stats?.loyaltyPoints || 0,
         balance:      0, // financial-gateway'den gelecek
       },
     };
@@ -51,7 +58,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Benim takas zincirlerim' })
   @Get('my-chains')
-  async getMyChains(@CurrentUser() user: any) {
+  async getMyChains(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.getVendor(user.id);
 
     const sessions = await this.prisma.swapSession.findMany({
@@ -79,7 +86,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Benim tekliflerim' })
   @Get('my-offers')
-  async getMyOffers(@CurrentUser() user: any) {
+  async getMyOffers(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.getVendor(user.id);
 
     const offers = await this.prisma.tradeOffer.findMany({
@@ -105,7 +112,7 @@ export class BarterController {
   @ApiOperation({ summary: 'Barter sistemine kayıt' })
   @ApiResponse({ status: 201 })
   @Post('register')
-  async register(@CurrentUser() user: any) {
+  async register(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { userId: user.id },
       select: { id: true, status: true },
@@ -137,7 +144,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Barter cüzdanına para yükle' })
   @Post('topup')
-  async topup(@CurrentUser() user: any, @Body() body: { amount: number }) {
+  async topup(@CurrentUser() user: AuthenticatedUser, @Body() body: { amount: number }) {
     if (!body.amount || body.amount <= 0) {
       throw new BadRequestException('Geçersiz miktar');
     }
@@ -155,7 +162,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Barter cüzdanından para çek' })
   @Post('withdraw')
-  async withdraw(@CurrentUser() user: any, @Body() body: { amount: number }) {
+  async withdraw(@CurrentUser() user: AuthenticatedUser, @Body() body: { amount: number }) {
     if (!body.amount || body.amount <= 0) {
       throw new BadRequestException('Geçersiz miktar');
     }
@@ -174,7 +181,7 @@ export class BarterController {
   @ApiOperation({ summary: 'Barter transferi başlat' })
   @Post('transfer')
   async transfer(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: { toCompanyId: string; amount: number; note?: string },
   ) {
     if (!body.toCompanyId || !body.amount || body.amount <= 0) {

@@ -20,7 +20,7 @@ import {
 
 @ApiTags('Analytics Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/analytics')
 export class AnalyticsAdminController {
@@ -28,14 +28,20 @@ export class AnalyticsAdminController {
 
   @ApiOperation({ summary: 'Get root analytics (Admin)', description: 'Genel istatistikleri döner.' })
   @Get()
-  async getRoot(@Query('period') period: any) { return this.queryBus.execute(new GetDashboardStatsQuery(period || 'DAILY')); }
+  async getRoot(@Query('period') period: 'DAILY' | 'WEEKLY' | 'MONTHLY' = 'DAILY') {
+    const periodMap = { 'DAILY': 'day', 'WEEKLY': 'week', 'MONTHLY': 'month' } as const;
+    return this.queryBus.execute(new GetDashboardStatsQuery(periodMap[period]));
+  }
 
   @ApiOperation({ summary: 'Get dashboard statistics (Admin)', description: 'Yönetim paneli için özet istatistikleri ve grafik verilerini döner.' })
   @ApiQuery({ name: 'period', required: false, enum: ['DAILY', 'WEEKLY', 'MONTHLY'], example: 'DAILY' })
   @ApiResponse({ status: 200, description: 'İstatistik verileri.' })
   @ApiResponse({ status: 403, description: 'Sadece admin yetkisi ile erişilebilir.' })
   @Get('dashboard')
-  async getDashboard(@Query('period') period: any) { return this.queryBus.execute(new GetDashboardStatsQuery(period)); }
+  async getDashboard(@Query('period') period: 'DAILY' | 'WEEKLY' | 'MONTHLY' = 'DAILY') {
+    const periodMap = { 'DAILY': 'day', 'WEEKLY': 'week', 'MONTHLY': 'month' } as const;
+    return this.queryBus.execute(new GetDashboardStatsQuery(periodMap[period]));
+  }
 
   @ApiOperation({ summary: 'Get general admin statistics', description: 'Kullanıcı, ürün, vendor ve satış sayılarını kapsayan genel admin istatistiklerini döner.' })
   @ApiResponse({ status: 200, description: 'Genel istatistik verileri.' })

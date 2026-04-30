@@ -10,5 +10,6 @@ export class CheckoutCommand {
     public readonly paymentMethod: string,
     public readonly couponCode?: string,
     public readonly useWallet: boolean = false,
+    public readonly clientMutationId?: string,
   ) {}
 }

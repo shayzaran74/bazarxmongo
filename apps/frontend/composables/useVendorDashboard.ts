@@ -218,7 +218,7 @@ export const useVendorDashboard = () => {
 
   const fetchEcosystemStatus = async () => {
     try {
-      const res: any = await $api('/api/v1/vendors/my-ecosystem')
+      const res: any = await $api('/api/v1/ecosystem/my')
       if (res.success && res.ecosystem) {
         myEcosystem.value = res.ecosystem
       }
