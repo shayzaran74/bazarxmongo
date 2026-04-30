@@ -1,95 +1,153 @@
 <template>
-  <div class="min-h-screen bg-gray-50/50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <!-- Header Section -->
-      <div class="mb-10">
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+  <div class="min-h-screen bg-background font-body-md text-on-background pb-20">
+    <!-- Hero / Header Section -->
+    <div class="bg-md3-primary text-white py-16 relative overflow-hidden">
+      <!-- High-tech Grid Background -->
+      <div class="absolute inset-0 opacity-5 pointer-events-none">
+        <div class="absolute inset-0 bg-[url('/grid-white.svg')] bg-[length:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black,transparent)]" />
+      </div>
+
+      <div class="max-w-screen-2xl mx-auto px-6 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
-            <h1 class="text-5xl font-black text-gray-900 mb-3 italic tracking-tighter">🔥 AÇIK ARTIRMALAR</h1>
-            <p class="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">ÖZEL PROTOKOLLER & TEKLİF YARIŞI</p>
+            <div class="flex items-center gap-2 mb-4">
+              <span class="bg-secondary text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-secondary/20">
+                <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;"></span>
+                {{ $t('auctionsHome.badge') || 'CANLI TEKLİFLER' }}
+              </span>
+            </div>
+            <h1 class="text-display-lg font-black tracking-tighter uppercase italic mb-2">
+              {{ $t('auctionsHome.title') || 'AÇIK' }} <span class="text-primary-fixed-dim">{{ $t('auctionsHome.subtitle') || 'ARTIRMA' }}</span>
+            </h1>
+            <p class="text-primary-fixed opacity-70 text-lg font-medium max-w-2xl italic">
+              {{ $t('auctionsHome.description') || 'En iyi teklifi sen ver, benzersiz ürünleri kazanan sen ol.' }}
+            </p>
           </div>
-          <div class="flex gap-3">
-            <button v-if="authStore.user?.isAdmin" class="px-6 py-3 bg-primary-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-700 shadow-xl shadow-primary-900/20 transition-all active:scale-95" @click="showCreateModal = true">
+          
+          <div class="flex gap-4">
+            <button 
+              v-if="authStore.user?.isAdmin"
+              @click="showCreateModal = true"
+              class="px-8 py-4 bg-secondary-fixed text-on-secondary-fixed rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-secondary/20"
+            >
               + YENİ PROTOKOL
             </button>
-            <NuxtLink to="/auctions/my" class="px-6 py-3 bg-white border border-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all active:scale-95">
-              KATILDIĞIM İLANLAR
-            </NuxtLink>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Filters Component -->
-        <AuctionFilters
-          v-model:search-query="searchQuery"
-          v-model:selected-category="selectedCategory"
-          v-model:status-filter="statusFilter"
-          v-model:sort-by="sortBy"
-          :categories="categories"
-          @update:search-query="debounceSearch"
-          @update:selected-category="fetchAuctions"
-          @update:status-filter="fetchAuctions"
-          @update:sort-by="fetchAuctions"
-        />
+    <!-- Main Listing Area -->
+    <div class="max-w-screen-2xl mx-auto px-6 -mt-8 relative z-20">
+      <!-- Filters -->
+      <div class="bg-white p-4 rounded-2xl shadow-xl border border-surface-variant mb-12 flex flex-col lg:flex-row items-center gap-4">
+        <div class="relative flex-1 w-full lg:w-auto">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input 
+            v-model="searchQuery"
+            class="w-full bg-surface-container-low border border-outline-variant rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-md3-primary transition-all text-sm font-bold"
+            placeholder="Ürün, kategori veya lot ara..."
+            @input="debounceSearch"
+          />
+        </div>
+        
+        <div class="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+          <button 
+            v-for="cat in ['HEPSİ', 'SAAT', 'ELEKTRONİK', 'ANTİKA', 'GAYRİMENKUL']" 
+            :key="cat"
+            class="px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border"
+            :class="selectedCategory === cat ? 'bg-md3-primary text-white border-md3-primary shadow-lg shadow-md3-primary/20' : 'bg-surface-container-low text-outline border-transparent hover:border-outline-variant'"
+            @click="selectedCategory = cat"
+          >
+            {{ cat }}
+          </button>
+        </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center h-80">
-        <div class="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-      </div>
-
-      <!-- Error State -->
-      <div v-else-if="error" class="bg-red-50 border border-red-100 rounded-3xl p-6 mb-10 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-2xl">⚠️</div>
-          <div>
-            <p class="text-sm font-black text-red-900 uppercase tracking-tight">İşlem Başarısız</p>
-            <p class="text-xs font-bold text-red-600 opacity-80">{{ error }}</p>
-          </div>
-        </div>
-        <button class="px-5 py-2.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all" @click="fetchAuctions">TEKRAR DENE</button>
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div v-for="i in 8" :key="i" class="h-96 bg-white rounded-xl animate-pulse ambient-shadow" />
       </div>
 
       <!-- Content Grid -->
-      <div v-else-if="auctions.length > 0" class="space-y-10">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AuctionCard
-            v-for="auction in auctions"
-            :key="auction.id"
-            :auction="auction"
-            :status-badge-class="getStatusBadgeClass(auction.status)"
-            :status-text="getStatusText(auction.status)"
-            :format-price="formatPrice"
-          />
-        </div>
+      <div v-else-if="auctions.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <NuxtLink 
+          v-for="auction in auctions" 
+          :key="auction.id"
+          :to="`/auctions/${auction.id}`"
+          class="bg-white rounded-xl overflow-hidden ambient-shadow group hover:-translate-y-2 transition-all duration-500 border border-surface-variant/20"
+        >
+          <div class="aspect-video relative overflow-hidden bg-surface-container">
+            <img 
+              :src="auction.Product?.image || '/placeholder.png'" 
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+              alt="Auction product"
+            />
+            <div class="absolute top-3 left-3 bg-error text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-error/20">
+              {{ $t('auctionsHome.live') || 'CANLI' }}
+            </div>
+            <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/60 to-transparent">
+               <div class="flex items-center gap-1.5 text-white">
+                 <span class="material-symbols-outlined text-xs animate-pulse">timer</span>
+                 <span class="text-[10px] font-black tracking-widest tabular-nums uppercase">AKTİF</span>
+               </div>
+            </div>
+          </div>
+          <div class="p-5 space-y-4">
+            <h3 class="font-bold text-md3-primary truncate uppercase italic tracking-tight">{{ auction.title }}</h3>
+            
+            <div class="flex justify-between items-end pt-4 border-t border-slate-50">
+              <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-outline uppercase">{{ $t('auctionsHome.currentBid') || 'Güncel Teklif' }}</span>
+                <p class="text-xl font-black text-md3-primary tabular-nums">{{ formatPrice(auction.currentPrice ?? auction.startingPrice ?? 0) }}</p>
+              </div>
+              <div class="text-right">
+                <span class="text-[8px] font-bold text-outline uppercase block">Toplam</span>
+                <span class="text-xs font-black text-secondary uppercase">{{ (auction._count?.bids || 0) }} {{ $t('auctionsHome.bidCount') || 'Teklif' }}</span>
+              </div>
+            </div>
 
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="flex justify-center items-center gap-2 mt-12 bg-white p-2 rounded-2xl border border-gray-100 w-fit mx-auto shadow-sm">
-          <button :disabled="currentPage <= 1" class="p-3 text-gray-400 hover:text-primary-600 disabled:opacity-30 transition-colors" @click="changePage(currentPage - 1)">
-            <ChevronLeftIcon class="w-5 h-5" />
-          </button>
-          <div class="flex gap-1">
-            <button
-              v-for="page in visiblePages"
-              :key="page"
-              :class="['px-5 py-2.5 text-xs font-black rounded-xl transition-all', page === currentPage ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/20' : 'text-gray-500 hover:bg-gray-50']"
-              @click="changePage(page)"
-            >
-              {{ page }}
+            <button class="w-full py-3 bg-surface-container-high text-md3-primary font-black rounded-lg uppercase tracking-widest text-[10px] group-hover:bg-md3-primary group-hover:text-white transition-all">
+              {{ $t('auctionsHome.placeBid') || 'TEKLİF VER' }}
             </button>
           </div>
-          <button :disabled="currentPage >= totalPages" class="p-3 text-gray-400 hover:text-primary-600 disabled:opacity-30 transition-colors" @click="changePage(currentPage + 1)">
-            <ChevronRightIcon class="w-5 h-5" />
-          </button>
-        </div>
+        </NuxtLink>
       </div>
 
       <!-- Empty State -->
-      <AuctionEmptyState
-        v-else
-        :is-admin="authStore.user?.isAdmin"
-        @clear-filters="clearFilters"
-        @create="showCreateModal = true"
-      />
+      <div v-else class="text-center py-32 bg-white rounded-2xl border-2 border-dashed border-outline-variant/30">
+        <span class="material-symbols-outlined text-5xl text-outline mb-4">gavel</span>
+        <h2 class="text-xl font-black text-md3-primary uppercase mb-2">Aktif Protokol Bulunmuyor</h2>
+        <p class="text-outline text-sm font-medium mb-8">Aradığınız kriterlerde aktif bir açık artırma şu an bulunmamaktadır.</p>
+        <button @click="clearFilters" class="px-8 py-3 bg-md3-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest">TÜMÜNÜ GÖR</button>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="flex justify-center items-center gap-3 mt-20">
+        <button 
+          :disabled="currentPage <= 1"
+          @click="changePage(currentPage - 1)"
+          class="w-12 h-12 rounded-xl bg-white border border-surface-variant flex items-center justify-center text-outline hover:text-md3-primary disabled:opacity-30 transition-all"
+        >
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <button 
+          v-for="page in visiblePages" 
+          :key="page"
+          @click="changePage(page)"
+          class="w-12 h-12 rounded-xl font-black text-xs transition-all"
+          :class="page === currentPage ? 'bg-md3-primary text-white shadow-xl shadow-md3-primary/20' : 'bg-white border border-surface-variant text-outline hover:bg-slate-50'"
+        >
+          {{ page }}
+        </button>
+        <button 
+          :disabled="currentPage >= totalPages"
+          @click="changePage(currentPage + 1)"
+          class="w-12 h-12 rounded-xl bg-white border border-surface-variant flex items-center justify-center text-outline hover:text-md3-primary disabled:opacity-30 transition-all"
+        >
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
     </div>
 
     <!-- Create Modal -->
@@ -102,28 +160,26 @@
 </template>
 
 <script setup>
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useAuctionOverview } from '~/composables/useAuctionOverview'
-
-// Page Logic
-definePageMeta({ layout: 'default', middleware: 'auth' })
-useHead({
-  title: 'Açık Artırma Protokolleri | BazarX',
-  meta: [{ name: 'description', content: 'Geleceğin ticaretine katılın. Gerçek zamanlı açık artırma protokolleri.' }]
-})
 
 const authStore = useAuthStore()
 const {
-  auctions, loading, error, categories, searchQuery, selectedCategory,
-  statusFilter, sortBy, showCreateModal, currentPage, totalPages, visiblePages,
+  auctions, loading, error, searchQuery, selectedCategory,
+  showCreateModal, currentPage, totalPages, visiblePages,
   fetchAuctions, changePage, clearFilters, debounceSearch, formatPrice,
-  getStatusBadgeClass, getStatusText
+  onAuctionCreated
 } = useAuctionOverview()
 
-const onAuctionCreated = () => {
-  showCreateModal.value = false
-  sortBy.value = 'created_desc'
-  currentPage.value = 1
-  fetchAuctions()
-}
+definePageMeta({ layout: 'default' })
+useHead({ title: 'AÇIK ARTIRMALAR // BAZARX' })
 </script>
+
+<style>
+.ambient-shadow {
+  box-shadow: 0 20px 25px -5px rgba(26, 58, 92, 0.05), 0 8px 10px -6px rgba(26, 58, 92, 0.05);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+</style>

@@ -119,11 +119,15 @@ export const useAuctionDetail = () => {
     if (timer) clearInterval(timer)
   })
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(price)
+  }
+
   return {
     auction, bids, loading, bidding, claiming,
     participation, countdown, minNextBid,
     isHighestBidder, isEligibleToClaim,
     handleParticipate, handlePlaceBid, handleClaim,
-    bidAmount
+    bidAmount, formatPrice
   }
 }

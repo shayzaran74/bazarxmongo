@@ -19,7 +19,7 @@ const {
 } = useAdminAuctions()
 
 const showCreateModal = ref(false)
-const editingAuction = ref(null)
+const editingAuction = ref<any>(null)
 
 const handleEdit = (auction: any) => {
   editingAuction.value = auction
@@ -113,7 +113,7 @@ onMounted(() => init())
     </div>
 
     <!-- Modal - Already external, reuse -->
-    <CreateAuctionModal
+    <ModalsCreateAuctionModal
       v-if="showCreateModal"
       :auction="editingAuction"
       :is-edit="!!editingAuction"

@@ -1,6 +1,9 @@
 <template>
   <div
     v-if="show === 'true'"
+    v-motion
+    :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
+    :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
     class="w-full bg-slate-950 py-10 md:py-16 relative overflow-hidden group mb-8 md:mb-12"
   >
     <!-- Organic Animated Backgrounds -->
@@ -18,7 +21,12 @@
 
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col lg:flex-row items-center gap-12 md:gap-20">
-        <div class="lg:w-1/2 text-center lg:text-left">
+        <div
+          v-motion
+          :initial="{ opacity: 0, x: -28, filter: 'blur(10px)' }"
+          :visible-once="{ opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 700, ease: [0.25, 0.46, 0.45, 0.94] } }"
+          class="lg:w-1/2 text-center lg:text-left"
+        >
           <div
             class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 text-xs font-black uppercase tracking-widest mb-6 backdrop-blur-xl"
           >
@@ -52,7 +60,12 @@
           </div>
         </div>
 
-        <div class="lg:w-1/2 grid grid-cols-2 gap-5 relative">
+        <div
+          v-motion
+          :initial="{ opacity: 0, x: 28, filter: 'blur(10px)' }"
+          :visible-once="{ opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 700, delay: 100, ease: [0.25, 0.46, 0.45, 0.94] } }"
+          class="lg:w-1/2 grid grid-cols-2 gap-5 relative"
+        >
           <div
             class="bg-slate-900/50 backdrop-blur-2xl p-5 rounded-[1.5rem] border border-white/5 hover:border-primary-500/30 transition-all hover:-translate-y-4 shadow-2xl group/card"
           >

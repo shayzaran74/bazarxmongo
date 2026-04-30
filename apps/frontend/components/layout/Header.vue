@@ -195,8 +195,8 @@ const showUserDropdown = ref(false)
 
 const ecosystems = [
   { id: 'bazarx', label: 'nav.ecoBazarX', icon: '🛒', path: '/', activeClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' },
-  { id: 'ticaritakas', label: 'nav.ecoTicariTakas', icon: '🏭', path: '/surplus', activeClass: 'bg-gradient-to-r from-primary-600 to-blue-600 text-white' },
-  { id: 'barterborsa', label: 'nav.ecoBarterBorsa', icon: '💼', path: '/barterborsa', activeClass: 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' }
+  { id: 'ticaritakas', label: 'nav.ecoTicariTakas', icon: '🏭', path: '/barterborsa/b2b-dashboard', activeClass: 'bg-gradient-to-r from-primary-600 to-blue-600 text-white' },
+  { id: 'barterborsa', label: 'nav.ecoBarterBorsa', icon: '💼', path: '/barterborsa/yonetim-paneli', activeClass: 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' }
 ]
 
 const logoBgClass = computed(() => {

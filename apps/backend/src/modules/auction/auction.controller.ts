@@ -47,11 +47,14 @@ export class AuctionController {
         orderBy: { endTime: 'asc' }, // en yakın biten önce
         include: {
           listing: {
-            select: {
-              id:    true,
-              title: true,
-              slug:  true,
-            },
+            include: {
+              catalogProduct: {
+                include: { media: true }
+              },
+              vendor: {
+                include: { profile: true }
+              }
+            }
           },
           bids: {
             orderBy: { createdAt: 'desc' },
@@ -78,11 +81,27 @@ export class AuctionController {
     const auction = await this.prisma.auction.findUnique({
       where: { id },
       include: {
-        listing: true,
+        listing: {
+          include: {
+            catalogProduct: {
+              include: { media: true }
+            },
+            vendor: {
+              include: { profile: true }
+            }
+          }
+        },
         bids: {
           orderBy: { createdAt: 'desc' },
-          take: 10,
-          select: { amount: true, createdAt: true },
+          take: 20,
+          include: { 
+            user: { 
+              select: { 
+                email: true, 
+                profile: { select: { firstName: true, lastName: true } } 
+              } 
+            } 
+          }
         },
       },
     });
@@ -93,9 +112,70 @@ export class AuctionController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Teklif ver' })
-  @Post('bid')
-  async placeBid(@CurrentUser() user: any, @Body() dto: PlaceBidDto) {
-    return this.commandBus.execute(new PlaceBidCommand(dto.auctionId, user.id, dto.amount));
+  @Post(':id/bid')
+  async placeBid(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: PlaceBidDto) {
+    return this.commandBus.execute(new PlaceBidCommand(id, user.id, dto.amount));
+  }
+
+  @Public()
+  @Get(':id/bids')
+  async getAuctionBids(@Param('id') id: string) {
+    const bids = await this.prisma.auctionBid.findMany({
+      where: { auctionId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: {
+          select: {
+            email: true,
+            profile: { select: { firstName: true, lastName: true } }
+          }
+        }
+      }
+    });
+    return { success: true, data: bids };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/participation')
+  async getParticipation(@Param('id') id: string, @CurrentUser() user: any) {
+    const p = await this.prisma.auctionParticipation.findUnique({
+      where: { auctionId_userId: { auctionId: id, userId: user.id } }
+    });
+    return { success: true, data: p };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/participate')
+  async participate(@Param('id') id: string, @CurrentUser() user: any) {
+    const auction = await this.prisma.auction.findUnique({ where: { id } });
+    if (!auction) return { success: false, message: 'Açık artırma bulunamadı' };
+
+    const p = await this.prisma.auctionParticipation.upsert({
+      where: { auctionId_userId: { auctionId: id, userId: user.id } },
+      update: { status: 'ACTIVE' },
+      create: {
+        auctionId: id,
+        userId: user.id,
+        status: 'ACTIVE',
+        blockedAmount: auction.participationDeposit || 0
+      }
+    });
+    return { success: true, data: p };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/claim')
+  async claim(@Param('id') id: string, @CurrentUser() user: any) {
+    const auction = await this.prisma.auction.findUnique({ where: { id } });
+    if (!auction || auction.winnerId !== user.id) {
+      return { success: false, message: 'Bu açık artırmayı kazanan siz değilsiniz.' };
+    }
+    // İleride burada ödeme/teslimat mantığı eklenebilir
+    return { success: true, message: 'Kazanım onaylandı' };
   }
 
   @ApiBearerAuth()

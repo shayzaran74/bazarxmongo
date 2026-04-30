@@ -1,6 +1,9 @@
 <template>
   <div
     v-if="show === 'true'"
+    v-motion
+    :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
+    :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
     class="w-full bg-gradient-to-br from-indigo-700 via-indigo-900 to-slate-900 py-12 md:py-20 relative overflow-hidden mb-10 md:mb-16"
   >
     <div class="absolute inset-0 opacity-20 pointer-events-none">

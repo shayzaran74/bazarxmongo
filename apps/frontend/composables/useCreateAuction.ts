@@ -16,7 +16,8 @@ export interface AuctionForm {
 export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emit: any) => {
   const authStore = useAuthStore()
   const config = useRuntimeConfig()
-  const { $toast: toast } = useNuxtApp()
+  const { $toast: toast } = useNuxtApp() as any
+  const { $api } = useApi()
 
   const form = ref<AuctionForm>({
     productId: '',
@@ -50,9 +51,7 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
 
   const fetchProducts = async () => {
     try {
-      const response = await $fetch<any>('/api/products', {
-        baseURL: config.public.apiBase,
-        headers: { 'Authorization': `Bearer ${authStore.token}` },
+      const response = await $api<any>('/api/admin/products', {
         query: { limit: 100 }
       })
       products.value = response.data || []
@@ -94,19 +93,15 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
       }
 
       if (isEditing.value) {
-        const response = await $fetch<any>(`/api/auctions/${props.auction.id}`, {
+        const response = await $api<any>(`/api/admin/auctions/${props.auction.id}`, {
           method: 'PUT',
-          baseURL: config.public.apiBase,
-          headers: { 'Authorization': `Bearer ${authStore.token}` },
           body: payload
         })
         toast.success('Açık artırma güncellendi!')
         emit('updated', response.data)
       } else {
-        const response = await $fetch<any>('/api/auctions', {
+        const response = await $api<any>('/api/admin/auctions', {
           method: 'POST',
-          baseURL: config.public.apiBase,
-          headers: { 'Authorization': `Bearer ${authStore.token}` },
           body: payload
         })
         toast.success('Açık artırma oluşturuldu!')

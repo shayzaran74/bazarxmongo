@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BazarX Core - Güvenli Ödeme</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#191c1d",
+                        "secondary-fixed": "#9cf6b4",
+                        "background": "#f8f9fa",
+                        "outline": "#73777f",
+                        "tertiary-container": "#4c3500",
+                        "secondary": "#046d39",
+                        "on-tertiary-fixed": "#271900",
+                        "surface-dim": "#d9dadb",
+                        "primary-fixed-dim": "#abc9f2",
+                        "on-tertiary-container": "#ce9925",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#2a486b",
+                        "on-primary-fixed": "#001c37",
+                        "outline-variant": "#c3c6cf",
+                        "tertiary-fixed-dim": "#f7bd48",
+                        "surface-container-low": "#f3f4f5",
+                        "secondary-fixed-dim": "#81d999",
+                        "primary": "#002444",
+                        "on-background": "#191c1d",
+                        "surface-tint": "#436084",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#99f3b1",
+                        "primary-fixed": "#d2e4ff",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface": "#f8f9fa",
+                        "on-primary-container": "#87a4cc",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#edeeef",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-secondary-container": "#0e713d",
+                        "surface-container-high": "#e7e8e9",
+                        "on-secondary-fixed": "#00210d",
+                        "surface-bright": "#f8f9fa",
+                        "primary-container": "#1a3a5c",
+                        "on-tertiary-fixed-variant": "#5d4200",
+                        "surface-variant": "#e1e3e4",
+                        "inverse-primary": "#abc9f2",
+                        "on-surface-variant": "#43474e",
+                        "tertiary": "#302000",
+                        "tertiary-fixed": "#ffdea6",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005229",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "base-unit": "4px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "title-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .card-shadow {
+            box-shadow: 0 10px 30px -10px rgba(26, 58, 92, 0.08);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-50">
+<div class="flex justify-between items-center px-6 py-3 w-full max-w-screen-2xl mx-auto font-inter antialiased">
+<div class="text-xl font-bold tracking-tight text-blue-900 dark:text-white cursor-pointer active:opacity-80">
+                BazarX Core
+            </div>
+<div class="hidden md:flex flex-1 justify-center max-w-xl mx-8">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-50 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary-container" placeholder="Ürün veya kategori ara..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-slate-500">
+<span class="material-symbols-outlined cursor-pointer hover:bg-slate-50 p-2 rounded-full transition-colors">shopping_cart</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-slate-50 p-2 rounded-full transition-colors">notifications</span>
+</div>
+<div class="h-8 w-8 rounded-full bg-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a modern executive user against a soft, neutral grey background. The lighting is high-end and cinematic, highlighting sophisticated details in the facial features and dark navy corporate attire. This profile avatar represents a premium merchant identity within a clean, modern digital commerce ecosystem." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASmiqZAbkFt0ztTellRChMRbqy4WRC9gi7iFcp8grE94xKQY3DJAxQe8UtYyAeFdsMR2IWoQ499ltIzfQX2b32u5u0mdt_D9LYWa0zO7QWgNfmQjYCUAL9hxFu2CVeVGtR8h4aYyYL_JERXHX0Nw2SmgSHLWZHQ_FEI6ZQMJrPgd4IBI0mR9j_wf-Xv6RTr86lGL7t_YKNoeHe09i-LBlRW4_v3Xggl38XfqU2ycn_QdBcVoyT8Rq6sa2BwKLuoTgpfFAGAuQoi_oN"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="max-w-screen-2xl mx-auto px-6 py-12">
+<div class="flex gap-gutter">
+<!-- Left Ad Sidebar -->
+<aside class="hidden xl:block w-48 shrink-0">
+<div class="sticky top-24 space-y-6">
+<div class="rounded-xl overflow-hidden card-shadow">
+<img class="w-full h-80 object-cover" data-alt="A luxurious abstract banner featuring deep navy blue and metallic gold waves flowing across a clean, minimalist canvas. The composition is elegant and high-end, evoking a sense of institutional financial prosperity and corporate stability. Soft ambient lighting creates a professional atmosphere suited for premium merchant services." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCONT9RERY6SBV908TJ1cgcsuGpJl1lHft2ZYtl9oykgjHCt7fUzm5GSHzDBGpGcyd-68s1RiH2fzG89ObqBYjB6B7BoAucYPI7dGBQksVTYLPn4TNZJxEuN5rFmBL60-ItahBbJACMJGsoDrKEyOid1w0IVTt-4Dq3o3ibeLqfzlVe3JCkGxalKPHT4naV2lTooEU-vuxsA4-ob8TwhpF66NoVj-Kq89o2JbndmifotQY7QpXVGhc2HMv-wr5q3skTTvdxR0vE62g2"/>
+<div class="p-4 bg-white">
+<p class="text-xs font-bold text-primary mb-1 uppercase tracking-wider">Premium Plus</p>
+<p class="text-xs text-slate-500">%0 Komisyon Avantajı</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center Content -->
+<div class="flex-1 space-y-8">
+<!-- Progress Stepper -->
+<div class="flex items-center justify-between max-w-2xl mx-auto mb-12">
+<div class="flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full border-2 border-primary-container flex items-center justify-center text-primary-container font-bold">1</div>
+<span class="text-xs font-semibold text-slate-400">Sepet</span>
+</div>
+<div class="flex-1 h-px bg-slate-200 mx-4"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-primary-container text-white flex items-center justify-center shadow-lg ring-4 ring-primary/10">
+<span class="material-symbols-outlined" data-weight="fill">local_shipping</span>
+</div>
+<span class="text-xs font-bold text-primary">Teslimat &amp; Ödeme</span>
+</div>
+<div class="flex-1 h-px bg-slate-200 mx-4"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full border-2 border-slate-200 flex items-center justify-center text-slate-300 font-bold">3</div>
+<span class="text-xs font-semibold text-slate-400">Onay</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Checkout Details (Left/Center) -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Section 1: Delivery Address -->
+<section class="bg-white rounded-xl card-shadow border border-slate-100 overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+<h3 class="text-title-sm font-headline-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">location_on</span>
+                                    Teslimat Adresi
+                                </h3>
+<button class="text-sm font-bold text-secondary flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                                    Yeni Ekle
+                                </button>
+</div>
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="relative p-4 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer">
+<div class="absolute top-4 right-4 text-primary">
+<span class="material-symbols-outlined" data-weight="fill">check_circle</span>
+</div>
+<p class="font-bold text-primary mb-1">Evim</p>
+<p class="text-xs text-slate-600 leading-relaxed">Levent Mah. Meltem Sok. No:12 D:4<br/>Beşiktaş, İstanbul</p>
+<p class="text-xs font-medium text-slate-400 mt-2">532 *** ** 89</p>
+</div>
+<div class="p-4 rounded-xl border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors">
+<p class="font-bold text-slate-700 mb-1">Ofis</p>
+<p class="text-xs text-slate-500 leading-relaxed">Maslak Plazalar, A Blok Kat:18<br/>Sarıyer, İstanbul</p>
+<p class="text-xs font-medium text-slate-400 mt-2">212 *** ** 00</p>
+</div>
+</div>
+</section>
+<!-- Section 2: Payment Method -->
+<section class="bg-white rounded-xl card-shadow border border-slate-100 overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-100">
+<h3 class="text-title-sm font-headline-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">account_balance_wallet</span>
+                                    Ödeme Yöntemi
+                                </h3>
+</div>
+<div class="p-4 grid grid-cols-3 gap-3">
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer text-center">
+<span class="material-symbols-outlined text-primary mb-2">credit_card</span>
+<span class="text-xs font-bold text-primary">Kredi Kartı</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer text-center transition-colors">
+<span class="material-symbols-outlined text-slate-400 mb-2">swap_horiz</span>
+<span class="text-xs font-bold text-slate-600">Barter / Takas</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer text-center transition-colors">
+<span class="material-symbols-outlined text-slate-400 mb-2">stars</span>
+<span class="text-xs font-bold text-slate-600">BazarX XP</span>
+</div>
+</div>
+<div class="p-6 pt-2">
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Kart Üzerindeki İsim</label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium" placeholder="AD SOYAD" type="text"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Kart Numarası</label>
+<div class="relative">
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium" placeholder="0000 0000 0000 0000" type="text"/>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+<img class="h-5 opacity-80" data-alt="A clean, minimalist graphic representation of the Visa and Mastercard logos rendered in high resolution. The visual style is crisp and modern, featuring the classic red and orange interlocking circles and the stylized blue typography. The lighting is flat and professional, optimized for UI branding elements in a financial checkout environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOezZwFWNEwCgmmwiDIJoE1VG7VALZNEQ1y1q1lwRfFB3cn7PNVLKfbrNTz88388tvpdndEOdcAnZJicco_4ZoZh2uvpKd5v5vKMVzlFykv_uMQbVt-XDODtqxXQoLjU2XCcA8BGnTO-42mZkKzW06u4XvL3_SaGE-xg-194rxzA98SxPQ4YQ55fOVpip1aCnRzYgKOcVOlvo1enJUoynDBKHaim8LjSo3HE386FH9jdk0NE7jFC2fA_GR-PqyEfzC8xF9Wv1C3a3v"/>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Son Kullanma</label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium" placeholder="AA / YY" type="text"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">CVV</label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium" placeholder="***" type="text"/>
+</div>
+</div>
+</div>
+<div class="mt-6 flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-600">verified_user</span>
+<span class="text-xs font-medium text-slate-600">SSL 256-bit Güvenli Ödeme ve PCI-DSS Uyumluluğu</span>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-slate-300 text-lg">shield_lock</span>
+<span class="material-symbols-outlined text-slate-300 text-lg">enhanced_encryption</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: XP Usage -->
+<section class="bg-white rounded-xl card-shadow border border-slate-100 p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center text-amber-600">
+<span class="material-symbols-outlined" data-weight="fill">stars</span>
+</div>
+<div>
+<h3 class="font-bold text-primary">BazarX XP Kullan</h3>
+<p class="text-xs text-slate-500">Mevcut Bakiyeniz: 4,250 XP (₺425.00)</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</div>
+</div>
+<div class="space-y-4">
+<input class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-secondary" type="range"/>
+<div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+<span>0 XP</span>
+<span class="text-secondary">Limit: ₺120.00 (Order %20 Max)</span>
+</div>
+<p class="text-sm text-slate-600 italic">"XP kullanımı toplam sipariş tutarının %20'si ile sınırlandırılmıştır."</p>
+</div>
+</section>
+</div>
+<!-- Right Sidebar: Order Summary -->
+<div class="lg:col-span-1">
+<div class="sticky top-24 space-y-6">
+<section class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden">
+<div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+<h3 class="font-bold text-primary flex items-center gap-2">
+                                        Sipariş Özeti
+                                        <span class="px-2 py-0.5 rounded-full bg-primary-container text-[10px] text-white">3 Ürün</span>
+</h3>
+</div>
+<div class="p-6 space-y-4">
+<div class="flex gap-3 pb-4 border-b border-slate-50">
+<img class="w-12 h-12 rounded-lg object-cover" data-alt="A detailed macro shot of a premium, Swiss-made luxury wristwatch resting on a dark velvet display. The watch features a polished steel finish and a complex mechanical face, illuminated by focused, warm gallery lighting that creates sophisticated glints. The aesthetic is high-end corporate commerce, symbolizing timeless value and institutional trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWKfn0vGlAXcu7RY3EiUJH2X49jLgVSglLhMd_EPmIAwEIXN59x1GhhuWdH5U4vZv50mwuUKsKWmcy2fgmdKJyI4rTYhGQt-4lhuIRA6JWkmHckinO_2MzeVTX_6x851X9BvQer3O-WOBNQhHBFSlJv-p-RK9Z5knpHhyY0_6zVD59ta42xndjLUkA61fd9prMCC2HEg_l--BTj7z7n1U1LSbJF3ZWl6y9-Imas0HUFpGRG3cCmSx4zXX6k19dnF7qQHTItaIgvY6q"/>
+<div class="flex-1">
+<p class="text-xs font-bold text-slate-800 line-clamp-1">Elite Merchant Chrono Watch</p>
+<p class="text-xs text-slate-500">Adet: 1</p>
+<p class="text-xs font-bold text-primary mt-1">₺850.00</p>
+</div>
+</div>
+<div class="flex gap-3">
+<img class="w-12 h-12 rounded-lg object-cover" data-alt="A studio photograph of a sleek, white smart device with a minimalist industrial design, placed on a light oak surface. The lighting is soft and airy, with subtle shadows that emphasize its modern curves. The palette consists of clean whites, light woods, and soft greys, maintaining a premium light-mode UI aesthetic for a professional marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxGaVpFAFHHJWYkf4TfCyJUz_zQOfEWdUuR59NjC6gfBcAt8zL2yfIouWc0srpnYDY5paGGgs2GkHul75xnt5-mZ8IAK7rHDwoNu8vX5_gPbI73u9XkOvQf4y4B8sNCU69vU7f16t3a6sSg_ImAEdSPZi_60WoJXhGJ23E1wLhJzWYM4_8pxLg0sBtiVy9PE0OZS75nNL5ZROSHWAruYiQ_MB3erKGK7yfkiukD6dNXmkfQrPOYcn9Qi0uv66LZ6BIrVjr_ShLB9E6"/>
+<div class="flex-1">
+<p class="text-xs font-bold text-slate-800 line-clamp-1">Pro Hub Connectivity Kit</p>
+<p class="text-xs text-slate-500">Adet: 2</p>
+<p class="text-xs font-bold text-primary mt-1">₺150.00</p>
+</div>
+</div>
+<div class="pt-4 space-y-3">
+<div class="flex justify-between text-sm text-slate-600">
+<span>Ara Toplam</span>
+<span class="font-medium">₺1,000.00</span>
+</div>
+<div class="flex justify-between text-sm text-slate-600">
+<span>Kargo</span>
+<span class="text-secondary font-bold">ÜCRETSİZ</span>
+</div>
+<div class="flex justify-between text-sm text-slate-600">
+<span>KDV (%20)</span>
+<span class="font-medium">₺200.00</span>
+</div>
+<div class="flex justify-between text-sm text-secondary">
+<span>XP İndirimi</span>
+<span class="font-bold">-₺120.00</span>
+</div>
+<div class="pt-4 border-t border-slate-200">
+<div class="flex justify-between items-end">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Toplam Tutar</span>
+<span class="text-2xl font-black text-primary leading-none">₺1,080.00</span>
+</div>
+</div>
+</div>
+<button class="w-full py-4 bg-primary text-white rounded-xl font-bold text-base mt-6 shadow-xl shadow-primary/20 hover:bg-primary-container active:scale-[0.98] transition-all">
+                                        Ödemeyi Tamamla
+                                    </button>
+<p class="text-[10px] text-center text-slate-400 mt-4 leading-relaxed">
+                                        "Ödemeyi Tamamla" butonuna basarak Mesafeli Satış Sözleşmesi'ni ve Ön Bilgilendirme Formu'nu okuduğunuzu ve onayladığınızı kabul etmiş olursunuz.
+                                    </p>
+</div>
+</section>
+<div class="flex justify-center items-center gap-6 opacity-40">
+<img class="h-6 object-contain grayscale" data-alt="A set of high-security trust emblems including Mastercard ID Check and Visa Secure icons, designed with sharp, professional vector-style clarity. The badges are rendered in their official corporate colors on a pristine white background. The visual mood is one of absolute security, stability, and global financial compliance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWqPDxinDs6OnLfWfOx5tUcnKUG9ZvhlGXwgHY6iE8cPwvNj_GmIl6b76cCESo6Ysbi-5rnHYwYNI1vZMBtXk3ijtPo5cOAehR4He7RNjOQ0hLNnHDFQHSaRnAIowEaXCka1jHEr1j49k7yKmkyIUE8bZ0DKwC3rg7c2oRL6LcAVNW5HQJhIPMJSduzOlLKho_Jka4-euP45toHZDArXSDShV9i4R9kXey-QhN2aqv-BkAjBiQICATqFlTLXRvBacyb0i26jlcGlyM"/>
+<div class="h-8 w-px bg-slate-300"></div>
+<span class="material-symbols-outlined text-3xl">verified</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Ad Sidebar -->
+<aside class="hidden xl:block w-48 shrink-0">
+<div class="sticky top-24 space-y-6">
+<div class="rounded-xl overflow-hidden card-shadow bg-gradient-to-br from-amber-500 to-amber-700 p-5 text-white">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-white" data-weight="fill">workspace_premium</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">XP Bonus</span>
+</div>
+<p class="text-sm font-bold mb-2">Bu alışverişten 1,080 XP kazanabilirsiniz!</p>
+<div class="w-full bg-white/20 h-1.5 rounded-full mt-4">
+<div class="bg-white w-2/3 h-full rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+</div>
+<p class="text-[10px] mt-2 opacity-80">Gold Üyelik Yakın!</p>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 w-full py-12 mt-12">
+<div class="max-w-screen-2xl mx-auto px-8">
+<div class="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
+<div class="max-w-xs">
+<div class="font-bold text-blue-900 dark:text-white text-xl mb-4">BazarX Core</div>
+<p class="text-slate-500 text-xs leading-relaxed">Güvenli kurumsal ticaretin merkezi. O2O ekosisteminde lider finansal altyapı ve takas çözümleri.</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-12">
+<div class="space-y-4">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest">Kurumsal</h4>
+<ul class="space-y-2 text-xs text-slate-500">
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Hakkımızda</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Yatırımcı İlişkileri</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Kariyer</li>
+</ul>
+</div>
+<div class="space-y-4">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest">Destek</h4>
+<ul class="space-y-2 text-xs text-slate-500">
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Merchant Support</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Yardım Merkezi</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">İletişim</li>
+</ul>
+</div>
+<div class="space-y-4">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest">Yasal</h4>
+<ul class="space-y-2 text-xs text-slate-500">
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Terms of Trade</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">Privacy Policy</li>
+<li class="hover:text-blue-900 cursor-pointer transition-colors">KVKK Aydınlatma</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-100 gap-4">
+<div class="text-xs font-inter text-slate-500">© 2024 BazarX Core. Secure Institutional Commerce.</div>
+<div class="flex gap-6">
+<span class="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer transition-colors">social_leaderboard</span>
+<span class="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer transition-colors">terminal</span>
+<span class="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer transition-colors">account_balance</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

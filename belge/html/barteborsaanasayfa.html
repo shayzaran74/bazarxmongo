@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#00210d",
+                    "outline-variant": "#c3c6cf",
+                    "on-surface": "#191c1d",
+                    "primary": "#002444",
+                    "on-primary-container": "#87a4cc",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#e1e3e4",
+                    "outline": "#73777f",
+                    "on-tertiary-container": "#ce9925",
+                    "surface-container": "#edeeef",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#99f3b1",
+                    "surface-tint": "#436084",
+                    "secondary-fixed-dim": "#81d999",
+                    "inverse-on-surface": "#f0f1f2",
+                    "tertiary-fixed": "#ffdea6",
+                    "tertiary-container": "#4c3500",
+                    "on-primary": "#ffffff",
+                    "inverse-primary": "#abc9f2",
+                    "surface-dim": "#d9dadb",
+                    "on-error-container": "#93000a",
+                    "background": "#f8f9fa",
+                    "surface-container-high": "#e7e8e9",
+                    "on-tertiary-fixed": "#271900",
+                    "on-primary-fixed-variant": "#2a486b",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "surface-container-low": "#f3f4f5",
+                    "on-surface-variant": "#43474e",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed": "#9cf6b4",
+                    "on-primary-fixed": "#001c37",
+                    "on-background": "#191c1d",
+                    "secondary": "#046d39",
+                    "on-tertiary-fixed-variant": "#5d4200",
+                    "on-error": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#1a3a5c",
+                    "on-secondary-container": "#0e713d",
+                    "inverse-surface": "#2e3132",
+                    "on-secondary-fixed-variant": "#005229",
+                    "primary-fixed": "#d2e4ff",
+                    "tertiary": "#302000",
+                    "surface-bright": "#f8f9fa",
+                    "primary-fixed-dim": "#abc9f2",
+                    "tertiary-fixed-dim": "#f7bd48",
+                    "surface": "#f8f9fa"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "container-max": "1280px",
+                    "base-unit": "4px",
+                    "xl": "40px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "title-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(233, 236, 239, 1);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar Component -->
+<header class="bg-white dark:bg-slate-900 shadow-sm docked full-width top-0 z-40 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center px-6 py-3 w-full fixed">
+<div class="flex items-center gap-6">
+<span class="text-xl font-bold tracking-tighter text-[#1A3A5C] dark:text-white">BarterBorsa</span>
+<div class="hidden md:flex items-center gap-4">
+<span class="text-[#1A3A5C] dark:text-blue-400 font-semibold font-sans antialiased text-sm cursor-pointer active:opacity-80">Dashboard</span>
+<span class="text-slate-500 dark:text-slate-400 font-sans antialiased text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors px-2 py-1 rounded">Havuz</span>
+<span class="text-slate-500 dark:text-slate-400 font-sans antialiased text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors px-2 py-1 rounded">Analiz</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-outline text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Bayi veya stok ara..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 cursor-pointer p-1.5 hover:bg-slate-50 rounded-full" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer p-1.5 hover:bg-slate-50 rounded-full" data-icon="settings">settings</span>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer p-1.5 hover:bg-slate-50 rounded-full" data-icon="help">help</span>
+</div>
+<div class="h-8 w-px bg-slate-200 mx-2"></div>
+<span class="text-sm font-medium text-primary cursor-pointer hover:underline">Support</span>
+<img alt="User Avatar" class="h-8 w-8 rounded-full border border-slate-200" data-alt="A professional headshot of a corporate executive in a crisp white shirt, captured with soft, natural side-lighting in a modern office setting. The aesthetic is clean and high-end, utilizing a shallow depth of field to keep the focus on the subject's face while blurring the sophisticated, minimalist architecture behind them." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSqFTY5Juoh_j-Ic4S8AbdruwB_uPspSk4qL3NnPtqAjRn8ka2-lu8A9a8abIsO-N9iO6kfmoT0cCb15CUkOiyyBfdh2KQeylg_jBh0Ck0UcvMJz7cRtVm7Z_4sehGWZP6OAzOu2dYnaq5UnCQ5oWI4gNd6PRBs3Mabjc0G5bYaMn5EQLmmbkFqDUVhjXfhLRnvVm1ScWwj1bUpLwwX0H-AkSFbZm5YtOmhQ_nHP-7gTxG5FAHOu4eNAPalVz2fEbYEjy-_jby4TJg"/>
+</div>
+</header>
+<!-- SideNavBar Component -->
+<aside class="bg-white dark:bg-slate-900 fixed left-0 top-0 h-full w-64 border-r border-slate-200 dark:border-slate-800 shadow-none hidden lg:block z-30">
+<div class="flex flex-col h-full pt-20 px-4">
+<div class="mb-8 px-4">
+<h2 class="text-lg font-black text-[#1A3A5C] dark:text-white mb-2">BarterBorsa</h2>
+<p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Kurumsal Ekosistem</p>
+</div>
+<nav class="space-y-1">
+<a class="bg-slate-50 dark:bg-slate-800/50 text-[#1A3A5C] dark:text-blue-400 border-r-4 border-[#1A3A5C] dark:border-blue-500 flex items-center gap-3 px-4 py-3 rounded-lg font-sans font-medium text-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                    Dashboard
+                </a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#1A3A5C] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 px-4 py-3 rounded-lg font-sans font-medium text-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="waves">waves</span>
+                    Kör Havuz
+                </a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#1A3A5C] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 px-4 py-3 rounded-lg font-sans font-medium text-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="pie_chart">pie_chart</span>
+                    Akıllı Kota
+                </a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#1A3A5C] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 px-4 py-3 rounded-lg font-sans font-medium text-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group_work">group_work</span>
+                    Bayi Yönetimi
+                </a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#1A3A5C] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 px-4 py-3 rounded-lg font-sans font-medium text-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                    Raporlama
+                </a>
+</nav>
+<div class="mt-8 px-4">
+<button class="w-full bg-primary text-white py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Yeni İşlem Başlat
+                </button>
+</div>
+<div class="mt-auto pb-8 space-y-1">
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#1A3A5C] flex items-center gap-3 px-4 py-2 font-sans font-medium text-sm transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                    Hesap Ayarları
+                </a>
+<a class="text-error dark:text-red-400 hover:bg-red-50 flex items-center gap-3 px-4 py-2 font-sans font-medium text-sm transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                    Çıkış Yap
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="lg:ml-64 pt-20 pb-12 px-6 flex gap-6">
+<!-- Sidebar Left Ad Space (Simulated) -->
+<div class="hidden xl:block w-48 shrink-0 space-y-6">
+<div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm h-64 flex flex-col justify-center items-center text-center">
+<div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="campaign">campaign</span>
+</div>
+<p class="text-xs font-bold text-primary mb-1">PRO ÜYELİK</p>
+<p class="text-[10px] text-slate-500 leading-tight">Yıllık kota sınırı olmadan işlem yapın.</p>
+<button class="mt-4 text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold">İncele</button>
+</div>
+<div class="bg-surface-container-high rounded-xl p-4 border border-slate-200 h-96 relative overflow-hidden">
+<img alt="Premium Promo" class="absolute inset-0 object-cover opacity-20" data-alt="A macro photograph of high-end business stationary and a sleek silver laptop on a marble desk. The lighting is bright and airy, emphasizing a luxurious corporate environment. The composition uses cool tones of gray and white with deep navy accents, reflecting a professional SaaS design language." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaPGfH8Xs0x1_1vQhR_0evq4XU4I33WAiCeTP3sK2cnNg42RIYuhDKi_KSgLwoUyjiyMNTP4ArPnjWNELkdmQeEwRnyVGm6dBXGOaOph--7M7r91PTtR2kED0Qt-mD7J6sfVuIXz0qKfOIc1Es6_ADUpv_0_JVFJu8CeCZoWTDcdbbkUUTn5OnwzBLJmtG0SnSdqO35tOM4-dYdMWekWuexw2HzS5v5xyYt-vZ4jgnV6TuQJAq5VX6NRZFMbjCgG9TUurwPBViTR0H"/>
+<div class="relative z-10">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded text-[10px] font-bold">SPONSORLU</span>
+<h3 class="text-primary font-bold text-sm mt-2">Global Lojistik Çözümleri</h3>
+<p class="text-[11px] text-slate-600 mt-1">Bayiler arası transferde %20 indirim.</p>
+</div>
+</div>
+</div>
+<!-- Center Canvas -->
+<div class="flex-grow max-w-container-max space-y-6">
+<!-- Hero Header Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-headline-md text-headline-md text-primary">Kurumsal Marka Paneli</h1>
+<p class="font-body-md text-body-md text-slate-500 mt-1">Master Plan v4.3 • Ekosistem Genel Görünümü</p>
+</div>
+<div class="flex gap-3">
+<div class="bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm flex items-center gap-3">
+<div class="text-right border-r border-slate-100 pr-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Grup İçi Oran</p>
+<p class="text-xl font-black text-secondary">%6.00</p>
+</div>
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid - Upper Section -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Blind Pool (Kör Havuz) Visual -->
+<div class="col-span-12 lg:col-span-8 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden min-h-[400px]">
+<div class="flex justify-between items-start mb-8 relative z-10">
+<div>
+<h3 class="font-title-sm text-title-sm text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="waves">waves</span>
+                                Kör Havuz (Blind Pool)
+                            </h3>
+<p class="text-sm text-slate-500">Anonimleştirilmiş toplam stok verisi</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-slate-100 rounded-full text-[11px] font-bold text-slate-600">CANLI</span>
+<span class="px-3 py-1 bg-primary text-white rounded-full text-[11px] font-bold">TÜM TÜRKİYE</span>
+</div>
+</div>
+<!-- Abstract Data Viz Placeholder -->
+<div class="flex items-end justify-between h-48 gap-3 mt-12">
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/20 rounded-t-lg" style="height: 65%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-primary text-white text-[10px] px-2 py-1 rounded">Bölge A: 12.4k</div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/20 rounded-t-lg" style="height: 42%;"></div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/40 rounded-t-lg" style="height: 89%;"></div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/20 rounded-t-lg" style="height: 30%;"></div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/20 rounded-t-lg" style="height: 55%;"></div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-primary-container/10">
+<div class="absolute bottom-0 left-0 w-full bg-primary/60 rounded-t-lg" style="height: 75%;"></div>
+</div>
+</div>
+<div class="mt-4 flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+<span>Segment A</span>
+<span>Segment B</span>
+<span>Segment C</span>
+<span>Segment D</span>
+<span>Segment E</span>
+<span>Segment F</span>
+</div>
+<div class="mt-8 grid grid-cols-3 gap-4 border-t border-slate-100 pt-6">
+<div>
+<p class="text-[10px] font-bold text-slate-400">TOPLAM STOK</p>
+<p class="text-2xl font-black text-primary">₺412.5M</p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400">ERİTME HIZI</p>
+<p class="text-2xl font-black text-secondary">+14.2%</p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400">AKTİF BAYİ</p>
+<p class="text-2xl font-black text-primary">124</p>
+</div>
+</div>
+</div>
+<!-- Smart Cap (Akıllı Kota) Control -->
+<div class="col-span-12 lg:col-span-4 bg-[#1A3A5C] rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between border-t-4 border-tertiary-fixed-dim">
+<div>
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-title-sm text-title-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" data-icon="pie_chart">pie_chart</span>
+                                Smart Cap
+                            </h3>
+<span class="material-symbols-outlined text-tertiary-fixed-dim" data-icon="info">info</span>
+</div>
+<p class="text-blue-200 text-sm mb-8 leading-relaxed">
+                            Bayi bazlı <span class="text-tertiary-fixed-dim font-bold">%25 işlem sınırı</span> aktif. Kota aşımında sistem otomatik blokaj uygular.
+                        </p>
+<div class="space-y-6">
+<div class="relative pt-1">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold uppercase">Global Kota Doluluğu</span>
+<span class="text-xs font-semibold">18.4%</span>
+</div>
+<div class="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-primary/30">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-tertiary-fixed-dim" style="width:18.4%"></div>
+</div>
+</div>
+<div class="bg-primary-container p-4 rounded-xl border border-white/10">
+<p class="text-[10px] font-bold text-blue-300 uppercase mb-2">KRİTİK UYARI</p>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+<p class="text-xs leading-tight">3 bayi %20 limitine yaklaştı. Erken uyarılar iletildi.</p>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 border border-white/30 hover:bg-white/10 py-3 rounded-xl font-bold text-sm transition-all">
+                        Parametreleri Düzenle
+                    </button>
+</div>
+</div>
+<!-- TrustScore & Performance Section -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Bayi TrustScore Monitoring -->
+<div class="col-span-12 lg:col-span-12 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+<h3 class="font-title-sm text-title-sm text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="verified">verified</span>
+                            Bayi TrustScore İzleme
+                        </h3>
+<div class="flex gap-2">
+<button class="text-xs font-bold text-primary flex items-center gap-1">Filtrele <span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span></button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
+<th class="px-6 py-4">Bayi Kimliği</th>
+<th class="px-6 py-4">TrustScore</th>
+<th class="px-6 py-4">İşlem Hacmi</th>
+<th class="px-6 py-4">Kota Kullanımı</th>
+<th class="px-6 py-4">Performans</th>
+<th class="px-6 py-4">Eylem</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50">
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-primary">ID:01</div>
+<span class="text-sm font-semibold text-slate-700">Güney Marmara Ana Bayi</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-primary">94.2</span>
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600">₺2.4M</td>
+<td class="px-6 py-4">
+<div class="w-24 h-1.5 bg-slate-100 rounded-full">
+<div class="w-[65%] h-full bg-primary rounded-full"></div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase">Mükemmel</span>
+</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-primary">ID:02</div>
+<span class="text-sm font-semibold text-slate-700">İç Anadolu Lojistik</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-primary">82.1</span>
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600">₺1.8M</td>
+<td class="px-6 py-4">
+<div class="w-24 h-1.5 bg-slate-100 rounded-full">
+<div class="w-[42%] h-full bg-primary rounded-full"></div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded text-[10px] font-bold uppercase">Kararlı</span>
+</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-primary">ID:03</div>
+<span class="text-sm font-semibold text-slate-700">Ege Bölge Dağıtım</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-primary">68.5</span>
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="star">star</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600">₺940k</td>
+<td class="px-6 py-4">
+<div class="w-24 h-1.5 bg-slate-100 rounded-full">
+<div class="w-[88%] h-full bg-error rounded-full"></div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-error-container text-on-error-container px-2 py-0.5 rounded text-[10px] font-bold uppercase">Riskli</span>
+</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Ad Space / Quick Actions (Simulated) -->
+<div class="hidden xl:block w-72 shrink-0 space-y-6">
+<div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+<h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Hızlı İşlemler</h4>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-all border border-transparent hover:border-slate-200">
+<span class="material-symbols-outlined text-primary" data-icon="swap_horiz">swap_horiz</span>
+<span class="text-sm font-bold text-primary">Stok Transferi Başlat</span>
+</div>
+<div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-all border border-transparent hover:border-slate-200">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<span class="text-sm font-bold text-primary">Mutabakat Raporu Al</span>
+</div>
+<div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-all border border-transparent hover:border-slate-200">
+<span class="material-symbols-outlined text-primary" data-icon="person_add">person_add</span>
+<span class="text-sm font-bold text-primary">Yeni Bayi Onayla</span>
+</div>
+</div>
+</div>
+<!-- Ad Block 2 -->
+<div class="bg-gradient-to-br from-primary to-[#2a486b] rounded-xl p-5 text-white relative overflow-hidden">
+<img alt="Data Analytics" class="absolute inset-0 object-cover opacity-10" data-alt="Close-up shot of a high-tech data visualization interface with glowing blue lines and graphs on a dark, reflective surface. The image conveys advanced technology, security, and financial depth, perfectly matching the BarterBorsa corporate SaaS aesthetic and the Master Plan v4.3 vision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtwol13hlIqzkrP-vmfrubQV-LP9dve5rtWNFGtWRWTWFHvZUi2GjhoSvwG-cvfivKK7vlVrRwlxHel9yTnAZrVmkQPZgxB73iAx3PYuLF_gsiCsvoj4LlFlayW8h5muNk4mhd6h7XEerH9FRqPO0Wq0EziyEFNIs2u5lxYrjZZTsrgm7W_qH1Rh8tX-uSpMAiTlErw-Q9AU_IUGtwXZbORysK-FJdCIUApZseDfM-Xu2B0TnEKUyFOdBW0LdgoDHzbfJcGkmj98qH"/>
+<div class="relative z-10">
+<p class="text-[10px] font-bold text-blue-300 uppercase">Yapay Zeka Destekli</p>
+<h4 class="text-lg font-black leading-tight mt-2">Gelecek Ay Tahminlemesi</h4>
+<p class="text-xs text-blue-100 mt-2">Mevcut stok eritme hızıyla önümüzdeki 30 günün projeksiyonu.</p>
+<button class="mt-4 w-full bg-tertiary-fixed-dim text-on-tertiary-fixed py-2 rounded-lg font-bold text-xs">Tahmini Başlat</button>
+</div>
+</div>
+<!-- Sidebar Ad Container -->
+<div class="bg-white border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center h-48">
+<span class="material-symbols-outlined text-slate-300 text-3xl mb-2" data-icon="ads_click">ads_click</span>
+<p class="text-xs font-bold text-slate-400">Kurumsal Reklam Alanı</p>
+<p class="text-[10px] text-slate-300 mt-1">İş ortaklıkları için iletişime geçin.</p>
+</div>
+</div>
+</main>
+<!-- FAB Component -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="bg-primary hover:bg-primary-container text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all transform active:scale-90 group">
+<span class="material-symbols-outlined text-2xl group-hover:rotate-90 transition-transform" data-icon="add">add</span>
+</button>
+</div>
+</body></html>

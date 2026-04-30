@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#001c37",
+                    "surface": "#f8f9fa",
+                    "surface-container-low": "#f3f4f5",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#ffdea6",
+                    "on-background": "#191c1d",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#0e713d",
+                    "on-tertiary-fixed": "#271900",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#81d999",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-dim": "#d9dadb",
+                    "secondary-fixed": "#9cf6b4",
+                    "secondary": "#046d39",
+                    "tertiary": "#302000",
+                    "outline-variant": "#c3c6cf",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#1a3a5c",
+                    "on-tertiary-fixed-variant": "#5d4200",
+                    "tertiary-fixed-dim": "#f7bd48",
+                    "surface-container-lowest": "#ffffff",
+                    "primary": "#002444",
+                    "on-tertiary-container": "#ce9925",
+                    "on-secondary-fixed-variant": "#005229",
+                    "outline": "#73777f",
+                    "on-primary-container": "#87a4cc",
+                    "surface-bright": "#f8f9fa",
+                    "inverse-on-surface": "#f0f1f2",
+                    "on-surface-variant": "#43474e",
+                    "on-surface": "#191c1d",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#edeeef",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e1e3e4",
+                    "on-secondary-fixed": "#00210d",
+                    "surface-tint": "#436084",
+                    "inverse-primary": "#abc9f2",
+                    "background": "#f8f9fa",
+                    "primary-fixed-dim": "#abc9f2",
+                    "primary-fixed": "#d2e4ff",
+                    "tertiary-container": "#4c3500",
+                    "on-primary-fixed-variant": "#2a486b",
+                    "inverse-surface": "#2e3132",
+                    "secondary-container": "#99f3b1",
+                    "on-error": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "40px",
+                    "container-max": "1280px",
+                    "md": "16px",
+                    "base-unit": "4px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "title-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { background-color: #f8f9fa; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-ambient {
+            box-shadow: 0 10px 30px -5px rgba(26, 58, 92, 0.08);
+            border: 1px solid #E9ECEF;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 bottom-0 flex flex-col z-50 bg-white border-r border-slate-200 w-64 shadow-[4px_0_24px_rgba(26,58,92,0.05)]">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">swap_vertical_circle</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-[#1A3A5C] uppercase tracking-wider">TicariTakas</h1>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enterprise Portal</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto scrollbar-hide">
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg bg-slate-50 text-[#1A3A5C] border-r-4 border-[#1A3A5C] transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span class="font-title-sm text-sm">Dashboard</span>
+</a>
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="swap_vertical_circle">swap_vertical_circle</span>
+<span class="font-body-md text-sm">Trade Pool</span>
+</a>
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="receipt_long">receipt_long</span>
+<span class="font-body-md text-sm">Transactions</span>
+</a>
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="storefront">storefront</span>
+<span class="font-body-md text-sm">Marketplace</span>
+</a>
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="insights">insights</span>
+<span class="font-body-md text-sm">Analytics</span>
+</a>
+<a class="group flex items-center px-4 py-3 my-1 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="business_center">business_center</span>
+<span class="font-body-md text-sm">Corporate Tools</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-100 space-y-1">
+<a class="group flex items-center px-4 py-3 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="contact_support">contact_support</span>
+<span class="font-body-md text-sm">Support</span>
+</a>
+<a class="group flex items-center px-4 py-3 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+<span class="font-body-md text-sm">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full h-16 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm font-['Inter'] antialiased">
+<div class="flex items-center gap-4 w-1/2">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-full text-sm focus:ring-2 focus:ring-[#1A3A5C]" placeholder="Search trade assets, partners, or transactions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors cursor-pointer">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors cursor-pointer">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3 pl-2 group cursor-pointer">
+<div class="text-right">
+<p class="text-sm font-bold text-[#1A3A5C]">Global Logistics Inc.</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-tertiary-fixed text-on-tertiary-fixed-variant">ELITE MEMBER</span>
+</div>
+<img alt="User Profile" class="h-10 w-10 rounded-full border-2 border-primary-container object-cover" data-alt="A professional corporate portrait of a middle-aged executive wearing a tailored navy blue suit and a crisp white shirt. He is standing in a high-floor office with a blurred cityscape background visible through floor-to-ceiling windows. The lighting is bright and natural, conveying success and institutional reliability. The overall aesthetic is clean, high-end, and perfectly aligned with a professional B2B platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0MpaeL0ia_wQq8b2w-Gxtk_2pFXJ2MqY9F7tdRqsc-E9OliAas6fQoJYIuc29WDtqdZKax7aK7bKMocHEfQKfYunqvxrC92Xna9agxbj7kpn3h0Yi0IW_kOVOT8yFbmrYZxMg37UFjH3ag7SCEfZz5bO0j9ufkLObjmm8l3tjtEFbYYQoOMLnsiF_9dgfylfrTWcJwctkhrmfjv1BeKHi73r077h9Osr-tgrEeriYEWiYgb2Hj1XZGBJCRwtc0wQh8Zl8aC63qkcV"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="p-8 space-y-8">
+<!-- Dashboard Header & TrustScore -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">Corporate Dashboard - ELITE Membership</h2>
+<p class="text-slate-500 mt-1">Welcome back. Your trade ecosystem is performing at optimal efficiency.</p>
+</div>
+<div class="flex items-center gap-6 bg-white p-4 rounded-xl card-ambient">
+<div class="relative h-16 w-16">
+<svg class="h-full w-full" viewbox="0 0 36 36">
+<path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="transparent" stroke="currentColor" stroke-width="3"></path>
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="transparent" stroke="currentColor" stroke-dasharray="95, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-bold text-[#1A3A5C]">95</div>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-slate-400">TRUSTSCORE</p>
+<p class="text-secondary font-bold">All Systems Normal</p>
+</div>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<div class="bg-white p-6 rounded-xl card-ambient relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-500 mb-2">TRADE POOL BALANCE</p>
+<h3 class="text-2xl font-bold text-[#1A3A5C]">850,000 TL</h3>
+<div class="mt-4 w-full bg-slate-100 h-1.5 rounded-full">
+<div class="bg-primary-container h-1.5 rounded-full" style="width: 56%"></div>
+</div>
+<p class="text-xs text-slate-400 mt-2">Limit: 1,500,000 TL</p>
+</div>
+<div class="bg-white p-6 rounded-xl card-ambient relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="stars">stars</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-500 mb-2">TOTAL XP</p>
+<h3 class="text-2xl font-bold text-tertiary-container">12,450 XP</h3>
+<div class="mt-2 flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-bold uppercase">Subsidy available</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl card-ambient relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="gavel">gavel</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-500 mb-2">ACTIVE BIDS</p>
+<h3 class="text-2xl font-bold text-[#1A3A5C]">14</h3>
+<p class="text-xs text-slate-400 mt-2">+3 from yesterday</p>
+</div>
+<div class="bg-white p-6 rounded-xl card-ambient relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="savings">savings</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-500 mb-2">SAVED COMMISSION</p>
+<h3 class="text-2xl font-bold text-secondary">4,200 TL</h3>
+<p class="text-xs text-slate-400 mt-2">Saved via XP multipliers</p>
+</div>
+</div>
+<!-- Main Grid: Bento Style -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Active Trade Opportunities -->
+<div class="lg:col-span-8 bg-white rounded-xl card-ambient flex flex-col">
+<div class="p-6 border-b border-slate-100 flex justify-between items-center">
+<h4 class="font-title-sm text-title-sm text-primary">Active Trade Opportunities</h4>
+<button class="text-sm font-bold text-[#1A3A5C] hover:underline">View All</button>
+</div>
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Opportunity 1 -->
+<div class="p-4 border border-slate-100 rounded-xl hover:border-primary-container transition-colors cursor-pointer group">
+<div class="flex gap-4">
+<img alt="Office Furniture" class="h-20 w-20 rounded-lg object-cover" data-alt="Modern high-end ergonomic office furniture set in a bright, minimalist coworking space. The image shows a sleek white desk with a high-back black mesh chair and aesthetic storage units. Soft daylight filters through sheer curtains, creating a calm, productive atmosphere. Professional architectural photography style with a focus on clean lines and luxury finishes." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBewVz4HP44rvUnpfZpX54Hzuxac0jTHfbXZwm0HIPVSqG9EofzI4Niuta7apuwliQzxHVkhmOAodoHNti1yrT87vKVAydF82qQ4OTL1_GlTiFFBq1zk_5Cx900JbAAtRuN5tegCkIJQGYPlkRclzRFHe6Zxf0tdIy8jWaQKOzN68U_vTfFdPbO2Gw7KnUDi9NZCVLFn_IUEp9wz9hRMroD8IjyZ17SIZc4FMrFgqrf8WAqtQfeKu823QFebRrNlQy1PRImt8W6uUtP"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="font-bold text-sm text-[#1A3A5C]">Premium Office Set</p>
+<span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded font-black uppercase">Industrial</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">12 Units available for barter</p>
+<div class="mt-2 flex justify-between items-center">
+<span class="text-sm font-black text-secondary">45,000 TL Val.</span>
+<button class="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full group-hover:bg-[#1A3A5C]">BID NOW</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Opportunity 2 -->
+<div class="p-4 border border-slate-100 rounded-xl hover:border-primary-container transition-colors cursor-pointer group">
+<div class="flex gap-4">
+<img alt="Industrial Kitchen" class="h-20 w-20 rounded-lg object-cover" data-alt="Stainless steel industrial kitchen equipment in a professional restaurant setting. Shiny chrome surfaces reflecting soft overhead studio lights. The atmosphere is sterile, modern, and high-efficiency. Focus on a large commercial range and prep tables. High-quality commercial photography style, emphasizing durability and precision engineering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4d6zm3FcUiNzJhiyhS7ZC1eAGuhidKFAuo7wKyHoZngmmM7uAkxyYyzY99kozY8YuqSzc_707-GATaPGppKfGiO7jDf4DV1A80AyEt_IJM-11tKicvbc_ryGqHUnpzHRhRGPfIlN8KmdlMFBniS-VaBYDnLlOeKZy8txMlAgSEWAm2yyTELwryCZS0_WJEJMtbEPXZIUd3UM6OWzSRMZmuQQKfAGzRVdRnmJNKy9ctrEIvywHBsXLk0VIn2MLHUBGxu99KVlYPVum"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="font-bold text-sm text-[#1A3A5C]">Industrial Kitchen Suite</p>
+<span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded font-black uppercase">Equipment</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">Full set of modular units</p>
+<div class="mt-2 flex justify-between items-center">
+<span class="text-sm font-black text-secondary">120,000 TL Val.</span>
+<button class="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full group-hover:bg-[#1A3A5C]">BID NOW</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Opportunity 3 -->
+<div class="p-4 border border-slate-100 rounded-xl hover:border-primary-container transition-colors cursor-pointer group">
+<div class="flex gap-4">
+<img alt="Logistics Services" class="h-20 w-20 rounded-lg object-cover" data-alt="A row of clean, modern white freight trucks parked at a sophisticated distribution center loading dock. Morning golden hour light casts long shadows and highlights the sleek lines of the vehicles. The scene communicates high-volume commerce, efficiency, and global logistics power. Wide-angle professional commercial shot." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIYQLc0gKv1rVLDGw3o1HL5nbqq2FZFuT9IX5G8z8SopscswVWGmz5xWzrelEMnk0oBdDo-jRNqFjFnafrvI0_0Zk4wySnst_862nBpU4IGtL6R12wBh1xz4yE35TImCbidyw-_H9xvhwhrSCRz66OLLOFt1MqUjsjj8-ef57hZN-6KyuNn8DjiBjaJv4HXAPzklsoh2OJ76FRm9lWUgjFPQpAwYMUCycDii_haEaJYExhf8z6_uE1esANmEPfEAQCtosGvZrvYvaD"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="font-bold text-sm text-[#1A3A5C]">Intercontinental Logistics</p>
+<span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded font-black uppercase">Service</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">Regional distribution slots</p>
+<div class="mt-2 flex justify-between items-center">
+<span class="text-sm font-black text-secondary">32,500 TL Val.</span>
+<button class="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full group-hover:bg-[#1A3A5C]">BID NOW</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Opportunity 4 -->
+<div class="p-4 border border-slate-100 rounded-xl hover:border-primary-container transition-colors cursor-pointer group">
+<div class="flex gap-4">
+<img alt="Smart Hardware" class="h-20 w-20 rounded-lg object-cover" data-alt="A high-tech laboratory or industrial setting featuring advanced robotic arms and smart hardware components. The lighting is cool-toned with blue and white accents, highlighting the precision engineering of the technology. The atmosphere is cutting-edge and futuristic, showcasing the height of modern industrial digital transformation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPsGKsOq9VjeNfXpxzD3q2Sl8xFigeWWIPa1bi07ABepa6a6TOZSMZZr5AkLsL9O-ecMbBTxGe4hWPV5SFsGDnPx8u64IKzZ5GrhPQFe2UmhVqbWPUx9uKhEKm7_J2cT0qBXQOC7CF0ZoV9X3En7Gxpyc-2ar4g1IARwlWyJ5zUfPH1yCGEqzwFZ5B0VJn4d2k238QjBk_FTVfMwfJbEJhDDvSaKgvbcCMbmvkGTbywZRj703VGsrA_BbrlGmA1IIJiVKo9FemUfge"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="font-bold text-sm text-[#1A3A5C]">Smart IoT Hubs</p>
+<span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded font-black uppercase">Technology</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">Industrial gateway package</p>
+<div class="mt-2 flex justify-between items-center">
+<span class="text-sm font-black text-secondary">18,200 TL Val.</span>
+<button class="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full group-hover:bg-[#1A3A5C]">BID NOW</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar/Panel Area -->
+<div class="lg:col-span-4 space-y-gutter">
+<!-- XP Subsidy Manager -->
+<div class="bg-white p-6 rounded-xl card-ambient">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-tertiary-fixed rounded-lg text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">electric_bolt</span>
+</div>
+<h4 class="font-bold text-primary">XP Subsidy Manager</h4>
+</div>
+<div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+<div>
+<p class="text-sm font-bold text-[#1A3A5C]">Auto-apply Subsidy</p>
+<p class="text-[10px] text-slate-500 mt-0.5">50% commission discount active</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="mt-6">
+<p class="text-xs text-slate-500 mb-2">Available Multiplier Stack:</p>
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-tertiary-fixed/30 text-on-tertiary-fixed-variant text-[10px] font-black rounded border border-tertiary-fixed">x1.5 GROWTH</span>
+<span class="px-2 py-1 bg-secondary-container/30 text-on-secondary-fixed-variant text-[10px] font-black rounded border border-secondary-container">x2.0 LOYALTY</span>
+</div>
+</div>
+</div>
+<!-- Compliance Watchtower -->
+<div class="bg-[#1A3A5C] p-6 rounded-xl shadow-lg relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl text-white">security</span>
+</div>
+<div class="relative z-10">
+<h4 class="text-white font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-fixed">verified_user</span>
+                                Compliance Watchtower
+                            </h4>
+<div class="p-4 bg-white/10 rounded-lg border border-white/10">
+<div class="flex items-center justify-between">
+<span class="text-xs text-white/70">Current Status:</span>
+<span class="text-xs font-black text-secondary-fixed uppercase tracking-widest">All Systems Normal</span>
+</div>
+<div class="mt-3 flex gap-1">
+<div class="h-1 flex-1 bg-secondary-fixed rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary-fixed rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary-fixed rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary-fixed rounded-full"></div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors border border-white/20">
+                                RUN COMPLIANCE AUDIT
+                            </button>
+</div>
+</div>
+</div>
+<!-- Trade Performance Chart -->
+<div class="lg:col-span-12 bg-white rounded-xl card-ambient overflow-hidden">
+<div class="p-6 border-b border-slate-100 flex justify-between items-center">
+<h4 class="font-title-sm text-title-sm text-primary">Trade Performance Chart</h4>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="h-3 w-3 bg-primary-container rounded-full"></span>
+<span class="text-xs text-slate-500">Barter Volume</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="h-3 w-3 bg-secondary rounded-full"></span>
+<span class="text-xs text-slate-500">Cash Savings</span>
+</div>
+</div>
+</div>
+<div class="p-6 h-64 flex items-end gap-6">
+<!-- Simulated Bar Chart -->
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container/20 rounded-t-sm" style="height: 40%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 20%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">JAN</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container/20 rounded-t-sm" style="height: 55%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 35%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">FEB</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container rounded-t-sm" style="height: 75%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 45%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">MAR</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container rounded-t-sm" style="height: 90%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 60%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">APR</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container rounded-t-sm" style="height: 85%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 50%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">MAY</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex justify-center gap-1 h-full items-end">
+<div class="w-8 bg-primary-container rounded-t-sm" style="height: 100%"></div>
+<div class="w-8 bg-secondary rounded-t-sm" style="height: 70%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">JUN</span>
+</div>
+</div>
+</div>
+<!-- Recent Transactions Table -->
+<div class="lg:col-span-12 bg-white rounded-xl card-ambient overflow-hidden">
+<div class="p-6 border-b border-slate-100">
+<h4 class="font-title-sm text-title-sm text-primary">Recent Transactions</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 border-b border-slate-100">
+<tr>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Transaction ID</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Partner Entity</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Asset Category</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Value (TL)</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900">#TRX-88291</td>
+<td class="px-6 py-4 text-sm text-slate-600">Zenith Manufacturing</td>
+<td class="px-6 py-4 text-sm text-slate-500">Industrial Parts</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 12, 2023</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">125,400.00</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-fixed-variant">COMPLETED</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900">#TRX-88285</td>
+<td class="px-6 py-4 text-sm text-slate-600">Metro Tech Solutions</td>
+<td class="px-6 py-4 text-sm text-slate-500">IT Infrastructure</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 11, 2023</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">48,250.00</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-tertiary-fixed text-on-tertiary-fixed-variant">PENDING</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900">#TRX-88274</td>
+<td class="px-6 py-4 text-sm text-slate-600">AeroFreight Cargo</td>
+<td class="px-6 py-4 text-sm text-slate-500">Logistics Credits</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 10, 2023</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">92,000.00</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-fixed-variant">COMPLETED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

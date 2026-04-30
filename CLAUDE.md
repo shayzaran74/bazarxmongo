@@ -62,23 +62,24 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - **TrustScoreController:** `GET /trust-score/me`, `POST /trust-score/xp-allowance`, Admin: violation/recalculate/watchtower. ✅
 
 ### Master Plan v4.3 — Faz 3 (Nisan 2026)
-- **CommissionCalculatorService (financial-service):** Master Plan §3.2 — CORE %12/PRIME %10/ELITE %8/APEX %6. Grup içi oranlar eklendi. XP indirimi eklendi. "İki indirim bir arada yok" kuralı. `calculateSimple` geriye dönük uyum. ✅
-- **CommissionEngineService (backend):** Tam hesaplama — tier lookup, isGroupTransaction, xpToApply, CommissionBreakdown döndürür. ✅
-- **CommissionController:** `POST /commission/preview` — satın alım öncesi ön hesaplama. ✅
+### Master Plan v4.3 — Faz 1 (Nisan 2026)
+- **CommissionCalculatorService (financial-service):** Master Plan §3.2 — CORE %12/PRIME %10/ELITE %8/APEX %6. ✅
+- **CommissionEngineService (backend):** Tam hesaplama — tier lookup, isGroupTransaction, xpToApply. ✅
+- **TrustScoreCalculatorService:** §3.3 TrustScore Algoritması — Trading (%40), XP Loyalty (%30), Compliance (%30). ✅
+- **BlindPoolService:** §4 BarterBorsa Kör Havuz + Akıllı Kota (%25 Smart Cap). ✅
+- **GiftVoucherSchedulerService:** Doğum günü/Yıl dönümü/Referans bazlı otomatik hediye çeki dağıtımı. ✅
 - **AdvanceLaunchPartnerPhaseHandler:** PHASE_1→2→3 geçişi, Faz 2 için 60 menü taahhüt kontrolü. ✅
 - **DistributeFreeMenuHandler:** Taahhütten bedava QR dağıtımı, kalan limit kontrolü. ✅
-- **GetLaunchPartnersHandler:** Faz/şehir filtreli admin liste + progress % hesabı. ✅
-- **RestaurantAdminController:** `GET|POST /launch-partners`, `PATCH /advance-phase`, `POST /distribute`. ✅
+- **RestaurantAdminController:** `GET|POST /launch-partners`, `PATCH /advance-phase`. ✅
 
 ### Master Plan v4.3 — Faz 2 (Nisan 2026)
-- **MenuModule:** `PurchaseMenuHandler` (%8+KDV+QR), `ActivateOneFreeHandler` (1+1), `RedeemMenuHandler` (restoran QR), `CreateRestaurant/Menu`. ✅
+- **MenuModule:** `PurchaseMenuHandler` (%8+KDV+QR), `ActivateOneFreeHandler` (1+1), `RedeemMenuHandler`. ✅
 - **BrowseRestaurantsHandler:** Şehir/kategori/arama filtreli, launchPartner flag. ✅
-- **GetRestaurantDetailHandler:** Tüm menüler + fiyat breakdown. ✅
-- **GetMyPurchasesHandler:** Aktif QR'lar + 1+1 durumu. ✅
 - **MenuUsageTrackerService:** Aylık 2× aidat kredi takibi, deduct, assert. ✅
 - **QrGeneratorService:** MENU-/FREE- prefix QR üretimi. ✅
-- **Frontend:** `pages/menu/index.vue`, `pages/menu/[id].vue`, `pages/menu/my-menus.vue`, `pages/partner/menu-redeem.vue`. ✅
-- **API:** `GET /menu/restaurants`, `GET /menu/restaurants/:id`, `GET /menu/my-purchases`, `POST /menu/purchase/:menuId`, `POST /menu/activate-one-free/:id`, `POST /menu/redeem`. ✅
+- **MarketingAdminController:** `GET /vouchers`, `POST /vouchers/issue-manual`. ✅
+- **Frontend:** `pages/menu/index.vue`, `pages/menu/my-menus.vue`, `pages/partner/menu-redeem.vue`. ✅
+
 
 ### Master Plan v4.3 — Faz 1 (Nisan 2026)
 - **SubscriptionModule:** `SubscribeUserCommand`, `UpgradeTierCommand` (5× ciro + 50/50 XP/nakit), `CancelSubscriptionCommand` (30 gün koruma). ✅

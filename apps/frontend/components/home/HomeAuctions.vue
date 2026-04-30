@@ -1,6 +1,9 @@
 <template>
   <div
     v-if="show === 'true'"
+    v-motion
+    :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
+    :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
     class="w-full bg-slate-950 py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
   >
     <!-- High-tech Grid Background -->
@@ -29,7 +32,7 @@
             </div>
             <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">
               {{
-                $t('auctionsHome.title') }} <span class="text-red-500">{{ $t('auctionsHome.subtitle') }}</span>
+                $t('home.title') }} <span class="text-red-500">{{ $t('auctionsHome.subtitle') }}</span>
             </h2>
             <p class="text-slate-400 text-lg font-medium mt-1 italic opacity-80">
               {{ $t('auctionsHome.description') }}
@@ -89,7 +92,7 @@
             <div class="absolute bottom-6 left-6 right-6">
               <div class="flex items-center gap-3 bg-red-600/20 backdrop-blur-md border border-red-500/30 px-4 py-2 rounded-2xl">
                 <ClockIcon class="h-5 w-5 text-red-400" />
-                <span class="text-red-100 font-black text-sm uppercase tracking-widest">{{ formatTimeRemaining(auction.endDate, t) }}</span>
+                <span class="text-red-100 font-black text-sm uppercase tracking-widest">{{ formatTimeRemaining(auction.endTime, t) }}</span>
               </div>
             </div>
           </div>
@@ -97,19 +100,18 @@
           <!-- Content -->
           <div class="p-8 flex flex-col flex-grow">
             <h3 class="text-xl font-black text-white mb-4 line-clamp-2 uppercase italic tracking-tight leading-tight">
-              {{ auction.title }}
+              {{ auction.title || auction.listing?.title || auction.listing?.catalogProduct?.name || 'Açık Artırma' }}
             </h3>
 
             <div class="mt-auto grid grid-cols-2 gap-4">
               <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
                 <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{
-                  $t('auctionsHome.currentBid') }}</span>
-                <span class="text-xl font-black text-primary-400">{{ formatPrice(auction.currentBid ||
-                  auction.startBid) }}</span>
+                  $t('auctionsHome.currentBid') || 'Güncel Teklif' }}</span>
+                <span class="text-xl font-black text-primary-400">{{ formatPrice(auction.currentPrice ?? auction.startingPrice ?? 0) }}</span>
               </div>
               <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
                 <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{
-                  $t('auctionsHome.totalBids') }}</span>
+                  $t('auctionsHome.bidCount') || 'Teklif Sayısı' }}</span>
                 <span class="text-xl font-black text-white">{{ auction._count?.bids || 0 }}</span>
               </div>
             </div>
@@ -117,7 +119,7 @@
             <button
               class="w-full mt-6 py-4 bg-gradient-to-r from-red-600 to-rose-700 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:from-red-500 hover:to-rose-600 transition-all shadow-xl shadow-red-900/20"
             >
-              {{ $t('auctionsHome.placeBid') }}
+              {{ $t('auctionsHome.placeBid') || 'TEKLİF VER' }}
             </button>
           </div>
         </div>
@@ -152,7 +154,16 @@ const fetchAuctions = async () => {
       query: { limit: 6, status: 'Active' }
     }) as ApiResponse<HomeAuction[]>
     if (data.success && data.data) {
-      auctions.value = data.data
+      auctions.value = data.data.map((auction: any) => {
+        const media = auction.listing?.catalogProduct?.media || []
+        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || '/placeholder.png'
+        return {
+          ...auction,
+          Product: {
+            image
+          }
+        }
+      })
     }
   } catch (error) {
     console.error('Fetch auctions error:', error)

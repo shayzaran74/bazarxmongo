@@ -1,6 +1,9 @@
 <template>
   <div
     v-if="show !== 'false'"
+    v-motion
+    :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
+    :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
     class="w-full bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-700 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-8"
   >
     <!-- Animated Background Decorations -->
@@ -74,11 +77,14 @@
       </div>
       <div
         v-else-if="flashSaleProducts.length > 0"
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-fade-in"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
       >
         <div
-          v-for="product in flashSaleProducts.slice(0, 6)"
+          v-for="(product, idx) in flashSaleProducts.slice(0, 6)"
           :key="'flash-' + product.id"
+          v-motion
+          :initial="{ opacity: 0, y: 24, filter: 'blur(10px)' }"
+          :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 600, delay: idx * 70, ease: [0.25, 0.46, 0.45, 0.94] } }"
         >
           <ProductCard
             :product="{ ...product, isFlashSale: true }"

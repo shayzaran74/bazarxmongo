@@ -43,7 +43,25 @@ export const useAdminAuctions = () => {
     loading.value = true
     try {
       const res = await $api<any>('/api/admin/auctions')
-      auctions.value = res.data || []
+      
+      // Admin tablosu için Product formatlaması
+      const mapAuctionAdmin = (raw: any) => {
+        if (!raw) return {}
+        const media = raw.listing?.catalogProduct?.media || []
+        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || null
+        return {
+          ...raw,
+          startingPrice: Number(raw.startingPrice || 0),
+          currentPrice: Number(raw.currentPrice ?? raw.startingPrice ?? 0),
+          Product: raw.listing?.catalogProduct ? {
+            name: raw.listing.catalogProduct.name,
+            image,
+            category: raw.listing.catalogProduct.category || null
+          } : null
+        }
+      }
+
+      auctions.value = (res.data || []).map(mapAuctionAdmin)
       stats.total = auctions.value.length
       stats.active = auctions.value.filter((a: any) => a.status === 'ACTIVE').length
       stats.scheduled = auctions.value.filter((a: any) => a.status === 'SCHEDULED').length

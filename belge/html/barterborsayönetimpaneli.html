@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BarterBorsa - Bayi Yönetimi Paneli</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdea6",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "on-tertiary-fixed-variant": "#5d4200",
+                        "on-surface-variant": "#43474e",
+                        "on-secondary-fixed": "#00210d",
+                        "background": "#f8f9fa",
+                        "on-error": "#ffffff",
+                        "secondary": "#046d39",
+                        "tertiary": "#302000",
+                        "on-primary-fixed-variant": "#2a486b",
+                        "inverse-primary": "#abc9f2",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#ce9925",
+                        "primary": "#002444",
+                        "secondary-fixed": "#9cf6b4",
+                        "primary-container": "#1a3a5c",
+                        "primary-fixed": "#d2e4ff",
+                        "surface-container-low": "#f3f4f5",
+                        "on-tertiary-fixed": "#271900",
+                        "surface-dim": "#d9dadb",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#f7bd48",
+                        "surface": "#f8f9fa",
+                        "error": "#ba1a1a",
+                        "surface-container": "#edeeef",
+                        "secondary-fixed-dim": "#81d999",
+                        "on-surface": "#191c1d",
+                        "on-primary-fixed": "#001c37",
+                        "surface-tint": "#436084",
+                        "surface-variant": "#e1e3e4",
+                        "on-secondary-container": "#0e713d",
+                        "primary-fixed-dim": "#abc9f2",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f8f9fa",
+                        "outline-variant": "#c3c6cf",
+                        "on-background": "#191c1d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "base-unit": "4px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "xl": "40px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav-item {
+            background-color: #1A3A5C;
+            color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-background antialiased">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-gray-200 bg-white shadow-[4px_0_24px_rgba(26,58,92,0.05)] flex flex-col p-4 gap-2 z-50">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">currency_exchange</span>
+</div>
+<div>
+<h1 class="text-xl font-black text-[#1A3A5C] tracking-tight">BarterBorsa</h1>
+<p class="text-xs text-slate-500 font-medium">Kurumsal Bayi Paneli</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="waves">waves</span>
+<span class="font-medium text-sm">Kör Havuz</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-medium text-sm">Envanter</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="speed">speed</span>
+<span class="font-medium text-sm">Akıllı Kota</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 active-nav-item transform active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-medium text-sm">Bayi Yönetimi</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-medium text-sm">Raporlama</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-gray-100 pt-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-medium text-sm">Ayarlar</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/5 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-medium text-sm">Çıkış Yap</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar Shell -->
+<header class="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 h-16 ml-64 shadow-sm" style="width: calc(100% - 16rem);">
+<div class="flex items-center gap-4 flex-1 max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full bg-slate-100 border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-[#1A3A5C]/20 transition-all" placeholder="Bayi veya bölge ara..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-px bg-gray-200 mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="text-xs font-bold text-primary">Ahmet Yılmaz</p>
+<p class="text-[10px] text-slate-500">Global Admin</p>
+</div>
+<img alt="Kullanıcı Profili" class="w-10 h-10 rounded-full border-2 border-primary-fixed shadow-sm group-hover:scale-105 transition-transform" data-alt="A professional headshot of a corporate executive in a crisp white shirt against a soft bokeh background of a modern office space, conveying leadership and reliability within the BarterBorsa branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCW1VYhvhp-vTgQpFkXpAHoCOeedCW1BXenS31jZnuAaQddDcCygNOl1sae1BvfeMhKTHUpx0gATuTp31Ub0g5FNgsHf9Yz7mTKX8SkTAm1EEH9KWcziqnWaS_dL5k2Q0kX1xXh_u8UebUSnorb6uiQH-Bz_P6-3dxHWHAQYLoTqZa2K7m3tZKzbLf7yvC7Gp_2CBUbQ4tHE4uKvgbmvIOqHklCBwjvUY9UhzOeZ8396rdiActUf9cvFuqa6MKg_f6YCFa_erQnNwFd"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 p-8 min-h-screen">
+<!-- Bayi Ağı Genel Bakış -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(26,58,92,0.04)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-label-caps text-slate-500">TOPLAM BAYİ</span>
+<span class="material-symbols-outlined text-primary bg-primary-fixed/30 p-2 rounded-lg">group</span>
+</div>
+<div>
+<h3 class="text-2xl font-bold text-primary">1,248</h3>
+<p class="text-xs text-secondary font-medium flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12 bu ay
+                    </p>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(26,58,92,0.04)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-label-caps text-slate-500">AKTİF / PASİF</span>
+<span class="material-symbols-outlined text-secondary bg-secondary-fixed/30 p-2 rounded-lg">verified</span>
+</div>
+<div>
+<h3 class="text-2xl font-bold text-primary">1,192 / 56</h3>
+<div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 95.5%;"></div>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(26,58,92,0.04)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-label-caps text-slate-500">TOPLAM HAVUZ LİMİTİ</span>
+<span class="material-symbols-outlined text-on-tertiary-container bg-tertiary-fixed p-2 rounded-lg" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+</div>
+<div>
+<h3 class="text-2xl font-bold text-primary">₺45.2M</h3>
+<p class="text-xs text-slate-500 font-medium mt-1">Toplam tanımlı barter hacmi</p>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(26,58,92,0.04)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-label-caps text-slate-500">HAVUZ KULLANIM ORANI</span>
+<span class="material-symbols-outlined text-error bg-error-container p-2 rounded-lg">analytics</span>
+</div>
+<div>
+<h3 class="text-2xl font-bold text-primary">64.2%</h3>
+<p class="text-xs text-slate-500 font-medium mt-1">Sistem geneli doluluk</p>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+<!-- Bayi Listesi Content -->
+<div class="lg:col-span-3 space-y-6">
+<!-- Filtreleme Alanı -->
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<div class="flex flex-wrap items-center gap-4">
+<div class="flex-1 min-w-[200px]">
+<label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">Üyelik Tipi</label>
+<select class="w-full border-gray-200 rounded-lg text-sm focus:border-primary focus:ring-primary transition-all">
+<option>Tümü</option>
+<option>Elite</option>
+<option>Prime</option>
+<option>Core</option>
+</select>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">Şehir</label>
+<select class="w-full border-gray-200 rounded-lg text-sm focus:border-primary focus:ring-primary transition-all">
+<option>Tüm Şehirler</option>
+<option>İstanbul</option>
+<option>Ankara</option>
+<option>İzmir</option>
+<option>Bursa</option>
+</select>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">TrustScore Aralığı</label>
+<select class="w-full border-gray-200 rounded-lg text-sm focus:border-primary focus:ring-primary transition-all">
+<option>Tümü</option>
+<option>Kritik (&lt; 40)</option>
+<option>Orta (40-75)</option>
+<option>Yüksek (75+)</option>
+</select>
+</div>
+<div class="pt-5">
+<button class="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md hover:bg-primary-container transition-all active:scale-95">
+                                Filtreleri Uygula
+                            </button>
+</div>
+</div>
+</div>
+<!-- Ana Tablo -->
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-gray-100 flex items-center justify-between">
+<h2 class="text-lg font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hub</span>
+                            Bayi Listesi
+                        </h2>
+<button class="text-sm font-bold text-primary flex items-center gap-2 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all">
+<span class="material-symbols-outlined text-base">download</span>
+                            Dışa Aktar (CSV)
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50/50 text-[11px] font-label-caps text-slate-400">
+<tr>
+<th class="px-6 py-4">BAYİ ADI / ŞEHİR</th>
+<th class="px-6 py-4">ÜYELİK TİPİ</th>
+<th class="px-6 py-4">TRUSTSCORE</th>
+<th class="px-6 py-4">GÜNCEL BAKİYE</th>
+<th class="px-6 py-4">SMART CAP</th>
+<th class="px-6 py-4 text-right">İŞLEMLER</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50">
+<!-- Row 1 Elite -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-fixed/20 flex items-center justify-center text-primary font-bold text-xs">AY</div>
+<div>
+<div class="text-sm font-bold text-primary">Anadolu Yapı A.Ş.</div>
+<div class="text-[11px] text-slate-500">İstanbul, Kadıköy</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-tertiary-fixed text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined text-xs mr-1" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                                            ELITE
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full border-4 border-secondary/20 flex items-center justify-center text-xs font-bold text-secondary">92</div>
+<span class="text-[10px] font-bold text-secondary">GÜVENLİ</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="text-sm font-bold text-primary">₺452.000</div>
+<div class="text-[10px] text-slate-400">Barter TL</div>
+</td>
+<td class="px-6 py-5">
+<div class="w-32">
+<div class="flex justify-between text-[10px] mb-1">
+<span class="font-medium text-slate-500">Dolar Oranı</span>
+<span class="font-bold text-primary">42%</span>
+</div>
+<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 42%;"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Detay">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Limit Düzenle">
+<span class="material-symbols-outlined text-lg">edit_note</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="İşlemleri İzle">
+<span class="material-symbols-outlined text-lg">monitoring</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 Prime -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-secondary-fixed-dim/20 flex items-center justify-center text-secondary font-bold text-xs">ML</div>
+<div>
+<div class="text-sm font-bold text-primary">Mavi Lojistik</div>
+<div class="text-[11px] text-slate-500">Ankara, Ostim</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-fixed text-primary">
+<span class="material-symbols-outlined text-xs mr-1" style="font-variation-settings: 'FILL' 1;">star</span>
+                                            PRIME
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full border-4 border-on-tertiary-container/20 flex items-center justify-center text-xs font-bold text-on-tertiary-container">68</div>
+<span class="text-[10px] font-bold text-on-tertiary-container">ORTA</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="text-sm font-bold text-primary">₺125.400</div>
+<div class="text-[10px] text-slate-400">Barter TL</div>
+</td>
+<td class="px-6 py-5">
+<div class="w-32">
+<div class="flex justify-between text-[10px] mb-1">
+<span class="font-medium text-slate-500">Dolar Oranı</span>
+<span class="font-bold text-on-tertiary-container">88%</span>
+</div>
+<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="bg-on-tertiary-container h-full rounded-full" style="width: 88%;"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">visibility</span></button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">edit_note</span></button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">monitoring</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3 Core -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">ÖT</div>
+<div>
+<div class="text-sm font-bold text-primary">Özcan Tekstil</div>
+<div class="text-[11px] text-slate-500">Bursa, Yıldırım</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                            CORE
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full border-4 border-error/20 flex items-center justify-center text-xs font-bold text-error">34</div>
+<span class="text-[10px] font-bold text-error">KRİTİK</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="text-sm font-bold text-primary">₺8.200</div>
+<div class="text-[10px] text-slate-400">Barter TL</div>
+</td>
+<td class="px-6 py-5">
+<div class="w-32">
+<div class="flex justify-between text-[10px] mb-1">
+<span class="font-medium text-slate-500">Dolar Oranı</span>
+<span class="font-bold text-slate-600">12%</span>
+</div>
+<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="bg-slate-400 h-full rounded-full" style="width: 12%;"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">visibility</span></button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">edit_note</span></button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">monitoring</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-gray-100 flex items-center justify-between bg-slate-50/50">
+<p class="text-xs text-slate-500">Toplam 1,248 kayıt arasından 1-30 arası gösteriliyor.</p>
+<div class="flex items-center gap-2">
+<button class="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-slate-400"><span class="material-symbols-outlined text-base">chevron_left</span></button>
+<button class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold">1</button>
+<button class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs text-slate-600">2</button>
+<button class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs text-slate-600">3</button>
+<button class="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-slate-400"><span class="material-symbols-outlined text-base">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Sağ Panel: Kritik Uyarılar -->
+<aside class="space-y-6">
+<div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+<h3 class="text-sm font-bold text-primary flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+                        Kritik Uyarılar (4)
+                    </h3>
+<div class="space-y-4">
+<!-- Alert Item -->
+<div class="p-4 rounded-lg bg-error/5 border-l-4 border-error">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-error tracking-wider uppercase">Kota Sınırı</span>
+<span class="text-[10px] text-slate-400">14:20</span>
+</div>
+<p class="text-xs font-bold text-primary mb-1">Mavi Lojistik A.Ş.</p>
+<p class="text-[11px] text-slate-600">Kota doluluk oranı %94'e ulaştı. Havuz limiti yükseltilmesi gerekebilir.</p>
+</div>
+<div class="p-4 rounded-lg bg-on-tertiary-container/5 border-l-4 border-on-tertiary-container">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-on-tertiary-container tracking-wider uppercase">TrustScore Düşüşü</span>
+<span class="text-[10px] text-slate-400">11:05</span>
+</div>
+<p class="text-xs font-bold text-primary mb-1">Özcan Tekstil</p>
+<p class="text-[11px] text-slate-600">Son 3 ayda 12 puanlık sert düşüş tespit edildi. İnceleme başlatın.</p>
+</div>
+<div class="p-4 rounded-lg bg-error/5 border-l-4 border-error">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-error tracking-wider uppercase">Vadesi Geçmiş</span>
+<span class="text-[10px] text-slate-400">Dün</span>
+</div>
+<p class="text-xs font-bold text-primary mb-1">Korkmaz Mobilya</p>
+<p class="text-[11px] text-slate-600">Takas bekleyen ₺45.000 tutarında işlem vadesi 7 gün aşıldı.</p>
+</div>
+<button class="w-full py-3 text-xs font-bold text-primary hover:bg-slate-50 border border-dashed border-gray-200 rounded-lg transition-all">
+                            Tüm Uyarıları Gör
+                        </button>
+</div>
+</div>
+<div class="bg-primary p-6 rounded-xl shadow-lg relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="text-white text-sm font-bold mb-2">Hızlı Limit Artırımı</h4>
+<p class="text-blue-100 text-[11px] leading-relaxed mb-4">
+                            Sistem önerisi: Aktif 12 Elite bayinin toplam ₺2.4M ek hacim kapasitesi bulunuyor.
+                        </p>
+<button class="w-full bg-white text-primary py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition-all">
+                            Önerileri İncele
+                        </button>
+</div>
+<!-- Decorative Background Element -->
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[120px] text-white">auto_awesome</span>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Contextual FAB -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group">
+<span class="material-symbols-outlined text-2xl">add</span>
+<span class="absolute right-full mr-4 bg-primary text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Yeni Bayi Ekle</span>
+</button>
+</body></html>

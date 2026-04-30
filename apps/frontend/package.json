@@ -65,6 +65,7 @@
     "@tiptap/vue-3": "^2.10.4",
     "@vee-validate/i18n": "^4.15.0",
     "@vee-validate/rules": "^4.15.0",
+    "@vueuse/motion": "^3.0.3",
     "@vueuse/nuxt": "^12.7.0",
     "apexcharts": "^4.7.0",
     "blurhash": "^2.0.5",

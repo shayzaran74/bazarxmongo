@@ -37,6 +37,8 @@ model User {
   verificationTokens VerificationToken[]
   vendor             Vendor?
   orders             Order[]
+  auctionParticipations AuctionParticipation[]
+  auctionBids AuctionBid[]
 
   @@index([email])
   @@index([phoneNumber])
@@ -1509,6 +1511,7 @@ model AuctionParticipation {
   updatedAt     DateTime            @default(now()) @updatedAt @map("updated_at")
   userId        String              @map("user_id")
   auction       Auction             @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([auctionId, userId])
   @@map("auction_participations")
@@ -1520,6 +1523,7 @@ model AuctionBid {
   auctionId String   @map("auction_id")
   createdAt DateTime @default(now()) @map("created_at")
   userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
 
   @@index([auctionId])
@@ -2464,6 +2468,7 @@ enum ParticipationStatus {
   WON
   LOST
   REFUNDED
+  REJECTED
 }
 
 enum LotteryStatus {

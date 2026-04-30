@@ -75,11 +75,14 @@ export const useAuctionOverview = () => {
     }, 400)
   }
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('tr-TR', {
+  const formatPrice = (price: any) => {
+    const num = Number(price);
+    if (isNaN(num)) return '₺0,00';
+    return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY'
-    }).format(price)
+    }).format(num);
+  }
 
   const getStatusBadgeClass = (status: string) => {
     const map: Record<string, string> = {

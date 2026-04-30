@@ -98,13 +98,13 @@ async function main() {
             const vendorSlug = u.name.toLowerCase().replace(/\s+/g, '-')
             const vendor = await prisma.vendor.upsert({
                 where: { userId: user.id },
-                update: { companyId: company.id, slug: vendorSlug, status: 'APPROVED', tier: 'PREMIUM' },
+                update: { companyId: company.id, slug: vendorSlug, status: 'APPROVED', tier: 'ELITE' },
                 create: {
                     userId: user.id,
                     companyId: company.id,
                     slug: vendorSlug,
                     status: 'APPROVED',
-                    tier: 'PREMIUM'
+                    tier: 'ELITE'
                 }
             })
 
@@ -151,8 +151,8 @@ async function main() {
             // Create Vendor Bank Account
             await prisma.vendorBankAccount.upsert({
                 where: { vendorId: vendor.id },
-                update: {  bankName: 'Sanayi Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011' },
-                create: { vendorId: vendor.id, bankName: 'Sanayi Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011', isPrimary: true }
+                update: {  bankName: 'Bazarx Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011' },
+                create: { vendorId: vendor.id, bankName: 'Bazarx Bank', accountHolderName: u.name, iban: 'TR001122334455667788990011', isPrimary: true }
             })
         }
     }

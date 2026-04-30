@@ -237,13 +237,13 @@ function mapAuction(raw: any): Auction {
 
   return {
     ...raw,
-    startingPrice: Number(raw.startingPrice),
-    currentPrice: Number(raw.currentPrice ?? raw.startingPrice),
-    minBidIncrement: Number(raw.minBidIncrement),
+    startingPrice: Number(raw.startingPrice || 0),
+    currentPrice: Number(raw.currentPrice ?? raw.startingPrice ?? 0),
+    minBidIncrement: Number(raw.minBidIncrement || 1),
     participationDeposit: raw.participationDeposit
       ? Number(raw.participationDeposit)
-      : undefined,
-    title: raw.title || raw.listing?.title || raw.listing?.catalogProduct?.name,
+      : 0,
+    title: raw.title || raw.listing?.title || raw.listing?.catalogProduct?.name || 'İsimsiz Protokol',
     Product: raw.listing?.catalogProduct
       ? {
           id: raw.listing.catalogProduct.id,
@@ -251,6 +251,11 @@ function mapAuction(raw: any): Auction {
           image,
           category: raw.listing.catalogProduct.category || null,
         }
-      : undefined,
+      : {
+          id: '',
+          name: raw.title || 'Ürün Bilgisi Yok',
+          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000',
+          category: null
+        },
   }
 }

@@ -103,6 +103,52 @@
           </NuxtLink>
         </div>
 
+        <!-- Quick Navigation to New Pages -->
+        <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+          <NuxtLink
+            to="/barterborsa/analitik"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">📊</span>
+            Executive Analitik
+          </NuxtLink>
+          <NuxtLink
+            to="/barterborsa/kurumsal"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">🏢</span>
+            Kurumsal Araçlar
+          </NuxtLink>
+          <NuxtLink
+            to="/barterborsa/ticari-detay"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">🔄</span>
+            Ticari Takas Detay
+          </NuxtLink>
+          <NuxtLink
+            to="/barterborsa/b2b-dashboard"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">💼</span>
+            B2B Dashboard
+          </NuxtLink>
+          <NuxtLink
+            to="/barterborsa/islem-gecmisi"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">🧾</span>
+            İşlem Geçmişi
+          </NuxtLink>
+          <NuxtLink
+            to="/barterborsa/yonetim-paneli"
+            class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+          >
+            <span class="text-base">👥</span>
+            Bayi Yönetim Paneli
+          </NuxtLink>
+        </div>
+
         <!-- Coming Soon Timer Style -->
         <div
           class="mt-12 inline-flex items-center gap-3 bg-white/60 backdrop-blur-sm px-6 py-3 rounded-full border border-amber-100 shadow-sm"

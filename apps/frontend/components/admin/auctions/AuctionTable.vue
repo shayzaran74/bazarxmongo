@@ -59,10 +59,10 @@ const formatDate = (dateString: string) => {
           <tr v-for="auction in auctions" :key="auction.id" class="hover:bg-gray-50/50 transition-colors">
             <td class="px-8 py-5">
               <div class="flex items-center gap-4">
-                <img :src="auction.Product?.media?.[0]?.url || auction.image" class="w-12 h-12 rounded-2xl object-cover bg-gray-100">
+                <img :src="auction.Product?.image || '/placeholder.png'" class="w-12 h-12 rounded-2xl object-cover bg-gray-100">
                 <div>
                   <div class="text-sm font-black text-gray-900 leading-tight mb-1">{{ auction.title }}</div>
-                  <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ auction.category }}</div>
+                  <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ auction.Product?.category?.name || 'Genel' }}</div>
                 </div>
               </div>
             </td>
@@ -73,10 +73,10 @@ const formatDate = (dateString: string) => {
             </td>
             <td class="px-6 py-5">
               <div class="text-sm font-black text-gray-900">₺{{ (auction.currentPrice || 0).toLocaleString('tr-TR') }}</div>
-              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ auction.bidCount }} Teklif</div>
+              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ auction._count?.bids || 0 }} Teklif</div>
             </td>
             <td class="px-6 py-5">
-              <div class="text-sm font-black text-gray-900">{{ formatDate(auction.endDate) }}</div>
+              <div class="text-sm font-black text-gray-900">{{ formatDate(auction.endTime) }}</div>
             </td>
             <td class="px-8 py-5 text-right">
               <div class="flex items-center justify-end gap-2">
