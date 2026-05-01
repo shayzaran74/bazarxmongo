@@ -229,8 +229,9 @@ export const useAdminProducts = () => {
       body.append('file', file)
 
       try {
-        // Proxy'yi atlamak için direkt fetch kullanıyoruz
-        const res = await fetch(`${backendUrl}/api/v1/upload?subPath=products`, {
+        const uploadUrl = '/api/v1/upload?subPath=products'
+        
+        const res = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})

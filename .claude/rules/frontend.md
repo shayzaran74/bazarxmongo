@@ -6,13 +6,15 @@ paths:
 # Nuxt 3 & Frontend Guidelines
 
 ## Development
-- Use **Vue 3 Composition API** with `<script setup lang="ts">`.
+- Use **Vue 3 Composition API** with `<script setup lang="ts">`. Options API KESİNLİKLE YASAKTIR.
 - Use **Nuxt 3 Auto-imports** effectively.
 - All styles should use **TailwindCSS**.
+- **Hardcoded URL YASAKTIR.** Tüm API çağrıları `useRuntimeConfig().public.apiBase` üzerinden yapılacaktır.
+- Import path'leri `~/` prefix'i ile kullanılacaktır (Ör: `~/stores/auth`).
 
 ## SSR & Safety
-- Use `import.meta.client` or `onMounted` for client-only code.
-- Ensure all composables are SSR-safe.
+- Use `import.meta.client` or `onMounted` for client-only code (window, document, localStorage vb.).
+- Ensure all composables and stores are SSR-safe.
 - Use `useFetch` or `useAsyncData` for data fetching.
 
 ## Store Management

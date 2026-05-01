@@ -107,13 +107,22 @@
           </div>
         </div>
 
-        <button
-          class="w-full bg-primary-500 hover:bg-primary-400 text-white py-5 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center group/btn active:scale-95"
-          @click="navigateTo(activeGroupBuy?.Product ? getProductUrl(activeGroupBuy.Product) : '/')"
-        >
-          {{ $t('groupBuy.joinGroup') }}
-          <ArrowRightIcon class="h-6 w-6 ml-3 group-hover/btn:translate-x-2 transition-transform" />
-        </button>
+        <div class="flex flex-col sm:flex-row gap-4 mt-6">
+          <button
+            class="flex-1 bg-primary-500 hover:bg-primary-400 text-white py-5 rounded-[2rem] font-black text-[16px] md:text-xl shadow-2xl transition-all flex items-center justify-center group/btn active:scale-95"
+            @click="navigateTo(activeGroupBuy?.Product ? getProductUrl(activeGroupBuy.Product) : '/')"
+          >
+            {{ $t('groupBuy.joinGroup') }}
+            <ArrowRightIcon class="h-6 w-6 ml-3 group-hover/btn:translate-x-2 transition-transform" />
+          </button>
+          
+          <button
+            class="sm:flex-none px-8 bg-white/10 hover:bg-white/20 border border-white/20 text-white py-5 rounded-[2rem] font-black text-[16px] transition-all flex items-center justify-center group/btn2 active:scale-95"
+            @click="navigateTo('/group-buys')"
+          >
+            Tümünü Keşfet
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -162,6 +171,11 @@ const getNextTierQuantity = () => {
 
 const isTierReached = (minQty: number) => {
   return (activeGroupBuy.value?.currentQuantity || 0) >= minQty
+}
+
+const getProductUrl = (product: any) => {
+  if (!product) return '/'
+  return `/products/${product.slug || product.id}`
 }
 
 const fetchActiveGroupBuy = async () => {

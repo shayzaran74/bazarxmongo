@@ -1,7 +1,9 @@
-// apps/backend/src/modules/auction/application/dtos/draw-lottery.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class DrawLotteryDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Çekiliş ID' })
+  @IsString()
+  @IsNotEmpty()
   lotteryId!: string;
 }

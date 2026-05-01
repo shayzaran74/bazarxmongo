@@ -41,8 +41,12 @@ export const useAdminGroupBuy = () => {
       const res = await $api<any>('/api/admin/products', {
         query: { q: productSearch.value, limit: 10 }
       })
-      searchResults.value = res.data?.items || []
+      // The API returns the array directly in res.data, or wrapped based on the exact endpoint structure.
+      // ProductAdminController returns: { success: true, data: result.items }
+      // So res.data IS the array of items.
+      searchResults.value = Array.isArray(res.data) ? res.data : (res.data?.items || [])
     } catch { /* ignore */ }
+
   }
 
   const selectProduct = (p: any) => {

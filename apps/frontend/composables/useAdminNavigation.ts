@@ -44,7 +44,8 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
         { label: 'Ürünler', to: '/admin/products', activePath: '/admin/product', icon: ShoppingBagIcon },
         { label: 'Kategoriler', to: '/admin/categories', activePath: '/admin/categor', icon: TagIcon },
         { label: 'Açık Artırmalar', to: '/admin/auctions', icon: CurrencyDollarIcon },
-        { label: 'Çekilişler', to: '/admin/lotteries', icon: TicketIcon }
+        { label: 'Çekilişler', to: '/admin/lotteries', icon: TicketIcon },
+        { label: 'Birlikte Al', to: '/admin/group-buy', icon: UserGroupIcon }
       ]
     },
     {

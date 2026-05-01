@@ -8,10 +8,10 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { DomainException } from '@barterborsa/shared-core';
 
 /**
  * Tüm hataları yakalayıp detaylıca loglayan merkezi hata filtresi.
- * 500 hatalarının gerçek sebebini görmek için kritik öneme sahiptir.
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -22,29 +22,34 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message: any = 'Internal server error';
 
-    // Hata detaylarını terminale bas (Stack Trace dahil)
-    let errorDetails = '';
-    try {
-      errorDetails = exception instanceof Error ? exception.stack || exception.message : JSON.stringify(exception);
-    } catch (e) {
-      errorDetails = 'Could not stringify exception: ' + String(exception);
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const res = exception.getResponse();
+      message = (res as any).message || exception.message;
+    } else if (exception instanceof DomainException) {
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.message;
+    } else if (exception instanceof Error) {
+      message = exception.message;
     }
 
+    // Hata detaylarını terminale bas
+    const errorStack = exception instanceof Error ? exception.stack : JSON.stringify(exception);
     this.logger.error(
-      `Hata: ${request?.method || 'N/A'} ${request?.url || 'N/A'}`,
-      errorDetails
+      `Hata: ${request?.method} ${request?.url} [${status}]`,
+      errorStack
     );
 
-    response.status(status).send({
+    response.status(status).json({
+      success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: (exception as any)?.message || 'Internal server error',
+      message: Array.isArray(message) ? message[0] : message, // İlk hatayı dön veya mesajı dön
+      details: Array.isArray(message) ? message : undefined,
     });
   }
 }

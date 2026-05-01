@@ -31,31 +31,39 @@ export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuer
   async execute(query: GetTransactionsQuery): Promise<TransactionResult> {
     const { userId, page, limit, accountId } = query;
     const skip = (page - 1) * limit;
+    const isGlobal = !userId;
 
-    // 1. Kullanıcı hesaplarını getir
-    const userAccounts = await this.prisma.account.findMany({
-      where: { userId },
-      select: { id: true, type: true },
-    });
-    const accountIds = userAccounts.map(a => a.id);
+    // 1. Kullanıcı hesaplarını getir (Eğer userId varsa)
+    let accountIds: string[] = [];
+    if (!isGlobal) {
+      const userAccounts = await this.prisma.account.findMany({
+        where: { userId },
+        select: { id: true, type: true },
+      });
+      accountIds = userAccounts.map(a => a.id);
+    }
 
     // 2. İki tablodan paralel sorgulama
     const [accTx, genLedger] = await Promise.all([
       this.prisma.accountTransaction.findMany({
-        where: accountId ? { accountId } : { accountId: { in: accountIds } },
+        where: isGlobal 
+          ? (accountId ? { accountId } : {}) 
+          : (accountId ? { accountId } : { accountId: { in: accountIds } }),
         include: { account: true },
         orderBy: { createdAt: 'desc' },
         take: limit * 2,
       }),
       this.prisma.generalLedger.findMany({
-        where: {
-          OR: [
-            { debitAccountId: userId },
-            { creditAccountId: userId },
-            { debitAccountId: { in: accountIds } },
-            { creditAccountId: { in: accountIds } },
-          ],
-        },
+        where: isGlobal 
+          ? {} 
+          : {
+              OR: [
+                { debitAccountId: userId },
+                { creditAccountId: userId },
+                { debitAccountId: { in: accountIds } },
+                { creditAccountId: { in: accountIds } },
+              ],
+            },
         orderBy: { createdAt: 'desc' },
         take: limit * 2,
       }),

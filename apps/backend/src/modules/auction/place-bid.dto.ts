@@ -1,9 +1,9 @@
-// apps/backend/src/modules/auction/application/dtos/place-bid.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNumber, Min } from 'class-validator';
 
 export class PlaceBidDto {
-  @ApiProperty()
-  auctionId!: string;
-  @ApiProperty()
+  @ApiProperty({ example: 100, description: 'Teklif tutarı' })
+  @IsNumber()
+  @Min(0.01)
   amount!: number;
 }

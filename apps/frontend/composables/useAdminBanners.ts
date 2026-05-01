@@ -107,8 +107,10 @@ export const useAdminBanners = () => {
 
       // Nuxt Nitro proxy multipart/form-data isteklerini bozuyor.
       // /api/v1 yoktu — /api/upload kullanılmalı.
-      const backendUrl = config.public.apiBase || 'http://localhost:3001'
-      const res = await fetch(`${backendUrl}/api/v1/upload?subPath=banners`, {
+      // Üretim ortamında karmaşık birleştirmeler yerine doğrudan /api üzerinden gidiyoruz
+      const uploadUrl = '/api/v1/upload?subPath=banners'
+      
+      const res = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {})

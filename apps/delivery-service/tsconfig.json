@@ -31,5 +31,7 @@
         "../../packages/shared/shared-persistence/dist/index.d.ts"
       ]
     }
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }

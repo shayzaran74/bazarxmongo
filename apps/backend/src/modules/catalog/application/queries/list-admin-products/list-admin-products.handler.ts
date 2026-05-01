@@ -59,7 +59,7 @@ export class ListAdminProductsHandler
         image: item.media?.[0]?.url ?? null,
         images: item.media?.map(m => m.url) ?? [],
         price: listing ? listing.price : 0,
-        stock: listing?.stock ?? 0,
+        stock: listing?.availableQuantity ?? listing?.stock ?? 0,
         sku: listing?.sku ?? ''
       };
     });

@@ -77,11 +77,9 @@ export class WalletAdminController {
     @Query('limit') limit = '20',
     @Query('userId') userId?: string,
   ) {
-    if (!userId) {
-      throw new BadRequestException('userId parametresi gerekli');
-    }
+    // Not: Dashboard tüm işlemleri görmek istediği için userId artık opsiyonel
     const data = await this.queryBus.execute(
-      new GetWalletTransactionsQuery(userId, undefined, parseInt(page, 10) || 1, parseInt(limit, 10) || 20),
+      new GetWalletTransactionsQuery(userId || '', undefined, parseInt(page, 10) || 1, parseInt(limit, 10) || 20),
     );
     return { success: true, data };
   }

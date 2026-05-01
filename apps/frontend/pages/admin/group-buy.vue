@@ -73,8 +73,12 @@ useHead({
 
 const {
   campaigns, showModal, saving, editingCampaign, productSearch, searchResults, selectedProductData, form,
-  searchProducts, selectProduct, addTier, removeTier, openModal, saveCampaign, deleteCampaign
+  searchProducts, selectProduct, addTier, removeTier, openModal, saveCampaign, deleteCampaign, fetchGroupBuys
 } = useAdminGroupBuy()
+
+onMounted(() => {
+  fetchGroupBuys()
+})
 
 // Search watch trigger
 watch(productSearch, () => {

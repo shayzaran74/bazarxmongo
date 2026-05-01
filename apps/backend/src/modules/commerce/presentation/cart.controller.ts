@@ -16,15 +16,26 @@ import { ClearCartCommand } from '../application/commands/clear-cart.command';
 import { MergeCartCommand } from '../application/commands/merge-cart.command';
 import { GetCartQuery } from '../application/queries/get-cart.query';
 
+import { IsString, IsInt, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
 class GuestCartItemDto {
   @ApiProperty({ example: 'listing-uuid' })
+  @IsString()
   listingId!: string;
+
   @ApiProperty({ example: 2, minimum: 1, maximum: 99 })
+  @IsInt()
+  @Min(1)
+  @Max(99)
   quantity!: number;
 }
 
 class MergeCartDto {
   @ApiProperty({ type: [GuestCartItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestCartItemDto)
   items!: GuestCartItemDto[];
 }
 

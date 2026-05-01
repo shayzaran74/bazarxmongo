@@ -51,15 +51,15 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - DATABASE_URL=postgresql://barterborsa:barterborsa123@postgres:5432/barterborsa_core?schema=public
+      - REDIS_URL=redis://:barterborsa123@redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - RABBITMQ_URL=amqp://${RMQ_USER}:${RMQ_PASSWORD}@rabbitmq:5672
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - FRONTEND_URL=https://${DOMAIN}
+      - REDIS_PASSWORD=barterborsa123
+      - RABBITMQ_URL=amqp://barterborsa:barterborsa123@rabbitmq:5672
+      - JWT_ACCESS_SECRET=bazarx_access_secret_2026_safe_key
+      - JWT_REFRESH_SECRET=bazarx_refresh_secret_2026_safe_key
+      - FRONTEND_URL=https://balmy-game-recount.ngrok-free.dev
       - IYZICO_API_KEY=${IYZICO_API_KEY}
       - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY}
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
@@ -192,10 +192,11 @@ services:
     restart: unless-stopped
     command:
       - "http"
+      - "--log=stdout"
       - "nginx:80"
     env_file: .env
     environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - NGROK_AUTHTOKEN=3CWM9F43krNGnAqhb7Wj8j9jtxT_6ePigcgosvaTQXk957jdT
     depends_on:
       - nginx
     networks:

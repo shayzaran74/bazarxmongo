@@ -2,8 +2,11 @@
 
 ## Code Quality
 - **ZERO TOLERANCE for `any`**.
+- **File Headers:** Her dosyanın tam path'ini başına yorum satırı olarak yaz (örn: `// packages/shared/shared-core/src/domain/entity.base.ts`).
+- **TypeScript Direktifleri:** `@ts-ignore` veya `@ts-expect-error` kullanımı YASAKTIR.
 - Use **ESLint** and **Prettier** for formatting.
 - Every function must have explicit parameter and return types.
+- TypeScript strict mode uyumlu yaz.
 
 ## Communication
 - **Code comments must be in Turkish.**

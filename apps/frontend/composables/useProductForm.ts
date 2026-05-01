@@ -117,9 +117,17 @@ export const useProductForm = (params: { productId?: string | null; initialData?
 
       const body = new FormData()
       body.append('file', file)
-
+      let baseUrl = config.public.apiBase || '/api'
+      if (!baseUrl.startsWith('/') && !baseUrl.startsWith('http')) {
+        baseUrl = '/' + baseUrl
+      }
+      
+      const uploadUrl = baseUrl.endsWith('/api') 
+        ? `${baseUrl}/v1/upload?subPath=products` 
+        : `${baseUrl}/api/v1/upload?subPath=products`
+        
       try {
-        const res = await fetch(`${backendUrl}/api/v1/upload?subPath=products`, {
+        const res = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})

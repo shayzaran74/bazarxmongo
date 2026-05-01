@@ -3,8 +3,12 @@
 ## 🚀 Project Overview
 BazarX is a commercial barter/trading platform built with a modern monorepo architecture.
 - **Core Strategy:** Domain-Driven Design (DDD), CQRS, and Event-Driven Architecture.
-- **Backend:** NestJS 10, Fastify, Prisma (PostgreSQL), Mongoose (MongoDB).
-- **Frontend:** Nuxt 3, Vue 3, TailwindCSS.
+- **Backend:** NestJS 10+ (Fastify adapter).
+- **Monorepo:** Turborepo + pnpm workspaces (@barterborsa/ prefix).
+- **Infrastructure:** PostgreSQL 16 (Prisma), MongoDB 7 (Mongoose), Redis 7 (Cache/Session), RabbitMQ 3.13 (Event Bus).
+- **Inter-service:** gRPC (sync) or RabbitMQ (async).
+- **Frontend:** Nuxt 3 (SSR-safe), Vue 3, TailwindCSS.
+- **Auth:** Google OAuth2 + JWT + Redis session.
 
 ## 🛠 Main Commands
 - **Build:** `pnpm build` (turbo build)
@@ -33,10 +37,15 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - SSR Safety: Access Browser APIs (window, etc.) only in `onMounted` or client-side checks.
 
 ### General Rules
-- **Type Safety:** `any` is strictly forbidden. Use interfaces/types.
-- **Logging:** No `console.log`. Use `StructuredLogger` from `@barterborsa/shared-observability`.
-- **Language:** Code comments and explanations must be in **Turkish**.
-- **Imports:** Use `@barterborsa/` prefix for monorepo packages.
+- **File Headers:** Her dosyanın tam path'ini başına yorum satırı olarak yaz (örn: `// packages/shared/shared-core/src/domain/entity.base.ts`).
+- **Type Safety:** `any` KESİNLİKLE YASAKTIR. TypeScript strict mode uyumlu yaz.
+- **TypeScript Direktifleri:** `@ts-ignore` veya `@ts-expect-error` kullanımı YASAKTIR.
+- **Logging:** `console.log` YASAKTIR. Sadece `console.error`/`warn` (kritik) veya `StructuredLogger` (@barterborsa/shared-observability) kullan.
+- **Exports:** index.ts barrel export dosyaları oluştur.
+- **Language:** Kod yorumları ve açıklamalar TÜRKÇE olacaktır.
+- **Architecture:** Kendi mimari önerini ekleme, belirtilen DDD/CQRS/Outbox pattern'lerine sadık kal.
+- **Scope:** Sadece istenen dosyaları yaz, fazladan dosya ekleme.
+- **Imports:** Monorepo package isimleri `@barterborsa/` prefix'i ile olacak.
 
 ## 📜 Architecture Stabilization History
 ### Audit - May 2026 (Ecosystem & Tech Debt)

@@ -143,34 +143,55 @@
                 </div>
 
                 <div class="space-y-4">
-                  <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-md3-primary">₺</span>
-                    <input
-                      v-model="bidAmount"
-                      class="w-full pl-8 pr-4 py-4 border-2 border-slate-100 rounded-xl focus:border-md3-primary focus:ring-0 font-bold text-xl text-md3-primary outline-none transition-all"
-                      type="number"
-                    />
-                  </div>
-                  <div class="grid grid-cols-3 gap-2">
+                  <!-- Katılım Kontrolü -->
+                  <template v-if="!participation || !['ACTIVE', 'DEPOSIT_HELD', 'APPROVED'].includes(participation.status)">
+                    <div class="p-4 bg-secondary/10 rounded-xl border border-secondary/20 space-y-3">
+                      <p class="text-xs font-medium text-secondary leading-relaxed">
+                        Bu açık artırmaya teklif verebilmek için katılmanız gerekmektedir. 
+                        <span v-if="auction.participationDeposit > 0">
+                          Katılım için <strong>{{ formatPrice(auction.participationDeposit) }}</strong> teminat bakiyesi gereklidir.
+                        </span>
+                      </p>
+                      <button 
+                        @click="handleParticipate"
+                        class="w-full bg-secondary text-black py-4 rounded-xl font-bold text-lg hover:bg-secondary/90 transition-all active:scale-95 shadow-lg shadow-secondary/20"
+                      >
+                        Açık Artırmaya Katıl
+                      </button>
+                    </div>
+                  </template>
+
+                  <!-- Teklif Verme Arayüzü -->
+                  <template v-else>
+                    <div class="relative">
+                      <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-md3-primary">₺</span>
+                      <input
+                        v-model="bidAmount"
+                        class="w-full pl-8 pr-4 py-4 border-2 border-slate-100 rounded-xl focus:border-md3-primary focus:ring-0 font-bold text-xl text-md3-primary outline-none transition-all"
+                        type="number"
+                      />
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button 
+                        v-for="inc in [500, 1000, 2500]" :key="inc"
+                        @click="bidAmount = (auction.currentPrice || auction.startPrice) + inc"
+                        class="py-2 rounded-lg border border-slate-200 text-xs font-bold text-md3-primary hover:bg-slate-50 transition-colors"
+                      >
+                        +{{ inc }}
+                      </button>
+                    </div>
                     <button 
-                      v-for="inc in [500, 1000, 2500]" :key="inc"
-                      @click="bidAmount = (auction.currentPrice || auction.startPrice) + inc"
-                      class="py-2 rounded-lg border border-slate-200 text-xs font-bold text-md3-primary hover:bg-slate-50 transition-colors"
+                      @click="handlePlaceBid(bidAmount)"
+                      :disabled="bidding"
+                      class="w-full bg-md3-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-primary-container transition-all active:scale-95 disabled:opacity-50"
                     >
-                      +{{ inc }}
+                      <span v-if="!bidding">Hemen Teklif Ver</span>
+                      <span v-else class="flex items-center justify-center gap-2">
+                        <span class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        YÜKLENİYOR
+                      </span>
                     </button>
-                  </div>
-                  <button 
-                    @click="handlePlaceBid(bidAmount)"
-                    :disabled="bidding"
-                    class="w-full bg-md3-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-primary-container transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    <span v-if="!bidding">Hemen Teklif Ver</span>
-                    <span v-else class="flex items-center justify-center gap-2">
-                      <span class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      YÜKLENİYOR
-                    </span>
-                  </button>
+                  </template>
                 </div>
 
                 <div class="flex items-center gap-4 py-4 border-t border-slate-100">
@@ -242,7 +263,8 @@
 <script setup>
 const {
   auction, bids, loading, bidding, countdown,
-  isHighestBidder, handlePlaceBid, formatPrice
+  isHighestBidder, handlePlaceBid, formatPrice,
+  participation, handleParticipate
 } = useAuctionDetail()
 
 const bidAmount = ref(0)

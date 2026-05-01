@@ -161,6 +161,21 @@ export class CheckoutService {
             // Güncel stok bilgisini kullanıcıya göster
             throw new DomainException(`Yetersiz stok: ${g.listing!.getProps().title}`);
           }
+
+          // Group Buy (Birlikte Al) kampanyası varsa ilerlemeyi (katılım adedini) artır
+          const prismaListing = await tx.listing.findUnique({ where: { id: listingId } });
+          if (prismaListing && prismaListing.catalogProductId) {
+            const groupBuyUpdateQuery: any = {
+              where: {
+                status: 'ACTIVE',
+                productId: prismaListing.catalogProductId
+              },
+              data: {
+                currentQuantity: { increment: quantity }
+              }
+            };
+            await tx.groupBuy.updateMany(groupBuyUpdateQuery);
+          }
         }
 
         // Fiyatı DB'den çekilen listing'den hesapla (frontend manipülasyonuna karşı)
@@ -303,6 +318,21 @@ export class CheckoutService {
               .catch((releaseError: unknown) => {
                 const msg = releaseError instanceof Error ? releaseError.message : 'Bilinmeyen hata';
                 this.logger.error(`Stok serbest bırakma başarısız`, { listingId: item.getProps().listingId, error: msg });
+              });
+
+            // Rolllback GroupBuy (Birlikte Al) quantity
+            this.prisma.listing.findUnique({ where: { id: item.getProps().listingId } })
+              .then(prismaListing => {
+                if (prismaListing && prismaListing.catalogProductId) {
+                  const groupBuyRollbackQuery: any = {
+                    where: { status: 'ACTIVE', productId: prismaListing.catalogProductId },
+                    data: { currentQuantity: { decrement: item.getProps().quantity } }
+                  };
+                  return this.prisma.groupBuy.updateMany(groupBuyRollbackQuery);
+                }
+              })
+              .catch((err) => {
+                 this.logger.error(`GroupBuy rollback başarısız`, { error: err.message });
               });
           }
 

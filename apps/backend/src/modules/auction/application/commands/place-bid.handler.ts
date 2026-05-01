@@ -38,18 +38,30 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     const bid = AuctionBid.create(auction.id, command.userId, amount);
 
-    await this.prisma.$transaction(async (tx) => {
+    const createdBid = await this.prisma.$transaction(async (tx) => {
       await this.repository.save(auction);
-      await tx.auctionBid.create({
+      return tx.auctionBid.create({
         data: {
           id: bid.id,
           auctionId: bid.getProps().auctionId,
           userId: bid.getProps().userId,
           amount: bid.getProps().amount,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+              profile: { select: { firstName: true, lastName: true } }
+            }
+          }
         }
       });
     });
 
-    return { success: true, currentPrice: auction.getProps().currentPrice.toString() };
+    return { 
+      success: true, 
+      data: createdBid,
+      currentPrice: auction.getProps().currentPrice.toString() 
+    };
   }
 }

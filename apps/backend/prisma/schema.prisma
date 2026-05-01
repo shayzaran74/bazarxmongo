@@ -861,16 +861,21 @@ model Campaign {
 }
 
 model GroupBuy {
-  id              String   @id @default(cuid())
-  listingId       String?  @map("listing_id")
-  targetQuantity  Int      @map("target_quantity")
-  currentQuantity Int      @default(0) @map("current_quantity")
-  price           Decimal  @db.Decimal(18, 2)
-  endDate         DateTime @map("end_date")
-  status          String   @default("ACTIVE")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id              String    @id @default(cuid())
+  title           String?   @db.VarChar(255)
+  productId       String?   @map("product_id")
+  listingId       String?   @map("listing_id")
+  targetQuantity  Int       @map("target_quantity") @default(0)
+  currentQuantity Int       @default(0) @map("current_quantity")
+  price           Decimal   @db.Decimal(18, 2) @default(0)
+  startDate       DateTime? @map("start_date")
+  endDate         DateTime  @map("end_date")
+  status          String    @default("ACTIVE")
+  tiers           Json?     // e.g. [{ minQuantity: 10, price: 450 }]
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   @@index([listingId])
+  @@index([productId])
   @@map("group_buys")
 }
 

@@ -10,7 +10,7 @@ import { GroupBuyController } from './presentation/group-buy.controller';
 import { GiftCardAdminController } from './presentation/gift-card-admin.controller';
 import { CouponAdminController } from './presentation/coupon-admin.controller';
 import { PublicCouponController } from './presentation/public-coupon.controller';
-import { MarketingAdminController } from './presentation/marketing-admin.controller';
+import { MarketingAdminController, GroupBuyAdminController } from './presentation/marketing-admin.controller';
 import { IssueGiftVoucherHandler } from './application/commands/issue-gift-voucher.handler';
 import { RedeemGiftVoucherHandler } from './application/commands/redeem-gift-voucher.handler';
 import { GiftVoucherSchedulerService } from './application/services/gift-voucher-scheduler.service';
@@ -25,6 +25,7 @@ import { GiftVoucherSchedulerService } from './application/services/gift-voucher
     CouponAdminController,
     PublicCouponController,
     MarketingAdminController,
+    GroupBuyAdminController,
   ],
   providers: [
     IssueGiftVoucherHandler,
