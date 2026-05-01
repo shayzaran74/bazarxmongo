@@ -45,6 +45,25 @@ interface FinancialService {
     adminId: string;
     reason?: string;
   }): any;
+  processWithdrawal(data: {
+    withdrawalId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }): any;
+  createGiftCard(data: {
+    code: string;
+    amount: string;
+    expiresAt?: string;
+    customerId?: string;
+    note?: string;
+  }): any;
+  listGiftCards(data: {
+    customerId?: string;
+    page?: number;
+    limit?: number;
+  }): any;
+  getGiftCard(data: { id: string }): any;
 }
 
 @Injectable()
@@ -199,6 +218,64 @@ export class WalletGrpcService implements OnModuleInit {
         throw new DomainException(response.error || 'Request processing failed');
       }
       return response;
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+  async processWithdrawal(data: {
+    withdrawalId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    try {
+      const response: any = await firstValueFrom(
+        this.financialService.processWithdrawal(data)
+      );
+      if (!response.success) {
+        throw new DomainException(response.error || 'Withdrawal processing failed');
+      }
+      return response;
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+
+  async createGiftCard(data: {
+    code: string;
+    amount: string;
+    expiresAt?: string;
+    customerId?: string;
+    note?: string;
+  }) {
+    try {
+      const response: any = await firstValueFrom(
+        this.financialService.createGiftCard(data)
+      );
+      if (!response.success) {
+        throw new DomainException(response.error || 'Gift card creation failed');
+      }
+      return response;
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+
+  async listGiftCards(data: {
+    customerId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    try {
+      return await firstValueFrom(this.financialService.listGiftCards(data));
+    } catch (error: any) {
+      throw new DomainException(`Financial Service Error: ${error.message}`);
+    }
+  }
+
+  async getGiftCard(id: string) {
+    try {
+      return await firstValueFrom(this.financialService.getGiftCard({ id }));
     } catch (error: any) {
       throw new DomainException(`Financial Service Error: ${error.message}`);
     }

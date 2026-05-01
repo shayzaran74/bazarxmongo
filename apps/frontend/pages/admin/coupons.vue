@@ -280,9 +280,17 @@ const formatPrice = (price) => {
 const fetchCoupons = async () => {
   loading.value = true
   try {
-    const data = await $api('/api/coupons')
+    const data = await $api('/api/admin/coupons')
     if (data.success) {
-      coupons.value = data.data || []
+      // Map backend fields to frontend format
+      coupons.value = (data.data || []).map(c => ({
+        ...c,
+        type: c.discountPercentage ? 'PERCENTAGE' : 'FIXED',
+        value: c.discountPercentage || c.discountAmount || 0,
+        minAmount: c.minOrderAmount || 0,
+        usedCount: 0, // Backend doesn't have usage tracking yet
+        usageLimit: null
+      }))
     }
   } catch (error) {
     console.error('Fetch coupons error:', error)
@@ -308,7 +316,7 @@ const openModal = () => {
 const saveCoupon = async () => {
   saving.value = true
   try {
-    const data = await $api('/api/coupons', {
+    const data = await $api('/api/admin/coupons', {
       method: 'POST',
       body: form.value
     })
@@ -327,7 +335,7 @@ const saveCoupon = async () => {
 const deleteCoupon = async (id) => {
   if (!confirm('Bu kuponu silmek istediğinize emin misiniz?')) return
   try {
-    const data = await $api(`/api/coupons/${id}`, {
+    const data = await $api(`/api/admin/coupons/${id}`, {
       method: 'DELETE'
     })
     if (data.success) {

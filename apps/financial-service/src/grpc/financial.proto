@@ -18,6 +18,9 @@ service FinancialService {
   rpc GetWalletRequests (GetWalletRequestsRequest) returns (GetWalletRequestsResponse) {}
   rpc ProcessWalletRequest (ProcessWalletRequestRequest) returns (ProcessWalletRequestResponse) {}
   rpc ProcessWithdrawal (ProcessWithdrawalRequest) returns (ProcessWithdrawalResponse) {}
+  rpc CreateGiftCard (CreateGiftCardRequest) returns (CreateGiftCardResponse) {}
+  rpc ListGiftCards (ListGiftCardsRequest) returns (ListGiftCardsResponse) {}
+  rpc GetGiftCard (GetGiftCardRequest) returns (GiftCardRecord) {}
 }
 
 // ---- Mevcut Messages (değişmedi) ----
@@ -39,6 +42,7 @@ message GetWalletResponse {
   repeated Account accounts = 1;
   repeated WalletRequest requests = 2;
   repeated WithdrawalRecord withdrawalRequests = 3;
+  repeated GiftCardRecord giftCards = 4;
 }
 
 message GetBalanceRequest {
@@ -222,4 +226,45 @@ message ProcessWithdrawalRequest {
 message ProcessWithdrawalResponse {
   bool success = 1;
   string error = 2;
+}
+
+message CreateGiftCardRequest {
+  string code = 1;
+  string amount = 2;
+  string expiresAt = 3;
+  string customerId = 4;
+  string note = 5;
+}
+
+message CreateGiftCardResponse {
+  bool success = 1;
+  string giftCardId = 2;
+  string error = 3;
+}
+
+message ListGiftCardsRequest {
+  string customerId = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message GetGiftCardRequest {
+  string id = 1;
+}
+
+message GiftCardRecord {
+  string id = 1;
+  string code = 2;
+  string initialValue = 3;
+  string currentValue = 4;
+  string status = 5;
+  string expiresAt = 6;
+  string customerId = 7;
+  string note = 8;
+  string createdAt = 9;
+}
+
+message ListGiftCardsResponse {
+  repeated GiftCardRecord items = 1;
+  int32 total = 2;
 }

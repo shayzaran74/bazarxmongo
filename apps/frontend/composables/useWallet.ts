@@ -157,6 +157,22 @@ export const useWallet = () => {
     userTier, tierConfig, 
     formatPrice, fetchWallet,
     registerForBarter, topUpBarter, withdrawBarter, redeemGiftCard, isCardWinner,
+    requestWithdrawal: async (data: any) => {
+      submitting.value = true
+      try {
+        const res = await walletService.withdraw(data)
+        if (res.success) {
+          toast.success(res.message || 'Para çekme talebi başarıyla iletildi.')
+          await fetchWallet()
+          return true
+        }
+      } catch (e: any) {
+        toast.error(e.data?.message || 'Para çekme talebi sırasında bir hata oluştu.')
+      } finally {
+        submitting.value = false
+      }
+      return false
+    },
     fetchTransactions: walletService.getTransactions,
     fetchAccountTransactions: walletService.getAccountTransactions,
     fetchLedger: walletService.getLedger,

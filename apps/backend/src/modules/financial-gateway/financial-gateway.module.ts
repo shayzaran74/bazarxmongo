@@ -19,6 +19,7 @@ import { GetWalletRequestsHandler } from './application/queries/get-wallet-reque
 import { TopUpWalletHandler } from './application/commands/top-up-wallet.handler';
 import { RequestWithdrawalHandler } from './application/commands/request-withdrawal.handler';
 import { ProcessWalletRequestHandler } from './application/commands/process-wallet-request.handler';
+import { ProcessWithdrawalHandler } from './application/commands/process-withdrawal.handler';
 
 const QueryHandlers = [
   GetWalletBalanceHandler,
@@ -31,6 +32,7 @@ const CommandHandlers = [
   TopUpWalletHandler,
   RequestWithdrawalHandler,
   ProcessWalletRequestHandler,
+  ProcessWithdrawalHandler,
 ];
 
 @Global()

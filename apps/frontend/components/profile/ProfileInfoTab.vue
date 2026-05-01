@@ -39,6 +39,42 @@
           >
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.birthday') || 'Doğum Tarihi' }}</label>
+          <input
+            v-model="form.birthday"
+            type="date"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.gender') || 'Cinsiyet' }}</label>
+          <select
+            v-model="form.gender"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base appearance-none bg-white"
+          >
+            <option value="">{{ $t('profile.selectGender') || 'Seçiniz' }}</option>
+            <option value="MALE">{{ $t('profile.genderMale') || 'Erkek' }}</option>
+            <option value="FEMALE">{{ $t('profile.genderFemale') || 'Kadın' }}</option>
+            <option value="OTHER">{{ $t('profile.genderOther') || 'Belirtmek İstemiyorum' }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.district') || 'İlçe' }}</label>
+          <input
+            v-model="form.district"
+            type="text"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.neighborhood') || 'Mahalle' }}</label>
+          <input
+            v-model="form.neighborhood"
+            type="text"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+          >
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profile.accountStatus') }}</label>
           <div class="flex items-center gap-2">
             <span

@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { userService } from '~/services/userService'
+import { useOrderService } from '~/services/api/OrderService'
 import type { LoyaltyStatus, LoyaltyHistoryItem, UserProfileStats } from '@barterborsa/shared-types'
 
 export const useProfileLoyalty = () => {
@@ -8,17 +9,20 @@ export const useProfileLoyalty = () => {
   const loyaltyHistoryLoading = ref(false)
   const userTierData = ref<unknown>(null)
   const userStats = ref<UserProfileStats | null>(null)
+  const recentOrders = ref<any[]>([])
 
   const loyaltyStatusMapped = computed(() => {
     if (!loyaltyStatus.value) return null
     const d = loyaltyStatus.value
+    const tierInfo = (userTierData.value as any) || {}
+    
     return {
-      tier: d.rank || 'Bronze',
+      tier: d.rank || tierInfo.currentTier?.name || 'BRONZE',
       xp: d.xp || 0,
-      nextTier: 'Silver',
-      nextTierXP: 1000,
-      progress: Math.min((d.xp || 0) / 1000 * 100, 100),
-      message: 'Keep going!'
+      nextTier: tierInfo.nextTier?.name || 'Silver',
+      nextTierXP: tierInfo.nextTier?.minXp || 1000,
+      progress: tierInfo.progress || Math.min((d.xp || 0) / 1000 * 100, 100),
+      message: tierInfo.nextTier ? `${tierInfo.nextTier.name} seviyesine ulaşmanıza az kaldı!` : 'En üst seviyedesiniz!'
     }
   })
 
@@ -44,13 +48,19 @@ export const useProfileLoyalty = () => {
     try {
       const data = await userService.fetchUserStats()
       if (data.success && data.data) userStats.value = data.data.stats
+      
+      const { getMyOrders } = useOrderService()
+      const ordersRes = await getMyOrders({ limit: 5 })
+      if (ordersRes.success && ordersRes.data) {
+        recentOrders.value = ordersRes.data
+      }
     } catch (error) {
       console.error('Error fetching stats:', error)
     }
   }
 
   return { 
-    loyaltyStatusMapped, loyaltyHistory, loyaltyHistoryLoading, userTierData, userStats,
+    loyaltyStatusMapped, loyaltyHistory, loyaltyHistoryLoading, userTierData, userStats, recentOrders,
     fetchLoyaltyData, fetchUserStats 
   }
 }

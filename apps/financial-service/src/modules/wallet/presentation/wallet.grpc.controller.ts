@@ -113,7 +113,7 @@ export class WalletGrpcController {
       });
     }
 
-    const [topupRequests, withdrawalRequests] = await Promise.all([
+    const [topupRequests, withdrawalRequests, giftCards] = await Promise.all([
       this.prisma.accountTopUpRequest.findMany({
         where: { userId: data.userId },
         orderBy: { createdAt: 'desc' },
@@ -123,6 +123,10 @@ export class WalletGrpcController {
         where: { userId: data.userId },
         orderBy: { createdAt: 'desc' },
         take: 10,
+      }),
+      this.prisma.giftCard.findMany({
+        where: { customerId: data.userId },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -177,6 +181,17 @@ export class WalletGrpcController {
         createdAt: req.createdAt.toISOString(),
         processedAt: req.processedAt ? req.processedAt.toISOString() : '',
         rejectionReason: req.rejectionReason || '',
+      })),
+      giftCards: giftCards.map(g => ({
+        id: g.id,
+        code: g.code,
+        initialValue: g.initialValue.toString(),
+        currentValue: g.currentValue.toString(),
+        status: g.status,
+        expiresAt: g.expiresAt ? g.expiresAt.toISOString() : '',
+        customerId: g.customerId || '',
+        note: g.note || '',
+        createdAt: g.createdAt.toISOString(),
       })),
     };
   }
@@ -314,6 +329,268 @@ export class WalletGrpcController {
         rejectionReason: item.rejectionReason || '',
       })),
       total,
+    };
+  }
+
+  @GrpcMethod('FinancialService', 'RequestWithdrawal')
+  async requestWithdrawal(data: {
+    userId: string;
+    amount: string;
+    iban: string;
+    accountHolder: string;
+    bankName: string;
+    idempotencyKey?: string;
+  }) {
+    try {
+      const amount = new Decimal(data.amount);
+      if (!amount.isPositive()) {
+        return { success: false, error: 'Çekim tutarı sıfırdan büyük olmalıdır.' };
+      }
+
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Check balance (Simple check)
+        const wallet = await tx.wallet.findUnique({ where: { userId: data.userId } });
+        const mainAccount = await tx.account.findFirst({
+          where: { userId: data.userId, type: 'MAIN' }
+        });
+
+        if (!wallet || !mainAccount || mainAccount.availableBalance.lessThan(amount)) {
+          throw new Error('Yetersiz bakiye.');
+        }
+
+        const request = await tx.accountWithdrawalRequest.create({
+          data: {
+            userId: data.userId,
+            amount,
+            iban: data.iban,
+            accountHolder: data.accountHolder,
+            bankName: data.bankName,
+            status: 'PENDING',
+          },
+        });
+
+        // Block funds
+        await tx.account.update({
+          where: { id: mainAccount.id },
+          data: {
+            availableBalance: { decrement: amount },
+            blockedBalance: { increment: amount }
+          }
+        });
+
+        // Create a pending transaction record so it shows in history
+        await tx.accountTransaction.create({
+          data: {
+            accountId: mainAccount.id,
+            amount,
+            type: 'WITHDRAWAL',
+            direction: 'DEBIT',
+            status: 'PENDING',
+            description: `${data.bankName} - ${data.iban} hesabına çekim talebi`,
+            referenceId: request.id,
+            referenceType: 'WITHDRAWAL_REQUEST'
+          }
+        });
+
+        return { withdrawalId: request.id };
+      });
+
+      return { success: true, withdrawalId: result.withdrawalId };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
+    }
+  }
+
+  @GrpcMethod('FinancialService', 'ProcessWithdrawal')
+  async processWithdrawal(data: {
+    withdrawalId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    try {
+      const request = await this.prisma.accountWithdrawalRequest.findUnique({
+        where: { id: data.withdrawalId },
+      });
+
+      if (!request) {
+        return { success: false, error: 'Talep bulunamadı.' };
+      }
+
+      if (request.status !== 'PENDING') {
+        return { success: false, error: 'Talep zaten işlenmiş.' };
+      }
+
+      if (data.action === 'approve') {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.accountWithdrawalRequest.update({
+            where: { id: data.withdrawalId },
+            data: {
+              status: 'APPROVED',
+              processedAt: new Date(),
+              processedBy: data.adminId,
+            },
+          });
+
+          // Deduct from blocked balance and wallet balance
+          await tx.wallet.update({
+            where: { userId: request.userId },
+            data: { balanceTL: { decrement: request.amount } }
+          });
+
+          await tx.account.update({
+            where: { userId_type: { userId: request.userId, type: 'MAIN' } },
+            data: {
+              balance: { decrement: request.amount },
+              blockedBalance: { decrement: request.amount }
+            }
+          });
+
+          // Update transaction status
+          await tx.accountTransaction.updateMany({
+            where: { referenceId: data.withdrawalId, referenceType: 'WITHDRAWAL_REQUEST' },
+            data: { status: 'COMPLETED' }
+          });
+        });
+      } else {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.accountWithdrawalRequest.update({
+            where: { id: data.withdrawalId },
+            data: {
+              status: 'REJECTED',
+              processedAt: new Date(),
+              processedBy: data.adminId,
+              rejectionReason: data.reason || '',
+            },
+          });
+
+          // Return to available balance
+          await tx.account.update({
+            where: { userId_type: { userId: request.userId, type: 'MAIN' } },
+            data: {
+              availableBalance: { increment: request.amount },
+              blockedBalance: { decrement: request.amount }
+            }
+          });
+
+          // Update transaction status
+          await tx.accountTransaction.updateMany({
+            where: { referenceId: data.withdrawalId, referenceType: 'WITHDRAWAL_REQUEST' },
+            data: { status: 'FAILED' }
+          });
+        });
+      }
+
+      return { success: true };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
+    }
+  }
+
+  @GrpcMethod('FinancialService', 'CreateGiftCard')
+  async createGiftCard(data: {
+    code?: string;
+    amount: string;
+    expiresAt?: string;
+    customerId?: string;
+    note?: string;
+  }) {
+    try {
+      let code = data.code;
+      if (!code || code.trim() === '') {
+        // Otomatik kod üret: BZX-XXXX-XXXX formatında
+        const suffix = Math.random().toString(36).substring(2, 10).toUpperCase();
+        code = `BZX-${suffix.substring(0, 4)}-${suffix.substring(4, 8)}`;
+      }
+      
+      const amount = new Decimal(data.amount || '0');
+      if (amount.isNegative()) throw new Error('Tutar negatif olamaz.');
+
+      // gRPC boş stringleri undefined/null yerine "" olarak gönderebilir
+      const expiresAt = (data.expiresAt && data.expiresAt.trim() !== '') 
+        ? new Date(data.expiresAt) 
+        : null;
+        
+      const customerId = (data.customerId && data.customerId.trim() !== '')
+        ? data.customerId
+        : null;
+
+      const giftCard = await this.prisma.giftCard.create({
+        data: {
+          code: code!,
+          initialValue: amount,
+          currentValue: amount,
+          expiresAt: expiresAt,
+          customerId: customerId,
+          note: data.note || '',
+          status: 'Active',
+        },
+      });
+      return { success: true, giftCardId: giftCard.id };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
+    }
+  }
+
+  @GrpcMethod('FinancialService', 'ListGiftCards')
+  async listGiftCards(data: { customerId?: string; page?: number; limit?: number }) {
+    const page = data.page || 1;
+    const limit = data.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (data.customerId) where.customerId = data.customerId;
+
+    const [items, total] = await Promise.all([
+      this.prisma.giftCard.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.giftCard.count({ where }),
+    ]);
+
+    return {
+      items: items.map(item => ({
+        id: item.id,
+        code: item.code,
+        initialValue: item.initialValue.toString(),
+        currentValue: item.currentValue.toString(),
+        status: item.status,
+        expiresAt: item.expiresAt ? item.expiresAt.toISOString() : '',
+        customerId: item.customerId || '',
+        note: item.note || '',
+        createdAt: item.createdAt.toISOString(),
+      })),
+      total,
+    };
+  }
+
+  @GrpcMethod('FinancialService', 'GetGiftCard')
+  async getGiftCard(data: { id: string }) {
+    if (!data.id) {
+      throw new Error('Hediye kartı ID bilgisi gereklidir.');
+    }
+
+    const giftCard = await this.prisma.giftCard.findUnique({
+      where: { id: data.id },
+    });
+
+    if (!giftCard) {
+      throw new Error('Hediye kartı bulunamadı.');
+    }
+
+    return {
+      id: giftCard.id,
+      code: giftCard.code,
+      initialValue: giftCard.initialValue.toString(),
+      currentValue: giftCard.currentValue.toString(),
+      status: giftCard.status,
+      expiresAt: giftCard.expiresAt ? giftCard.expiresAt.toISOString() : '',
+      customerId: giftCard.customerId || '',
+      note: giftCard.note || '',
+      createdAt: giftCard.createdAt.toISOString(),
     };
   }
 }

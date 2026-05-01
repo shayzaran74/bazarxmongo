@@ -72,7 +72,16 @@ export const useProfile = () => {
   const txLoading = ref(false)
 
   const loadWalletData = async () => {
-    await wallet.fetchWallet()
+    txLoading.value = true
+    try {
+      await wallet.fetchWallet()
+      const res = await wallet.fetchTransactions({ limit: 10 })
+      if (res.success && res.data) {
+        transactions.value = res.data as any
+      }
+    } finally {
+      txLoading.value = false
+    }
   }
 
   return {

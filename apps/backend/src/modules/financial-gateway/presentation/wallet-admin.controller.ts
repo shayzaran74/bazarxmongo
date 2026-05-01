@@ -7,6 +7,7 @@ import { GetWithdrawalsQuery } from '../application/queries/get-withdrawals.quer
 import { GetWalletRequestsQuery } from '../application/queries/get-wallet-requests.query';
 import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-transactions.query';
 import { ProcessWalletRequestCommand } from '../application/commands/process-wallet-request.command';
+import { ProcessWithdrawalCommand } from '../application/commands/process-withdrawal.command';
 
 interface AuthenticatedUser {
   id: string;
@@ -68,6 +69,24 @@ export class WalletAdminController {
       new GetWithdrawalsQuery(userId, status, parseInt(page, 10) || 1, parseInt(limit, 10) || 10),
     );
     return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Approve withdrawal' })
+  @Post('withdrawals/:id/approve')
+  async approveWithdrawal(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
+    await this.commandBus.execute(new ProcessWithdrawalCommand(id, 'approve', admin.id));
+    return { success: true, message: 'Çekim talebi onaylandı' };
+  }
+
+  @ApiOperation({ summary: 'Reject withdrawal' })
+  @Post('withdrawals/:id/reject')
+  async rejectWithdrawal(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    await this.commandBus.execute(new ProcessWithdrawalCommand(id, 'reject', admin.id, body.reason));
+    return { success: true, message: 'Çekim talebi reddedildi' };
   }
 
   @ApiOperation({ summary: 'Get transactions for a specific user (admin view)' })

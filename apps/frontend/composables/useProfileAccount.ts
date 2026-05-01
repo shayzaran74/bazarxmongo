@@ -11,8 +11,8 @@ export const useProfileAccount = () => {
   const { $toast: toast } = useNuxtApp()
 
   const profileLoading = ref(false)
-  const profileForm = ref<UserProfileUpdate>({
-    firstName: '', lastName: '', phoneNumber: '', district: '', neighborhood: ''
+  const profileForm = ref<any>({
+    firstName: '', lastName: '', phoneNumber: '', district: '', neighborhood: '', birthday: '', gender: ''
   })
 
   const showAvatarModal = ref(false)
@@ -27,7 +27,9 @@ export const useProfileAccount = () => {
         lastName: user.lastName || '',
         phoneNumber: (user as any).phoneNumber || '',
         district: user.district || '',
-        neighborhood: user.regionName || ''
+        neighborhood: user.regionName || '',
+        birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
+        gender: user.gender || ''
       }
     }
   }, { immediate: true })

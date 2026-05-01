@@ -9,9 +9,9 @@
         <!-- Breadcrumb -->
         <nav class="flex items-center gap-2 text-xs font-label-caps text-outline mb-6">
           <NuxtLink class="hover:text-md3-primary" to="/">MARKET</NuxtLink>
-          <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;"></span>
           <NuxtLink class="hover:text-md3-primary" to="/auctions">CANLI TEKLİFLER</NuxtLink>
-          <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;"></span>
           <span class="text-md3-primary font-bold uppercase">{{ auction.title }}</span>
         </nav>
 
@@ -21,7 +21,7 @@
             <!-- Gallery Card -->
             <div class="bg-white rounded-xl overflow-hidden ambient-shadow relative group">
               <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                <span class="bg-secondary text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-secondary/20">
+                <span class="bg-secondary text-blue-500 text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-secondary/20">
                   <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
                   EKSPERTİZ RAPORU
                 </span>
@@ -29,7 +29,7 @@
               
               <div class="aspect-[4/3] bg-slate-50 flex items-center justify-center relative cursor-zoom-in overflow-hidden">
                 <img 
-                  :src="selectedImage || auction.Product?.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000'" 
+                  :src="selectedImage || auction.Product?.image || auction.listing?.catalogProduct?.media?.[0]?.url || 'https://placehold.co/600x600?text=A%C3%A7%C4%B1k+Art%C4%B1rma'" 
                   class="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                   alt="Auction Image" 
                 />
@@ -68,21 +68,18 @@
               <div class="p-8 space-y-6">
                 <div v-if="activeTab === 'Ürün Özellikleri'" class="animate-fade-in">
                   <h2 class="text-title-sm text-md3-primary mb-4">{{ auction.title }}</h2>
-                  <p class="text-on-surface-variant leading-relaxed mb-6">
-                    {{ auction.description || 'BazarX ayrıcalığıyla sunulan bu özel seri, havacılık sınıfı titanyum gövdesi ve safir kristal camı ile dayanıklılığı zarafetle buluşturuyor.' }}
+                  <p class="text-on-surface-variant leading-relaxed mb-6 whitespace-pre-wrap">
+                    {{ auction.description || auction.listing?.description || auction.listing?.catalogProduct?.description || 'Bu açık artırma için henüz bir açıklama girilmemiştir.' }}
                   </p>
-                  <div class="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
-                    <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/10">
-                      <span class="text-[10px] font-bold text-outline uppercase block mb-1">Materyal</span>
-                      <span class="text-sm font-semibold text-md3-primary">Grade 5 Titanyum</span>
-                    </div>
-                    <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/10">
-                      <span class="text-[10px] font-bold text-outline uppercase block mb-1">Batarya</span>
-                      <span class="text-sm font-semibold text-md3-primary">96 Saat Kullanım</span>
-                    </div>
-                    <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/10">
-                      <span class="text-[10px] font-bold text-outline uppercase block mb-1">Su Direnci</span>
-                      <span class="text-sm font-semibold text-md3-primary">100 Metre (10 ATM)</span>
+                  
+                  <div v-if="auction.listing?.catalogProduct?.attributes" class="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
+                    <div 
+                      v-for="(val, key) in auction.listing.catalogProduct.attributes" 
+                      :key="key"
+                      class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/10"
+                    >
+                      <span class="text-[10px] font-bold text-outline uppercase block mb-1">{{ key }}</span>
+                      <span class="text-sm font-semibold text-md3-primary">{{ val }}</span>
                     </div>
                   </div>
                 </div>
@@ -210,20 +207,17 @@
             <!-- Rules Box -->
             <div class="bg-tertiary-fixed text-on-tertiary-fixed p-6 rounded-xl ambient-shadow space-y-4">
               <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-2xl">gavel</span>
+                <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">BazarX</span>
                 <h3 class="font-bold uppercase tracking-tight">Açık Artırma Kuralları</h3>
               </div>
               <ul class="text-sm space-y-3 opacity-90 font-medium">
                 <li class="flex gap-2">
-                  <span class="material-symbols-outlined text-sm mt-0.5">check_circle</span>
                   <span>Tekliflerin geri alınması mümkün değildir.</span>
                 </li>
                 <li class="flex gap-2">
-                  <span class="material-symbols-outlined text-sm mt-0.5">check_circle</span>
                   <span>Son 10 saniye içinde gelen teklifler süreyi 30 saniye uzatır.</span>
                 </li>
                 <li class="flex gap-2 text-md3-secondary font-bold">
-                  <span class="material-symbols-outlined text-sm mt-0.5">verified_user</span>
                   <span>BazarX %100 Orijinallik Garantisi kapsamındadır.</span>
                 </li>
               </ul>
@@ -231,30 +225,7 @@
           </div>
         </div>
 
-        <!-- Related Auctions -->
-        <section class="mt-16 space-y-8">
-          <div class="flex justify-between items-center">
-            <h2 class="text-headline-md text-md3-primary font-black uppercase italic tracking-tighter">Benzer Açık Artırmalar</h2>
-            <NuxtLink class="text-md3-primary font-bold text-sm flex items-center gap-1 hover:underline" to="/auctions">
-              Tümünü Gör <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </NuxtLink>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div v-for="i in 4" :key="i" class="bg-white rounded-xl ambient-shadow overflow-hidden group hover:-translate-y-2 transition-all">
-              <div class="aspect-video relative overflow-hidden bg-surface-container">
-                <img src="https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1000" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div class="absolute top-2 right-2 bg-error text-white text-[8px] font-black px-2 py-0.5 rounded-full">CANLI</div>
-              </div>
-              <div class="p-4 space-y-3">
-                <h4 class="font-bold text-md3-primary truncate uppercase italic">Lüks Klasik Seri v{{ i }}</h4>
-                <div class="flex justify-between items-center pt-2 border-t border-slate-50">
-                  <span class="text-[10px] text-outline font-bold uppercase">Son Teklif</span>
-                  <span class="text-lg font-black text-md3-primary">{{ formatPrice(12400 + (i * 1000)) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+
       </div>
     </main>
   </div>

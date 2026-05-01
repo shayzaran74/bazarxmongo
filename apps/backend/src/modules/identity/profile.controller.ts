@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
   ApiTags, 
@@ -18,7 +18,7 @@ import {
 
 @ApiTags('Profile')
 @ApiBearerAuth()
-@Controller('identity/profile')
+@Controller('user/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
   constructor(
@@ -37,6 +37,8 @@ export class ProfileController {
   @ApiOperation({ summary: 'Update user profile', description: 'Kullanıcının profil bilgilerini günceller.' })
   @ApiBody({ type: UpdateProfileDto })
   @ApiResponse({ status: 200, description: 'Profil başarıyla güncellendi.' })
+  @Put()
+  @Patch()
   @Post()
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const userId = req.user.id;

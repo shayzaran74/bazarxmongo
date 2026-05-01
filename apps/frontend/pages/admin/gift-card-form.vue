@@ -45,6 +45,27 @@
 
         <!-- Form Fields -->
         <div class="space-y-4">
+          <div v-if="!isEditing">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Hediye Kartı Kodu
+            </label>
+            <div class="flex gap-2">
+              <input
+                v-model="form.code"
+                type="text"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Boş bırakırsanız otomatik üretilir"
+              >
+              <button 
+                type="button"
+                class="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                @click="generateRandomCode"
+              >
+                Rastgele Üret
+              </button>
+            </div>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Başlangıç Değeri *
@@ -64,16 +85,23 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
-              Müşteri E-posta (Opsiyonel)
+              Müşteri Seçin (Opsiyonel)
             </label>
-            <input
-              v-model="form.customerEmail"
-              type="email"
+            <select
+              v-model="form.customerId"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="musteri@example.com"
             >
+              <option value="">Genel (Kullanıcıya Atanmamış)</option>
+              <option 
+                v-for="user in registeredUsers" 
+                :key="user.id" 
+                :value="user.id"
+              >
+                {{ user.profile?.firstName }} {{ user.profile?.lastName }} ({{ user.email }})
+              </option>
+            </select>
             <p class="mt-1 text-sm text-gray-500">
-              Müşteriye özel bir hediye kartı oluşturmak için e-posta adresini girin.
+              Kayıtlı kullanıcılardan birini seçebilirsiniz.
             </p>
           </div>
 
@@ -137,9 +165,11 @@ const { $api } = useApi()
 const isEditing = computed(() => !!route.query.id)
 const saving = ref(false)
 const expiryType = ref('none')
+const registeredUsers = ref([])
 
 const form = ref({
   initialValue: 10,
+  customerId: '',
   customerEmail: '',
   expiresAt: '',
   note: '',
@@ -148,6 +178,20 @@ const form = ref({
   customer: null
 })
 
+const fetchUsers = async () => {
+  try {
+    const response = await $api('/api/v1/admin/users?limit=100')
+    registeredUsers.value = response.items || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+  }
+}
+
+const generateRandomCode = () => {
+  const suffix = Math.random().toString(36).substring(2, 10).toUpperCase()
+  form.value.code = `BZX-${suffix.substring(0, 4)}-${suffix.substring(4, 8)}`
+}
+
 const fetchGiftCard = async () => {
   if (!route.query.id) return
 
@@ -155,12 +199,11 @@ const fetchGiftCard = async () => {
     const response = await $api(`/api/v1/admin/gift-cards/${route.query.id}`)
 
     form.value = response.data
-    if (form.value.customer) {
-      form.value.customerEmail = form.value.customer.email
+    if (form.value.customerId) {
+      // customerEmail logic if needed
     }
     if (form.value.expiresAt) {
       expiryType.value = 'custom'
-      // Format date for html5 input (YYYY-MM-DD)
       form.value.expiresAt = new Date(form.value.expiresAt).toISOString().split('T')[0]
     }
   } catch (error) {
@@ -173,8 +216,9 @@ const saveGiftCard = async () => {
   saving.value = true
   try {
     const data = {
+      code: form.value.code,
       initialValue: form.value.initialValue,
-      customerEmail: form.value.customerEmail,
+      customerId: form.value.customerId || null,
       note: form.value.note,
       expiresAt: expiryType.value === 'custom' ? form.value.expiresAt : null
     }
@@ -192,13 +236,14 @@ const saveGiftCard = async () => {
   } catch (error) {
     console.error('Error saving gift card:', error)
     const toast = useNuxtApp().$toast
-    toast.error('Hata oluştu')
+    toast.error(error.message || 'Hata oluştu')
   } finally {
     saving.value = false
   }
 }
 
 onMounted(() => {
+  fetchUsers()
   fetchGiftCard()
 })
 </script>

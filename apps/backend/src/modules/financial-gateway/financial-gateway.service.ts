@@ -90,4 +90,35 @@ export class FinancialGatewayService {
   }) {
     return this.walletService.processWalletRequest(data);
   }
+
+  async processWithdrawal(data: {
+    withdrawalId: string;
+    action: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    return this.walletService.processWithdrawal(data);
+  }
+
+  async createGiftCard(data: {
+    code: string;
+    amount: string;
+    expiresAt?: string;
+    customerId?: string;
+    note?: string;
+  }) {
+    return this.walletService.createGiftCard(data);
+  }
+
+  async listGiftCards(data: {
+    customerId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.walletService.listGiftCards(data);
+  }
+
+  async getGiftCard(id: string) {
+    return this.walletService.getGiftCard(id);
+  }
 }
