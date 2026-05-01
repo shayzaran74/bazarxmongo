@@ -4,6 +4,10 @@
   "description": "BazarX API V1 Core",
   "private": true,
   "type": "commonjs",
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "license": "UNLICENSED",
   "scripts": {
     "prebuild": "rimraf dist",
@@ -78,7 +82,8 @@
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
     "sharp": "^0.33.5",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "prisma": "5.12.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -92,7 +97,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/pdfkit": "^0.17.6",
     "@types/sharp": "^0.31.1",
-    "prisma": "5.12.0",
+
     "rimraf": "^5.0.5",
     "source-map-support": "^0.5.21",
     "ts-loader": "^9.4.3",

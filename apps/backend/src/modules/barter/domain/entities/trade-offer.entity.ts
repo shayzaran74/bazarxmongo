@@ -74,6 +74,11 @@ export class TradeOffer extends AggregateRoot<TradeOfferProps> {
     });
   }
 
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: TradeOfferProps, id: string): TradeOffer {
+    return new TradeOffer(props, id);
+  }
+
   get status(): TradeOfferStatus {
     return this.props.status;
   }

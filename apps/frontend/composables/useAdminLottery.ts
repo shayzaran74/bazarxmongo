@@ -35,7 +35,24 @@ export const useAdminLottery = () => {
           limit: pagination.limit,
         }
       })
-      lotteries.value = res.data?.items || res.data || []
+      const items = res.data?.items || res.data || []
+      
+      const mapLotteryAdmin = (raw: any) => {
+        if (!raw) return {}
+        const media = raw.listing?.catalogProduct?.media || []
+        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || null
+        return {
+          ...raw,
+          Product: raw.listing?.catalogProduct ? {
+            name: raw.listing.catalogProduct.name,
+            image,
+            category: raw.listing.catalogProduct.category || null
+          } : null,
+          title: raw.title || raw.listing?.title || 'Çekiliş'
+        }
+      }
+
+      lotteries.value = items.map(mapLotteryAdmin)
       pagination.total = res.data?.total || lotteries.value.length
       stats.total = lotteries.value.length
       stats.active = lotteries.value.filter((l: any) => l.status === 'ACTIVE').length

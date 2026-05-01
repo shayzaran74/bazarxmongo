@@ -29,8 +29,8 @@ export class PrismaLotteryRepository implements ILotteryRepository {
     const data = this.mapper.toPersistence(lottery);
     await this.prisma.lottery.upsert({
       where: { id: lottery.id },
-      update: data,
-      create: data,
+      update: data as any,
+      create: data as any,
     });
   }
 

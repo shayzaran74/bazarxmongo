@@ -3,7 +3,10 @@
 import { Command } from '@barterborsa/shared-core';
 
 export class DrawLotteryCommand extends Command {
-  constructor(public readonly lotteryId: string) {
+  constructor(
+    public readonly lotteryId: string,
+    public readonly actorId: string = 'SYSTEM',
+  ) {
     super();
   }
 }

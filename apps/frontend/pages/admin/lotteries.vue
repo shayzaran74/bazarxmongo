@@ -50,11 +50,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { PlusIcon, TicketIcon } from '@heroicons/vue/24/outline'
 import LotteryStats from '~/components/admin/lottery/LotteryStats.vue'
 import LotteryFilters from '~/components/admin/lottery/LotteryFilters.vue'
 import LotteryTable from '~/components/admin/lottery/LotteryTable.vue'
+import CreateLotteryModal from '~/components/modals/CreateLotteryModal.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 useHead({ title: 'ÇEKİLİŞ YÖNETİMİ // BAZARX' })

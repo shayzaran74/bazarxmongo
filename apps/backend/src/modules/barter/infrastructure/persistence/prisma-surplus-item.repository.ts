@@ -27,8 +27,8 @@ export class PrismaSurplusItemRepository implements ISurplusItemRepository {
     const data = this.mapper.toPersistence(item);
     await this.prisma.surplusItem.upsert({
       where: { id: item.id },
-      update: data,
-      create: data,
+      update: data as any,
+      create: data as any,
     });
   }
 

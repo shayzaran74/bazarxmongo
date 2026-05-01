@@ -18,7 +18,7 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
 
     const existing = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
-      select: { id: true, status: true, userId: true },
+      select: { id: true, status: true, userId: true, companyId: true },
     });
     if (!existing) throw new NotFoundException('Satıcı bulunamadı');
 
@@ -33,6 +33,13 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
       where: { id: vendorId },
       data: { status: 'APPROVED', verifiedAt: new Date(), isVerified: true },
     });
+
+    if (existing.companyId) {
+      await this.prisma.company.update({
+        where: { id: existing.companyId },
+        data: { status: 'APPROVED', verifiedAt: new Date() },
+      });
+    }
 
     // Kullanıcı rolünü VENDOR yap
     if (existing.userId) {

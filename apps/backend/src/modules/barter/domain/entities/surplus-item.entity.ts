@@ -16,9 +16,9 @@ export interface SurplusItemProps {
   unit: string;
   minTradeQuantity?: Prisma.Decimal;
   unitPrice?: Prisma.Decimal;
-  wantedCategories?: any;
-  tradeModes?: any;
-  images?: any;
+  wantedCategories?: unknown;
+  tradeModes?: unknown;
+  images?: unknown;
   location?: string;
   city?: PilotCity;
   status: SurplusStatus;
@@ -29,6 +29,11 @@ export interface SurplusItemProps {
 export class SurplusItem extends AggregateRoot<SurplusItemProps> {
   private constructor(props: SurplusItemProps, id?: string) {
     super(props, id);
+  }
+
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: SurplusItemProps, id: string): SurplusItem {
+    return new SurplusItem(props, id);
   }
 
   public static create(

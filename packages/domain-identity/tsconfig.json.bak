@@ -1,0 +1,29 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "../..",
+    "paths": {
+      "@barterborsa/shared-core": [
+        "../shared/shared-core/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-persistence": [
+        "../shared/shared-persistence/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-security": [
+        "../shared/shared-security/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-types": [
+        "../shared/shared-types/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts"
+  ]
+}

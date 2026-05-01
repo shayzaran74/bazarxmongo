@@ -20,8 +20,19 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
     const auction = await this.repository.findById(command.auctionId);
     if (!auction) throw new DomainException('Auction not found');
 
+    // Teklif verenin geçerli katılım kaydı olmalı
+    const participation = await this.prisma.auctionParticipation.findUnique({
+      where: {
+        auctionId_userId: { auctionId: command.auctionId, userId: command.userId },
+      },
+    });
+    const geçerliDurumlar = ['DEPOSIT_HELD', 'APPROVED', 'ACTIVE'];
+    if (!participation || !geçerliDurumlar.includes(participation.status)) {
+      throw new DomainException('Bu açık artırmaya katılım kaydınız bulunmuyor');
+    }
+
     const amount = new Prisma.Decimal(command.amount);
-    
+
     // Domain logic: validate and update current price
     auction.placeBid(command.userId, amount);
 
@@ -29,7 +40,7 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     await this.prisma.$transaction(async (tx) => {
       await this.repository.save(auction);
-      await (tx as any).auctionBid.create({
+      await tx.auctionBid.create({
         data: {
           id: bid.id,
           auctionId: bid.getProps().auctionId,

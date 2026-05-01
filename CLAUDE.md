@@ -39,6 +39,38 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - **Imports:** Use `@barterborsa/` prefix for monorepo packages.
 
 ## 📜 Architecture Stabilization History
+### Audit - May 2026 (Ecosystem & Tech Debt)
+- **CommissionEngineService:** `isGroupTransaction=true` → `BrandEcosystem.internalCommRate` DB'den okunuyor (varsayılan %4); yoksa tier-based fallback. ✅
+- **CreateEcosystemHandler:** Duplicate guard (vendor zaten owner mı) + `EcosystemAuditLog{ ECOSYSTEM_CREATED }` eklendi. ✅
+- **RemoveEcosystemMemberCommand/Handler:** Yeni endpoint — owner/admin kontrolü + `EcosystemAuditLog{ MEMBER_REMOVED, severity:HIGH }`. ✅
+- **UpdateEcosystemSettingsCommand/Handler:** `isBlindPool` + `internalCommRate` güncelleme + `EcosystemAuditLog{ SETTINGS_UPDATED, oldValue/newValue }`. ✅
+- **EcosystemController:** `body:any → CreateEcosystemDto`, `PATCH /settings`, `DELETE /members/:vendorId` endpoint'leri eklendi. ✅
+- **Teknik Borç (33 ihlal):** `auction.mapper`, `lottery.mapper`, `surplus-item.mapper`, `trade-offer.mapper` → Prisma payload tipleri. `SurplusItem/TradeOffer/Auction.createFrom` statik metodları eklendi. `surplus.controller`, `wanted-items.controller`, `barter-admin.controller` → `AuthenticatedUser`, `Prisma.*WhereInput`, typed DTO'lar. `any = 0`. ✅
+
+### Audit - May 2026 (Barter System)
+- **counterOffer Guard:** `offers.controller.ts` karşı teklif hedefi firma `APPROVED` kontrolü eklendi. ✅
+- **Sıralı Escrow (gRPC holdFunds):** `AcceptTradeOfferHandler` → initiator teminat blokajı, ardından receiver blokajı; receiver başarısız olursa initiator otomatik iade. ✅
+- **holdId Persistansı:** `session.setHoldIds(fromHoldId, toHoldId)` → `SwapSession.fromCollateralHoldId/toCollateralHoldId` DB'ye yazılıyor, `collateralStatus → HELD`. ✅
+- **SmartCap Enforcement:** `WatchtowerService.checkBarterSmartCap()` eklendi — `VendorB2BData.barterLimitOverride` veya default 50.000 TRY limitini aşarsa AuditLog + `DomainException`. ✅
+- **AuditLog:** `BARTER_OFFER_ACCEPTED` her kabul işleminde yazılıyor. ✅
+- **Tip Güvenliği:** `SwapSessionMapper.toDomain/toPersistence` `any`'den `SwapSessionRaw/Record<string,unknown>`'a; entity `shipments: any → unknown`; controller DTO'ları typed. `any` = 0. ✅
+
+### Audit - May 2026 (Lottery System)
+- **`participate` Gerçek Bilet Satın Alma:** `LotteryController.participate()` → `holdFunds(LOTTERY_TICKET)` + `LotteryTicket` kaydı oluşturma. `maxTicketsPerUser`, `totalTickets` kotası, kopya numara kontrolü (5 retry). ✅
+- **Kazanan Atama:** `DrawLotteryHandler` → `winningNumber` çekildikten sonra `LotteryTicket.findFirst({ has: winningNumber })` → `lottery.setWinner(userId)`. ✅
+- **`Lottery.createFrom` + `setWinner`:** Entity'ye persistence reconstitution + winner setter eklendi. `draw()` guard düzeltildi. ✅
+- **`LotteryDrawScheduler`:** 60 sn'de bir süresi dolan `ACTIVE` çekilişler için `DrawLotteryCommand` otomatik tetikler. ✅
+- **`lottery-admin.controller.ts`:** `endLottery` artık `DrawLotteryCommand` çalıştırıyor (gerçek kazanan belirleniyor). Tüm işlemler AuditLog'a yazılıyor. ✅
+- **Tip Güvenliği:** `query/dto/where/user: any` → `AuthenticatedUser`, `Prisma.LotteryWhereInput`, `Record<string,unknown>`. `any` = 0. ✅
+
+### Audit - May 2026 (Auction System)
+- **Teminat Blokajı:** `AuctionController.participate()` → Financial Service `holdFunds(AUCTION_BID)` çağrısı eklendi; `holdId` DB'ye kaydediliyor, status `DEPOSIT_HELD`. ✅
+- **PlaceBidHandler Guard:** Teklif öncesi `AuctionParticipation` `DEPOSIT_HELD|APPROVED|ACTIVE` kontrolü eklendi. ✅
+- **AuctionCloseScheduler:** Her 60 sn'de bir süresi dolan `ACTIVE` artırmaları kapatır; kazananı belirler, `AuctionWinner` oluşturur, kaybedenlere `refundFunds()` yapar. ✅
+- **AuditLog:** Her katılım, kazanan belirleme ve teminat iadesi için `AuditLogService.log()` eklendi. ✅
+- **Admin approveParticipation:** Guard + AuditLog eklendi; `user: any` → `AuthenticatedUser` düzeltildi. ✅
+- **Tip Güvenliği:** `any` sıfırlandı (query, where, dto, error catch hepsi tipli). ✅
+
 ### Master Plan v4.3 — Faz 7 (Nisan 2026)
 - **`pages/simulator.vue`:** Karlılık Simülatörü — B2C + B2B parametreleri, gerçek zamanlı hesaplama, vergi breakdown, kırılım uyarıları. Public erişim. ✅
 
@@ -167,6 +199,10 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - `.claude/rules/style.md`: Global coding style and Turkish comments.
 - `.claude/rules/commerce.md`: Order, Cart and Inventory safety.
 - `.claude/rules/security.md`: RBAC, Data Isolation and Audit Log rules.
+- `.claude/rules/auction-audit.md`: Auction system audit instructions.
+- `.claude/rules/lottery-audit.md`: Lottery system audit instructions.
+- `.claude/rules/barter-audit.md`: Commercial Barter system audit instructions.
+- `.claude/rules/ecosystem-audit.md`: Ecosystem and Dealer Network system audit instructions.
 
 ## 🕹️ Custom Commands
 - `/audit`: General module technical audit.
@@ -174,3 +210,7 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - `/admin-audit`: Admin dashboard security and system settings audit.
 - `/vendor-audit`: Vendor dashboard isolation and store audit.
 - `/commerce-audit`: Transactional flow and stock safety audit.
+- `/auction-audit`: End-to-end audit for the Auction system (participation, bidding, holds).
+- `/lottery-audit`: End-to-end audit for the Lottery system (tickets, random draw, winner assignment).
+- `/barter-audit`: End-to-end audit for the Commercial Barter (Ticari Takas) system.
+- `/ecosystem-audit`: End-to-end audit for the Brand Ecosystem & Dealer Network system.

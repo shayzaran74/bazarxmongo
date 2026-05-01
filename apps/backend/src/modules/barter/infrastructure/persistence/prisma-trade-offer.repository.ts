@@ -36,21 +36,31 @@ export class PrismaTradeOfferRepository implements ITradeOfferRepository {
 
   async save(offer: TradeOffer): Promise<void> {
     const data = this.mapper.toPersistence(offer);
-    const { offeredItems, requestedItems, ...offerData } = data;
 
     await this.prisma.tradeOffer.upsert({
       where: { id: offer.id },
+      // Sadece durum ve tarih alanları güncellenir; ilişkili öğeler değişmez
       update: {
-        ...offerData as any,
+        status: data.status as any,
+        acceptedAt: data.acceptedAt as Date | undefined,
+        rejectedAt: data.rejectedAt as Date | undefined,
+        cancelledAt: data.cancelledAt as Date | undefined,
+        completedAt: data.completedAt as Date | undefined,
       },
       create: {
-        ...offerData as any,
-        offeredItems: {
-          create: offeredItems,
-        },
-        requestedItems: {
-          create: requestedItems,
-        },
+        id: data.id as string,
+        fromCompanyId: data.fromCompanyId as string,
+        toCompanyId: data.toCompanyId as string,
+        message: data.message as string | undefined,
+        status: data.status as any,
+        cashAmount: data.cashAmount as string,
+        cashDirection: data.cashDirection as string,
+        cashCurrency: data.cashCurrency as string,
+        expiresAt: data.expiresAt as Date,
+        initiatorId: data.initiatorId as string,
+        initiatorType: data.initiatorType as string,
+        receiverId: data.receiverId as string,
+        receiverType: data.receiverType as string,
       },
     });
   }

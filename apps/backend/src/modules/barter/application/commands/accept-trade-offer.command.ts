@@ -3,7 +3,10 @@
 import { Command } from '@barterborsa/shared-core';
 
 export class AcceptTradeOfferCommand extends Command {
-  constructor(public readonly offerId: string) {
+  constructor(
+    public readonly offerId: string,
+    public readonly actorId: string = 'UNKNOWN',
+  ) {
     super();
   }
 }

@@ -4,6 +4,16 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } f
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { Prisma } from '@prisma/client';
+
+interface SurplusCategoryDto {
+  name: string;
+  slug?: string;
+  icon?: string;
+  parentId?: string;
+  order?: number;
+  isActive?: boolean;
+}
 
 @ApiTags('Barter Admin')
 @ApiBearerAuth()
@@ -47,8 +57,8 @@ export class BarterAdminController {
   @ApiOperation({ summary: 'List wanted items' })
   @Get('wanted-items')
   async getWantedItems(@Query('status') status?: string) {
-    const where: any = {};
-    if (status) where.status = status;
+    const where: Prisma.WantedItemWhereInput = {};
+    if (status) where.status = status as any;
     const data = await this.prisma.wantedItem.findMany({
       where,
       include: { company: true },
@@ -68,11 +78,11 @@ export class BarterAdminController {
   }
 
   @Post('surplus-categories')
-  async createSurplusCategory(@Body() dto: any) {
+  async createSurplusCategory(@Body() dto: SurplusCategoryDto) {
     const res = await this.prisma.surplusCategory.create({
       data: {
         name: dto.name,
-        slug: dto.slug || dto.name.toLowerCase().replace(/ /g, '-'),
+        slug: dto.slug ?? dto.name.toLowerCase().replace(/ /g, '-'),
         icon: dto.icon,
         parentId: dto.parentId,
         order: dto.order || 0,
@@ -83,7 +93,7 @@ export class BarterAdminController {
   }
 
   @Patch('surplus-categories/:id')
-  async updateSurplusCategory(@Param('id') id: string, @Body() dto: any) {
+  async updateSurplusCategory(@Param('id') id: string, @Body() dto: Partial<SurplusCategoryDto>) {
     const res = await this.prisma.surplusCategory.update({
       where: { id },
       data: {
@@ -117,8 +127,8 @@ export class BarterAdminController {
   @ApiOperation({ summary: 'List swap sessions (chains)' })
   @Get('chains')
   async getBarterChains(@Query('status') status?: string) {
-    const where: any = {};
-    if (status) where.status = status;
+    const where: Prisma.SwapSessionWhereInput = {};
+    if (status) where.status = status as any;
     const data = await this.prisma.swapSession.findMany({
       where,
       include: {
@@ -135,8 +145,8 @@ export class BarterAdminController {
   @ApiOperation({ summary: 'List demand matches' })
   @Get('demand-matches')
   async getDemandMatches(@Query('status') status?: string) {
-    const where: any = {};
-    if (status) where.status = status;
+    const where: Prisma.DemandMatchWhereInput = {};
+    if (status) where.status = status as any;
     const data = await this.prisma.demandMatch.findMany({
       where,
       orderBy: { score: 'desc' },

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "../..",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@barterborsa/shared-core": [
+        "../../packages/shared/shared-core/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-messaging": [
+        "../../packages/shared/shared-messaging/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-observability": [
+        "../../packages/shared/shared-observability/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-persistence": [
+        "../../packages/shared/shared-persistence/dist/index.d.ts"
+      ]
+    }
+  }
+}

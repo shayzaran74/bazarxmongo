@@ -1,19 +1,38 @@
 // apps/backend/src/modules/auction/infrastructure/persistence/mappers/lottery.mapper.ts
 
 import { Injectable } from '@nestjs/common';
-import { Lottery } from '../../../domain/entities/lottery.entity';
+import { Prisma } from '@prisma/client';
+import { Lottery, LotteryProps } from '../../../domain/entities/lottery.entity';
 import { LotteryStatus } from '../../../domain/enums/lottery-status.enum';
+
+type LotteryRaw = Prisma.LotteryGetPayload<object>;
 
 @Injectable()
 export class LotteryMapper {
-  toDomain(raw: any): Lottery {
-    return (Lottery as any).createFrom({
-      ...raw,
+  toDomain(raw: LotteryRaw): Lottery {
+    const props: LotteryProps = {
+      title: raw.title,
+      prizeDescription: raw.prizeDescription ?? undefined,
+      ticketPrice: raw.ticketPrice,
       status: raw.status as LotteryStatus,
-    }, raw.id);
+      winnerId: raw.winnerId ?? undefined,
+      endTime: raw.endTime,
+      maxTicketsPerUser: raw.maxTicketsPerUser,
+      ownerId: raw.ownerId,
+      startTime: raw.startTime,
+      ticketDigits: raw.ticketDigits,
+      totalTickets: raw.totalTickets,
+      numbersPerTicket: raw.numbersPerTicket,
+      prizeValue: raw.prizeValue ?? undefined,
+      winningNumber: raw.winningNumber ?? undefined,
+      listingId: raw.listingId ?? undefined,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+    };
+    return Lottery.createFrom(props, raw.id);
   }
 
-  toPersistence(domain: Lottery): any {
+  toPersistence(domain: Lottery): Record<string, unknown> {
     const props = domain.getProps();
     return {
       id: domain.id,

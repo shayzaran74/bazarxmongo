@@ -3,8 +3,10 @@
 // KVKK md. 5, 10, 12 — kullanıcı üyelik sözleşmesinde bu yetkiyi kabul eder
 
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { DomainException } from '@barterborsa/shared-core';
 
 export type WatchFlag = 'PRICE_MANIPULATION' | 'QUOTA_ABUSE' | 'SUSPICIOUS_PATTERN' | 'COMPLIANCE_BREACH';
 
@@ -87,6 +89,39 @@ export class WatchtowerService {
     }
 
     return isViolation;
+  }
+
+  // Barter SmartCap: teminat tutarı şirket limitini aşıyorsa flag + throw
+  async checkBarterSmartCap(
+    vendorId: string,
+    collateralAmount: Prisma.Decimal,
+    offerId: string,
+  ): Promise<void> {
+    const DEFAULT_BARTER_LIMIT = new Prisma.Decimal(50_000);
+
+    // Firmaya özgü barter limitini VendorB2BData'dan al
+    const b2bData = await this.prisma.vendorB2BData.findFirst({
+      where: { vendor: { userId: vendorId } },
+      select: { barterLimitOverride: true, b2bWalletLimit: true },
+    });
+
+    const limit =
+      b2bData?.barterLimitOverride ??
+      b2bData?.b2bWalletLimit ??
+      DEFAULT_BARTER_LIMIT;
+
+    if (collateralAmount.gt(limit)) {
+      await this.flag({
+        vendorId,
+        flag: 'QUOTA_ABUSE',
+        description: `Teminat tutarı (${collateralAmount.toString()} TRY) firma limitini (${limit.toString()} TRY) aşıyor`,
+        tradeId: offerId,
+        severity: 'HIGH',
+      });
+      throw new DomainException(
+        `Takas teklifi firma barter limitini aşıyor (limit: ${limit.toString()} TRY)`,
+      );
+    }
   }
 
   // Admin: Watchtower olaylarını listele

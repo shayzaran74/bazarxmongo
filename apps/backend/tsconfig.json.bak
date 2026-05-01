@@ -1,0 +1,44 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "../..",
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "paths": {
+      "@barterborsa/domain-identity": [
+        "../../packages/domain-identity/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-core": [
+        "../../packages/shared/shared-core/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-messaging": [
+        "../../packages/shared/shared-messaging/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-nest": [
+        "../../packages/shared/shared-nest/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-persistence": [
+        "../../packages/shared/shared-persistence/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-security": [
+        "../../packages/shared/shared-security/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-types": [
+        "../../packages/shared/shared-types/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/shared/*/src/**/*",
+    "../../packages/domain-identity/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*.spec.ts",
+    "../../packages/**/*.spec.ts"
+  ]
+}

@@ -27,40 +27,43 @@ COPY . .
 # Prisma client generate
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
-# Üretilen client'ı diğer paketlerin görebileceği yerlere kopyala
-RUN mkdir -p node_modules/.prisma packages/domain-identity/node_modules/.prisma packages/shared/shared-persistence/node_modules/.prisma && \
-    cp -r apps/backend/node_modules/.prisma/* node_modules/.prisma/ 2>/dev/null || true && \
-    cp -r apps/backend/node_modules/.prisma/* packages/domain-identity/node_modules/.prisma/ 2>/dev/null || true && \
-    cp -r apps/backend/node_modules/.prisma/* packages/shared/shared-persistence/node_modules/.prisma/ 2>/dev/null || true
-
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
+RUN pnpm --filter "@barterborsa/domain-*" build
 
 # Backend build
 RUN pnpm --filter @bazarx/backend build
+
+# Kesin çözüm: pnpm deploy ile uygulamayı izole et
+RUN pnpm --filter @bazarx/backend --prod deploy /app/out
+RUN cp -rv /app/apps/backend/dist /app/out/dist
+
+# Proto dosyalarını manuel kopyalayalım (Monorepo yapısına uygun derinlikte)
+RUN mkdir -p /app/out/dist/apps/backend/src/modules/financial-gateway/grpc && \
+    cp /app/apps/backend/src/modules/financial-gateway/grpc/financial.proto \
+       /app/out/dist/apps/backend/src/modules/financial-gateway/grpc/financial.proto
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl netcat-openbsd
+
+# Prisma'yı yerel bağımlılıklardan kullanalım, global kurulum yetki hatalarına yol açıyor
+
 
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-# Production node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/dist ./dist
+# Deploy edilmiş tertemiz klasörü kopyala
+COPY --from=builder --chown=nestjs:nodejs /app/out ./
+# Prisma klasörünün kopyalandığından emin ol (deploy bazen atlayabilir)
 COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 
-# Prisma client'ı zaten node_modules kopyalaması ile geliyor
-
 USER nestjs
-
 EXPOSE 3001
 
-# Prisma migrate + app başlat
-CMD ["sh", "-c", "npx prisma@5.12.0 migrate deploy && node dist/main.js"]
+# Prisma generate + migrate + app başlat
+CMD ["sh", "-c", "npx prisma@5.12.0 generate --schema=prisma/schema.prisma && ./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma && node dist/apps/backend/src/main.js"]

@@ -10,7 +10,7 @@ export interface SwapSessionProps {
   initiatorId: string;
   receiverId: string;
   shipmentMode: string;
-  shipments?: any;
+  shipments?: unknown;
   escrowId?: string;
   collateralAmount: Prisma.Decimal;
   collateralCurrency: string;
@@ -59,6 +59,20 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
       createdAt: now,
       updatedAt: now,
     });
+  }
+
+  // Her iki tarafın holdId'sini kaydeder ve collateral durumunu HELD'e geçirir
+  public setHoldIds(fromHoldId: string, toHoldId: string): void {
+    this.props.fromCollateralHoldId = fromHoldId;
+    this.props.toCollateralHoldId = toHoldId;
+    this.props.collateralStatus = 'HELD';
+    this.props.collateralLockedAt = new Date();
+    this.props.updatedAt = new Date();
+  }
+
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: SwapSessionProps, id: string): SwapSession {
+    return new SwapSession(props, id);
   }
 
   public activate(): void {

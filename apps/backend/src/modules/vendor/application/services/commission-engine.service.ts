@@ -49,8 +49,22 @@ export class CommissionEngineService {
     const amount = new Decimal(transactionAmount);
 
     // Grup içi işlem → XP indirimi uygulanamaz (Master Plan §3.2)
+    // Ekosisteme özel internalCommRate önceliklidir; yoksa tier tabanlı grup oranı
     if (isGroupTransaction) {
-      const groupRate  = tierVO.getGroupCommissionRate();
+      const ecosystem = await this.prisma.brandEcosystem.findFirst({
+        where: {
+          OR: [
+            { ownerId: vendorId },
+            { members: { some: { id: vendorId } } },
+          ],
+        },
+        select: { internalCommRate: true },
+      });
+
+      const groupRate = ecosystem
+        ? Number(ecosystem.internalCommRate)
+        : tierVO.getGroupCommissionRate();
+
       const commission = amount.mul(groupRate).div(100).toDecimalPlaces(2);
 
       return {

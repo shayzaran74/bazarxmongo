@@ -1,0 +1,37 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDirs": [
+      "./src",
+      "../../packages/shared/..."
+    ],
+    "outDir": "./dist",
+    "baseUrl": "../..",
+    "paths": {
+      "@barterborsa/shared-core": [
+        "../../packages/shared/shared-core/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-messaging": [
+        "../../packages/shared/shared-messaging/dist/index.d.ts"
+      ],
+      "@barterborsa/shared-observability": [
+        "../../packages/shared/shared-observability/dist/index.d.ts"
+      ],
+      "@prisma/client": [
+        "./src/generated/client"
+      ],
+      ".prisma/client": [
+        "./src/generated/client"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*.spec.ts"
+  ]
+}

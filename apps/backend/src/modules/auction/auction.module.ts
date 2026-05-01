@@ -6,6 +6,8 @@ import { PrismaModule } from '@barterborsa/shared-persistence';
 
 import { PlaceBidHandler } from './application/commands/place-bid.handler';
 import { DrawLotteryHandler } from './application/commands/draw-lottery.handler';
+import { AuctionCloseScheduler } from './application/services/auction-close.scheduler';
+import { LotteryDrawScheduler } from './application/services/lottery-draw.scheduler';
 import { PrismaAuctionRepository } from './infrastructure/persistence/prisma-auction.repository';
 import { AuctionMapper } from './infrastructure/persistence/mappers/auction.mapper';
 import { PrismaLotteryRepository } from './infrastructure/persistence/prisma-lottery.repository';
@@ -21,6 +23,8 @@ import { LotteryAdminController } from './lottery-admin.controller';
   providers: [
     PlaceBidHandler,
     DrawLotteryHandler,
+    AuctionCloseScheduler,
+    LotteryDrawScheduler,
     AuctionMapper,
     LotteryMapper,
     { provide: 'IAuctionRepository', useClass: PrismaAuctionRepository },

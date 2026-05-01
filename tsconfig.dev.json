@@ -31,7 +31,8 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    "apps/**/*"
   ],
   "exclude": [
     "node_modules",

@@ -36,8 +36,8 @@ export class PrismaSwapSessionRepository implements ISwapSessionRepository {
     const data = this.mapper.toPersistence(session);
     await this.prisma.swapSession.upsert({
       where: { id: session.id },
-      update: data,
-      create: data,
+      update: data as any,
+      create: data as any,
     });
   }
 

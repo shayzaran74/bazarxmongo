@@ -14,6 +14,19 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 import { WantedItem } from '../domain/entities/wanted-item.entity';
 import { WantedItemType } from '../domain/enums/wanted-item-type.enum';
 
+interface AuthenticatedUser { id: string; role: string; }
+
+interface WantedItemCreateBody {
+  categoryId: string;
+  keywords?: string[];
+  description?: string;
+  type?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  latitude?: number;
+  longitude?: number;
+}
+
 @ApiTags('Wanted Items')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -23,7 +36,7 @@ export class WantedItemsController {
 
   @ApiOperation({ summary: 'Kullanıcının aradıkları listesi' })
   @Get('me')
-  async getMyItems(@CurrentUser() user: any) {
+  async getMyItems(@CurrentUser() user: AuthenticatedUser) {
     const items = await this.prisma.wantedItem.findMany({
       where: { userId: user.id, isActive: true },
       include: {
@@ -37,7 +50,7 @@ export class WantedItemsController {
   @ApiOperation({ summary: 'Aranan ürün ekle' })
   @ApiResponse({ status: 201 })
   @Post()
-  async create(@CurrentUser() user: any, @Body() body: any) {
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: WantedItemCreateBody) {
     // Kategori var mı kontrol et
     const category = await this.prisma.surplusCategory.findUnique({
       where: { id: body.categoryId },
@@ -64,11 +77,11 @@ export class WantedItemsController {
       data: {
         id:          item.id,
         categoryId:  body.categoryId,
-        keywords:    body.keywords || [],
+        keywords:    body.keywords ?? [],
         description: body.description,
         companyId:   vendor?.company?.id,
         userId:      user.id,
-        type:        body.type || 'PRODUCT',
+        type:        (body.type || 'PRODUCT') as any,
         minPrice:    body.minPrice,
         maxPrice:    body.maxPrice,
         latitude:    body.latitude,
@@ -85,7 +98,7 @@ export class WantedItemsController {
   @ApiParam({ name: 'id' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@CurrentUser() user: any, @Param('id') id: string) {
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const item = await this.prisma.wantedItem.findFirst({
       where: { id, userId: user.id },
     });

@@ -58,6 +58,11 @@ export class Auction extends AggregateRoot<AuctionProps> {
     });
   }
 
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: AuctionProps, id: string): Auction {
+    return new Auction(props, id);
+  }
+
   public start(): void {
     if (this.props.status !== AuctionStatus.SCHEDULED) {
       throw new DomainException('Only scheduled auctions can be started');

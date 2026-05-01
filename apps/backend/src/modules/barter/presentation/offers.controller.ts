@@ -16,6 +16,38 @@ import { Prisma } from '@prisma/client';
 import { TradeOffer } from '../domain/entities/trade-offer.entity';
 import { TradeOfferItem } from '../domain/entities/trade-offer-item.entity';
 
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
+
+interface TradeOfferItemBody {
+  quantity?: number;
+  estimatedValue?: number;
+  listingId?: string;
+  surplusItemId?: string;
+}
+
+interface CreateOfferBody {
+  toCompanyId: string;
+  offeredItems?: TradeOfferItemBody[];
+  requestedItems?: TradeOfferItemBody[];
+  cashAmount?: number;
+  cashDirection?: string;
+  currency?: string;
+  expiresInDays?: number;
+  message?: string;
+  receiverId?: string;
+}
+
+interface CounterOfferBody {
+  cashAmount?: number;
+  cashDirection?: string;
+  currency?: string;
+  expiresInDays?: number;
+  message?: string;
+}
+
 @ApiTags('Offers')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -28,7 +60,7 @@ export class OffersController {
 
   @ApiOperation({ summary: 'Gelen/giden teklifleri listele' })
   @Get('my')
-  async getMyOffers(@CurrentUser() user: any) {
+  async getMyOffers(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     const offers = await this.prisma.tradeOffer.findMany({
@@ -53,29 +85,32 @@ export class OffersController {
   @ApiOperation({ summary: 'Takas teklifi oluştur' })
   @ApiResponse({ status: 201 })
   @Post()
-  async createOffer(@CurrentUser() user: any, @Body() body: any) {
+  async createOffer(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateOfferBody) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     // toCompany doğrula
     const toCompany = await this.prisma.company.findUnique({
       where: { id: body.toCompanyId },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (!toCompany) throw new NotFoundException('Hedef şirket bulunamadı');
+    if (toCompany.status !== 'APPROVED') {
+      throw new BadRequestException('Hedef şirket henüz onaylanmamış. Takas teklifi verilemez.');
+    }
 
     // Domain entity ile oluştur
-    const offeredItems = (body.offeredItems || []).map((i: any) =>
+    const offeredItems = (body.offeredItems ?? []).map((i) =>
       TradeOfferItem.create(
-        new Prisma.Decimal(i.quantity || 1),
-        new Prisma.Decimal(i.estimatedValue || 0),
+        new Prisma.Decimal(i.quantity ?? 1),
+        new Prisma.Decimal(i.estimatedValue ?? 0),
         i.listingId,
         i.surplusItemId,
       ),
     );
-    const requestedItems = (body.requestedItems || []).map((i: any) =>
+    const requestedItems = (body.requestedItems ?? []).map((i) =>
       TradeOfferItem.create(
-        new Prisma.Decimal(i.quantity || 1),
-        new Prisma.Decimal(i.estimatedValue || 0),
+        new Prisma.Decimal(i.quantity ?? 1),
+        new Prisma.Decimal(i.estimatedValue ?? 0),
         i.listingId,
         i.surplusItemId,
       ),
@@ -86,9 +121,9 @@ export class OffersController {
       body.toCompanyId,
       offeredItems,
       requestedItems,
-      new Prisma.Decimal(body.cashAmount || 0),
-      body.cashDirection || 'TO_RECEIVER',
-      body.expiresInDays || 7,
+      new Prisma.Decimal(body.cashAmount ?? 0),
+      (body.cashDirection ?? 'TO_RECEIVER') as any,
+      body.expiresInDays ?? 7,
       body.message,
     );
 
@@ -99,15 +134,15 @@ export class OffersController {
         fromCompanyId: vendor.company.id,
         toCompanyId:   body.toCompanyId,
         status:        'PENDING',
-        cashAmount:    new Prisma.Decimal(body.cashAmount || 0),
-        cashDirection: body.cashDirection || 'TO_RECEIVER',
-        cashCurrency:  body.currency || 'TRY',
+        cashAmount:    new Prisma.Decimal(body.cashAmount ?? 0),
+        cashDirection: body.cashDirection ?? 'TO_RECEIVER',
+        cashCurrency:  body.currency ?? 'TRY',
         message:       body.message,
         initiatorId:   user.id,
         initiatorType: 'VENDOR',
-        receiverId:    body.receiverId || body.toCompanyId,
+        receiverId:    body.receiverId ?? body.toCompanyId,
         receiverType:  'VENDOR',
-        expiresAt:     new Date(Date.now() + (body.expiresInDays || 7) * 24 * 60 * 60 * 1000),
+        expiresAt:     new Date(Date.now() + (body.expiresInDays ?? 7) * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -118,9 +153,9 @@ export class OffersController {
   @ApiParam({ name: 'id', description: 'Orijinal teklif ID' })
   @Post(':id/counter')
   async counterOffer(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') originalOfferId: string,
-    @Body() body: any,
+    @Body() body: CounterOfferBody,
   ) {
     const vendor = await this.getVendorWithCompany(user.id);
 
@@ -128,6 +163,17 @@ export class OffersController {
       where: { id: originalOfferId, toCompanyId: vendor.company.id, status: 'PENDING' },
     });
     if (!original) throw new NotFoundException('Teklif bulunamadı veya yanıtlamaya yetkili değilsiniz');
+
+    // Karşı teklif hedefi (orijinal teklifçi) APPROVED olmalı
+    if (original.fromCompanyId) {
+      const fromCompany = await this.prisma.company.findUnique({
+        where: { id: original.fromCompanyId },
+        select: { status: true },
+      });
+      if (fromCompany?.status !== 'APPROVED') {
+        throw new BadRequestException('Karşı teklif gönderilecek şirket onaylı değil.');
+      }
+    }
 
     // Orijinal teklifi COUNTER_OFFERED olarak işaretle
     await this.prisma.tradeOffer.update({
@@ -141,9 +187,9 @@ export class OffersController {
         fromCompanyId:  vendor.company.id,
         toCompanyId:    original.fromCompanyId!,
         status:         'PENDING',
-        cashAmount:     new Prisma.Decimal(body.cashAmount || 0),
-        cashDirection:  body.cashDirection || 'TO_RECEIVER',
-        cashCurrency:   body.currency || 'TRY',
+        cashAmount:     new Prisma.Decimal(body.cashAmount ?? 0),
+        cashDirection:  body.cashDirection ?? 'TO_RECEIVER',
+        cashCurrency:   body.currency ?? 'TRY',
         message:        body.message,
         parentOfferId:  originalOfferId,
         counterOfferId: originalOfferId,
@@ -151,7 +197,7 @@ export class OffersController {
         initiatorType:  'VENDOR',
         receiverId:     original.fromCompanyId!,
         receiverType:   'VENDOR',
-        expiresAt:      new Date(Date.now() + (body.expiresInDays || 7) * 24 * 60 * 60 * 1000),
+        expiresAt:      new Date(Date.now() + (body.expiresInDays ?? 7) * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -161,7 +207,7 @@ export class OffersController {
   @ApiOperation({ summary: 'Teklif detayı' })
   @ApiParam({ name: 'id' })
   @Get(':id')
-  async findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  async findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     const offer = await this.prisma.tradeOffer.findFirst({
@@ -186,7 +232,7 @@ export class OffersController {
   @ApiOperation({ summary: 'Teklifi kabul et' })
   @ApiParam({ name: 'id' })
   @Post(':id/accept')
-  async acceptOffer(@CurrentUser() user: any, @Param('id') id: string) {
+  async acceptOffer(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     const offer = await this.prisma.tradeOffer.findFirst({
@@ -194,13 +240,13 @@ export class OffersController {
     });
     if (!offer) throw new NotFoundException('Teklif bulunamadı');
 
-    return this.commandBus.execute(new AcceptTradeOfferCommand(id));
+    return this.commandBus.execute(new AcceptTradeOfferCommand(id, user.id));
   }
 
   @ApiOperation({ summary: 'Teklifi iptal et' })
   @ApiParam({ name: 'id' })
   @Delete(':id')
-  async cancelOffer(@CurrentUser() user: any, @Param('id') id: string) {
+  async cancelOffer(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     const offer = await this.prisma.tradeOffer.findFirst({
@@ -224,10 +270,19 @@ export class OffersController {
   private async getVendorWithCompany(userId: string) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { userId },
-      include: { company: { select: { id: true, name: true } } },
+      include: { company: { select: { id: true, name: true, status: true } } },
     });
     if (!vendor?.company) {
       throw new BadRequestException('Şirket hesabı bulunamadı');
+    }
+    if (vendor.status !== 'APPROVED') {
+      throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
+    }
+    if (vendor.company.status !== 'APPROVED') {
+      throw new BadRequestException('Şirketiniz onaylanmamış. Takas işlemi yapamazsınız.');
+    }
+    if (!vendor.barterEnabled) {
+      throw new BadRequestException('Ticari takas yetkiniz aktif değil.');
     }
     return vendor;
   }

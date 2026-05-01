@@ -58,19 +58,29 @@ export class Lottery extends AggregateRoot<LotteryProps> {
   }
 
   public draw(): string {
-    if (this.props.status !== LotteryStatus.ACTIVE && new Date() < this.props.endTime) {
-       // Optional: enforce end time before draw
+    if (this.props.status !== LotteryStatus.ACTIVE) {
+      throw new Error('Yalnızca aktif çekilişler çekilebilir');
     }
 
-    // crypto.randomInt for fairness
+    // crypto.randomInt adil rastgelelik sağlar
     const maxVal = this.props.totalTickets;
     const winningInt = crypto.randomInt(0, maxVal);
     const winningNumber = winningInt.toString().padStart(this.props.ticketDigits, '0');
-    
+
     this.props.winningNumber = winningNumber;
     this.props.status = LotteryStatus.DRAWN;
     this.props.updatedAt = new Date();
 
     return winningNumber;
+  }
+
+  public setWinner(userId: string): void {
+    this.props.winnerId = userId;
+    this.props.updatedAt = new Date();
+  }
+
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: LotteryProps, id: string): Lottery {
+    return new Lottery(props, id);
   }
 }

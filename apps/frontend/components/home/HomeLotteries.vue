@@ -84,8 +84,8 @@
                 {{ getLotteryStatusText(lottery.status || 'Active') }}
               </GhostBadge>
               <div class="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl flex flex-col items-center">
-                <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.participants || 0) }}</span>
-                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{{ $t('lotteriesHome.remaining') }}</span>
+                <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.tickets || 0) }}</span>
+                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{{ $t('lotteriesHome.remaining') || 'KALAN' }}</span>
               </div>
             </div>
 
@@ -97,13 +97,13 @@
               <div class="flex items-center gap-4 py-6 border-y border-white/10 mb-6">
                 <div class="flex-grow">
                   <div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
-                    <span>{{ lottery._count?.participants || 0 }} {{ $t('lotteriesHome.entries') }}</span>
-                    <span>{{ lottery.totalTickets }} {{ $t('lotteriesHome.limit') }}</span>
+                    <span>{{ lottery._count?.tickets || 0 }} {{ $t('lotteriesHome.entries') || 'Katılım' }}</span>
+                    <span>{{ lottery.totalTickets }} {{ $t('lotteriesHome.limit') || 'Limit' }}</span>
                   </div>
                   <div class="h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       class="h-full bg-gradient-to-r from-primary-600 to-indigo-500"
-                      :style="{ width: ((lottery._count?.participants || 0) / lottery.totalTickets * 100) + '%' }"
+                      :style="{ width: ((lottery._count?.tickets || 0) / lottery.totalTickets * 100) + '%' }"
                     />
                   </div>
                 </div>
@@ -111,12 +111,12 @@
 
               <div class="flex items-center justify-between">
                 <div>
-                  <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.ticketPrice') }}</span>
-                  <span class="text-2xl font-black text-white">{{ formatPrice(lottery.ticketPrice) }}</span>
+                  <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.ticketPrice') || 'Bilet Fiyatı' }}</span>
+                  <span class="text-2xl font-black text-white">{{ formatPrice(lottery.ticketPrice || 0) }}</span>
                 </div>
                 <div class="text-right">
-                  <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.drawDate') }}</span>
-                  <span class="text-xs font-black text-indigo-300 uppercase italic">{{ formatDate(lottery.drawDate) }}</span>
+                  <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.drawDate') || 'Çekiliş Tarihi' }}</span>
+                  <span class="text-xs font-black text-indigo-300 uppercase italic">{{ formatDate(lottery.endTime) }}</span>
                 </div>
               </div>
             </div>
@@ -152,7 +152,15 @@ const fetchLotteries = async () => {
       query: { limit: 6, status: 'Active' }
     }) as ApiResponse<HomeLottery[]>
     if (data.success && data.data) {
-      lotteries.value = data.data
+      lotteries.value = data.data.map((lottery: any) => {
+        const media = lottery.listing?.catalogProduct?.media || []
+        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || '/placeholder.png'
+        return {
+          ...lottery,
+          Product: { image },
+          title: lottery.title || lottery.listing?.title || 'Çekiliş'
+        }
+      })
     }
   } catch (error) {
     console.error('Fetch lotteries error:', error)

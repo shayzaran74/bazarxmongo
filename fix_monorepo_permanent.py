@@ -28,6 +28,11 @@ PACKAGES = [
     ("shared-messaging",     "packages/shared/shared-messaging"),
     ("shared-observability", "packages/shared/shared-observability"),
     ("shared-persistence",   "packages/shared/shared-persistence"),
+    ("domain-identity",      "packages/domain-identity"),
+    # Backend Apps
+    ("backend",              "apps/backend"),
+    ("financial-service",    "apps/financial-service"),
+    ("delivery-service",     "apps/delivery-service"),
 ]
 
 # Tüm bilinen paket adı → dist yolu eşleşmesi
@@ -145,14 +150,14 @@ def fix_package_tsconfig(name, pkg_dir):
     data = read_json(tsconfig_path)
     opts = data.setdefault("compilerOptions", {})
 
-    # baseUrl = monorepo kökünden çözümleme için "../../.." (pakete göre değişir)
-    # Göreceli yol hesapla
-    rel_to_root = os.path.relpath(BASE_DIR, pkg_dir)
-    opts["baseUrl"] = rel_to_root if rel_to_root != "." else "."
+    # baseUrl her zaman "." olmalı (paket içi yollar için)
+    opts["baseUrl"] = "."
 
+    # Mevcut paths varsa koru, sadece @barterborsa/* olanları güncelle
+    paths = opts.get("paths", {})
+    
     # Sadece bu paketin import ettiği paketleri ekle
     if imports:
-        paths = {}
         for imp in sorted(imports):
             dist_path = ALL_PACKAGES_DIST[imp]
             # dist_path monorepo kökünden göreceli → paketten göreceli yap
@@ -161,8 +166,12 @@ def fix_package_tsconfig(name, pkg_dir):
             paths[imp] = [rel_dist]
         opts["paths"] = paths
     else:
-        # paths varsa kaldır
-        opts.pop("paths", None)
+        # @barterborsa/* olanları temizle ama diğerlerini bırak
+        new_paths = {k: v for k, v in paths.items() if not k.startswith("@barterborsa/")}
+        if new_paths:
+            opts["paths"] = new_paths
+        else:
+            opts.pop("paths", None)
 
     write_json(tsconfig_path, data)
     print(f"  ✅ tsconfig.json güncellendi")
@@ -179,7 +188,7 @@ def create_dev_tsconfig():
             "baseUrl": ".",
             "paths": {k: [v] for k, v in ALL_PACKAGES_SRC.items()}
         },
-        "include": ["packages/**/*"],
+        "include": ["packages/**/*", "apps/**/*"],
         "exclude": ["node_modules", "dist", "**/dist/**"]
     }
 

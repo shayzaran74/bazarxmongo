@@ -2,7 +2,7 @@
 
 import {
   Controller, Get, Post, Put, Delete,
-  Body, Param, Query, UseGuards, NotFoundException,
+  Body, Param, Query, UseGuards, NotFoundException, BadRequestException,
   HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
@@ -13,8 +13,38 @@ import {
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { Prisma } from '@prisma/client';
 import { CreateSurplusItemCommand } from '../application/commands/create-surplus-item.command';
 import { PilotCity } from '../domain/enums/pilot-city.enum';
+
+interface AuthenticatedUser { id: string; role: string; }
+
+interface SurplusListQuery {
+  categoryId?: string;
+  city?: string;
+  q?: string;
+  page?: string;
+  limit?: string;
+}
+
+interface SurplusCreateBody {
+  title: string;
+  category?: string;
+  categoryId?: string;
+  quantity: number;
+  unit: string;
+  city: string;
+  description?: string;
+  unitPrice?: number;
+}
+
+interface SurplusUpdateBody {
+  title?: string;
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  images?: unknown;
+}
 
 @ApiTags('Surplus')
 @Controller('surplus')
@@ -54,12 +84,12 @@ export class SurplusController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get()
-  async list(@Query() query: any) {
-    const page  = parseInt(query.page, 10)  || 1;
-    const limit = parseInt(query.limit, 10) || 20;
+  async list(@Query() query: SurplusListQuery) {
+    const page  = parseInt(query.page  ?? '1',  10) || 1;
+    const limit = parseInt(query.limit ?? '20', 10) || 20;
     const skip  = (page - 1) * limit;
 
-    const where: any = { status: 'ACTIVE' };
+    const where: Prisma.SurplusItemWhereInput = { status: 'ACTIVE' };
     if (query.categoryId) where.category = query.categoryId;
     if (query.city)       where.city = query.city;
     if (query.q) {
@@ -91,14 +121,8 @@ export class SurplusController {
   @ApiOperation({ summary: 'Surplus ürün ekle' })
   @ApiResponse({ status: 201 })
   @Post()
-  async create(@CurrentUser() user: any, @Body() body: any) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: { company: { select: { id: true } } },
-    });
-    if (!vendor?.company) {
-      throw new NotFoundException('Şirket hesabı bulunamadı');
-    }
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: SurplusCreateBody) {
+    const vendor = await this.getVendorWithCompany(user.id);
 
     const result = await this.commandBus.execute(
       new CreateSurplusItemCommand(
@@ -138,14 +162,11 @@ export class SurplusController {
   @ApiParam({ name: 'id' })
   @Put(':id')
   async update(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: any,
+    @Body() body: SurplusUpdateBody,
   ) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: { company: { select: { id: true } } },
-    });
+    const vendor = await this.getVendorWithCompany(user.id);
 
     const item = await this.prisma.surplusItem.findFirst({
       where: { id, companyId: vendor?.company?.id },
@@ -159,7 +180,7 @@ export class SurplusController {
         ...(body.description !== undefined && { description: body.description }),
         ...(body.quantity    !== undefined && { quantity: body.quantity }),
         ...(body.unitPrice   !== undefined && { unitPrice: body.unitPrice }),
-        ...(body.images      !== undefined && { images: body.images }),
+        ...(body.images      !== undefined && { images: body.images as any }),
       },
     });
     return { success: true, data: updated };
@@ -173,11 +194,8 @@ export class SurplusController {
   @ApiParam({ name: 'id' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@CurrentUser() user: any, @Param('id') id: string) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: { company: { select: { id: true } } },
-    });
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    const vendor = await this.getVendorWithCompany(user.id);
 
     const item = await this.prisma.surplusItem.findFirst({
       where: { id, companyId: vendor?.company?.id },
@@ -186,5 +204,27 @@ export class SurplusController {
 
     await this.prisma.surplusItem.delete({ where: { id } });
     return { success: true };
+  }
+
+  // ─── Yardımcı ─────────────────────────────────────────────────────────────
+
+  private async getVendorWithCompany(userId: string) {
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { userId },
+      include: { company: { select: { id: true, name: true, status: true } } },
+    });
+    if (!vendor?.company) {
+      throw new BadRequestException('Şirket hesabı bulunamadı');
+    }
+    if (vendor.status !== 'APPROVED') {
+      throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
+    }
+    if (vendor.company.status !== 'APPROVED') {
+      throw new BadRequestException('Şirketiniz onaylanmamış. Takas işlemi yapamazsınız.');
+    }
+    if (!vendor.barterEnabled) {
+      throw new BadRequestException('Ticari takas yetkiniz aktif değil.');
+    }
+    return vendor;
   }
 }

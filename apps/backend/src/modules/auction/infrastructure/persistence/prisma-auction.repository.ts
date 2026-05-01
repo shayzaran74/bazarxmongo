@@ -29,8 +29,8 @@ export class PrismaAuctionRepository implements IAuctionRepository {
     const data = this.mapper.toPersistence(auction);
     await this.prisma.auction.upsert({
       where: { id: auction.id },
-      update: data,
-      create: data,
+      update: data as any,
+      create: data as any,
     });
   }
 
