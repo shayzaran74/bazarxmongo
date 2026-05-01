@@ -33,10 +33,11 @@
           <!-- Product Image & Badge -->
           <div class="relative h-64 bg-gray-50 p-6 flex justify-center items-center overflow-hidden">
             <div class="absolute inset-0 bg-primary-900/5 group-hover:bg-primary-900/10 transition-colors"></div>
-            <img 
-              :src="campaign.Product?.image || 'https://placehold.co/600x600?text=PRODUCT'" 
-              :alt="campaign.title"
-              class="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+            <ProductImage 
+              :src="campaign.Product?.image" 
+              :alt="campaign.title || campaign.Product?.name"
+              class="relative z-10 w-full h-full"
+              image-class="object-contain group-hover:scale-105 transition-transform duration-500"
             />
             <div class="absolute top-4 left-4 z-20">
               <span class="bg-red-500 text-white text-xs font-black uppercase px-3 py-1.5 rounded-lg shadow-md">
