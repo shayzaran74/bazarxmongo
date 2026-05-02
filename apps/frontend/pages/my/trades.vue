@@ -26,7 +26,7 @@
       <p class="text-sm font-black text-gray-400 max-w-md mx-auto mb-12 uppercase tracking-widest opacity-70">İHTİYAÇLARINIZI VE FAZLA MALLARINIZI GİRDİKÇE SİSTEM SİZE UYGUN TAKASLAR ÖNERECEKTİR.</p>
       <div class="flex flex-wrap justify-center gap-6">
         <NuxtLink to="/dashboard/wanted-items" class="h-16 px-12 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-[10px] hover:bg-black transition-all shadow-2xl shadow-indigo-100 active:scale-95 flex items-center justify-center">İSTEK EKLE</NuxtLink>
-        <NuxtLink to="/my/surplus" class="h-16 px-12 bg-white border border-neutral-200 text-gray-400 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[10px] hover:text-black transition-all shadow-sm active:scale-95 flex items-center justify-center">FAZLA MAL EKLE</NuxtLink>
+        <NuxtLink to="/ticaritakas/inbox" class="h-16 px-12 bg-white border border-neutral-200 text-gray-400 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[10px] hover:text-black transition-all shadow-sm active:scale-95 flex items-center justify-center">FAZLA MAL EKLE</NuxtLink>
       </div>
     </div>
 

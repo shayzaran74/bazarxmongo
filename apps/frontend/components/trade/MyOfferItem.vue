@@ -93,7 +93,7 @@
 
         <template v-if="['ACCEPTED', 'COMPLETED'].includes(offer.status.toUpperCase())">
           <NuxtLink
-            :to="`/my/surplus/swap/${offer.id}`"
+            :to="offer.swapSession?.id ? `/ticaritakas/swap/${offer.swapSession.id}` : `/ticaritakas/trade-pool/offer/detail/${offer.id}`"
             class="text-center bg-amber-50 text-amber-700 border border-amber-100 rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-all font-black"
           >
             TAKASI YÖNET

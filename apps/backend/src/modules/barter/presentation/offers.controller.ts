@@ -2,7 +2,7 @@
 
 import {
   Controller, Get, Post, Delete,
-  Body, Param, UseGuards, NotFoundException, BadRequestException,
+  Body, Param, UseGuards, NotFoundException, BadRequestException, ForbiddenException,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import {
@@ -29,7 +29,8 @@ interface TradeOfferItemBody {
 }
 
 interface CreateOfferBody {
-  toCompanyId: string;
+  toCompanyId?: string;
+  surplusItemId?: string;
   offeredItems?: TradeOfferItemBody[];
   requestedItems?: TradeOfferItemBody[];
   cashAmount?: number;
@@ -37,6 +38,9 @@ interface CreateOfferBody {
   currency?: string;
   expiresInDays?: number;
   message?: string;
+  note?: string;
+  type?: string;
+  barterAmount?: number;
   receiverId?: string;
 }
 
@@ -46,6 +50,8 @@ interface CounterOfferBody {
   currency?: string;
   expiresInDays?: number;
   message?: string;
+  note?: string;
+  barterAmount?: number;
 }
 
 @ApiTags('Offers')
@@ -73,8 +79,10 @@ export class OffersController {
       include: {
         fromCompany: { select: { id: true, name: true } },
         toCompany:   { select: { id: true, name: true } },
-        offeredItems: true,
+        offeredItems:   true,
         requestedItems: true,
+        // Kabul sonrası swap session ID'yi frontend'e taşı
+        swapSession: { select: { id: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -88,15 +96,33 @@ export class OffersController {
   async createOffer(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateOfferBody) {
     const vendor = await this.getVendorWithCompany(user.id);
 
+    let toCompanyId = body.toCompanyId;
+    let receiverId = body.receiverId;
+
+    // Eğer toCompanyId veya receiverId yoksa ama surplusItemId varsa, ilandan bul
+    if ((!toCompanyId || !receiverId) && body.surplusItemId) {
+      const item = await this.prisma.surplusItem.findUnique({
+        where: { id: body.surplusItemId },
+        include: { company: { include: { vendor: true } } }
+      });
+      if (item) {
+        if (!toCompanyId) toCompanyId = item.companyId;
+        if (!receiverId) {
+          // İlan sahibinin vendor ID'sini bul, yoksa companyId'yi fallback yap
+          receiverId = item.company?.vendor?.userId || item.company?.vendor?.id || item.companyId;
+        }
+      }
+    }
+
+    if (!toCompanyId) throw new BadRequestException('Hedef şirket ID (toCompanyId) bulunamadı.');
+    if (!receiverId) throw new BadRequestException('Hedef alıcı ID (receiverId) bulunamadı.');
+
     // toCompany doğrula
     const toCompany = await this.prisma.company.findUnique({
-      where: { id: body.toCompanyId },
+      where: { id: toCompanyId },
       select: { id: true, status: true },
     });
     if (!toCompany) throw new NotFoundException('Hedef şirket bulunamadı');
-    if (toCompany.status !== 'APPROVED') {
-      throw new BadRequestException('Hedef şirket henüz onaylanmamış. Takas teklifi verilemez.');
-    }
 
     // Domain entity ile oluştur
     const offeredItems = (body.offeredItems ?? []).map((i) =>
@@ -118,35 +144,35 @@ export class OffersController {
 
     const offer = TradeOffer.create(
       vendor.company.id,
-      body.toCompanyId,
+      toCompanyId,
       offeredItems,
       requestedItems,
       new Prisma.Decimal(body.cashAmount ?? 0),
-      (body.cashDirection ?? 'TO_RECEIVER') as any,
+      (body.cashDirection ?? 'TO_RECEIVER') as 'TO_INITIATOR' | 'TO_RECEIVER',
       body.expiresInDays ?? 7,
-      body.message,
+      body.note || body.message,
     );
 
     // Prisma'ya yaz
-    await this.prisma.tradeOffer.create({
+    const createdOffer = await this.prisma.tradeOffer.create({
       data: {
         id:            offer.id,
         fromCompanyId: vendor.company.id,
-        toCompanyId:   body.toCompanyId,
+        toCompanyId:   toCompanyId,
         status:        'PENDING',
         cashAmount:    new Prisma.Decimal(body.cashAmount ?? 0),
         cashDirection: body.cashDirection ?? 'TO_RECEIVER',
         cashCurrency:  body.currency ?? 'TRY',
-        message:       body.message,
+        message:       body.note || body.message,
         initiatorId:   user.id,
         initiatorType: 'VENDOR',
-        receiverId:    body.receiverId ?? body.toCompanyId,
+        receiverId:    receiverId,
         receiverType:  'VENDOR',
         expiresAt:     new Date(Date.now() + (body.expiresInDays ?? 7) * 24 * 60 * 60 * 1000),
-      },
+      }
     });
 
-    return { success: true, data: { id: offer.id, status: 'PENDING' } };
+    return { success: true, data: createdOffer };
   }
 
   @ApiOperation({ summary: 'Teklife karşı teklif ver' })
@@ -159,10 +185,21 @@ export class OffersController {
   ) {
     const vendor = await this.getVendorWithCompany(user.id);
 
-    const original = await this.prisma.tradeOffer.findFirst({
-      where: { id: originalOfferId, toCompanyId: vendor.company.id, status: 'PENDING' },
+    const original = await this.prisma.tradeOffer.findUnique({
+      where: { id: originalOfferId },
     });
-    if (!original) throw new NotFoundException('Teklif bulunamadı veya yanıtlamaya yetkili değilsiniz');
+
+    if (!original) {
+      throw new NotFoundException(`Orijinal teklif (${originalOfferId}) bulunamadı.`);
+    }
+
+    if (original.toCompanyId !== vendor.company.id) {
+      throw new ForbiddenException('Bu teklife karşı teklif verme yetkiniz yok (Şirket uyuşmazlığı).');
+    }
+
+    if (original.status !== 'PENDING') {
+      throw new BadRequestException(`Sadece 'BEKLEMEDE' (PENDING) durumundaki tekliflere karşı teklif verilebilir. Mevcut durum: ${original.status}`);
+    }
 
     // Karşı teklif hedefi (orijinal teklifçi) APPROVED olmalı
     if (original.fromCompanyId) {
@@ -190,7 +227,7 @@ export class OffersController {
         cashAmount:     new Prisma.Decimal(body.cashAmount ?? 0),
         cashDirection:  body.cashDirection ?? 'TO_RECEIVER',
         cashCurrency:   body.currency ?? 'TRY',
-        message:        body.message,
+        message:        body.note || body.message,
         parentOfferId:  originalOfferId,
         counterOfferId: originalOfferId,
         initiatorId:    user.id,
@@ -267,23 +304,30 @@ export class OffersController {
 
   // ─── Yardımcı ─────────────────────────────────────────────────────────────
 
-  private async getVendorWithCompany(userId: string) {
+  private async getVendorWithCompany(userId: string): Promise<{
+    id: string;
+    status: string;
+    barterEnabled: boolean;
+    company: { id: string; name: string; status: string };
+  }> {
     const vendor = await this.prisma.vendor.findFirst({
-      where: { userId },
+      where:   { userId },
       include: { company: { select: { id: true, name: true, status: true } } },
     });
-    if (!vendor?.company) {
-      throw new BadRequestException('Şirket hesabı bulunamadı');
+
+    if (!vendor) {
+      throw new BadRequestException('Satıcı profiliniz bulunamadı.');
     }
     if (vendor.status !== 'APPROVED') {
       throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
     }
-    if (vendor.company.status !== 'APPROVED') {
-      throw new BadRequestException('Şirketiniz onaylanmamış. Takas işlemi yapamazsınız.');
-    }
-    if (!vendor.barterEnabled) {
-      throw new BadRequestException('Ticari takas yetkiniz aktif değil.');
-    }
-    return vendor;
+
+    const company = vendor.company ?? {
+      id:     vendor.id,
+      name:   vendor.slug ?? 'Bireysel Satıcı',
+      status: 'APPROVED',
+    };
+
+    return { id: vendor.id, status: vendor.status, barterEnabled: vendor.barterEnabled, company };
   }
 }

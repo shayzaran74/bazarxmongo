@@ -31,13 +31,29 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
 
     const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
-      data: { status: 'APPROVED', verifiedAt: new Date(), isVerified: true },
-    });
+      data: { status: 'APPROVED', verifiedAt: new Date(), isVerified: true, barterEnabled: true },
+      include: { profile: true },
+    }) as { id: string; slug: string; barterEnabled: boolean; profile?: { storeName?: string } | null; [key: string]: unknown };
 
     if (existing.companyId) {
       await this.prisma.company.update({
         where: { id: existing.companyId },
         data: { status: 'APPROVED', verifiedAt: new Date() },
+      });
+    } else {
+      // Eğer şirket kaydı yoksa otomatik oluştur
+      const newCompany = await this.prisma.company.create({
+        data: {
+          name: vendor.profile?.storeName ?? vendor.slug ?? 'Satıcı Şirketi',
+          taxNumber: 'AUTO-' + vendor.id.substring(0, 8),
+          status: 'APPROVED',
+          verifiedAt: new Date(),
+        }
+      });
+      // Satıcıyı bu yeni şirkete bağla
+      await this.prisma.vendor.update({
+        where: { id: vendorId },
+        data: { companyId: newCompany.id }
       });
     }
 

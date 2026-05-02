@@ -12,11 +12,19 @@ import { OffersController } from './presentation/offers.controller';
 import { WantedItemsController } from './presentation/wanted-items.controller';
 import { BarterController } from './presentation/barter.controller';
 import { TrustScoreController } from './presentation/trust-score.controller';
+import { SwapSessionController } from './presentation/swap-session.controller';
 
 // Command handlers
 import { AcceptTradeOfferHandler } from './application/commands/accept-trade-offer.handler';
 import { CreateSurplusItemHandler } from './application/commands/create-surplus-item.handler';
+import { ApproveSurplusHandler } from './application/commands/approve-surplus.handler';
+import { RejectSurplusHandler } from './application/commands/reject-surplus.handler';
+import { ReactivateSurplusHandler } from './application/commands/reactivate-surplus.handler';
 import { RecordTrustViolationHandler } from './application/commands/record-trust-violation.handler';
+import { SubmitShippingHandler } from './application/commands/submit-shipping.handler';
+import { ConfirmReceiptHandler } from './application/commands/confirm-receipt.handler';
+import { FinalizeSwapHandler } from './application/commands/finalize-swap.handler';
+import { OpenDisputeHandler } from './application/commands/open-dispute.handler';
 
 // Query handlers
 import { GetVendorTrustScoreHandler } from './application/queries/get-vendor-trust-score.handler';
@@ -47,6 +55,7 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     WantedItemsController,
     BarterController,
     TrustScoreController,
+    SwapSessionController,
   ],
   providers: [
     // Domain services
@@ -61,8 +70,15 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     // Handlers
     AcceptTradeOfferHandler,
     CreateSurplusItemHandler,
+    ApproveSurplusHandler,
+    RejectSurplusHandler,
+    ReactivateSurplusHandler,
     RecordTrustViolationHandler,
     GetVendorTrustScoreHandler,
+    SubmitShippingHandler,
+    ConfirmReceiptHandler,
+    FinalizeSwapHandler,
+    OpenDisputeHandler,
     // Mappers
     TradeOfferMapper,
     SurplusItemMapper,

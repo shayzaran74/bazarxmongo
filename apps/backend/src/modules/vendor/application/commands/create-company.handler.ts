@@ -5,9 +5,8 @@ import { CreateCompanyCommand } from './create-company.command';
 import { ICompanyRepository } from '../../domain/repositories/company.repository.interface';
 import { TaxNumber } from '../../domain/value-objects/tax-number.vo';
 import { Company } from '../../domain/entities/company.entity';
-import { ConflictException } from '@barterborsa/shared-core';
+import { ConflictException, Inject } from '@nestjs/common';
 import { isErr } from '@barterborsa/shared-core';
-import { Inject } from '@nestjs/common';
 
 @CommandHandler(CreateCompanyCommand)
 export class CreateCompanyHandler implements ICommandHandler<CreateCompanyCommand> {

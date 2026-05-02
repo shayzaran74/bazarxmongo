@@ -94,12 +94,11 @@
 </template>
 
 <script setup>
-import { ref, useRuntimeConfig, useAuthStore, useNuxtApp } from '#imports'
-import XMarkIcon from '@heroicons/vue/24/outline/XMarkIcon'
+import { ref } from 'vue'
+import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 const emit = defineEmits(['close', 'success'])
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
+const { $api } = useApi()
 const loading = ref(false)
 
 const formData = ref({
@@ -113,25 +112,34 @@ const formData = ref({
 })
 
 const submitCompany = async () => {
-  if (!formData.value.name) return
+  if (!formData.value.name || !formData.value.taxNumber) {
+    useNuxtApp().$toast.error('Firma adı ve Vergi Numarası zorunludur.')
+    return
+  }
+  
   loading.value = true
   try {
-    const response = await $fetch('/api/companies', {
+    // Map frontend data to backend DTO
+    const payload = {
+      name: formData.value.name,
+      taxNumber: formData.value.taxNumber,
+      phone: formData.value.phone,
+      address: `${formData.value.city} / ${formData.value.district}`.trim()
+    }
+
+    const response = await $api<{ success: boolean }>('/api/v1/companies', {
       method: 'POST',
-      baseURL: config.public.apiBase,
-      body: formData.value,
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
+      body:   payload,
     })
+    
     if (response.success) {
       const toast = useNuxtApp().$toast
       toast.success('Firma profili başarıyla oluşturuldu!')
       emit('success')
       emit('close')
     }
-  } catch (error) {
-    console.error('Create company error:', error)
+  } catch {
+    useNuxtApp().$toast.error('Firma oluşturulurken bir hata oluştu. Lütfen bilgileri kontrol edin.')
   } finally {
     loading.value = false
   }

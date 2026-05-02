@@ -122,9 +122,9 @@
       </div>
 
       <NuxtLink
-        to="/my/surplus"
+        to="/ticaritakas/inbox"
         class="flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
-        :class="{ 'bg-gray-800': route.path === '/my/surplus' }"
+        :class="{ 'bg-gray-800': route.path.startsWith('/ticaritakas/inbox') || route.path.startsWith('/ticaritakas/swap') }"
       >
         <div class="flex items-center"><SparklesIcon class="h-5 w-5 mr-3" />Takas İlanlarım</div>
       </NuxtLink>

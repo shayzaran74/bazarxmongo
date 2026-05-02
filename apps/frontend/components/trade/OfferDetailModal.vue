@@ -80,7 +80,7 @@
           <button class="flex-1 bg-white border border-gray-200 text-red-600 rounded-2xl py-4 font-black uppercase text-xs hover:bg-red-50 transition-colors" @click="$emit('reject', offer.id)">REDDET</button>
         </div>
         <div class="flex justify-end gap-3">
-          <NuxtLink v-if="['ACCEPTED', 'COMPLETED'].includes(offer.status.toUpperCase())" :to="`/my/surplus/swap/${offer.id}`" class="px-8 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+          <NuxtLink v-if="['ACCEPTED', 'COMPLETED'].includes(offer.status.toUpperCase())" :to="offer.swapSession?.id ? `/ticaritakas/swap/${offer.swapSession.id}` : `/ticaritakas/trade-pool/offer/detail/${offer.id}`" class="px-8 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
             ⚙️ Takası Yönet
           </NuxtLink>
           <button v-if="!showChat" class="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2" @click="showChat = true">

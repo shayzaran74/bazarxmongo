@@ -43,7 +43,7 @@
         olmalıdır.
       </p>
       <NuxtLink
-        to="/my/surplus"
+        to="/ticaritakas/inbox"
         class="inline-block mt-4 px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black transition"
       >
         Takas Paneline Git

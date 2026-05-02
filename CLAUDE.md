@@ -48,6 +48,19 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - **Imports:** Monorepo package isimleri `@barterborsa/` prefix'i ile olacak.
 
 ## 📜 Architecture Stabilization History
+### B2B Entegrasyonu — Mayıs 2026 (Tek Sistem Birleştirme)
+- **SwapSessionController:** `GET /api/v1/barter/swap/:id`, `POST /ship`, `/confirm`, `/finalize`, `/dispute` — 5 endpoint + 4 command/handler sıfırdan yazıldı. ✅
+- **Faz Köprüsü:** `acceptOffer()` artık backend'den gelen `sessionId`'yi alıp `/ticaritakas/swap/:id`'ye navigate ediyor. ✅
+- **useSwapSession Rewrite:** Doğru API prefix (`/api/v1/barter/swap/`), parametre kabul eden imza, 7 eksik metot eklendi (isFromCompany, lockCollateral, submitShipping, confirmReceipt, finalizeSwap, sendDispute, computed flag'ler). ✅
+- **Status Enum Düzeltmesi:** Frontend'deki `COLLATERAL_DEPOSITED` → `ACTIVE`, `SHIPPING_IN_PROGRESS` → `SHIPPING`, `INSPECTION_PERIOD` → `PARTIALLY_COMPLETED` ile değiştirildi. ✅
+- **Yeni Sayfalar:** `pages/ticaritakas/swap/[id].vue`, `pages/ticaritakas/inbox.vue`, `pages/ticaritakas/trade-pool/offer/detail/[id].vue`. ✅
+- **InboxOfferItem.vue:** `COUNTER_OFFERED` desteği, swapSession.id ile doğru swap URL, tüm status enum normalizasyonu (toUpperCase). ✅
+- **Redirect Middleware:** `/my/surplus` → `/ticaritakas/inbox`, `/my/surplus/swap/:id` → `/ticaritakas/swap/:id` (301). ✅
+- **Nav Güncelleme:** VendorSidebar `my/surplus` → `ticaritakas/inbox`, b2b-dashboard "Görüntüle" → `offer/detail/:id`. ✅
+- **`GET /api/v1/offers/my`:** `swapSession: { id, status }` include eklendi (frontend'de swap yönlendirmesi için). ✅
+- **Silinmesi gereken (Faz 9 — ileriki oturumda):** `pages/my/surplus/index.vue`, `pages/my/surplus/swap/[id].vue`, `components/my/surplus/swap/*`. ⚠️
+
+
 ### Audit - May 2026 (Ecosystem & Tech Debt)
 - **CommissionEngineService:** `isGroupTransaction=true` → `BrandEcosystem.internalCommRate` DB'den okunuyor (varsayılan %4); yoksa tier-based fallback. ✅
 - **CreateEcosystemHandler:** Duplicate guard (vendor zaten owner mı) + `EcosystemAuditLog{ ECOSYSTEM_CREATED }` eklendi. ✅
@@ -55,6 +68,21 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - **UpdateEcosystemSettingsCommand/Handler:** `isBlindPool` + `internalCommRate` güncelleme + `EcosystemAuditLog{ SETTINGS_UPDATED, oldValue/newValue }`. ✅
 - **EcosystemController:** `body:any → CreateEcosystemDto`, `PATCH /settings`, `DELETE /members/:vendorId` endpoint'leri eklendi. ✅
 - **Teknik Borç (33 ihlal):** `auction.mapper`, `lottery.mapper`, `surplus-item.mapper`, `trade-offer.mapper` → Prisma payload tipleri. `SurplusItem/TradeOffer/Auction.createFrom` statik metodları eklendi. `surplus.controller`, `wanted-items.controller`, `barter-admin.controller` → `AuthenticatedUser`, `Prisma.*WhereInput`, typed DTO'lar. `any = 0`. ✅
+
+### Audit - May 2026 (B2B Surplus Stabilizasyon)
+- **`SurplusStatus.REJECTED` Eklendi:** Prisma schema + domain enum + migration hazır. `rejectionReason`, `approvedBy` alanları `SurplusItem`'a eklendi. ✅
+- **State Machine:** `SurplusItem` entity'sine `approve()`, `reject()`, `markUpdated()`, `reactivate()` domain metodları eklendi; her biri geçersiz statüde `BadRequestException` fırlatıyor. ✅
+- **Yeni Commands/Handlers:** `ApproveSurplusCommand`, `RejectSurplusCommand`, `ReactivateSurplusCommand` — her biri AuditLog yazıyor. ✅
+- **RBAC:** `SurplusController.updateStatus` + `rejectItem` endpoint'leri `@Roles('ADMIN','SUPER_ADMIN')` ile korunuyor. ✅
+- **`/reactivate` Endpoint:** Vendor kendi pasif ilanını yeniden onaya gönderebilir; `reactivationCount` artırılıyor. ✅
+- **`/categories/:id/attributes` Endpoint:** Form dinamik alanları için public endpoint eklendi. ✅
+- **Tam Veri Kaydı:** `wantedCategories`, `tradeModes`, `technicalSpecs`, `materialType`, `location` artık command → handler → entity → repository → DB zincirine tam taşınıyor. ✅
+- **barterEnabled Senkronizasyonu:** `ApproveVendorHandler` vendor onaylandığında `barterEnabled: true` yapıyor. Surplus oluşturma `barterEnabled` kontrolü yapıyor. ✅
+- **API Prefix Düzeltmesi:** Tüm frontend `/api/...` çağrıları `/api/v1/...` prefixine çekildi (backend global prefix uyumu). ✅
+- **Tip Güvenliği:** `surplus.controller.ts`, `offers.controller.ts`, `useSurplus.ts`, `useSurplusForm.ts` — `any` sıfırlandı; `~/types/surplus.ts` tip kütüphanesi oluşturuldu. ✅
+- **`WantedItemsManager.vue` Düzeltmeleri:** `<script setup lang="ts">`'ye geçildi, statü filtresi düzgün enum değerleri kullanıyor, admin reject için `reason` prompt eklendi. ✅
+- **`console.error` Temizliği:** Tüm frontend composable ve sayfalardan `console.error` kaldırıldı. ✅
+- **Migration Gerekli:** `pnpm prisma:migrate dev --name surplus_rejected_status` çalıştır. ⚠️
 
 ### Audit - May 2026 (Barter System)
 - **counterOffer Guard:** `offers.controller.ts` karşı teklif hedefi firma `APPROVED` kontrolü eklendi. ✅

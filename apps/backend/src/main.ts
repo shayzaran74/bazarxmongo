@@ -1,8 +1,9 @@
 // apps/backend/src/main.ts
 
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { join } from 'path';

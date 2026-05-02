@@ -1,77 +1,123 @@
-import { ref, computed } from 'vue'
+// apps/frontend/composables/useTradeOffers.ts
+
+interface Company {
+  id: string
+  name: string
+}
+
+interface TradeOfferRow {
+  id: string
+  status: string
+  fromCompany?: Company
+  toCompany?: Company
+  offeredItem?: Record<string, unknown>
+  requestedItem?: Record<string, unknown>
+  swapSession?: { id: string; status: string } | null
+  reviews?: { fromUserId: string }[]
+  [key: string]: unknown
+}
+
+interface AcceptResponse {
+  success: boolean
+  sessionId?: string
+  message?: string
+}
+
+interface StatusResponse {
+  success: boolean
+  message?: string
+}
 
 export const useTradeOffers = () => {
-    const { $api } = useApi()
-    const { $toast: toast } = useNuxtApp()
-    const authStore = useAuthStore()
+  const config = useRuntimeConfig()
+  const { $api } = useApi()
+  const nuxt = useNuxtApp()
+  const authStore = useAuthStore()
 
-    const loading = ref(false)
-    const offers = ref<any[]>([])
-    const activeTab = ref('received')
-    const myCompany = ref<any>(null)
-    const updatingStatus = ref<string | number | null>(null)
+  const loading = ref(false)
+  const offers = ref<TradeOfferRow[]>([])
+  const activeTab = ref('received')
+  const myCompany = ref<Company | null>(null)
+  const updatingStatus = ref<string | null>(null)
 
-    const fetchMyOffers = async () => {
-        loading.value = true
-        try {
-            if (!myCompany.value) {
-                const compRes: any = await $api('/api/v1/companies/me')
-                if (compRes.success) myCompany.value = compRes.company
-            }
+  const fetchMyOffers = async (): Promise<void> => {
+    loading.value = true
+    try {
+      if (!myCompany.value) {
+        const compRes = await $api<{ success: boolean; company: Company }>(
+          `${config.public.apiBase}/api/v1/companies/me`
+        )
+        if (compRes.success) myCompany.value = compRes.company
+      }
 
-            if (myCompany.value) {
-                const response: any = await $api('/api/v1/offers/my', {
-                    query: {
-                        companyId: myCompany.value.id,
-                        type: activeTab.value
-                    }
-                })
-                if (response.success) {
-                    offers.value = response.offers
-                }
-            }
-        } catch (error) {
-            console.error('Fetch offers error:', error)
-        } finally {
-            loading.value = false
+      if (myCompany.value) {
+        const res = await $api<{ success: boolean; data: TradeOfferRow[]; offers?: TradeOfferRow[] }>(
+          `${config.public.apiBase}/api/v1/offers/my`,
+          { query: { companyId: myCompany.value.id, type: activeTab.value } }
+        )
+        if (res.success) {
+          offers.value = res.data ?? res.offers ?? []
         }
+      }
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message ?? 'Teklifler yüklenemedi.'
+      nuxt.$toast?.error(msg)
+    } finally {
+      loading.value = false
     }
+  }
 
-    const updateStatus = async (id: string | number, status: string) => {
-        const s = status.toUpperCase()
-        updatingStatus.value = id
-        try {
-            const endpoint = s === 'ACCEPTED' ? `/api/v1/offers/${id}/accept` : `/api/v1/offers/${id}/status`
-            const body = s === 'ACCEPTED' ? {} : { status: s }
-
-            const response: any = await $api(endpoint, {
-                method: 'PATCH',
-                body
-            })
-
-            if (response.success) {
-                toast.success(s === 'ACCEPTED' ? 'Teklif kabul edildi!' : 'Teklif reddedildi.')
-                fetchMyOffers()
-                return true
-            } else {
-                toast.error(response.message || 'Bir hata oluştu.')
-                return false
-            }
-        } catch (error: any) {
-            toast.error(error.data?.message || 'İşlem sırasında bir hata oluştu.')
-            return false
-        } finally {
-            updatingStatus.value = null
+  // ACCEPTED → POST /accept (sessionId döner, swap paneline yönlendir)
+  // Diğerleri → PATCH /status
+  const updateStatus = async (id: string, status: string): Promise<boolean> => {
+    const s = status.toUpperCase()
+    updatingStatus.value = id
+    try {
+      if (s === 'ACCEPTED') {
+        const res = await $api<AcceptResponse>(
+          `${config.public.apiBase}/api/v1/offers/${id}/accept`,
+          { method: 'POST' }
+        )
+        if (res.success && res.sessionId) {
+          nuxt.$toast?.success('Teklif kabul edildi! Swap sürecine yönlendiriliyorsunuz...')
+          await navigateTo(`/ticaritakas/swap/${res.sessionId}`)
+          return true
+        } else if (res.success) {
+          nuxt.$toast?.success('Teklif kabul edildi.')
+          await fetchMyOffers()
+          return true
         }
-    }
+        nuxt.$toast?.error(res.message ?? 'Bir hata oluştu.')
+        return false
+      }
 
-    return {
-        loading,
-        offers,
-        activeTab,
-        myCompany,
-        updatingStatus,
-        fetchMyOffers,
-        updateStatus
+      const res = await $api<StatusResponse>(
+        `${config.public.apiBase}/api/v1/offers/${id}/status`,
+        { method: 'PATCH', body: { status: s } }
+      )
+      if (res.success) {
+        nuxt.$toast?.success('Teklif güncellendi.')
+        await fetchMyOffers()
+        return true
+      }
+      nuxt.$toast?.error(res.message ?? 'Bir hata oluştu.')
+      return false
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message ?? 'İşlem sırasında hata oluştu.'
+      nuxt.$toast?.error(msg)
+      return false
+    } finally {
+      updatingStatus.value = null
     }
+  }
+
+  return {
+    loading,
+    offers,
+    activeTab,
+    myCompany,
+    updatingStatus,
+    fetchMyOffers,
+    updateStatus,
+  }
 }

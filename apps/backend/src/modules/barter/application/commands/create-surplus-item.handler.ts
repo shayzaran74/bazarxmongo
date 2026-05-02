@@ -13,7 +13,7 @@ export class CreateSurplusItemHandler implements ICommandHandler<CreateSurplusIt
     @Inject('ISurplusItemRepository') private readonly repository: ISurplusItemRepository,
   ) {}
 
-  async execute(command: CreateSurplusItemCommand) {
+  async execute(command: CreateSurplusItemCommand): Promise<{ success: boolean; id: string }> {
     const surplus = SurplusItem.create(
       command.companyId,
       command.title,
@@ -22,7 +22,13 @@ export class CreateSurplusItemHandler implements ICommandHandler<CreateSurplusIt
       command.unit,
       command.city,
       command.description,
-      command.unitPrice ? new Prisma.Decimal(command.unitPrice) : undefined
+      command.unitPrice ? new Prisma.Decimal(command.unitPrice) : undefined,
+      command.images,
+      command.materialType,
+      command.location,
+      command.wantedCategories,
+      command.tradeModes,
+      command.technicalSpecs,
     );
 
     await this.repository.save(surplus);

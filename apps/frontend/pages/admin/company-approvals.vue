@@ -18,7 +18,7 @@
       </div>
 
       <div
-        v-else-if="items.length === 0"
+        v-else-if="!items || items?.length === 0"
         class="p-12 text-center"
       >
         <p class="text-gray-500 font-bold">
@@ -74,8 +74,11 @@
                     {{ item.name.charAt(0) }}
                   </div>
                   <div>
-                    <div class="font-bold text-gray-900 text-sm">
-                      {{ item.name }}
+                    <div class="flex items-center gap-2">
+                      <div class="font-bold text-gray-900 text-sm">
+                        {{ item.name }}
+                      </div>
+                      <span v-if="item.isVendor" class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase">SATICI</span>
                     </div>
                     <div class="text-xs text-gray-500">
                       {{ item.phone || '-' }}
@@ -95,8 +98,7 @@
                 </div>
               </td>
               <td class="px-6 py-4 text-sm font-medium text-gray-600">
-                {{ item.users && item.users.length > 0 && item.users[0].user ? item.users[0].user.name :
-                  '-' }}
+                {{ item.users?.length > 0 && item.users[0]?.user ? item.users[0].user.name : '-' }}
               </td>
               <td class="px-6 py-4">
                 <div class="flex gap-2">
@@ -140,7 +142,9 @@ const fetchPendingCompanies = async () => {
     try {
         const response = await $api('/api/companies/pending')
         if (response.success) {
-            items.value = response.companies
+            items.value = response.companies || []
+        } else {
+            items.value = []
         }
     } catch (error) {
         console.error('Fetch error:', error)

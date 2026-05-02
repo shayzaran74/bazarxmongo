@@ -40,7 +40,15 @@ import {
   AcademicCapIcon,
   CheckBadgeIcon,
   UsersIcon,
-  TruckIcon
+  TruckIcon,
+  BuildingOffice2Icon,
+  ClipboardDocumentCheckIcon,
+  ArrowsRightLeftIcon,
+  TicketIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  QuestionMarkCircleIcon,
+  GlobeAltIcon
 } from '@heroicons/vue/24/outline'
 import type { FunctionalComponent, SVGAttributes } from 'vue'
 
@@ -69,7 +77,15 @@ const getIconComponent = (iconName: string) => {
     AcademicCapIcon,
     CheckBadgeIcon,
     UsersIcon,
-    TruckIcon
+    TruckIcon,
+    BuildingOffice2Icon,
+    ClipboardDocumentCheckIcon,
+    ArrowsRightLeftIcon,
+    TicketIcon,
+    UserGroupIcon,
+    SparklesIcon,
+    QuestionMarkCircleIcon,
+    GlobeAltIcon
   }
   return icons[iconName] || null
 }

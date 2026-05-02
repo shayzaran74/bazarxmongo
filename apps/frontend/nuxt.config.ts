@@ -42,6 +42,7 @@ export default defineNuxtConfig({
     // DEV ONLY — prod'da nginx hallediyor
     ...(process.env.NODE_ENV !== 'production' && {
       '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/**` },
+      '/uploads/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/uploads/**` },
     }),
   },
 

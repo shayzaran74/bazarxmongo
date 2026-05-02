@@ -27,13 +27,13 @@ export const useLayoutLogic = () => {
 
   // ── Ecosystem ─────────────────────────────────────────────
   const currentEcosystem = computed(() => {
-    if (route.path.startsWith('/surplus') || route.path.startsWith('/my/surplus') || route.path.startsWith('/my/offers')) return 'ticaritakas'
+    if (route.path.startsWith('/ticaritakas') || route.path.startsWith('/my/offers')) return 'ticaritakas'
     if (route.path.startsWith('/barterborsa')) return 'barterborsa'
     return 'bazarx'
   })
 
   const ecosystemHomeLink = computed(() => {
-    if (currentEcosystem.value === 'ticaritakas') return '/surplus'
+    if (currentEcosystem.value === 'ticaritakas') return '/ticaritakas'
     if (currentEcosystem.value === 'barterborsa') return '/barterborsa'
     return '/'
   })

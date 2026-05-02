@@ -38,11 +38,27 @@ export class CompanyController {
     );
 
     if (!result) {
-      return { success: false, message: 'Satıcı kaydı bulunamadı.' };
+      return { success: false, message: 'Kullanıcı kaydı bulunamadı.' };
     }
 
     if (result.isSystemAdmin) {
       return { success: true, data: null, isSystemAdmin: true };
+    }
+
+    // Satıcı otomatik onay mantığı: Eğer satıcı ise ve şirket kaydı yoksa/onaylı değilse bile devam et
+    if (result.isVendor) {
+      const company = result.companyId ? await this.queryBus.execute(new GetCompanyQuery(result.companyId)) : null;
+      
+      return { 
+        success: true, 
+        company: {
+          id: result.companyId || result.vendorId || 'v-' + result.id,
+          name: company?.name || result.businessName || result.name || 'Satıcı Hesabı',
+          status: 'APPROVED',
+          isVendorAutoApproved: true
+        },
+        data: company || { name: result.businessName || 'Satıcı Hesabı' }
+      };
     }
 
     if (!result.companyId) {
@@ -52,7 +68,7 @@ export class CompanyController {
     const company = await this.queryBus.execute(
       new GetCompanyQuery(result.companyId)
     );
-    return { success: true, data: company };
+    return { success: true, data: company, company };
   }
 
   @ApiOperation({ summary: 'Register a company' })

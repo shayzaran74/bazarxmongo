@@ -8,37 +8,37 @@ datasource db {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  phoneNumber        String?             @unique @map("phone_number")
-  password           String?
-  transactionPin     String?             @map("transaction_pin")
-  role               UserRole            @default(USER)
-  status             UserStatus          @default(ACTIVE)
-  platform           Platform            @default(BAZARX)
-  isEmailVerified    Boolean             @default(false) @map("is_email_verified")
-  googleId           String?             @unique @map("google_id")
-  lockoutUntil       DateTime?           @map("lockout_until")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  deletedAt          DateTime?           @map("deleted_at")
-  lastLoginAt        DateTime?           @map("last_login_at")
-  lastSeenAt         DateTime?           @map("last_seen_at")
-  referredById       String?             @map("referred_by_id")
-  referralCode       String?             @unique @map("referral_code")  // kişisel davet kodu
-  loginHistory       LoginHistory[]
-  refreshTokens      RefreshToken[]
-  sessions           Session[]
-  ssoTokens          SSOToken[]
-  addresses          UserAddress[]
-  profile            UserProfile?
-  referredBy         User?               @relation("Referrals", fields: [referredById], references: [id])
-  referrals          User[]              @relation("Referrals")
-  verificationTokens VerificationToken[]
-  vendor             Vendor?
-  orders             Order[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  phoneNumber           String?                @unique @map("phone_number")
+  password              String?
+  transactionPin        String?                @map("transaction_pin")
+  role                  UserRole               @default(USER)
+  status                UserStatus             @default(ACTIVE)
+  platform              Platform               @default(BAZARX)
+  isEmailVerified       Boolean                @default(false) @map("is_email_verified")
+  googleId              String?                @unique @map("google_id")
+  lockoutUntil          DateTime?              @map("lockout_until")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  deletedAt             DateTime?              @map("deleted_at")
+  lastLoginAt           DateTime?              @map("last_login_at")
+  lastSeenAt            DateTime?              @map("last_seen_at")
+  referredById          String?                @map("referred_by_id")
+  referralCode          String?                @unique @map("referral_code")
+  auctionBids           AuctionBid[]
   auctionParticipations AuctionParticipation[]
-  auctionBids AuctionBid[]
+  loginHistory          LoginHistory[]
+  orders                Order[]
+  refreshTokens         RefreshToken[]
+  sessions              Session[]
+  ssoTokens             SSOToken[]
+  addresses             UserAddress[]
+  profile               UserProfile?
+  referredBy            User?                  @relation("Referrals", fields: [referredById], references: [id])
+  referrals             User[]                 @relation("Referrals")
+  vendor                Vendor?
+  verificationTokens    VerificationToken[]
 
   @@index([email])
   @@index([phoneNumber])
@@ -109,9 +109,9 @@ model Session {
   userId       String   @map("user_id")
   userAgent    String?  @map("user_agent")
   ipAddress    String?  @map("ip_address")
-  tokenHash    String?  @map("token_hash")
   lastActiveAt DateTime @default(now()) @map("last_active_at")
   createdAt    DateTime @default(now()) @map("created_at")
+  tokenHash    String?  @map("token_hash")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])
@@ -208,24 +208,24 @@ model CompanyUser {
 }
 
 model Vendor {
-  id                String              @id @default(cuid())
-  status            VendorStatus        @default(PENDING)
-  companyId         String              @unique @map("company_id")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  ecosystemId       String?             @map("ecosystem_id")
-  isVerified        Boolean             @default(false) @map("is_verified")
-  lastAuditAt       DateTime?           @map("last_audit_at")
-  membershipTierId  String?             @map("membership_tier_id")
-  rejectionReason   String?             @map("rejection_reason")
-  slug              String              @unique
-  suspensionReason  String?             @map("suspension_reason")
-  tier              VendorTier          @default(CORE)
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  userId            String              @unique @map("user_id")
-  verifiedAt        DateTime?           @map("verified_at")
-  barterEnabled     Boolean             @default(false) @map("barter_enabled")
+  id                String             @id @default(cuid())
+  status            VendorStatus       @default(PENDING)
+  companyId         String             @unique @map("company_id")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  ecosystemId       String?            @map("ecosystem_id")
+  isVerified        Boolean            @default(false) @map("is_verified")
+  lastAuditAt       DateTime?          @map("last_audit_at")
+  membershipTierId  String?            @map("membership_tier_id")
+  rejectionReason   String?            @map("rejection_reason")
+  slug              String             @unique
+  suspensionReason  String?            @map("suspension_reason")
+  tier              VendorTier         @default(CORE)
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  userId            String             @unique @map("user_id")
+  verifiedAt        DateTime?          @map("verified_at")
+  barterEnabled     Boolean            @default(false) @map("barter_enabled")
   adCampaigns       AdCampaign[]
-  brandEcosystem    BrandEcosystem?     @relation("EcosystemOwner")
+  brandEcosystem    BrandEcosystem?    @relation("EcosystemOwner")
   brands            Brand[]
   disputes          Dispute[]
   inventoryLogs     InventoryLog[]
@@ -234,7 +234,7 @@ model Vendor {
   purchaseOrders    PurchaseOrder[]
   transfers         Transfer[]
   b2bData           VendorB2BData?
-  bankAccounts      VendorBankAccount[]
+  bankAccounts      VendorBankAccount?
   banners           VendorBanner[]
   categories        VendorCategory[]
   followers         VendorFollower[]
@@ -242,9 +242,9 @@ model Vendor {
   profile           VendorProfile?
   settings          VendorSettings?
   stats             VendorStats?
-  company           Company             @relation(fields: [companyId], references: [id])
-  user              User                @relation(fields: [userId], references: [id])
-  memberOfEcosystem BrandEcosystem?     @relation("EcosystemMembers", fields: [ecosystemId], references: [id])
+  company           Company            @relation(fields: [companyId], references: [id])
+  memberOfEcosystem BrandEcosystem?    @relation("EcosystemMembers", fields: [ecosystemId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
   warehouses        Warehouse[]
 
   @@index([status])
@@ -253,18 +253,18 @@ model Vendor {
 }
 
 model VendorProfile {
-  id            String     @id @default(cuid())
-  vendorId      String     @unique @map("vendor_id")
-  storeName     String     @map("store_name")
+  id            String    @id @default(cuid())
+  vendorId      String    @unique @map("vendor_id")
+  storeName     String    @map("store_name")
   description   String?
   logo          String?
   banner        String?
-  supportEmail  String?    @map("support_email")
-  isFeatured    Boolean    @default(false) @map("is_featured")
-  featuredUntil DateTime?  @map("featured_until")
-  city          String?    @map("city")
-  district      String?    @map("district")
-  vendor        Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  supportEmail  String?   @map("support_email")
+  isFeatured    Boolean   @default(false) @map("is_featured")
+  featuredUntil DateTime? @map("featured_until")
+  city          String?   @map("city")
+  district      String?   @map("district")
+  vendor        Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@index([city])
   @@map("vendor_profiles")
@@ -538,8 +538,8 @@ model Category {
   parent            Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children          Category[]          @relation("CategoryHierarchy")
   attributes        CategoryAttribute[]
-  vendorCategories  VendorCategory[]
   listings          Listing[]           @relation("ListingCategory")
+  vendorCategories  VendorCategory[]
 
   @@index([order])
   @@index([parentId])
@@ -567,11 +567,11 @@ model Brand {
   rejectionReason  String?          @map("rejection_reason")
   reviewedBy       String?          @map("reviewed_by")
   submittedAt      DateTime?        @map("submitted_at")
-  documentUrl      String?          @map("document_url")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
   vendorId         String?          @map("vendor_id")
   blurhash         String?
+  documentUrl      String?          @map("document_url")
   violations       BrandViolation[]
   vendor           Vendor?          @relation(fields: [vendorId], references: [id])
   catalog_products CatalogProduct[] @relation("BrandToCatalogProduct")
@@ -622,7 +622,6 @@ model Listing {
   id                   String                @id @default(cuid())
   vendorId             String                @map("vendor_id")
   catalogProductId     String                @map("catalog_product_id")
-  categoryId           String?               @map("category_id")
   title                String
   description          String?
   price                Decimal               @db.Decimal(18, 2)
@@ -638,7 +637,6 @@ model Listing {
   wholesalePrice       Decimal?              @map("wholesale_price") @db.Decimal(18, 2)
   minWholesaleQty      Int?                  @map("min_wholesale_qty")
   sku                  String?
-  barcode              String?               @unique
   isDigital            Boolean               @default(false) @map("is_digital")
   isB2BOnly            Boolean               @default(false) @map("is_b2b_only")
   b2bDiscount          Decimal?              @map("b2b_discount") @db.Decimal(5, 2)
@@ -670,8 +668,11 @@ model Listing {
   isSponsored          Boolean               @default(false) @map("is_sponsored")
   lowStockThreshold    Int                   @default(5) @map("low_stock_threshold")
   sponsorBudget        Decimal?              @default(0) @map("sponsor_budget") @db.Decimal(18, 2)
+  barcode              String?               @unique
+  categoryId           String?               @map("category_id")
   adCampaigns          AdCampaignProduct[]
   auctions             Auction[]
+  blindPoolEntries     BlindPoolEntry[]
   cartItems            CartItem[]
   collectionProducts   CollectionProduct[]
   inventoryLogs        InventoryLog[]
@@ -689,7 +690,6 @@ model Listing {
   stocks               Stock[]
   transferItems        TransferItem[]
   campaigns            Campaign[]            @relation("CampaignListings")
-  blindPoolEntries     BlindPoolEntry[]
 
   @@index([vendorId])
   @@index([catalogProductId])
@@ -862,17 +862,17 @@ model Campaign {
 
 model GroupBuy {
   id              String    @id @default(cuid())
-  title           String?   @db.VarChar(255)
-  productId       String?   @map("product_id")
   listingId       String?   @map("listing_id")
-  targetQuantity  Int       @map("target_quantity") @default(0)
+  targetQuantity  Int       @default(0) @map("target_quantity")
   currentQuantity Int       @default(0) @map("current_quantity")
-  price           Decimal   @db.Decimal(18, 2) @default(0)
-  startDate       DateTime? @map("start_date")
+  price           Decimal   @default(0) @db.Decimal(18, 2)
   endDate         DateTime  @map("end_date")
   status          String    @default("ACTIVE")
-  tiers           Json?     // e.g. [{ minQuantity: 10, price: 450 }]
   createdAt       DateTime  @default(now()) @map("created_at")
+  productId       String?   @map("product_id")
+  startDate       DateTime? @map("start_date")
+  tiers           Json?
+  title           String?   @db.VarChar(255)
 
   @@index([listingId])
   @@index([productId])
@@ -1019,7 +1019,6 @@ model Order {
   deliveryDate      DateTime?            @map("delivery_date")
   notes             String?
   currency          String?              @default("TRY")
-  orderNumber       String?              @unique @map("order_number")
   subtotal          Decimal              @default(0) @db.Decimal(18, 2)
   taxAmount         Decimal              @default(0) @map("tax_amount") @db.Decimal(18, 2)
   shippingFee       Decimal              @default(0) @map("shipping_fee") @db.Decimal(18, 2)
@@ -1043,16 +1042,17 @@ model Order {
   escrowReleaseAt   DateTime?            @map("escrow_release_at")
   payoutEligibleAt  DateTime?            @map("payout_eligible_at")
   shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(18, 2)
+  orderNumber       String?              @unique @map("order_number")
   expiresAt         DateTime?            @map("expires_at")
   idempotencyKey    String?              @map("idempotency_key")
   dispute           Dispute?
+  invoices          Invoice[]
   orderItems        OrderItem[]
   returns           OrderReturn[]
   statusHistory     OrderStatusHistory[]
-  invoices          Invoice[]
+  user              User                 @relation(fields: [userId], references: [id])
   vendor            Vendor               @relation(fields: [vendorId], references: [id])
   reviews           Review[]
-  user              User                 @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([vendorId])
@@ -1083,9 +1083,9 @@ model OrderItem {
 }
 
 model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique @map("user_id")
-  createdAt DateTime   @default(now()) @map("created_at")
+  id            String         @id @default(cuid())
+  userId        String         @unique @map("user_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   items         CartItem[]
   escrowCoupons EscrowCoupon[]
@@ -1207,6 +1207,8 @@ model SurplusItem {
   latitude          Float?
   longitude         Float?
   metadata          Json?
+  approvedBy        String?       @map("approved_by")
+  rejectionReason   String?       @map("rejection_reason")
   demandMatches     DemandMatch[]
   company           Company       @relation(fields: [companyId], references: [id])
   givenOffers       TradeOffer[]  @relation("OfferedItemOffers")
@@ -1528,8 +1530,8 @@ model AuctionBid {
   auctionId String   @map("auction_id")
   createdAt DateTime @default(now()) @map("created_at")
   userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([auctionId])
   @@index([userId])
@@ -1912,9 +1914,9 @@ model XpTransaction {
   referenceId   String?   @map("reference_id")
   referenceType String?   @map("reference_type")
   metadata      Json?
-  expiresAt     DateTime? @map("expires_at")  // 6 ay TTL, her ay %10 erir
-  erodedAt      DateTime? @map("eroded_at")   // son erozyon tarihi
-  createdAt     DateTime  @default(now())     @map("created_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  erodedAt      DateTime? @map("eroded_at")
+  expiresAt     DateTime? @map("expires_at")
 
   @@id([id, createdAt])
   @@index([userId])
@@ -2179,19 +2181,18 @@ model UserComplaint {
 }
 
 model EscrowCoupon {
-  id         String   @id @default(cuid())
-  cartId     String   @map("cart_id")
-  userId     String   @map("user_id")
+  id         String    @id @default(cuid())
+  cartId     String    @map("cart_id")
+  userId     String    @map("user_id")
   code       String
-  discount   Float    @default(0) // indirim tutarı (TL)
-  percentage Float?   @map("percentage") // yüzdelik indirim (opsiyonel)
-  minAmount  Float?   @map("min_amount") // minimum sepet tutarı
+  discount   Float     @default(0)
+  percentage Float?    @map("percentage")
+  minAmount  Float?    @map("min_amount")
   expiresAt  DateTime? @map("expires_at")
-  isActive   Boolean  @default(true) @map("is_active")
-  appliedAt  DateTime @default(now()) @map("applied_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  isActive   Boolean   @default(true) @map("is_active")
+  appliedAt  DateTime  @default(now()) @map("applied_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  cart       Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@index([cartId], map: "idx_escrow_coupons_cart_id")
   @@index([userId], map: "idx_escrow_coupons_user_id")
@@ -2199,17 +2200,333 @@ model EscrowCoupon {
 }
 
 model Coupon {
-  id                 String   @id @default(cuid())
-  code               String   @unique
-  discountAmount     Float?   @map("discount_amount")
-  discountPercentage Float?   @map("discount_percentage")
-  minOrderAmount     Float?   @map("min_order_amount")
+  id                 String    @id @default(cuid())
+  code               String    @unique
+  discountAmount     Float?    @map("discount_amount")
+  discountPercentage Float?    @map("discount_percentage")
+  minOrderAmount     Float?    @map("min_order_amount")
   expiresAt          DateTime? @map("expires_at")
-  isActive           Boolean  @default(true) @map("is_active")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique @map("invoice_number")
+  orderId        String        @map("order_id")
+  type           InvoiceType
+  recipientId    String        @map("recipient_id")
+  recipientType  RecipientType @map("recipient_type")
+  status         InvoiceStatus @default(DRAFT)
+  subtotal       Decimal       @db.Decimal(18, 2)
+  taxAmount      Decimal       @default(0) @map("tax_amount") @db.Decimal(18, 2)
+  totalAmount    Decimal       @map("total_amount") @db.Decimal(18, 2)
+  currency       String        @default("TRY")
+  pdfUrl         String?       @map("pdf_url")
+  pdfGeneratedAt DateTime?     @map("pdf_generated_at")
+  issuedAt       DateTime      @default(now()) @map("issued_at")
+  dueAt          DateTime?     @map("due_at")
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  items          InvoiceItem[]
+  order          Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([recipientId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String  @map("invoice_id")
+  description String
+  quantity    Int
+  unitPrice   Decimal @map("unit_price") @db.Decimal(18, 2)
+  totalPrice  Decimal @map("total_price") @db.Decimal(18, 2)
+  taxRate     Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+model ImportJob {
+  id            String          @id @default(uuid())
+  adminId       String
+  status        ImportJobStatus @default(PENDING)
+  totalRows     Int
+  processedRows Int             @default(0)
+  createdRows   Int             @default(0)
+  failedRows    Int             @default(0)
+  errors        Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([adminId])
+  @@index([status])
+}
+
+model MembershipPlan {
+  id            String             @id @default(cuid())
+  tier          SubscriptionTier   @unique
+  monthlyFee    Decimal            @map("monthly_fee") @db.Decimal(18, 2)
+  annualFee     Decimal?           @map("annual_fee") @db.Decimal(18, 2)
+  menuCredit    Decimal            @map("menu_credit") @db.Decimal(18, 2)
+  breakeven     Decimal            @map("breakeven") @db.Decimal(18, 2)
+  benefits      Json?
+  isActive      Boolean            @default(true) @map("is_active")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  subscriptions UserSubscription[]
+
+  @@map("membership_plans")
+}
+
+model UserSubscription {
+  id                      String             @id @default(cuid())
+  userId                  String             @unique @map("user_id")
+  planId                  String             @map("plan_id")
+  status                  SubscriptionStatus @default(TRIAL)
+  startDate               DateTime           @map("start_date")
+  endDate                 DateTime           @map("end_date")
+  autoRenew               Boolean            @default(true) @map("auto_renew")
+  nextBillingDate         DateTime?          @map("next_billing_date")
+  cancelledAt             DateTime?          @map("cancelled_at")
+  downgradeProtectedUntil DateTime?          @map("downgrade_protected_until")
+  referralDiscountPct     Decimal            @default(0) @map("referral_discount_pct") @db.Decimal(5, 2)
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+  menuUsages              MenuUsage[]
+  plan                    MembershipPlan     @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("user_subscriptions")
+}
+
+model MenuUsage {
+  id             String           @id @default(cuid())
+  subscriptionId String           @map("subscription_id")
+  month          Int
+  year           Int
+  usedCredit     Decimal          @default(0) @map("used_credit") @db.Decimal(18, 2)
+  totalCredit    Decimal          @map("total_credit") @db.Decimal(18, 2)
+  subscription   UserSubscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([subscriptionId, month, year])
+  @@map("menu_usages")
+}
+
+model Restaurant {
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique
+  vendorId         String?        @map("vendor_id")
+  address          String?
+  city             String
+  district         String?
+  category         String?
+  imageUrl         String?        @map("image_url")
+  averageMenuPrice Decimal?       @map("average_menu_price") @db.Decimal(18, 2)
+  isActive         Boolean        @default(true) @map("is_active")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  menus            BazarXMenu[]
+  launchPartner    LaunchPartner?
+
+  @@index([city])
+  @@index([category])
+  @@map("restaurants")
+}
+
+model BazarXMenu {
+  id              String         @id @default(cuid())
+  restaurantId    String         @map("restaurant_id")
+  title           String
+  description     String?
+  originalPrice   Decimal        @map("original_price") @db.Decimal(18, 2)
+  discountedPrice Decimal        @map("discounted_price") @db.Decimal(18, 2)
+  imageUrl        String?        @map("image_url")
+  isActive        Boolean        @default(true) @map("is_active")
+  validFrom       DateTime?      @map("valid_from")
+  validUntil      DateTime?      @map("valid_until")
+  dailyLimit      Int?           @map("daily_limit")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  restaurant      Restaurant     @relation(fields: [restaurantId], references: [id])
+  purchases       MenuPurchase[]
+
+  @@index([restaurantId])
+  @@map("bazarx_menus")
+}
+
+model MenuPurchase {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  menuId             String             @map("menu_id")
+  subscriptionId     String?            @map("subscription_id")
+  paidAmount         Decimal            @map("paid_amount") @db.Decimal(18, 2)
+  serviceFee         Decimal            @map("service_fee") @db.Decimal(18, 2)
+  vatAmount          Decimal            @map("vat_amount") @db.Decimal(18, 2)
+  qrCode             String             @unique @map("qr_code")
+  qrExpiresAt        DateTime           @map("qr_expires_at")
+  oneFreeQrCode      String?            @unique @map("one_free_qr_code")
+  oneFreeActivatedAt DateTime?          @map("one_free_activated_at")
+  oneFreeUsedAt      DateTime?          @map("one_free_used_at")
+  status             MenuPurchaseStatus @default(ACTIVE)
+  xpEarned           Int                @default(0) @map("xp_earned")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  menu               BazarXMenu         @relation(fields: [menuId], references: [id])
+  redemptions        MenuRedemption[]
+
+  @@index([userId])
+  @@index([menuId])
+  @@index([status])
+  @@map("menu_purchases")
+}
+
+model MenuRedemption {
+  id             String       @id @default(cuid())
+  purchaseId     String       @map("purchase_id")
+  isOneFree      Boolean      @default(false) @map("is_one_free")
+  redeemedAt     DateTime     @default(now()) @map("redeemed_at")
+  scannedByStaff String?      @map("scanned_by_staff")
+  purchase       MenuPurchase @relation(fields: [purchaseId], references: [id])
+
+  @@index([purchaseId])
+  @@map("menu_redemptions")
+}
+
+model GiftVoucher {
+  id         String          @id @default(cuid())
+  userId     String          @map("user_id")
+  code       String          @unique
+  amount     Decimal         @db.Decimal(18, 2)
+  type       GiftVoucherType
+  validUntil DateTime        @map("valid_until")
+  redeemedAt DateTime?       @map("redeemed_at")
+  orderId    String?         @map("order_id")
+  issuedBy   String?         @map("issued_by")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([code])
+  @@map("gift_vouchers")
+}
+
+model Referral {
+  id              String    @id @default(cuid())
+  referrerId      String    @map("referrer_id")
+  refereeId       String    @unique @map("referee_id")
+  referralCode    String    @map("referral_code")
+  xpGranted       Int       @default(0) @map("xp_granted")
+  bonusGranted    Boolean   @default(false) @map("bonus_granted")
+  rewardGrantedAt DateTime? @map("reward_granted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([referrerId])
+  @@map("referrals")
+}
+
+model LaunchPartner {
+  id               String             @id @default(cuid())
+  restaurantId     String             @unique @map("restaurant_id")
+  phase            LaunchPartnerPhase @default(PHASE_1)
+  pledgedMenuCount Int                @default(60) @map("pledged_menu_count")
+  distributedCount Int                @default(0) @map("distributed_count")
+  freeAdMonths     Int                @default(1) @map("free_ad_months")
+  adMonthsUsed     Int                @default(0) @map("ad_months_used")
+  startDate        DateTime           @default(now()) @map("start_date")
+  phase2StartDate  DateTime?          @map("phase2_start_date")
+  phase3StartDate  DateTime?          @map("phase3_start_date")
+  notes            String?
+  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id])
+
+  @@map("launch_partners")
+}
+
+model TrustScore {
+  id                 String   @id @default(cuid())
+  vendorId           String   @unique @map("vendor_id")
+  score              Decimal  @default(100) @db.Decimal(5, 2)
+  tradingPerformance Decimal  @default(100) @map("trading_performance") @db.Decimal(5, 2)
+  xpLoyalty          Decimal  @default(100) @map("xp_loyalty") @db.Decimal(5, 2)
+  compliance         Decimal  @default(100) @db.Decimal(5, 2)
+  lastCalculatedAt   DateTime @default(now()) @map("last_calculated_at")
+  isFrozen           Boolean  @default(false) @map("is_frozen")
+  violationCount     Int      @default(0) @map("violation_count")
+  inactiveDays       Int      @default(0) @map("inactive_days")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  @@map("coupons")
+  @@map("trust_scores")
+}
+
+model BlindPool {
+  id             String           @id @default(cuid())
+  groupId        String           @map("group_id")
+  name           String
+  totalStock     Decimal          @map("total_stock") @db.Decimal(18, 2)
+  availableStock Decimal          @map("available_stock") @db.Decimal(18, 2)
+  smartCapPct    Decimal          @default(25) @map("smart_cap_pct") @db.Decimal(5, 2)
+  isActive       Boolean          @default(true) @map("is_active")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  entries        BlindPoolEntry[]
+
+  @@index([groupId])
+  @@map("blind_pools")
+}
+
+model BlindPoolEntry {
+  id         String    @id @default(cuid())
+  poolId     String    @map("pool_id")
+  vendorId   String    @map("vendor_id")
+  listingId  String    @map("listing_id")
+  quantity   Decimal   @db.Decimal(18, 2)
+  isReserved Boolean   @default(false) @map("is_reserved")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  listing    Listing   @relation(fields: [listingId], references: [id])
+  pool       BlindPool @relation(fields: [poolId], references: [id])
+
+  @@index([poolId])
+  @@index([listingId])
+  @@map("blind_pool_entries")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String   @map("actor_id")
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  oldValue     Json?    @map("old_value")
+  newValue     Json?    @map("new_value")
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 enum UserRole {
@@ -2239,13 +2556,11 @@ enum VendorStatus {
   SUSPENDED
 }
 
-// Master Plan v4.3 — TicariTakas B2B üyelik seviyeleri
-// Migration: PLUS→PRIME, PREMIUM→ELITE(old)→rename, ELITE→APEX
 enum VendorTier {
-  CORE   // 12.000₺/yıl — %12 komisyon
-  PRIME  // 48.000₺/yıl — %10 komisyon
-  ELITE  // 120.000₺/yıl — %8 komisyon
-  APEX   // 300.000₺/yıl — %6 komisyon
+  CORE
+  PRIME
+  ELITE
+  APEX
 }
 
 enum B2BTier {
@@ -2272,13 +2587,13 @@ enum PilotCity {
 
 enum ListingStatus {
   DRAFT
-  PENDING
   ACTIVE
   INACTIVE
   OUT_OF_STOCK
   SUSPENDED
   REJECTED
   ARCHIVED
+  PENDING
 }
 
 enum ListingVisibility {
@@ -2374,6 +2689,7 @@ enum PaymentStatus {
 enum SurplusStatus {
   PENDING_APPROVAL
   ACTIVE
+  REJECTED
   RESERVED
   TRADED
   EXPIRED
@@ -2556,51 +2872,10 @@ enum ComplaintStatus {
   RESOLVED
   REJECTED
 }
-model Invoice {
-  id             String        @id @default(cuid())
-  invoiceNumber  String        @unique @map("invoice_number")
-  orderId        String        @map("order_id")
-  type           InvoiceType
-  recipientId    String        @map("recipient_id")   // userId veya vendorId
-  recipientType  RecipientType @map("recipient_type") // BUYER veya VENDOR
-  status         InvoiceStatus @default(DRAFT)
-  subtotal       Decimal       @db.Decimal(18, 2)
-  taxAmount      Decimal       @default(0) @map("tax_amount") @db.Decimal(18, 2)
-  totalAmount    Decimal       @map("total_amount") @db.Decimal(18, 2)
-  currency       String        @default("TRY")
-  pdfUrl         String?       @map("pdf_url")
-  pdfGeneratedAt DateTime?     @map("pdf_generated_at")
-  issuedAt       DateTime      @default(now()) @map("issued_at")
-  dueAt          DateTime?     @map("due_at")
-  notes          String?
-  metadata       Json?
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  order          Order         @relation(fields: [orderId], references: [id])
-  items          InvoiceItem[]
-
-  @@index([orderId])
-  @@index([recipientId])
-  @@index([status])
-  @@map("invoices")
-}
-
-model InvoiceItem {
-  id          String   @id @default(cuid())
-  invoiceId   String   @map("invoice_id")
-  description String
-  quantity    Int
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(18, 2)
-  totalPrice  Decimal  @map("total_price") @db.Decimal(18, 2)
-  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@map("invoice_items")
-}
 
 enum InvoiceType {
-  BUYER_INVOICE    // Alıcı faturası
-  VENDOR_INVOICE   // Satıcı faturası (komisyon dahil)
+  BUYER_INVOICE
+  VENDOR_INVOICE
 }
 
 enum RecipientType {
@@ -2615,9 +2890,6 @@ enum InvoiceStatus {
   PAID
   CANCELLED
 }
-// ─── schema.prisma'ya EKLENECEK BLOK ─────────────────────────────────────────
-// Mevcut schema.prisma dosyanızın sonuna yapıştırın,
-// ardından: npx prisma migrate dev --name add-import-job
 
 enum ImportJobStatus {
   PENDING
@@ -2625,284 +2897,6 @@ enum ImportJobStatus {
   COMPLETED
   FAILED
 }
-
-model ImportJob {
-  id          String          @id @default(uuid())
-  adminId     String
-  status      ImportJobStatus @default(PENDING)
-  totalRows   Int
-  processedRows Int           @default(0)
-  createdRows Int             @default(0)
-  failedRows  Int             @default(0)
-  errors      Json?           // String[] — ilk 20 hata satırı
-  startedAt   DateTime?
-  completedAt DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  @@index([adminId])
-  @@index([status])
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// MASTER PLAN v4.3 — FAZ 0 MODELLERİ
-// ═══════════════════════════════════════════════════════════════════════
-
-// ─── B2C Abonelik Sistemi ──────────────────────────────────────────────
-
-// 8 kademe abonelik planı tanımı (seed data ile doldurulur)
-model MembershipPlan {
-  id            String           @id @default(cuid())
-  tier          SubscriptionTier @unique
-  monthlyFee    Decimal          @map("monthly_fee")     @db.Decimal(18, 2)
-  annualFee     Decimal?         @map("annual_fee")      @db.Decimal(18, 2) // 10 ay fiyatına 12 ay
-  menuCredit    Decimal          @map("menu_credit")     @db.Decimal(18, 2) // 2× aylık aidat
-  breakeven     Decimal          @map("breakeven")       @db.Decimal(18, 2) // aylık breakeven ciro
-  benefits      Json?
-  isActive      Boolean          @default(true)          @map("is_active")
-  createdAt     DateTime         @default(now())         @map("created_at")
-  updatedAt     DateTime         @updatedAt              @map("updated_at")
-  subscriptions UserSubscription[]
-
-  @@map("membership_plans")
-}
-
-// Kullanıcı başına aktif abonelik
-model UserSubscription {
-  id                      String             @id @default(cuid())
-  userId                  String             @unique @map("user_id")
-  planId                  String             @map("plan_id")
-  status                  SubscriptionStatus @default(TRIAL)
-  startDate               DateTime           @map("start_date")
-  endDate                 DateTime           @map("end_date")
-  autoRenew               Boolean            @default(true) @map("auto_renew")
-  nextBillingDate         DateTime?          @map("next_billing_date")
-  cancelledAt             DateTime?          @map("cancelled_at")
-  downgradeProtectedUntil DateTime?          @map("downgrade_protected_until") // 30 gün menü hakkı devam eder
-  referralDiscountPct     Decimal            @default(0) @map("referral_discount_pct") @db.Decimal(5, 2) // 3. referans: %20
-  createdAt               DateTime           @default(now()) @map("created_at")
-  updatedAt               DateTime           @updatedAt @map("updated_at")
-  plan                    MembershipPlan     @relation(fields: [planId], references: [id])
-  menuUsages              MenuUsage[]
-
-  @@index([userId])
-  @@index([status])
-  @@map("user_subscriptions")
-}
-
-// Aylık menü hakkı kullanım takibi
-model MenuUsage {
-  id             String           @id @default(cuid())
-  subscriptionId String           @map("subscription_id")
-  month          Int
-  year           Int
-  usedCredit     Decimal          @default(0) @map("used_credit") @db.Decimal(18, 2)
-  totalCredit    Decimal          @map("total_credit")             @db.Decimal(18, 2) // 2× aidat
-  subscription   UserSubscription @relation(fields: [subscriptionId], references: [id])
-
-  @@unique([subscriptionId, month, year])
-  @@map("menu_usages")
-}
-
-// ─── BazarX Menü Sistemi ──────────────────────────────────────────────
-
-// Anlaşmalı restoran / işletme
-model Restaurant {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  vendorId      String?        @map("vendor_id")
-  address       String?
-  city          String
-  district      String?
-  category      String?
-  imageUrl      String?        @map("image_url")
-  averageMenuPrice Decimal?    @map("average_menu_price") @db.Decimal(18, 2)
-  isActive      Boolean        @default(true)             @map("is_active")
-  createdAt     DateTime       @default(now())            @map("created_at")
-  updatedAt     DateTime       @updatedAt                 @map("updated_at")
-  menus         BazarXMenu[]
-  launchPartner LaunchPartner?
-
-  @@index([city])
-  @@index([category])
-  @@map("restaurants")
-}
-
-// Restoran menü kartı
-model BazarXMenu {
-  id              String        @id @default(cuid())
-  restaurantId    String        @map("restaurant_id")
-  title           String
-  description     String?
-  originalPrice   Decimal       @map("original_price")   @db.Decimal(18, 2)
-  discountedPrice Decimal       @map("discounted_price") @db.Decimal(18, 2) // %50 indirimli
-  imageUrl        String?       @map("image_url")
-  isActive        Boolean       @default(true)           @map("is_active")
-  validFrom       DateTime?     @map("valid_from")
-  validUntil      DateTime?     @map("valid_until")
-  dailyLimit      Int?          @map("daily_limit")
-  createdAt       DateTime      @default(now())          @map("created_at")
-  updatedAt       DateTime      @updatedAt               @map("updated_at")
-  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id])
-  purchases       MenuPurchase[]
-
-  @@index([restaurantId])
-  @@map("bazarx_menus")
-}
-
-// Kullanıcının satın aldığı menü + QR kodlar
-model MenuPurchase {
-  id                 String             @id @default(cuid())
-  userId             String             @map("user_id")
-  menuId             String             @map("menu_id")
-  subscriptionId     String?            @map("subscription_id")
-  paidAmount         Decimal            @map("paid_amount")  @db.Decimal(18, 2) // discounted + %8 + KDV
-  serviceFee         Decimal            @map("service_fee")  @db.Decimal(18, 2) // discounted × %8
-  vatAmount          Decimal            @map("vat_amount")   @db.Decimal(18, 2) // serviceFee × %20
-  qrCode             String             @unique              @map("qr_code")
-  qrExpiresAt        DateTime           @map("qr_expires_at")
-  oneFreeQrCode      String?            @unique @map("one_free_qr_code")
-  oneFreeActivatedAt DateTime?          @map("one_free_activated_at")
-  oneFreeUsedAt      DateTime?          @map("one_free_used_at")
-  status             MenuPurchaseStatus @default(ACTIVE)
-  xpEarned           Int                @default(0)          @map("xp_earned") // 5 XP/kullanım
-  createdAt          DateTime           @default(now())      @map("created_at")
-  updatedAt          DateTime           @updatedAt           @map("updated_at")
-  menu               BazarXMenu         @relation(fields: [menuId], references: [id])
-  redemptions        MenuRedemption[]
-
-  @@index([userId])
-  @@index([menuId])
-  @@index([status])
-  @@map("menu_purchases")
-}
-
-// Menü kullanım kaydı (restoran QR tarama)
-model MenuRedemption {
-  id             String       @id @default(cuid())
-  purchaseId     String       @map("purchase_id")
-  isOneFree      Boolean      @default(false)  @map("is_one_free")
-  redeemedAt     DateTime     @default(now())  @map("redeemed_at")
-  scannedByStaff String?      @map("scanned_by_staff")
-  purchase       MenuPurchase @relation(fields: [purchaseId], references: [id])
-
-  @@index([purchaseId])
-  @@map("menu_redemptions")
-}
-
-// ─── Hediye Çeki ─────────────────────────────────────────────────────
-
-model GiftVoucher {
-  id         String           @id @default(cuid())
-  userId     String           @map("user_id")
-  code       String           @unique
-  amount     Decimal          @db.Decimal(18, 2)
-  type       GiftVoucherType
-  validUntil DateTime         @map("valid_until")
-  redeemedAt DateTime?        @map("redeemed_at")
-  orderId    String?          @map("order_id")
-  issuedBy   String?          @map("issued_by")  // 'SYSTEM' veya admin ID
-  createdAt  DateTime         @default(now())    @map("created_at")
-
-  @@index([userId])
-  @@index([code])
-  @@map("gift_vouchers")
-}
-
-// ─── Referans Sistemi ────────────────────────────────────────────────
-
-// Tek katmanlı referans — zincirleme yapı yok
-model Referral {
-  id               String    @id @default(cuid())
-  referrerId       String    @map("referrer_id")
-  refereeId        String    @unique @map("referee_id")
-  referralCode     String    @map("referral_code")
-  xpGranted        Int       @default(0)  @map("xp_granted")
-  bonusGranted     Boolean   @default(false) @map("bonus_granted") // 3. referans bonusu
-  rewardGrantedAt  DateTime? @map("reward_granted_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-
-  @@index([referrerId])
-  @@map("referrals")
-}
-
-// ─── Lansman Ortağı ──────────────────────────────────────────────────
-
-model LaunchPartner {
-  id               String             @id @default(cuid())
-  restaurantId     String             @unique           @map("restaurant_id")
-  phase            LaunchPartnerPhase @default(PHASE_1)
-  pledgedMenuCount Int                @default(60)      @map("pledged_menu_count")
-  distributedCount Int                @default(0)       @map("distributed_count")
-  freeAdMonths     Int                @default(1)       @map("free_ad_months")
-  adMonthsUsed     Int                @default(0)       @map("ad_months_used")
-  startDate        DateTime           @default(now())   @map("start_date")
-  phase2StartDate  DateTime?          @map("phase2_start_date")
-  phase3StartDate  DateTime?          @map("phase3_start_date")
-  notes            String?
-  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id])
-
-  @@map("launch_partners")
-}
-
-// ─── TrustScore (TicariTakas B2B) ────────────────────────────────────
-
-model TrustScore {
-  id                 String   @id @default(cuid())
-  vendorId           String   @unique @map("vendor_id")
-  score              Decimal  @default(100) @db.Decimal(5, 2)
-  tradingPerformance Decimal  @default(100) @map("trading_performance") @db.Decimal(5, 2) // ağırlık %40
-  xpLoyalty          Decimal  @default(100) @map("xp_loyalty")          @db.Decimal(5, 2) // ağırlık %30
-  compliance         Decimal  @default(100) @db.Decimal(5, 2)                              // ağırlık %30
-  lastCalculatedAt   DateTime @default(now()) @map("last_calculated_at")
-  isFrozen           Boolean  @default(false) @map("is_frozen")
-  violationCount     Int      @default(0)  @map("violation_count")
-  inactiveDays       Int      @default(0)  @map("inactive_days")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("trust_scores")
-}
-
-// ─── BarterBorsa — Blind Pool ─────────────────────────────────────────
-
-model BlindPool {
-  id             String           @id @default(cuid())
-  groupId        String           @map("group_id")  // BarterBorsa ecosystem grubu
-  name           String
-  totalStock     Decimal          @map("total_stock")     @db.Decimal(18, 2)
-  availableStock Decimal          @map("available_stock") @db.Decimal(18, 2)
-  smartCapPct    Decimal          @default(25) @map("smart_cap_pct") @db.Decimal(5, 2) // tek işlemde max %25
-  isActive       Boolean          @default(true) @map("is_active")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  entries        BlindPoolEntry[]
-
-  @@index([groupId])
-  @@map("blind_pools")
-}
-
-// Kör havuz girişi — bayi kimliği gizlidir
-model BlindPoolEntry {
-  id         String    @id @default(cuid())
-  poolId     String    @map("pool_id")
-  vendorId   String    @map("vendor_id")   // diğer bayilere gösterilmez
-  listingId  String    @map("listing_id")
-  quantity   Decimal   @db.Decimal(18, 2)
-  isReserved Boolean   @default(false) @map("is_reserved")
-  createdAt  DateTime  @default(now())   @map("created_at")
-  pool       BlindPool @relation(fields: [poolId], references: [id])
-  listing    Listing   @relation(fields: [listingId], references: [id])
-
-  @@index([poolId])
-  @@index([listingId])
-  @@map("blind_pool_entries")
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// FAZ 0 ENUM'LARI
-// ═══════════════════════════════════════════════════════════════════════
 
 enum SubscriptionTier {
   BRONZE_P1
@@ -2926,7 +2920,7 @@ enum SubscriptionStatus {
 enum MenuPurchaseStatus {
   ACTIVE
   REDEEMED
-  PARTIALLY_REDEEMED  // 1. menü kullanıldı, 1+1 henüz değil
+  PARTIALLY_REDEEMED
   EXPIRED
   CANCELLED
 }
@@ -2940,36 +2934,7 @@ enum GiftVoucherType {
 }
 
 enum LaunchPartnerPhase {
-  PHASE_1   // Ay 1: 60 menü taahhüdü + ücretsiz profil
-  PHASE_2   // Ay 2-3: ücretsiz reklam + QR desteği
-  PHASE_3   // Ay 4+: ücretli B2B üyelik
-}
-
-// Sistem genelinde admin işlemlerini izler (vendor approve, role değişimi, ayar güncelleme vb.)
-model AuditLog {
-  id           String   @id @default(cuid())
-  actorId      String   @map("actor_id")
-  action       String
-  resourceType String   @map("resource_type")
-  resourceId   String?  @map("resource_id")
-  oldValue     Json?    @map("old_value")
-  newValue     Json?    @map("new_value")
-  ipAddress    String?  @map("ip_address")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  @@index([actorId])
-  @@index([resourceType, resourceId])
-  @@index([action])
-  @@index([createdAt])
-  @@map("audit_logs")
-}
-
-// Komisyon oranı, maintenance mode gibi dinamik sistem ayarları
-model SystemSetting {
-  key       String   @id
-  value     Json
-  updatedBy String?  @map("updated_by")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("system_settings")
+  PHASE_1
+  PHASE_2
+  PHASE_3
 }

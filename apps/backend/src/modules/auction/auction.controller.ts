@@ -189,11 +189,12 @@ export class AuctionController {
     if (hasDeposit) {
       // Financial Service'ten gerçek teminat blokajı al
       const idempotencyKey = `auction-participate-${id}-${user.id}`;
+      const referenceId = `auction-participate-${id}-${user.id}`;
       const holdResult = await this.financialGateway.holdFunds(
         user.id,
         auction.participationDeposit!.toString(),
         'AUCTION_BID',
-        id,
+        referenceId,
         'AUCTION_PARTICIPATION',
         idempotencyKey,
       );

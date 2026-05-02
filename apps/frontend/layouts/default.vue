@@ -8,6 +8,7 @@
       :logoUrl="siteLogoUrl ?? undefined"
       :categories="categories"
       :loading="false"
+      @navigate="navigateTo($event)"
       @open-search="showAdvancedSearch = true"
       @open-location="locationModalOpen = true"
     />

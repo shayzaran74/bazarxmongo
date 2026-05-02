@@ -10,9 +10,10 @@ import ShippingCalculator from '../calculators/ShippingCalculator.vue'
 import VatCalculator from '../calculators/VatCalculator.vue'
 import CalculatorDocs from '../calculators/CalculatorDocs.vue'
 
-const { data: dynamicData } = await useFetch('/api/dynamic/contents?category=help', {
-    baseURL: useRuntimeConfig().public.apiBase
-})
+// const { data: dynamicData } = await useFetch('/api/dynamic/contents?category=help', {
+//     baseURL: useRuntimeConfig().public.apiBase
+// })
+const dynamicData = ref({ success: false, data: [] })
 
 const activeCalculator = ref('commission')
 

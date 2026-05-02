@@ -1,17 +1,17 @@
 <template>
   <div>
     <DashboardWantedItemsManager
-      title="İstek Onay ve Yönetim"
-      subtitle="Kullanıcılar ve firmalar tarafından oluşturulan alım/satım isteklerini yönetin."
+      title="Ticari Takas İlan Onayları"
+      subtitle="Üyelerin paylaştığı atıl kapasite ve stok ilanlarını yönetin."
       :is-admin="true"
-      api-endpoint="/api/v1/admin/wanted-items"
+      api-endpoint="/api/v1/surplus"
     />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({
-    layout: 'admin',
-    middleware: ['admin'] // Assuming 'admin' middleware exists for protection
+  layout:     'admin',
+  middleware: ['admin'],
 })
 </script>

@@ -2,9 +2,10 @@
 
 export enum SurplusStatus {
   PENDING_APPROVAL = 'PENDING_APPROVAL',
-  ACTIVE = 'ACTIVE',
-  RESERVED = 'RESERVED',
-  TRADED = 'TRADED',
-  EXPIRED = 'EXPIRED',
-  DEACTIVATED = 'DEACTIVATED',
+  ACTIVE           = 'ACTIVE',
+  REJECTED         = 'REJECTED',
+  RESERVED         = 'RESERVED',
+  TRADED           = 'TRADED',
+  EXPIRED          = 'EXPIRED',
+  DEACTIVATED      = 'DEACTIVATED',
 }

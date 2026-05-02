@@ -75,77 +75,94 @@
   </div>
 </template>
 
-<script setup>
-import { ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
+<script setup lang="ts">
 import MyOfferItem from '~/components/trade/MyOfferItem.vue'
 import OfferDetailModal from '~/components/trade/OfferDetailModal.vue'
 import TradeOfferModal from '~/components/modals/TradeOfferModal.vue'
 import ReviewForm from '~/components/trade/ReviewForm.vue'
 
-const { loading, offers, activeTab, updatingStatus, fetchMyOffers, updateStatus } = useTradeOffers()
-const authStore = useAuthStore()
-
-const selectedOffer = ref(null)
-const showCounterModal = ref(false)
-const selectedOfferForCounter = ref(null)
-const showReviewModal = ref(false)
-const selectedOfferForReview = ref(null)
-
-const hasUserReviewed = (offer) => {
-  if (!offer.reviews || !authStore.user) return false
-  return offer.reviews.some(r => r.fromUserId === authStore.user.id)
+interface TradeOfferRow {
+  id: string
+  status: string
+  fromCompany?: { name: string; users?: { userId?: string; user?: { id: string } }[] }
+  toCompany?: { name: string; users?: { userId?: string; user?: { id: string } }[] }
+  offeredItem?: { images?: ({ url: string } | string)[] }
+  requestedItem?: { images?: ({ url: string } | string)[] }
+  swapSession?: { id: string } | null
+  reviews?: { fromUserId: string }[]
 }
 
-const openReviewModal = (offer) => {
+const { loading, offers, activeTab, updatingStatus, fetchMyOffers, updateStatus } = useTradeOffers()
+const authStore = useAuthStore()
+const route = useRoute()
+
+const selectedOffer = ref<TradeOfferRow | null>(null)
+const showCounterModal = ref(false)
+const selectedOfferForCounter = ref<TradeOfferRow | null>(null)
+const showReviewModal = ref(false)
+const selectedOfferForReview = ref<TradeOfferRow | null>(null)
+
+const hasUserReviewed = (offer: TradeOfferRow): boolean => {
+  if (!offer.reviews || !authStore.user) return false
+  return offer.reviews.some(r => r.fromUserId === authStore.user!.id)
+}
+
+const openReviewModal = (offer: TradeOfferRow): void => {
   selectedOfferForReview.value = offer
   showReviewModal.value = true
 }
 
-const handleReviewSuccess = () => {
+const handleReviewSuccess = (): void => {
   showReviewModal.value = false
   fetchMyOffers()
 }
 
-const prepareCounterOffer = (offer) => {
+const prepareCounterOffer = (offer: TradeOfferRow): void => {
   selectedOfferForCounter.value = offer
   showCounterModal.value = true
 }
 
-const handleCounterSuccess = () => {
+const handleCounterSuccess = (): void => {
   showCounterModal.value = false
   fetchMyOffers()
 }
 
-const handleStatusUpdate = async ({ id, status }) => {
+const handleStatusUpdate = async ({ id, status }: { id: string; status: string }): Promise<void> => {
   if (status === 'ACCEPTED' && !confirm('Takas sürecini başlatmak üzeresiniz. Emin misiniz?')) return
   if (status === 'REJECTED' && !confirm('Teklifi reddetmek istediğinize emin misiniz?')) return
-  
+
+  // ACCEPTED durumunda composable navigate eder; diğer durumlarda modal kapat
   const success = await updateStatus(id, status)
-  if (success && selectedOffer.value?.id === id) selectedOffer.value = null
+  if (success && status !== 'ACCEPTED' && selectedOffer.value?.id === id) {
+    selectedOffer.value = null
+  }
 }
 
 const reviewTradeInfo = computed(() => {
-  if (!selectedOfferForReview.value) return {}
   const offer = selectedOfferForReview.value
+  if (!offer) return {}
   const partner = activeTab.value === 'received' ? offer.fromCompany : offer.toCompany
-  let toUserId = partner?.users?.[0]?.userId || partner?.users?.[0]?.user?.id
-  
+  const toUserId = partner?.users?.[0]?.userId ?? partner?.users?.[0]?.user?.id
+
+  const getImageUrl = (item?: { images?: ({ url: string } | string)[] }): string => {
+    const img = item?.images?.[0]
+    if (!img) return ''
+    return typeof img === 'string' ? img : img.url
+  }
+
   return {
-    tradeId: offer.id,
+    tradeId:     offer.id,
     partnerName: partner?.name,
-    fromImage: offer.offeredItem?.images?.[0]?.url || offer.offeredItem?.images?.[0],
-    toImage: offer.requestedItem?.images?.[0]?.url || offer.requestedItem?.images?.[0],
-    toUserId
+    fromImage:   getImageUrl(offer.offeredItem),
+    toImage:     getImageUrl(offer.requestedItem),
+    toUserId,
   }
 })
 
 watch(activeTab, fetchMyOffers)
+
 onMounted(() => {
-  const route = useRoute()
-  if (route.query.type) activeTab.value = route.query.type
-  if (route.query.offerId) {
-     // logic for initial offer select could go here if needed
-  }
+  if (route.query.type) activeTab.value = route.query.type as string
   fetchMyOffers()
 })
 </script>
