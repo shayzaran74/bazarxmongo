@@ -9,7 +9,14 @@ export class PrismaVerificationTokenRepository implements IVerificationTokenRepo
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, type: string, expiresAt: Date): Promise<string> {
-    const token = randomBytes(32).toString('hex');
+    let token: string;
+    
+    if (type === 'EMAIL') {
+      // 6 haneli sayısal kod üret (0-999999)
+      token = Math.floor(100000 + Math.random() * 900000).toString();
+    } else {
+      token = randomBytes(32).toString('hex');
+    }
     
     await this.prisma.verificationToken.create({
       data: {

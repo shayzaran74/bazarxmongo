@@ -36,6 +36,7 @@ export class GetCatalogProductBySlugHandler
       Brand: rawProduct.brands?.[0] ?? null,
       Vendor: listing?.vendor ?? null,
       price: listing ? Number(listing.price) : 0,
+      listingId: listing?.id ?? null,
       stock: listing?.stock ?? 0,
       sku: listing?.sku ?? '',
       image: rawProduct.media?.[0]?.url ?? null,

@@ -151,4 +151,22 @@ export class AuthController {
       message: 'Şifreniz başarıyla sıfırlandı.',
     };
   }
+
+  @Public()
+  @ApiOperation({ summary: 'Verify email with code', description: 'E-posta doğrulama kodunu kontrol eder.' })
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { email: string; code: string }) {
+    const result = await this.authService.verifyEmail(body.email, body.code);
+    if (!result.success) {
+      throw new HttpException(result.message, HttpStatus.BAD_REQUEST);
+    }
+    return result;
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Resend verification code', description: 'Doğrulama kodunu tekrar gönderir.' })
+  @Post('resend-verification')
+  async resendVerification(@Body() body: { email: string }) {
+    return this.authService.resendVerification(body.email);
+  }
 }

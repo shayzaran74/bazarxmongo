@@ -11,6 +11,7 @@ import { User } from '../../domain/entities/user.entity';
 export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand, Result<UserResponseDto>> {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
+    @Inject('IVerificationTokenRepository') private readonly verificationTokenRepository: any,
     private readonly hashingService: HashingService,
     @Inject('IEventBus') private readonly eventBus: IEventBus,
   ) {}
@@ -44,12 +45,17 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand,
     const user = userResult.data;
     await this.userRepository.save(user);
 
+    // E-posta doğrulama kodu oluştur (1 saat geçerli)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const verificationCode = await this.verificationTokenRepository.create(user.id, 'EMAIL', expiresAt);
+
     // RabbitMQ Publish user.registered
     this.eventBus.publish('user.registered', {
       userId: user.id,
       email: user.email,
       role: user.role,
-      platform: user.platform
+      platform: user.platform,
+      verificationCode: verificationCode
     });
 
     return Ok(UserResponseDto.fromEntity(user));

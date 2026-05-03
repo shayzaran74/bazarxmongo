@@ -25,13 +25,14 @@ import TicketIcon from '@heroicons/vue/24/outline/TicketIcon'
 import UsersIcon from '@heroicons/vue/24/outline/UsersIcon'
 import PhotoIcon from '@heroicons/vue/24/outline/PhotoIcon'
 import TruckIcon from '@heroicons/vue/24/outline/TruckIcon'
+import MegaphoneIcon from '@heroicons/vue/24/outline/MegaphoneIcon'
 
 const shortcuts = [
   { label: 'Ürünler', path: '/admin/products', icon: ShoppingBagIcon, bg: 'bg-primary-600' },
   { label: 'Kategoriler', path: '/admin/categories', icon: FolderIcon, bg: 'bg-emerald-600' },
   { label: 'Siparişler', path: '/admin/orders', icon: TruckIcon, bg: 'bg-orange-500' },
   { label: 'Açık Artırma', path: '/admin/auctions', icon: CurrencyDollarIcon, bg: 'bg-purple-600' },
-  { label: 'Çekilişler', path: '/admin/lotteries', icon: TicketIcon, bg: 'bg-pink-600' },
+  { label: 'Bildirimler', path: '/admin/marketing/notifications', icon: MegaphoneIcon, bg: 'bg-indigo-600' },
   { label: 'Kullanıcılar', path: '/admin/users', icon: UsersIcon, bg: 'bg-blue-600' },
   { label: 'Bannerlar', path: '/admin/banners', icon: PhotoIcon, bg: 'bg-rose-500' }
 ]

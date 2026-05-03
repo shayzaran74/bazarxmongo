@@ -107,4 +107,18 @@ export class WalletController {
     );
     return { success: true, data };
   }
+  
+  @Get('gift-cards')
+  async getGiftCards(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const data = await this.financialGateway.listGiftCards({
+      customerId: user.id,
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(limit, 10) || 20,
+    });
+    return { success: true, data };
+  }
 }

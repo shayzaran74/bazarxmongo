@@ -10,6 +10,8 @@ import {
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { TokenService } from './token.service';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { IVerificationTokenRepository } from '@barterborsa/domain-identity';
+import { MailService } from '../../../communication/infrastructure/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +21,9 @@ export class AuthService {
     private readonly commandBus: CommandBus,
     private readonly tokenService: TokenService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
+    @Inject('IVerificationTokenRepository') private readonly verificationTokenRepository: IVerificationTokenRepository,
   ) { }
 
   /**
@@ -167,5 +171,58 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * E-posta doğrulama işlemi.
+   */
+  async verifyEmail(email: string, code: string) {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    const verificationToken = await this.verificationTokenRepository.findByToken(code);
+    
+    if (!verificationToken || verificationToken.userId !== user.id || verificationToken.type !== 'EMAIL') {
+      return { success: false, message: 'Geçersiz doğrulama kodu.' };
+    }
+
+    if (verificationToken.expiresAt < new Date()) {
+      return { success: false, message: 'Doğrulama kodunun süresi dolmuş.' };
+    }
+
+    // Kullanıcıyı doğrulanmış olarak işaretle
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isEmailVerified: true }
+    });
+
+    // Token'ı sil
+    await this.verificationTokenRepository.delete(verificationToken.id);
+
+    return { success: true, message: 'E-posta başarıyla doğrulandı.' };
+  }
+
+  /**
+   * Doğrulama kodunu tekrar gönder.
+   */
+  async resendVerification(email: string) {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    // Eski token'ları sil
+    await this.verificationTokenRepository.deleteByUserIdAndType(user.id, 'EMAIL');
+
+    // Yeni token oluştur (15 dakika geçerli)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const code = await this.verificationTokenRepository.create(user.id, 'EMAIL', expiresAt);
+
+    // Email gönder
+    await this.mailService.sendVerificationCode(email, code);
+
+    return { success: true, message: 'Yeni doğrulama kodu gönderildi.' };
   }
 }

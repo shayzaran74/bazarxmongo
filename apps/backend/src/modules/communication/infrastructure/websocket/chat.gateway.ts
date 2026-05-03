@@ -41,6 +41,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
       (client as any).userId = userId;
+      client.join(`user:${userId}`); // Kullanıcıya özel odaya katıl (bildirimler için)
       console.log(`Client connected: ${client.id}, user: ${userId}`);
     } catch (err) {
       client.disconnect();
@@ -104,5 +105,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       isTyping: data.isTyping,
     });
+  }
+
+  /**
+   * Bildirimi belirli bir kullanıcıya veya tüm kullanıcılara WebSocket üzerinden gönderir.
+   */
+  sendNotification(userId: string, notification: any) {
+    if (!userId || userId === '') {
+      // Tüm bağlı kullanıcılara gönder (Broadcast)
+      this.server.emit('notification', notification);
+    } else {
+      // Sadece belirli kullanıcı odasına gönder
+      this.server.to(`user:${userId}`).emit('notification', notification);
+    }
   }
 }

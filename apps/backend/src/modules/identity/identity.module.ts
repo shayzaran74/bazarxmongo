@@ -39,6 +39,7 @@ import { ListAdminUsersHandler } from './application/queries/list-admin-users.ha
 import { UpdateUserStatusHandler } from './application/commands/update-user-status.handler';
 import { UpdateUserRoleHandler } from './application/commands/update-user-role.handler';
 import { DeleteAdminUserHandler } from './application/commands/delete-admin-user.handler';
+import { CommunicationModule } from '../communication/communication.module';
 
 import { AuthController } from './auth.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
@@ -81,6 +82,7 @@ const Handlers = [
     SharedSecurityModule,
     PrismaModule,
     RabbitMQModule,
+    CommunicationModule,
   ],
   controllers: [
     AuthController,
@@ -129,7 +131,7 @@ const Handlers = [
         publish: async (topic: string, data: any) => {
           const logger = new Logger('IdentityEventBus');
           try {
-            await rabbitMQ.publish('auth.events', topic, data);
+            await rabbitMQ.publish('identity.events', topic, data);
           } catch (err: any) {
             // Event bus hatası kimlik doğrulama akışını bloklamamalı
             logger.error(`Event publish failed [${topic}]: ${err.message}`);

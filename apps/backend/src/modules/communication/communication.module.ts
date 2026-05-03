@@ -36,6 +36,8 @@ import { ChatGateway } from './infrastructure/websocket/chat.gateway';
 import { NotificationTemplateService } from './application/services/notification-template.service';
 import { OrderCreatedNotificationHandler } from './application/event-handlers/order-created-notification.handler';
 import { TradeOfferAcceptedNotificationHandler } from './application/event-handlers/trade-offer-accepted-notification.handler';
+import { UserRegisteredNotificationHandler } from './application/event-handlers/user-registered-notification.handler';
+import { MailService } from './infrastructure/mail/mail.service';
 
 @Module({
   imports: [
@@ -69,6 +71,7 @@ import { TradeOfferAcceptedNotificationHandler } from './application/event-handl
     // Handlers (Events)
     OrderCreatedNotificationHandler,
     TradeOfferAcceptedNotificationHandler,
+    UserRegisteredNotificationHandler,
     // Mappers
     ChatRoomMapper,
     ChatMessageMapper,
@@ -79,7 +82,8 @@ import { TradeOfferAcceptedNotificationHandler } from './application/event-handl
     { provide: 'IChatMessageRepository', useClass: PrismaChatMessageRepository },
     { provide: 'INotificationRepository', useClass: PrismaNotificationRepository },
     { provide: 'IUserComplaintRepository', useClass: PrismaUserComplaintRepository },
+    MailService,
   ],
-  exports: [NotificationTemplateService],
+  exports: [NotificationTemplateService, MailService],
 })
 export class CommunicationModule {}

@@ -9,6 +9,9 @@
         <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
           Platform genel bakış ve finansal durum
         </p>
+        <NuxtLink to="/admin/marketing/notifications" class="mt-4 inline-block bg-red-600 text-white px-6 py-3 font-black rounded-lg">
+          BURAYA TIKLA: BİLDİRİM GÖNDERME SAYFASI
+        </NuxtLink>
       </div>
       <div class="flex gap-3">
         <button 

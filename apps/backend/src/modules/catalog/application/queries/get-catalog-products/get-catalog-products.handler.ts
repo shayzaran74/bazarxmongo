@@ -82,6 +82,7 @@ export class GetCatalogProductsHandler
         image: item.media?.[0]?.url ?? null,
         images: item.media?.map(m => m.url) ?? [],
         price: listing ? Number(listing.price) : 0,
+        listingId: listing?.id ?? null,
         stock: listing?.stock ?? 0,
         sku: listing?.sku ?? '',
         isFeatured: item.isFeatured,
