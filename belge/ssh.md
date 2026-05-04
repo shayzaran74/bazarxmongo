@@ -1,4 +1,4 @@
-ssh shayzaran@188.119.3.242 giris yap
+ssh hayzaran@188.119.3.242 giris yap
 
 password : [PASSWORD]
 

@@ -14,6 +14,7 @@ export class CreateNotificationHandler implements ICommandHandler<CreateNotifica
     private readonly gateway: ChatGateway,
   ) {}
 
+  async execute(command: CreateNotificationCommand): Promise<any> {
     // Eğer userId boşsa (Broadcast), veritabanına kaydetmek için 
     // geçerli bir kullanıcı ID'si gerekebilir. Şimdilik broadcast bildirimleri 
     // WebSocket üzerinden anlık gider, DB kaydı için bir ID zorunludur.
