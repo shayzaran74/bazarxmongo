@@ -42,6 +42,21 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
       throw new DomainException('Teminat hold ID\'leri eksik, sistem hatası.');
     }
 
+    // 3. Güvenlik Kontrolü: 3 günlük itiraz penceresinin dolup dolmadığını kontrol et
+    const parts = await this.prisma.barterPart.findMany({
+      where: { swapSessionId: command.sessionId },
+    });
+
+    const now = new Date();
+    const pendingParts = parts.filter(p => p.disputeWindowEndsAt && p.disputeWindowEndsAt > now);
+
+    if (pendingParts.length > 0) {
+      const latestEndsAt = new Date(Math.max(...pendingParts.map(p => p.disputeWindowEndsAt!.getTime())));
+      throw new BadRequestException(
+        `İnceleme süresi henüz dolmadı. Teminatlar ${latestEndsAt.toLocaleString('tr-TR')} tarihinde serbest bırakılabilir.`,
+      );
+    }
+
     const idempotencyBase = `finalize-${command.sessionId}`;
 
     // İki tarafın teminatını iade et

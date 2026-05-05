@@ -13,11 +13,12 @@ import { GetMyCompanyQuery }
   from '../application/queries/get-my-company.query';
 import { GetPendingCompaniesQuery }
   from '../application/queries/get-pending-companies.query';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 
 @ApiTags('Companies')
 @Controller('companies')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CompanyController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -73,6 +74,7 @@ export class CompanyController {
 
   @ApiOperation({ summary: 'Register a company' })
   @ApiBody({ type: CreateCompanyDto })
+  @ApiBearerAuth()
   @ApiResponse({ status: 201 })
   @Post()
   async create(@Body() dto: CreateCompanyDto) {
@@ -80,6 +82,8 @@ export class CompanyController {
   }
 
   @ApiOperation({ summary: 'Get pending companies' })
+  @ApiBearerAuth()
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @Get('pending')
   async getPending() {
     const items = await this.queryBus.execute(

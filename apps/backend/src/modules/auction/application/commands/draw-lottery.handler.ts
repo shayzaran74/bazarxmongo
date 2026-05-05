@@ -7,6 +7,7 @@ import { ILotteryRepository } from '../../domain/repositories/lottery.repository
 import { DomainException } from '@barterborsa/shared-core';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import * as crypto from 'crypto';
 
 @CommandHandler(DrawLotteryCommand)
 export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
@@ -22,25 +23,28 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
     const lottery = await this.repository.findById(command.lotteryId);
     if (!lottery) throw new DomainException('Lottery not found');
 
-    // Kazanan numarayı çek
-    const winningNumber = lottery.draw();
-
-    // Çekilen numaraya sahip bileti bul → kazananı ata
-    const winnerTicket = await this.prisma.lotteryTicket.findFirst({
-      where: { lotteryId: command.lotteryId, numbers: { has: winningNumber } },
+    // Satılan biletleri getir
+    const soldTickets = await this.prisma.lotteryTicket.findMany({
+      where: { lotteryId: command.lotteryId },
     });
 
-    if (winnerTicket) {
-      lottery.setWinner(winnerTicket.userId);
+    let winningNumber: string | null = null;
+    let winnerId: string | null = null;
+
+    if (soldTickets.length === 0) {
+      this.logger.warn('Çekiliş için satılmış bilet bulunamadı', { lotteryId: command.lotteryId });
+      lottery.draw();
+    } else {
+      const winningIndex = crypto.randomInt(0, soldTickets.length);
+      const winnerTicket = soldTickets[winningIndex];
+      winningNumber = winnerTicket.numbers[0].toString();
+      winnerId = winnerTicket.userId;
+
+      lottery.drawManual(winningNumber, winnerId);
+      
       this.logger.log('Çekiliş kazananı bulundu', {
         lotteryId: command.lotteryId,
-        winnerId: winnerTicket.userId,
-        winningNumber,
-      });
-    } else {
-      // Bu numarayla bilet yoksa çekiliş sona erer ama kazanan atanmaz
-      this.logger.warn('Kazanan numarayla eşleşen bilet bulunamadı', {
-        lotteryId: command.lotteryId,
+        winnerId,
         winningNumber,
       });
     }
@@ -54,7 +58,7 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
       resourceId: command.lotteryId,
       newValue: {
         winningNumber,
-        winnerId: winnerTicket?.userId ?? null,
+        winnerId,
         status: 'DRAWN',
       },
     });
@@ -62,7 +66,7 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
     return {
       success: true,
       winningNumber,
-      winnerId: winnerTicket?.userId ?? null,
+      winnerId,
     };
   }
 }

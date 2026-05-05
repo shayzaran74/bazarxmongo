@@ -74,6 +74,16 @@ export class Lottery extends AggregateRoot<LotteryProps> {
     return winningNumber;
   }
 
+  public drawManual(winningNumber: string, winnerId: string): void {
+    if (this.props.status !== LotteryStatus.ACTIVE) {
+      throw new Error('Yalnızca aktif çekilişler çekilebilir');
+    }
+    this.props.winningNumber = winningNumber;
+    this.props.winnerId = winnerId;
+    this.props.status = LotteryStatus.DRAWN;
+    this.props.updatedAt = new Date();
+  }
+
   public setWinner(userId: string): void {
     this.props.winnerId = userId;
     this.props.updatedAt = new Date();

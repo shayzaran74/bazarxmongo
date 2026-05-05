@@ -8,12 +8,16 @@ import { AuctionBid } from '../../domain/entities/auction-bid.entity';
 import { Prisma } from '@prisma/client';
 import { DomainException } from '@barterborsa/shared-core';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
+import { AuditLogService } from '../../../audit/application/audit-log.service';
 
 @CommandHandler(PlaceBidCommand)
 export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
   constructor(
     @Inject('IAuctionRepository') private readonly repository: IAuctionRepository,
     private readonly prisma: PrismaService,
+    private readonly financialGateway: FinancialGatewayService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(command: PlaceBidCommand) {
@@ -33,29 +37,87 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     const amount = new Prisma.Decimal(command.amount);
 
+    // Cüzdan bakiyesi kontrolü
+    const wallet: any = await this.financialGateway.getWallet(command.userId);
+    const balance = new Prisma.Decimal(wallet.balanceTL);
+    if (balance.lessThan(amount)) {
+      throw new DomainException(`Yetersiz bakiye. Mevcut: ${balance.toString()} TL, Teklif: ${amount.toString()} TL`);
+    }
+
     // Domain logic: validate and update current price
     auction.placeBid(command.userId, amount);
 
-    const bid = AuctionBid.create(auction.id, command.userId, amount);
-
     const createdBid = await this.prisma.$transaction(async (tx) => {
-      await this.repository.save(auction);
+      // 1. Önceki en yüksek teklifi bul (iade için)
+      const previousBid: any = await tx.auctionBid.findFirst({
+        where: { auctionId: auction.id },
+        orderBy: { amount: 'desc' },
+      });
+
+      // 2. Yeni teklif için blokaj al
+      const idempotencyKey = `bid-${auction.id}-${command.userId}-${command.amount}`;
+      const referenceId = `bid-${auction.id}-${command.userId}`;
+      const holdResult = await this.financialGateway.holdFunds(
+        command.userId,
+        amount.toString(),
+        'AUCTION_BID',
+        referenceId,
+        'AUCTION_BID',
+        idempotencyKey,
+      );
+
+      // 3. Önceki teklif sahibinin parasını iade et (eğer varsa ve farklı kişiyse)
+      if (previousBid && previousBid.holdId) {
+        await this.financialGateway.releaseFunds(
+          previousBid.holdId,
+          `release-bid-${previousBid.id}`
+        );
+      }
+
+      // 4. Teklifi ve artırmayı kaydet
+      await tx.auction.update({
+        where: { id: auction.id },
+        data: { 
+          currentPrice: auction.getProps().currentPrice,
+          updatedAt: new Date()
+        }
+      });
+
+      const bid = AuctionBid.create(
+        auction.id, 
+        command.userId, 
+        amount, 
+        holdResult.holdId as string
+      );
+
       return tx.auctionBid.create({
         data: {
           id: bid.id,
           auctionId: bid.getProps().auctionId,
           userId: bid.getProps().userId,
           amount: bid.getProps().amount,
-        },
+          holdId: bid.getProps().holdId,
+        } as any,
         include: {
           user: {
             select: {
-              email: true,
               profile: { select: { firstName: true, lastName: true } }
             }
           }
         }
       });
+    });
+
+    await this.auditLog.log({
+      actorId: command.userId,
+      action: 'AUCTION_BID_PLACED',
+      resourceType: 'Auction',
+      resourceId: command.auctionId,
+      newValue: {
+        amount: command.amount,
+        bidId: createdBid.id,
+        holdId: (createdBid as any).holdId,
+      },
     });
 
     return { 

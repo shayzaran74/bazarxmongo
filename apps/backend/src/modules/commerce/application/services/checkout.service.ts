@@ -275,14 +275,16 @@ export class CheckoutService {
 
           heldFunds.push(holdResult.holdId);
 
-          // Siparişi ödendi olarak işaretle
+          // Siparişi ödendi olarak işaretle ve Escrow Hold ID'yi kaydet
           await this.prisma.order.update({
             where: { id: order.id },
             data: {
               status: PrismaOrderStatus.PAID,
               paymentStatus: PrismaPaymentStatus.COMPLETED,
               paidAt: new Date(),
-            },
+              escrowHoldId: holdResult.holdId,
+              escrowStatus: 'HELD',
+            } as any,
           });
         }
       } catch (error: unknown) {

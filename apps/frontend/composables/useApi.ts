@@ -16,16 +16,34 @@ export const useApi = () => {
     const headers: Record<string, string> = { ...(options.headers || {}) }
 
     // Token'ı önce store'dan, yoksa doğrudan cookie'den oku
+    const { $toast } = useNuxtApp() as any
     const token = authStore.token || useCookie('access_token').value
     if (token) headers['Authorization'] = `Bearer ${token}`
     if (authStore.csrfToken && options.method && options.method !== 'GET') {
       headers['X-CSRF-Token'] = authStore.csrfToken
     }
 
+    // 15 saniyelik default timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+
     try {
-      // baseURL parametresini kaldırıyoruz, böylece Nuxt proxy (nitro) üzerinden mevcut host kullanılır.
-      return await $fetch<ApiResponse<T>>(normalizedPath, { ...options, headers })
+      const response = await $fetch<ApiResponse<T>>(normalizedPath, { 
+        ...options, 
+        headers,
+        signal: controller.signal 
+      })
+      clearTimeout(timeoutId)
+      return response
     } catch (error: any) {
+      clearTimeout(timeoutId)
+      
+      // Timeout hatası özel kontrolü
+      if (error.name === 'AbortError') {
+        $toast.error('İstek zaman aşımına uğradı. Lütfen internet bağlantınızı kontrol edin.')
+        throw error
+      }
+
       if ((error.status === 419 || error.status === 401) && authStore.isLoggedIn) {
         if (error.status === 419) {
           const refreshed = await authStore.tryRefresh()
@@ -35,6 +53,10 @@ export const useApi = () => {
           }
         }
         authStore.logout()
+      } else {
+        // 401/419 dışındaki hataları (500, 404, vb.) global bildirime gönder
+        const message = error.data?.message || error.message || 'Bir hata oluştu'
+        $toast.error(message)
       }
       throw error
     }

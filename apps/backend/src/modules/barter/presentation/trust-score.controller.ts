@@ -16,7 +16,7 @@ interface AuthenticatedUser { id: string; role: string; }
 
 @ApiTags('TrustScore')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('trust-score')
 export class TrustScoreController {
   constructor(
@@ -32,7 +32,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: 'Kendi TrustScore ve tier bilgisi' })
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Get('me')
   async getMyTrustScore(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await this.prisma.vendor.findFirst({
@@ -49,7 +48,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: 'B2B XP kullanım hakkı hesapla (50/25/25 kuralı)' })
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Post('xp-allowance')
   @ApiBody({
     schema: {
@@ -79,7 +77,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: '[Admin] Vendor TrustScore görüntüle' })
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Get('admin/:vendorId')
   async getAdminTrustScore(@Param('vendorId') vendorId: string) {
     const data = await this.queryBus.execute(new GetVendorTrustScoreQuery(vendorId));
@@ -88,7 +85,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: '[Admin] İhlal kaydet (uyarı/ceza/dondurma)' })
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Post('admin/:vendorId/violation')
   async recordViolation(
     @Param('vendorId') vendorId: string,
@@ -102,7 +98,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: '[Admin] TrustScore manuel yeniden hesapla' })
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Post('admin/:vendorId/recalculate')
   async recalculate(@Param('vendorId') vendorId: string) {
     const data = await this.calculator.recalculate(vendorId);
@@ -111,7 +106,6 @@ export class TrustScoreController {
 
   @ApiOperation({ summary: '[Admin] Watchtower bayraklarını listele' })
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
   @Get('admin/watchtower/flags')
   async getWatchtowerFlags(
     @Query('vendorId') vendorId?: string,

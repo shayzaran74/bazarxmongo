@@ -32,6 +32,7 @@ export interface OrderProps {
   escrowStatus?: string;
   escrowReleaseAt?: Date;
   payoutEligibleAt?: Date;
+  escrowHoldId?: string;
   metadata?: Record<string, unknown>;
   couponCode?: string;
   expiresAt?: Date;

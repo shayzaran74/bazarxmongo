@@ -16,6 +16,7 @@ export class WalletMapper {
       xpAdsBalance: Money.fromDecimal(raw.xpAdsBalance, 'TRY'),
       xpTradeBalance: Money.fromDecimal(raw.xpTradeBalance, 'TRY'),
       xpCommissionBalance: Money.fromDecimal(raw.xpCommissionBalance, 'TRY'),
+      lastXpAdsEarnedDate: raw.lastXpAdsEarnedDate,
     }, raw.id);
   }
 
@@ -28,6 +29,7 @@ export class WalletMapper {
       xpAdsBalance: entity.xpAdsBalance.amount,
       xpTradeBalance: entity.xpTradeBalance.amount,
       xpCommissionBalance: entity.xpCommissionBalance.amount,
+      lastXpAdsEarnedDate: entity.lastXpAdsEarnedDate,
     };
   }
 }

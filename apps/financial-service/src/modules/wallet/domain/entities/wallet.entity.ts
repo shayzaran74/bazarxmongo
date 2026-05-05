@@ -11,6 +11,7 @@ interface WalletProps {
   xpAdsBalance: Money;
   xpTradeBalance: Money;
   xpCommissionBalance: Money;
+  lastXpAdsEarnedDate?: Date | null;
 }
 
 export class Wallet extends AggregateRoot<WalletProps> {
@@ -25,6 +26,7 @@ export class Wallet extends AggregateRoot<WalletProps> {
   get xpAdsBalance(): Money { return this.props.xpAdsBalance; }
   get xpTradeBalance(): Money { return this.props.xpTradeBalance; }
   get xpCommissionBalance(): Money { return this.props.xpCommissionBalance; }
+  get lastXpAdsEarnedDate(): Date | null | undefined { return this.props.lastXpAdsEarnedDate; }
 
   // Topup TL
   public topUpTL(amount: Money): void {

@@ -156,7 +156,8 @@ export class SurplusController {
   // ─── Surplus oluştur ──────────────────────────────────────────────────────
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Surplus ürün ekle' })
   @ApiResponse({ status: 201 })
   @Post()
@@ -206,7 +207,8 @@ export class SurplusController {
   // ─── Surplus güncelle (vendor) ────────────────────────────────────────────
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Surplus ürün güncelle' })
   @ApiParam({ name: 'id' })
   @Patch(':id')
@@ -243,7 +245,8 @@ export class SurplusController {
   // ─── Surplus sil (vendor) ─────────────────────────────────────────────────
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Surplus ürün sil' })
   @ApiParam({ name: 'id' })
   @Delete(':id')
@@ -319,7 +322,8 @@ export class SurplusController {
   // ─── Surplus yeniden aktifleştir (vendor) ─────────────────────────────────
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Pasif ilanı yeniden onaya gönder' })
   @ApiParam({ name: 'id' })
   @Patch(':id/reactivate')

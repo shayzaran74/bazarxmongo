@@ -34,10 +34,39 @@ export class PrismaWalletRepository implements IWalletRepository {
 
   async save(entity: Wallet): Promise<void> {
     const persistence = this.mapper.toPersistence(entity);
-    await this.prisma.wallet.upsert({
-      where: { userId: entity.userId },
-      update: persistence,
-      create: persistence,
+    
+    await this.prisma.$transaction(async (tx) => {
+      const current = await tx.wallet.findUnique({
+        where: { userId: entity.userId },
+      });
+
+      if (!current) {
+        // Cüzdan yoksa yeni oluştur (upsert mantığının 'create' kısmı)
+        await tx.wallet.create({ data: persistence });
+        return;
+      }
+
+      // Atomik güncellemeler için farkları hesapla
+      // Decimal değerler için parseFloat veya Number kullanımı (Prisma Decimal tipiyle uyumlu)
+      const diffTL = Number(persistence.balanceTL) - Number(current.balanceTL);
+      const diffBarter = Number(persistence.barterBalance) - Number(current.barterBalance);
+      const diffXpPoints = persistence.xpPoints - current.xpPoints;
+      const diffXpAds = Number(persistence.xpAdsBalance) - Number(current.xpAdsBalance);
+      const diffXpTrade = Number(persistence.xpTradeBalance) - Number(current.xpTradeBalance);
+      const diffXpComm = Number(persistence.xpCommissionBalance) - Number(current.xpCommissionBalance);
+
+      await tx.wallet.update({
+        where: { userId: entity.userId },
+        data: {
+          balanceTL: { increment: diffTL },
+          barterBalance: { increment: diffBarter },
+          xpPoints: { increment: diffXpPoints },
+          xpAdsBalance: { increment: diffXpAds },
+          xpTradeBalance: { increment: diffXpTrade },
+          xpCommissionBalance: { increment: diffXpComm },
+          lastXpAdsEarnedDate: persistence.lastXpAdsEarnedDate,
+        },
+      });
     });
   }
 

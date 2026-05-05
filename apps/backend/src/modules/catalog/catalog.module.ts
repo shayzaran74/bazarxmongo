@@ -41,6 +41,9 @@ import { ListAdminBrandsHandler } from './application/queries/list-admin-brands/
 import { GetCatalogProductsHandler } from './application/queries/get-catalog-products/get-catalog-products.handler';
 import { GetCatalogProductBySlugHandler } from './application/queries/get-catalog-product-by-slug/get-catalog-product-by-slug.handler';
 import { ListAdminReviewsHandler } from './application/queries/list-admin-reviews/list-admin-reviews.handler';
+import { GetProductStatsHandler } from './application/queries/get-product-stats.handler';
+import { GetImportJobStatusHandler } from './application/queries/get-import-job-status.handler';
+import { ListImportJobsHandler } from './application/queries/list-import-jobs.handler';
 
 // Infrastructure
 import { PrismaCategoryRepository } from './infrastructure/persistence/prisma-category.repository';
@@ -78,6 +81,9 @@ const QueryHandlers = [
   GetCatalogProductsHandler,
   GetCatalogProductBySlugHandler,
   ListAdminReviewsHandler,
+  GetProductStatsHandler,
+  GetImportJobStatusHandler,
+  ListImportJobsHandler,
 ];
 
 @Module({

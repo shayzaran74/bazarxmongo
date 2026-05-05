@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
@@ -35,6 +36,7 @@ import { TaxModule } from './modules/tax/tax.module';
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
+    ScheduleModule.forRoot(),
 
     // ─── Rate Limiting ─────────────────────────────────────────────
     // İki kural: 'auth' (sıkı) ve 'api' (gevşek)

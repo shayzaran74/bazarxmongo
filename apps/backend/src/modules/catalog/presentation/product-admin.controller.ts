@@ -11,6 +11,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { ListAdminProductsQuery } from '../application/queries/list-admin-products/list-admin-products.query';
+import { GetProductStatsQuery } from '../application/queries/get-product-stats.query';
+import { GetImportJobStatusQuery } from '../application/queries/get-import-job-status.query';
+import { ListImportJobsQuery } from '../application/queries/list-import-jobs.query';
 import { DeleteAdminProductCommand } from '../application/commands/delete-admin-product.command';
 import { BulkDeleteAdminProductsCommand } from '../application/commands/bulk-delete-admin-products.command';
 import { BulkUpdateAdminProductsCommand } from '../application/commands/bulk-update-admin-products.command';
@@ -34,7 +37,6 @@ export class ProductAdminController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
   ) {}
 
   // ─── Stats ─────────────────────────────────────────────────────────────────
@@ -42,12 +44,8 @@ export class ProductAdminController {
   @ApiOperation({ summary: 'Get product statistics' })
   @Get('stats')
   async getStats() {
-    const [total, active, pending] = await Promise.all([
-      this.prisma.catalogProduct.count(),
-      this.prisma.listing.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.listing.count({ where: { status: 'PENDING' } }),
-    ]);
-    return { success: true, data: { total, active, pending } };
+    const data = await this.queryBus.execute(new GetProductStatsQuery());
+    return { success: true, data };
   }
 
   // ─── Bulk Import (Queue tabanlı) ────────────────────────────────────────────
@@ -113,59 +111,8 @@ export class ProductAdminController {
     @Param('jobId') jobId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const job = await this.prisma.importJob.findUnique({
-      where: { id: jobId },
-      select: {
-        id: true,
-        status: true,
-        totalRows: true,
-        processedRows: true,
-        createdRows: true,
-        failedRows: true,
-        errors: true,
-        startedAt: true,
-        completedAt: true,
-        createdAt: true,
-        adminId: true,
-      },
-    });
-
-    if (!job || job.adminId !== user.id) {
-      throw new NotFoundException('Import job bulunamadı');
-    }
-
-    const progressPercent =
-      job.totalRows > 0
-        ? Math.round((job.processedRows / job.totalRows) * 100)
-        : 0;
-
-    const elapsedSeconds = job.startedAt
-      ? Math.round(
-          ((job.completedAt ?? new Date()).getTime() - job.startedAt.getTime()) / 1000,
-        )
-      : null;
-
-    return {
-      success: true,
-      data: {
-        jobId: job.id,
-        status: job.status,
-        progress: {
-          percent: progressPercent,
-          processed: job.processedRows,
-          total: job.totalRows,
-          created: job.createdRows,
-          failed: job.failedRows,
-        },
-        errors: job.errors ?? [],
-        timing: {
-          startedAt: job.startedAt,
-          completedAt: job.completedAt,
-          elapsedSeconds,
-        },
-        isDone: job.status === 'COMPLETED' || job.status === 'FAILED',
-      },
-    };
+    const data = await this.queryBus.execute(new GetImportJobStatusQuery(jobId, user.id));
+    return { success: true, data };
   }
 
   // ─── Admin'in import geçmişi ────────────────────────────────────────────────
@@ -177,32 +124,14 @@ export class ProductAdminController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const [jobs, total] = await Promise.all([
-      this.prisma.importJob.findMany({
-        where: { adminId: user.id },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: Number(limit),
-        select: {
-          id: true,
-          status: true,
-          totalRows: true,
-          processedRows: true,
-          createdRows: true,
-          failedRows: true,
-          createdAt: true,
-          completedAt: true,
-        },
-      }),
-      this.prisma.importJob.count({ where: { adminId: user.id } }),
-    ]);
+    const result = await this.queryBus.execute(
+      new ListImportJobsQuery(user.id, Number(page) || 1, Number(limit) || 20),
+    );
 
     return {
       success: true,
-      data: jobs,
-      pagination: { total, page: Number(page), limit: Number(limit) },
+      data: result.items,
+      pagination: { total: result.total, page: result.page, limit: result.limit },
     };
   }
 

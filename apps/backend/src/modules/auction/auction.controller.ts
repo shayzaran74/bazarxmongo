@@ -113,7 +113,6 @@ export class AuctionController {
           include: { 
             user: { 
               select: { 
-                email: true, 
                 profile: { select: { firstName: true, lastName: true } } 
               } 
             } 
@@ -143,7 +142,6 @@ export class AuctionController {
       include: {
         user: {
           select: {
-            email: true,
             profile: { select: { firstName: true, lastName: true } }
           }
         }

@@ -62,6 +62,9 @@ COPY --from=builder --chown=nestjs:nodejs /app/out ./
 # Prisma klasörünün kopyalandığından emin ol (deploy bazen atlayabilir)
 COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 
+# Banner/Resim yüklemeleri için gerekli klasörleri oluştur ve yetki ver
+RUN mkdir -p public/uploads && chown -R nestjs:nodejs public
+
 USER nestjs
 EXPOSE 3001
 

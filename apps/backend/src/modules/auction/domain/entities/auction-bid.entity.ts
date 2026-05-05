@@ -7,6 +7,7 @@ export interface AuctionBidProps {
   auctionId: string;
   userId: string;
   amount: Prisma.Decimal;
+  holdId: string;
   createdAt: Date;
 }
 
@@ -15,11 +16,12 @@ export class AuctionBid extends Entity<AuctionBidProps> {
     super(props, id);
   }
 
-  public static create(auctionId: string, userId: string, amount: Prisma.Decimal): AuctionBid {
+  public static create(auctionId: string, userId: string, amount: Prisma.Decimal, holdId: string): AuctionBid {
     return new AuctionBid({
       auctionId,
       userId,
       amount,
+      holdId,
       createdAt: new Date(),
     });
   }

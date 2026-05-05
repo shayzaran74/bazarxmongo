@@ -19,6 +19,7 @@ import { CheckoutService } from './application/services/checkout.service';
 import { StorageService } from './application/services/storage.service';
 import { InvoicePdfService } from './application/services/invoice-pdf.service';
 import { OrderExpiryService } from './application/services/order-expiry.service';
+import { OrderEscrowWorker } from './application/services/order-escrow-worker.service';
 
 // Command handlers
 import { CheckoutHandler } from './application/commands/checkout.handler';
@@ -28,16 +29,21 @@ import { RemoveCartItemHandler } from './application/commands/remove-cart-item.h
 import { ClearCartHandler } from './application/commands/clear-cart.handler';
 import { GenerateInvoiceHandler } from './application/commands/generate-invoice.handler';
 import { MergeCartHandler } from './application/commands/merge-cart.handler';
+import { OpenOrderDisputeHandler } from './application/commands/open-order-dispute.handler';
+import { ResolveOrderDisputeHandler } from './application/commands/resolve-order-dispute.handler';
 
 // Query handlers
 import { GetCartHandler } from './application/queries/get-cart.handler';
 import { ListAdminOrdersHandler } from './application/queries/list-admin-orders.handler';
 import { GetAdminOrderHandler } from './application/queries/get-admin-order.handler';
+import { GetMyOrdersHandler } from './application/queries/get-my-orders.handler';
+import { GetOrderDetailsHandler } from './application/queries/get-order-details.handler';
 
 // Repositories — sadece token olarak kayıtlı, sınıf tekrarı yok
 import { PrismaCartRepository } from './infrastructure/persistence/prisma-cart.repository';
 import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
 import { PrismaInvoiceRepository } from './infrastructure/persistence/prisma-invoice.repository';
+import { PrismaDisputeRepository } from './infrastructure/persistence/prisma-dispute.repository';
 
 const CommandHandlers = [
   CheckoutHandler,
@@ -47,18 +53,23 @@ const CommandHandlers = [
   ClearCartHandler,
   GenerateInvoiceHandler,
   MergeCartHandler,
+  OpenOrderDisputeHandler,
+  ResolveOrderDisputeHandler,
 ];
 
 const QueryHandlers = [
   GetCartHandler,
   ListAdminOrdersHandler,
   GetAdminOrderHandler,
+  GetMyOrdersHandler,
+  GetOrderDetailsHandler,
 ];
 
 const Repositories = [
   { provide: 'ICartRepository', useClass: PrismaCartRepository },
   { provide: 'IOrderRepository', useClass: PrismaOrderRepository },
   { provide: 'IInvoiceRepository', useClass: PrismaInvoiceRepository },
+  { provide: 'IDisputeRepository', useClass: PrismaDisputeRepository },
 ];
 
 @Module({
@@ -81,6 +92,7 @@ const Repositories = [
     StorageService,
     InvoicePdfService,
     OrderExpiryService,
+    OrderEscrowWorker,
     ...CommandHandlers,
     ...QueryHandlers,
     ...Repositories,

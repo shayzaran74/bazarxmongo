@@ -65,6 +65,9 @@ services:
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - APP_BASE_URL=https://balmy-game-recount.ngrok-free.dev
+    volumes:
+      - bazarx_uploads:/app/public/uploads
     expose:
       - "3001"
     healthcheck:
@@ -208,6 +211,7 @@ volumes:
   rabbitmq_data:
   minio_data:
   nginx_logs:
+  bazarx_uploads:
 
 networks:
   bazarx_net:

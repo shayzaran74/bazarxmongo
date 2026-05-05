@@ -10,9 +10,10 @@ import { RefundEscrowHandler } from './application/commands/refund-escrow.handle
 import { EscrowConsumer } from './infrastructure/messaging/escrow.consumer';
 import { EscrowGrpcController } from './presentation/escrow.grpc.controller';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { CommissionModule } from '../commission/commission.module';
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, CommissionModule],
   controllers: [EscrowGrpcController],
   providers: [
     CreateEscrowHandler,

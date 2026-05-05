@@ -8,9 +8,13 @@ import {
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { GetBarterInfoQuery } from '../application/queries/get-barter-info.query';
+import { GetMyBarterChainsQuery } from '../application/queries/get-my-barter-chains.query';
+import { GetMyBarterOffersQuery } from '../application/queries/get-my-barter-offers.query';
+import { RegisterBarterCommand } from '../application/commands/register-barter.command';
 
 interface AuthenticatedUser {
   id: string;
@@ -19,39 +23,22 @@ interface AuthenticatedUser {
 
 @ApiTags('Barter')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 @Controller('barter')
 export class BarterController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   // ─── Barter bilgisi ───────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Barter hesap bilgisi' })
   @Get('info')
   async getInfo(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: {
-        company: { select: { id: true, name: true } },
-        metrics: { select: { totalRevenue: true } },
-        stats:   { select: { rating: true, reviewCount: true, loyaltyPoints: true, trustScore: true } },
-      },
-    });
-
-    return {
-      success: true,
-      data: {
-        isRegistered: !!vendor,
-        vendorId:     vendor?.id,
-        companyId:    vendor?.company?.id,
-        companyName:  vendor?.company?.name,
-        tier:         vendor?.tier || 'CORE',
-        rating:       Number(vendor?.stats?.rating || 0),
-        trustScore:   Number(vendor?.stats?.trustScore || 100),
-        loyaltyPoints: vendor?.stats?.loyaltyPoints || 0,
-        balance:      0, // financial-gateway'den gelecek
-      },
-    };
+    const data = await this.queryBus.execute(new GetBarterInfoQuery(user.id));
+    return { success: true, data };
   }
 
   // ─── Zincirler (swap sessions) ────────────────────────────────────────────
@@ -59,26 +46,7 @@ export class BarterController {
   @ApiOperation({ summary: 'Benim takas zincirlerim' })
   @Get('my-chains')
   async getMyChains(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.getVendor(user.id);
-
-    const sessions = await this.prisma.swapSession.findMany({
-      where: {
-        OR: [
-          { initiatorId: vendor.company?.id },
-          { receiverId: vendor.company?.id },
-        ],
-      },
-      include: {
-        tradeOffer: {
-          include: {
-            fromCompany: { select: { id: true, name: true } },
-            toCompany:   { select: { id: true, name: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
+    const sessions = await this.queryBus.execute(new GetMyBarterChainsQuery(user.id));
     return { success: true, data: sessions };
   }
 
@@ -87,23 +55,7 @@ export class BarterController {
   @ApiOperation({ summary: 'Benim tekliflerim' })
   @Get('my-offers')
   async getMyOffers(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.getVendor(user.id);
-
-    const offers = await this.prisma.tradeOffer.findMany({
-      where: {
-        OR: [
-          { fromCompanyId: vendor.company?.id },
-          { toCompanyId: vendor.company?.id },
-        ],
-        status: { in: ['PENDING', 'COUNTER_OFFERED', 'ACCEPTED'] },
-      },
-      include: {
-        fromCompany: { select: { id: true, name: true } },
-        toCompany:   { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
+    const offers = await this.queryBus.execute(new GetMyBarterOffersQuery(user.id));
     return { success: true, data: offers };
   }
 
@@ -113,29 +65,7 @@ export class BarterController {
   @ApiResponse({ status: 201 })
   @Post('register')
   async register(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true, status: true },
-    });
-
-    if (!vendor) {
-      throw new BadRequestException('Önce satıcı kaydı yapılmalıdır');
-    }
-    if (vendor.status !== 'APPROVED') {
-      throw new BadRequestException('Barter sistemine katılmak için satıcı hesabı onaylı olmalıdır');
-    }
-
-    // Vendor tier'ı güncelle — barter erişimi aç
-    await this.prisma.vendor.update({
-      where: { id: vendor.id },
-      data: { barterEnabled: true },
-    });
-
-    return {
-      success: true,
-      message: 'Barter sistemine başarıyla kayıt oldunuz',
-      data: { vendorId: vendor.id },
-    };
+    return this.commandBus.execute(new RegisterBarterCommand(user.id));
   }
 
   // ─── Cüzdan işlemleri ─────────────────────────────────────────────────────
@@ -199,15 +129,5 @@ export class BarterController {
       },
     };
   }
-
-  // ─── Yardımcı ─────────────────────────────────────────────────────────────
-
-  private async getVendor(userId: string) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId },
-      include: { company: { select: { id: true, name: true } } },
-    });
-    if (!vendor) throw new BadRequestException('Satıcı hesabı bulunamadı');
-    return vendor;
-  }
 }
+

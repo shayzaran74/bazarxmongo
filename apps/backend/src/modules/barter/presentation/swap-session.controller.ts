@@ -6,15 +6,18 @@ import {
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { SubmitShippingCommand } from '../application/commands/submit-shipping.command';
 import { ConfirmReceiptCommand } from '../application/commands/confirm-receipt.command';
 import { FinalizeSwapCommand } from '../application/commands/finalize-swap.command';
 import { OpenDisputeCommand } from '../application/commands/open-dispute.command';
+import { ResolveDisputeCommand } from '../application/commands/resolve-dispute.command';
 import { SwapShippingDto } from './dto/swap-shipping.dto';
 import { SwapDisputeDto } from './dto/swap-dispute.dto';
+import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
+import { Patch } from '@nestjs/common';
 
 interface AuthenticatedUser {
   id: string;
@@ -103,6 +106,21 @@ export class SwapSessionController {
   ) {
     const vendorId = await this.resolveVendorId(user);
     return this.commandBus.execute(new OpenDisputeCommand(id, user.id, vendorId, dto.reason));
+  }
+
+  @ApiOperation({ summary: 'Anlaşmazlığı çözümle (Sadece Admin)' })
+  @ApiParam({ name: 'id' })
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Patch(':id/resolve')
+  async resolveDispute(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: ResolveDisputeDto,
+  ) {
+    return this.commandBus.execute(
+      new ResolveDisputeCommand(id, user.id, dto.result, dto.adminNote),
+    );
   }
 
   // ─── Yardımcı ─────────────────────────────────────────────────────────────

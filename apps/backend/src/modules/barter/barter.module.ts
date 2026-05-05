@@ -25,9 +25,14 @@ import { SubmitShippingHandler } from './application/commands/submit-shipping.ha
 import { ConfirmReceiptHandler } from './application/commands/confirm-receipt.handler';
 import { FinalizeSwapHandler } from './application/commands/finalize-swap.handler';
 import { OpenDisputeHandler } from './application/commands/open-dispute.handler';
+import { ResolveDisputeHandler } from './application/commands/resolve-dispute.handler';
+import { RegisterBarterHandler } from './application/commands/register-barter.handler';
 
 // Query handlers
 import { GetVendorTrustScoreHandler } from './application/queries/get-vendor-trust-score.handler';
+import { GetBarterInfoHandler } from './application/queries/get-barter-info.handler';
+import { GetMyBarterChainsHandler } from './application/queries/get-my-barter-chains.handler';
+import { GetMyBarterOffersHandler } from './application/queries/get-my-barter-offers.handler';
 
 // Services
 import { MatchingService } from './application/services/matching.service';
@@ -79,6 +84,11 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     ConfirmReceiptHandler,
     FinalizeSwapHandler,
     OpenDisputeHandler,
+    ResolveDisputeHandler,
+    RegisterBarterHandler,
+    GetBarterInfoHandler,
+    GetMyBarterChainsHandler,
+    GetMyBarterOffersHandler,
     // Mappers
     TradeOfferMapper,
     SurplusItemMapper,

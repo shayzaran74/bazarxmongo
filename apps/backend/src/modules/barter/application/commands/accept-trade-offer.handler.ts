@@ -102,6 +102,7 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
 
     // HoldId'leri session'a yaz; collateralStatus → HELD
     session.setHoldIds(fromHoldId, toHoldId);
+    session.activate();
 
     // ─── BarterPart'lar ────────────────────────────────────────────────────────
     const part1 = BarterPart.create(

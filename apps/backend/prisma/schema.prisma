@@ -1041,6 +1041,7 @@ model Order {
   escrowStatus      String?              @default("NONE") @map("escrow_status")
   escrowReleaseAt   DateTime?            @map("escrow_release_at")
   payoutEligibleAt  DateTime?            @map("payout_eligible_at")
+  escrowHoldId      String?              @map("escrow_hold_id")
   shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(18, 2)
   orderNumber       String?              @unique @map("order_number")
   expiresAt         DateTime?            @map("expires_at")
@@ -1530,6 +1531,7 @@ model AuctionBid {
   auctionId String   @map("auction_id")
   createdAt DateTime @default(now()) @map("created_at")
   userId    String   @map("user_id")
+  holdId    String?  @unique @map("hold_id")
   auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2659,6 +2661,7 @@ enum OrderStatus {
   CANCELLED
   REFUNDED
   PARTIALLY_REFUNDED
+  DISPUTED
 }
 
 enum DisputeStatus {

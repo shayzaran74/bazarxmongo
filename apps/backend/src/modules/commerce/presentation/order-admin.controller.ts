@@ -1,11 +1,14 @@
-import { Controller, Get, Query, UseGuards, Param } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
+import { Controller, Get, Query, UseGuards, Param, Patch, Body } from '@nestjs/common';
+import { QueryBus, CommandBus } from '@nestjs/cqrs';
+import { CurrentUser } from '@barterborsa/shared-nest';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { ListAdminOrdersQuery }
   from '../application/queries/list-admin-orders.query';
 import { GetAdminOrderQuery }
   from '../application/queries/get-admin-order.query';
+import { ResolveOrderDisputeCommand } from '../application/commands/resolve-order-dispute.command';
+import { ResolveOrderDisputeDto } from './dto/resolve-dispute.dto';
 
 @ApiTags('Order Admin')
 @ApiBearerAuth()
@@ -13,7 +16,10 @@ import { GetAdminOrderQuery }
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/orders')
 export class OrderAdminController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
+  ) {}
 
   @ApiOperation({ summary: 'List all orders for admin' })
   @Get()
@@ -60,5 +66,17 @@ export class OrderAdminController {
       success: true,
       data: order
     };
+  }
+
+  @ApiOperation({ summary: 'İtirazı (Dispute) sonuçlandır' })
+  @Patch('dispute/:disputeId/resolve')
+  async resolveDispute(
+    @CurrentUser() admin: any,
+    @Param('disputeId') disputeId: string,
+    @Body() dto: ResolveOrderDisputeDto,
+  ) {
+    return this.commandBus.execute(
+      new ResolveOrderDisputeCommand(disputeId, admin.id, dto.resolution, dto.adminNote),
+    );
   }
 }

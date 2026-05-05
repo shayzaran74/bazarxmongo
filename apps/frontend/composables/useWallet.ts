@@ -11,24 +11,24 @@ export const TIER_CONFIG = {
   APEX: { label: 'Zirve', icon: '🏆', color: 'bg-purple-100 text-purple-700 border-purple-200', commission: 4, roi: 100 }
 }
 
+const wallet = ref<any>({
+  accounts: [],
+  giftCards: [],
+  cards: [],
+  requests: [],
+  withdrawalRequests: [],
+  auctions: []
+})
+
+const loading = ref(false)
+const submitting = ref(false)
+const error = ref<string | null>(null)
+
 export const useWallet = () => {
   const walletService = useWalletService()
   const authStore = useAuthStore()
   const { $api } = useApi()
   const toast = useNuxtApp().$toast
-
-  const wallet = ref<any>({
-    accounts: [],
-    giftCards: [],
-    cards: [],
-    requests: [],
-    withdrawalRequests: [],
-    auctions: []
-  })
-
-  const loading = ref(false)
-  const submitting = ref(false)
-  const error = ref<string | null>(null)
 
   // Computed accounts
   const accounts = computed(() => wallet.value.accounts || [])

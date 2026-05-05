@@ -102,10 +102,22 @@ export const useCartStore = defineStore('cart', {
       }
     },
     async updateQuantity(itemId: string, quantity: number) {
+      const authStore = useAuthStore()
       const { $api } = useApi()
-      const res = await $api<any>(`/api/cart/${itemId}`, { method: 'PATCH', body: { quantity } })
-      if (res.success) await this.fetchCart()
-      return res
+      
+      if (authStore.isLoggedIn) {
+        const res = await $api<any>(`/api/cart/${itemId}`, { method: 'PATCH', body: { quantity } })
+        if (res.success) await this.fetchCart()
+        return res
+      } else {
+        const item = this.items.find(i => i.id === itemId)
+        if (item) {
+          item.quantity = quantity
+          this.saveLocal()
+          return { success: true }
+        }
+        return { success: false, error: 'Item not found' }
+      }
     },
     async fetchEscrowCoupons() {
       const { $api } = useApi()
