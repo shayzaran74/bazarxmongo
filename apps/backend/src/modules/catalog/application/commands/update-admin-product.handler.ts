@@ -3,11 +3,18 @@ import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { UpdateAdminProductCommand } from './update-admin-product.command';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { Inject } from '@nestjs/common';
+
 @CommandHandler(UpdateAdminProductCommand)
 export class UpdateAdminProductHandler
   implements ICommandHandler<UpdateAdminProductCommand> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   async execute(command: UpdateAdminProductCommand) {
     const { productId, data } = command;
@@ -31,6 +38,17 @@ export class UpdateAdminProductHandler
 
       if (data.gtin !== undefined || data.barcode !== undefined)
         productUpdate.gtin = data.gtin || data.barcode
+
+      if (data.brand !== undefined || data.brandName !== undefined)
+        productUpdate.brand = data.brand || data.brandName
+
+      if (data.name || data.title) {
+        const name = data.name || data.title;
+        productUpdate.name = name;
+        productUpdate.slug = name.toLowerCase()
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+      }
 
       if (data.categoryId !== undefined) {
         productUpdate.categoryId = (data.categoryId && data.categoryId !== '')
@@ -82,6 +100,9 @@ export class UpdateAdminProductHandler
       if (data.stock !== undefined)
         listingUpdate.stock = parseInt(String(data.stock), 10)
 
+      if (data.sku !== undefined)
+        listingUpdate.sku = data.sku
+
       if (data.name || data.title)
         listingUpdate.title = data.name || data.title
 
@@ -105,6 +126,13 @@ export class UpdateAdminProductHandler
           where: { catalogProductId: productId },
           data: listingUpdate,
         });
+      }
+
+      // ─── Önbellek Temizleme ───────────────────────────────────────────────
+      try {
+        await this.cacheManager.reset(); // Tüm kataloğu temizle (en güvenli yol)
+      } catch (e) {
+        // Cache manager hataları kritik değil, logla geç
       }
 
       return { success: true, message: 'Ürün başarıyla güncellendi' };
