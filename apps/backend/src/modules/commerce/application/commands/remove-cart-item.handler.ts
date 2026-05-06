@@ -9,7 +9,12 @@ export class RemoveCartItemHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: RemoveCartItemCommand) {
-    await this.prisma.cartItem.delete({ where: { id: command.itemId } });
+    const { userId, itemId } = command;
+    
+    await this.prisma.cartItem.delete({ 
+      where: { id: itemId, cart: { userId } } 
+    });
+
     return { success: true, message: 'Ürün sepetten silindi' };
   }
 }

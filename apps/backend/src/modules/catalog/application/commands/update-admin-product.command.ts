@@ -7,6 +7,9 @@ export class UpdateAdminProductCommand {
       description?: string;
       gtin?: string;
       barcode?: string;
+      brand?: string;
+      brandName?: string;
+      sku?: string;
       categoryId?: string;
       status?: string;
       price?: number | string;

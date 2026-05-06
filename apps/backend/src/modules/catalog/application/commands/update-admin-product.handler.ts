@@ -134,9 +134,17 @@ export class UpdateAdminProductHandler
 
       // ─── Önbellek Temizleme ───────────────────────────────────────────────
       try {
-        await this.cacheManager.reset(); // Tüm kataloğu temizle (en güvenli yol)
+        // cache-manager v5+ reset yerine clear kullanıyor olabilir
+        const manager = this.cacheManager as any;
+        if (typeof manager.reset === 'function') {
+          await manager.reset();
+        } else if (typeof manager.clear === 'function') {
+          await manager.clear();
+        }
+        // Spesifik bilinen anahtarları da temizleyelim
+        await manager.del('category-tree');
       } catch (e) {
-        // Cache manager hataları kritik değil, logla geç
+        // Cache manager hataları kritik değil
       }
 
       return { success: true, message: 'Ürün başarıyla güncellendi' };

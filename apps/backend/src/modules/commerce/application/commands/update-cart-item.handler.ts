@@ -9,13 +9,16 @@ export class UpdateCartItemHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: UpdateCartItemCommand) {
-    const { itemId, quantity } = command;
+    const { userId, itemId, quantity } = command;
 
+    // Sahiplik doğrulaması ve güncelleme/silme
     if (quantity <= 0) {
-      await this.prisma.cartItem.delete({ where: { id: itemId } });
+      await this.prisma.cartItem.delete({ 
+        where: { id: itemId, cart: { userId } } 
+      });
     } else {
       await this.prisma.cartItem.update({
-        where: { id: itemId },
+        where: { id: itemId, cart: { userId } },
         data: { quantity }
       });
     }

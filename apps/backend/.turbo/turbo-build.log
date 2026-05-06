@@ -6,3 +6,40 @@
 > @bazarx/backend@1.0.0 build /Users/macbook/Desktop/bazarx/apps/backend
 > nest build
 
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m42[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'brand' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m42[0m       if (data.brand !== undefined || data.brandName !== undefined)
+[7m  [0m [91m               ~~~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m42[0m:[93m44[0m - [91merror[0m[90m TS2339: [0mProperty 'brandName' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m42[0m       if (data.brand !== undefined || data.brandName !== undefined)
+[7m  [0m [91m                                           ~~~~~~~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m43[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 'brand' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m43[0m         productUpdate.brand = data.brand || data.brandName
+[7m  [0m [91m                                   ~~~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m43[0m:[93m50[0m - [91merror[0m[90m TS2339: [0mProperty 'brandName' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m43[0m         productUpdate.brand = data.brand || data.brandName
+[7m  [0m [91m                                                 ~~~~~~~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m107[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'sku' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m107[0m       if (data.sku !== undefined)
+[7m   [0m [91m               ~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m108[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'sku' does not exist on type '{ name?: string; title?: string; description?: string; gtin?: string; barcode?: string; categoryId?: string; status?: string; price?: string | number; stock?: string | number; isFeatured?: boolean; isSpecialOffer?: boolean; isFlashSale?: boolean; productImages?: string[]; image?: string; }'.
+
+[7m108[0m         listingUpdate.sku = data.sku
+[7m   [0m [91m                                 ~~~[0m
+[96msrc/modules/catalog/application/commands/update-admin-product.handler.ts[0m:[93m137[0m:[93m33[0m - [91merror[0m[90m TS2551: [0mProperty 'reset' does not exist on type 'Cache'. Did you mean 'set'?
+
+[7m137[0m         await this.cacheManager.reset(); // Tüm kataloğu temizle (en güvenli yol)
+[7m   [0m [91m                                ~~~~~[0m
+
+  [96m../../node_modules/.pnpm/cache-manager@7.2.8/node_modules/cache-manager/dist/index.d.ts[0m:[93m54[0m:[93m5[0m
+    [7m54[0m     set: <T>(key: string, value: T, ttl?: number) => Promise<T>;
+    [7m  [0m [96m    ~~~[0m
+    'set' is declared here.
+
+Found 7 error(s).
+
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

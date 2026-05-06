@@ -78,17 +78,18 @@ export class CartController {
   @Patch(':itemId')
   @UseGuards(JwtAuthGuard)
   async updateQuantity(
+    @CurrentUser() user: any,
     @Param('itemId') itemId: string,
     @Body('quantity') quantity: number,
   ) {
-    return this.commandBus.execute(new UpdateCartItemCommand(itemId, quantity));
+    return this.commandBus.execute(new UpdateCartItemCommand(user.id, itemId, quantity));
   }
 
   @ApiOperation({ summary: 'Sepetten ürün kaldır' })
   @Delete(':itemId')
   @UseGuards(JwtAuthGuard)
-  async removeItem(@Param('itemId') itemId: string) {
-    return this.commandBus.execute(new RemoveCartItemCommand(itemId));
+  async removeItem(@CurrentUser() user: any, @Param('itemId') itemId: string) {
+    return this.commandBus.execute(new RemoveCartItemCommand(user.id, itemId));
   }
 
   @ApiOperation({ summary: 'Sepeti temizle' })

@@ -1,3 +1,6 @@
 export class RemoveCartItemCommand {
-  constructor(public readonly itemId: string) {}
+  constructor(
+    public readonly userId: string,
+    public readonly itemId: string,
+  ) {}
 }
