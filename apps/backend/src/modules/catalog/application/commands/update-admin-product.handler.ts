@@ -97,8 +97,12 @@ export class UpdateAdminProductHandler
       if (data.price !== undefined)
         listingUpdate.price = parseFloat(String(data.price))
 
-      if (data.stock !== undefined)
-        listingUpdate.stock = parseInt(String(data.stock), 10)
+      if (data.stock !== undefined) {
+        const newStock = parseInt(String(data.stock), 10);
+        listingUpdate.stock = newStock;
+        // Dashboard availableQuantity okuduğu için burayı da güncelliyoruz
+        listingUpdate.availableQuantity = newStock;
+      }
 
       if (data.sku !== undefined)
         listingUpdate.sku = data.sku
