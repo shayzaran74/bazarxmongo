@@ -1,5 +1,5 @@
 <template>
-  <div class="relative aspect-[4/5] overflow-hidden bg-slate-50 dark:bg-gray-950">
+  <div class="relative aspect-[2/3] overflow-hidden bg-slate-50 dark:bg-gray-950">
     <!-- Main Product Image -->
     <ProductImage
       :src="image"

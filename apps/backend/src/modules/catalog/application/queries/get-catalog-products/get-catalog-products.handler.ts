@@ -26,11 +26,36 @@ export class GetCatalogProductsHandler
       ];
     }
     if (categoryId) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
-      if (isUuid) {
-        where.categoryId = categoryId;
+      // Find the target category first
+      // Find the target category by ID or Slug
+      const targetCategory = await this.prisma.category.findFirst({
+        where: {
+          OR: [
+            { id: categoryId },
+            { slug: categoryId }
+          ]
+        },
+        select: { id: true }
+      });
+
+      if (targetCategory) {
+        // Get all children IDs recursively
+        const allCategoryIds = [targetCategory.id];
+        let currentLevelIds = [targetCategory.id];
+
+        while (currentLevelIds.length > 0) {
+          const children = await this.prisma.category.findMany({
+            where: { parentId: { in: currentLevelIds } },
+            select: { id: true }
+          });
+          currentLevelIds = children.map(c => c.id);
+          allCategoryIds.push(...currentLevelIds);
+        }
+
+        where.categoryId = { in: allCategoryIds };
       } else {
-        where.category = { slug: categoryId };
+        // Fallback for non-existent category
+        where.categoryId = categoryId; 
       }
     }
     if (query.filters.brandId) {

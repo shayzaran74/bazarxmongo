@@ -4,7 +4,7 @@
     class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 mb-10"
   >
     <LayoutHorizontalProductScroll
-      v-for="(prods, catId) in bestSellersByCategory"
+      v-for="(prods, catId) in Object.fromEntries(Object.entries(bestSellersByCategory).slice(0, 4))"
       :key="catId"
       :title="getCategoryNameDisplay(catId) + ' Favorileri'"
       :products="prods"

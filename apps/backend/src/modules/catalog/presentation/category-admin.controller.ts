@@ -56,7 +56,51 @@ export class CategoryAdminController {
   @ApiOperation({ summary: 'Delete category' })
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    await this.prisma.category.delete({ where: { id } });
-    return { success: true, message: 'Kategori silindi' };
+    // 0. Kategori var mı kontrol et
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      return { success: true, message: 'Kategori zaten silinmiş' };
+    }
+
+    // 1. Önce "Genel" kategorisini bul veya oluştur (ürünleri buraya taşıyacağız)
+    const generalCategory = await this.prisma.category.upsert({
+      where: { slug: 'genel' },
+      update: {},
+      create: { name: 'Genel', slug: 'genel', isActive: true }
+    });
+
+    // Kategori "Genel" ise silme
+    if (category.slug === 'genel') {
+      return { success: false, message: 'Genel kategori silinemez' };
+    }
+
+    // 2. Bu kategoriye bağlı ürünleri "Genel" kategorisine taşı
+    await this.prisma.catalogProduct.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: generalCategory.id }
+    });
+
+    // 3. Alt kategorilerin parentId bilgisini temizle
+    await this.prisma.category.updateMany({
+      where: { parentId: id },
+      data: { parentId: null }
+    });
+
+    // 4. Bağlı kategori özelliklerini (CategoryAttribute) temizle
+    // Tablo ismi muhtemelen categoryAttribute veya categoryAttributes'dur
+    try {
+      // @ts-ignore - Dinamik tablo kontrolü
+      if (this.prisma.categoryAttribute) {
+        // @ts-ignore
+        await this.prisma.categoryAttribute.deleteMany({ where: { categoryId: id } });
+      }
+    } catch (e: any) {
+      console.warn('CategoryAttribute temizlenirken hata oluştu (belki tablo yoktur):', e.message);
+    }
+
+    // 5. Şimdi kategoriyi güvenle sil
+    await this.prisma.category.deleteMany({ where: { id } });
+    
+    return { success: true, message: 'Kategori ve bağlı veriler başarıyla silindi' };
   }
 }

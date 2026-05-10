@@ -21,21 +21,10 @@ const discountPercentage = computed(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Breadcrumb replacement or Category/Brand info -->
-    <div class="flex items-center gap-2">
-      <NuxtLink
-        :to="`/category/${product.Category?.slug}`"
-        class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors"
-      >
-        {{ product.Category?.name }}
-      </NuxtLink>
-      <span class="w-1 h-1 rounded-full bg-slate-200" />
-      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ product.brand }}</span>
-    </div>
 
     <!-- Title & Brand -->
     <div class="space-y-2">
-      <h1 class="text-3xl md:text-5xl font-black text-slate-900 uppercase italic tracking-tighter leading-[0.9] break-words">
+      <h1 class="text-3xl md:text-5xl font-black text-slate-900 italic tracking-tighter leading-[0.9] break-words">
         {{ product.name }}
       </h1>
       <p class="text-lg font-bold text-slate-400">
@@ -65,7 +54,7 @@ const discountPercentage = computed(() => {
     </div>
 
     <!-- Pricing Area -->
-    <div class="flex flex-col gap-1 p-8 rounded-[2.5rem] bg-slate-50/50 border border-slate-100 group transition-all hover:bg-white hover:shadow-2xl hover:shadow-indigo-100/50">
+    <div class="flex flex-col gap-1 p-5 rounded-3xl bg-slate-50/50 border border-slate-100 group transition-all hover:bg-white hover:shadow-2xl hover:shadow-indigo-100/50">
       <div
         v-if="discountPercentage > 0"
         class="flex items-center gap-3"
@@ -76,8 +65,8 @@ const discountPercentage = computed(() => {
         <span class="text-lg text-slate-400 line-through font-bold opacity-50">{{ formatPrice(product.compareAtPrice!) }}</span>
       </div>
       <div class="flex items-baseline gap-3">
-        <span class="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors">
-          {{ formatPrice(displayPrice) }}
+        <span class="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors">
+          {{ formatPrice(Math.floor(displayPrice)).split(',')[0] }}
         </span>
         <span class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ $t('products.detail.includingVat') }}</span>
       </div>

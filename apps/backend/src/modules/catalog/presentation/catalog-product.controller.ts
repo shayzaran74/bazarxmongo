@@ -7,6 +7,7 @@ import { CreateCatalogProductDto } from '../application/dtos/create-catalog-prod
 import { CreateCatalogProductCommand } from '../application/commands/create-catalog-product.command';
 import { GetCatalogProductsQuery } from '../application/queries/get-catalog-products/get-catalog-products.query';
 import { GetCatalogProductBySlugQuery } from '../application/queries/get-catalog-product-by-slug/get-catalog-product-by-slug.query';
+import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Listings')
 @Controller('products')
@@ -14,6 +15,7 @@ export class CatalogProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Public()
@@ -25,12 +27,29 @@ export class CatalogProductController {
     );
 
     const bestSellersByCategory: Record<string, any[]> = {};
+    
+    // Fetch all categories to map children to their root parent
+    const categories = await this.prisma.category.findMany({
+      select: { id: true, parentId: true }
+    });
+
+    const getRootId = (catId: string): string => {
+      let current = categories.find((c: any) => c.id === catId);
+      while (current && current.parentId) {
+        const parent = categories.find((c: any) => c.id === current!.parentId);
+        if (!parent) break;
+        current = parent;
+      }
+      return current?.id || catId;
+    };
+
     result.items.forEach((item: any) => {
       if (item.categoryId) {
-        if (!bestSellersByCategory[item.categoryId]) {
-          bestSellersByCategory[item.categoryId] = [];
+        const rootId = getRootId(item.categoryId);
+        if (!bestSellersByCategory[rootId]) {
+          bestSellersByCategory[rootId] = [];
         }
-        bestSellersByCategory[item.categoryId].push(item);
+        bestSellersByCategory[rootId].push(item);
       }
     });
 

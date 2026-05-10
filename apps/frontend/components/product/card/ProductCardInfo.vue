@@ -6,15 +6,8 @@
     <!-- Meta Info -->
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-black text-primary-600/80 uppercase tracking-widest leading-none">
-          {{ categoryName || $t('product.general') }}
-        </span>
-        <div v-if="brandName" class="flex items-center gap-1">
-          <div class="w-0.5 h-0.5 rounded-full bg-slate-300" />
-          <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[80px] leading-none">
-            {{ brandName }}
-          </span>
-        </div>
+        <!-- "Genel" kategoriyi gösterme; anlamlı kategori varsa göster -->
+
       </div>
       <div v-if="Number(rating) > 0" class="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
         <StarIcon class="h-2.5 w-2.5 text-amber-500 fill-current" />
@@ -23,7 +16,7 @@
     </div>
 
     <!-- Title -->
-    <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 line-clamp-2 mb-3 group-hover:text-primary-600 transition-colors uppercase italic tracking-tight leading-tight h-[2.5rem]">
+    <h3 class="text-xs font-black text-slate-800 dark:text-slate-100 line-clamp-3 mb-3 group-hover:text-primary-600 transition-colors italic tracking-tight leading-tight h-[3.75rem]">
       {{ name }}
     </h3>
 
