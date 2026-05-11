@@ -2,8 +2,6 @@
 
 import { Injectable } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { Prisma } from '@prisma/client';
-
 @Injectable()
 export class RabbitMQService {
   constructor(private readonly amqpConnection: AmqpConnection) {}
@@ -14,7 +12,7 @@ export class RabbitMQService {
 
   // Transactional outbox: Event'i transaction içinde OutboxMessage tablosuna yazar
   async publishTransactional(
-    tx: Prisma.TransactionClient,
+    tx: any,
     aggregateId: string,
     aggregateType: string,
     eventType: string,
