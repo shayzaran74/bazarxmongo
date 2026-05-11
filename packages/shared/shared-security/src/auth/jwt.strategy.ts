@@ -3,10 +3,15 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+// import type { Request } from 'express'; // Removed to fix frontend build errors
 
 /**
  * JWT Access Token doğrulama stratejisi.
  * Access Token ömrü: 15 dakika (Config üzerinden yönetilir).
+ *
+ * Token kaynak öncelikleri:
+ *  1. Authorization: Bearer ... header (mobile / API client'lar için)
+ *  2. httpOnly access_token cookie (web SSR / SPA için — XSS güvenli)
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -16,7 +21,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_ACCESS_SECRET is required but not defined in environment variables');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: any) => {
+          // cookie-parser middleware'i tarafından set edilir
+          const cookies = (req as any & { cookies?: Record<string, string> }).cookies;
+          return cookies?.access_token ?? null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret,
     });
