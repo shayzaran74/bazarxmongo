@@ -1,4 +1,5 @@
 import { Model, Document } from 'mongoose';
+// @ts-ignore
 import { AggregateRoot, IRepository } from '@barterborsa/shared-core';
 
 export abstract class BaseMongoRepository<
