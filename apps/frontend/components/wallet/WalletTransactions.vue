@@ -46,7 +46,7 @@
       <div class="animate-spin h-10 w-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full" />
     </div>
 
-    <div v-else-if="transactions.length > 0" class="overflow-x-auto">
+    <div v-else-if="transactions && transactions.length > 0" class="overflow-x-auto">
       <table class="w-full text-left border-separate border-spacing-y-2">
         <thead class="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
           <tr>

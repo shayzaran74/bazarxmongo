@@ -15,12 +15,8 @@ export class GetVendorBySlugHandler implements IQueryHandler<GetVendorBySlugQuer
   ) {}
 
   async execute(query: GetVendorBySlugQuery): Promise<any> {
-    const slugResult = VendorSlug.create(query.slug);
-    if (!slugResult.success) {
-      throw slugResult.error;
-    }
-
-    const vendor = await this.vendorRepository.findBySlug(slugResult.data);
+    const vendor = await this.vendorRepository.findByIdOrSlug(query.slug);
+    
     if (!vendor) {
       throw new NotFoundException('Satıcı bulunamadı.');
     }
@@ -30,6 +26,20 @@ export class GetVendorBySlugHandler implements IQueryHandler<GetVendorBySlugQuer
       slug: vendor.slug.value,
       tier: vendor.tier,
       status: vendor.status,
+      vendorType: vendor.vendorType,
+      profile: vendor.profile ? {
+        storeName: vendor.profile.storeName,
+        description: vendor.profile.description,
+        city: vendor.profile.city,
+        cuisineType: vendor.profile.cuisineType,
+        rating: vendor.profile.rating,
+        reviewCount: vendor.profile.reviewCount,
+        avgPrepTime: vendor.profile.avgPrepTimeMinutes,
+        minOrderAmount: vendor.profile.minOrderAmount,
+        deliveryRadius: vendor.profile.deliveryRadius,
+        isFeatured: vendor.profile.isFeatured,
+        imageUrl: vendor.profile.imageUrl,
+      } : null,
     };
   }
 }

@@ -220,6 +220,7 @@ model Vendor {
   slug              String             @unique
   suspensionReason  String?            @map("suspension_reason")
   tier              VendorTier         @default(CORE)
+  vendorType        VendorType         @default(COMMERCE) @map("vendor_type")
   updatedAt         DateTime           @updatedAt @map("updated_at")
   userId            String             @unique @map("user_id")
   verifiedAt        DateTime?          @map("verified_at")
@@ -229,6 +230,7 @@ model Vendor {
   brands            Brand[]
   disputes          Dispute[]
   inventoryLogs     InventoryLog[]
+  launchPartner     LaunchPartner?
   listings          Listing[]
   orders            Order[]
   purchaseOrders    PurchaseOrder[]
@@ -249,22 +251,29 @@ model Vendor {
 
   @@index([status])
   @@index([tier])
+  @@index([vendorType])
   @@map("vendors")
 }
 
 model VendorProfile {
-  id            String    @id @default(cuid())
-  vendorId      String    @unique @map("vendor_id")
-  storeName     String    @map("store_name")
-  description   String?
-  logo          String?
-  banner        String?
-  supportEmail  String?   @map("support_email")
-  isFeatured    Boolean   @default(false) @map("is_featured")
-  featuredUntil DateTime? @map("featured_until")
-  city          String?   @map("city")
-  district      String?   @map("district")
-  vendor        Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(cuid())
+  vendorId           String    @unique @map("vendor_id")
+  storeName          String    @map("store_name")
+  description        String?
+  logo               String?
+  banner             String?
+  supportEmail       String?   @map("support_email")
+  isFeatured         Boolean   @default(false) @map("is_featured")
+  featuredUntil      DateTime? @map("featured_until")
+  city               String?   @map("city")
+  district           String?   @map("district")
+  // Restoran-özel alanlar (vendorType=RESTAURANT için doldurulur, diğerleri için null)
+  openingHours       Json?     @map("opening_hours")
+  cuisineType        String?   @map("cuisine_type")
+  deliveryRadius     Float?    @map("delivery_radius")
+  minOrderAmount     Decimal?  @map("min_order_amount") @db.Decimal(10, 2)
+  avgPrepTimeMinutes Int?      @map("avg_prep_time_minutes")
+  vendor             Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@index([city])
   @@map("vendor_profiles")
@@ -285,6 +294,9 @@ model VendorSettings {
   vacationEndAt         DateTime? @map("vacation_end_at")
   autoFulfill           Boolean   @default(false) @map("auto_fulfill")
   commissionAdjustments Json?     @map("commission_adjustments")
+  // Restoran canlı sipariş kontrolü
+  holidayMode           Boolean   @default(false) @map("holiday_mode")
+  acceptingOrders       Boolean   @default(true) @map("accepting_orders")
   vendor                Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("vendor_settings")
@@ -685,6 +697,7 @@ model Listing {
   ecosystem            BrandEcosystem?       @relation(fields: [ecosystemId], references: [id])
   vendor               Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   lotteries            Lottery[]
+  menuPurchases        MenuPurchase[]
   orderItems           OrderItem[]
   purchaseOrderItems   PurchaseOrderItem[]
   stocks               Stock[]
@@ -1046,6 +1059,7 @@ model Order {
   orderNumber       String?              @unique @map("order_number")
   expiresAt         DateTime?            @map("expires_at")
   idempotencyKey    String?              @map("idempotency_key")
+  deliveryType      DeliveryType         @default(CARGO) @map("delivery_type")
   dispute           Dispute?
   invoices          Invoice[]
   orderItems        OrderItem[]
@@ -1054,6 +1068,7 @@ model Order {
   user              User                 @relation(fields: [userId], references: [id])
   vendor            Vendor               @relation(fields: [vendorId], references: [id])
   reviews           Review[]
+  deliveryDispatch  DeliveryDispatch?
 
   @@index([userId])
   @@index([vendorId])
@@ -2326,53 +2341,10 @@ model MenuUsage {
   @@map("menu_usages")
 }
 
-model Restaurant {
-  id               String         @id @default(cuid())
-  name             String
-  slug             String         @unique
-  vendorId         String?        @map("vendor_id")
-  address          String?
-  city             String
-  district         String?
-  category         String?
-  imageUrl         String?        @map("image_url")
-  averageMenuPrice Decimal?       @map("average_menu_price") @db.Decimal(18, 2)
-  isActive         Boolean        @default(true) @map("is_active")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
-  menus            BazarXMenu[]
-  launchPartner    LaunchPartner?
-
-  @@index([city])
-  @@index([category])
-  @@map("restaurants")
-}
-
-model BazarXMenu {
-  id              String         @id @default(cuid())
-  restaurantId    String         @map("restaurant_id")
-  title           String
-  description     String?
-  originalPrice   Decimal        @map("original_price") @db.Decimal(18, 2)
-  discountedPrice Decimal        @map("discounted_price") @db.Decimal(18, 2)
-  imageUrl        String?        @map("image_url")
-  isActive        Boolean        @default(true) @map("is_active")
-  validFrom       DateTime?      @map("valid_from")
-  validUntil      DateTime?      @map("valid_until")
-  dailyLimit      Int?           @map("daily_limit")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
-  restaurant      Restaurant     @relation(fields: [restaurantId], references: [id])
-  purchases       MenuPurchase[]
-
-  @@index([restaurantId])
-  @@map("bazarx_menus")
-}
-
 model MenuPurchase {
   id                 String             @id @default(cuid())
   userId             String             @map("user_id")
-  menuId             String             @map("menu_id")
+  listingId          String             @map("listing_id")
   subscriptionId     String?            @map("subscription_id")
   paidAmount         Decimal            @map("paid_amount") @db.Decimal(18, 2)
   serviceFee         Decimal            @map("service_fee") @db.Decimal(18, 2)
@@ -2386,11 +2358,11 @@ model MenuPurchase {
   xpEarned           Int                @default(0) @map("xp_earned")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
-  menu               BazarXMenu         @relation(fields: [menuId], references: [id])
+  listing            Listing            @relation(fields: [listingId], references: [id])
   redemptions        MenuRedemption[]
 
   @@index([userId])
-  @@index([menuId])
+  @@index([listingId])
   @@index([status])
   @@map("menu_purchases")
 }
@@ -2440,7 +2412,7 @@ model Referral {
 
 model LaunchPartner {
   id               String             @id @default(cuid())
-  restaurantId     String             @unique @map("restaurant_id")
+  vendorId         String             @unique @map("vendor_id")
   phase            LaunchPartnerPhase @default(PHASE_1)
   pledgedMenuCount Int                @default(60) @map("pledged_menu_count")
   distributedCount Int                @default(0) @map("distributed_count")
@@ -2450,7 +2422,7 @@ model LaunchPartner {
   phase2StartDate  DateTime?          @map("phase2_start_date")
   phase3StartDate  DateTime?          @map("phase3_start_date")
   notes            String?
-  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id])
+  vendor           Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("launch_partners")
 }
@@ -2565,6 +2537,13 @@ enum VendorTier {
   APEX
 }
 
+enum VendorType {
+  COMMERCE
+  RESTAURANT
+  MARKET
+  SERVICE
+}
+
 enum B2BTier {
   NONE
   STARTER
@@ -2655,6 +2634,10 @@ enum OrderStatus {
   PAID
   CONFIRMED
   PROCESSING
+  PREPARING
+  READY
+  AWAITING_PICKUP
+  OUT_FOR_DELIVERY
   SHIPPED
   DELIVERED
   COMPLETED
@@ -2662,6 +2645,37 @@ enum OrderStatus {
   REFUNDED
   PARTIALLY_REFUNDED
   DISPUTED
+}
+
+enum DeliveryType {
+  CARGO
+  LOCAL_COURIER
+  PICKUP
+}
+
+model DeliveryDispatch {
+  id            String         @id @default(cuid())
+  orderId       String         @unique @map("order_id")
+  courierId     String?        @map("courier_id")
+  status        DispatchStatus @default(PENDING_ASSIGN)
+  pickedUpAt   DateTime?      @map("picked_up_at")
+  deliveredAt  DateTime?      @map("delivered_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  order        Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([courierId])
+  @@index([status])
+  @@map("delivery_dispatches")
+}
+
+enum DispatchStatus {
+  PENDING_ASSIGN
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
 }
 
 enum DisputeStatus {
@@ -2940,4 +2954,31 @@ enum LaunchPartnerPhase {
   PHASE_1
   PHASE_2
   PHASE_3
+}
+
+// Outbox pattern: Event güvenilirliği için transactional outbox
+model OutboxMessage {
+  id            String       @id @default(cuid())
+  aggregateId   String       @map("aggregate_id")
+  aggregateType String       @map("aggregate_type")
+  eventType     String       @map("event_type")
+  exchange      String       @default("")
+  routingKey    String       @default("")
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0) @map("retry_count")
+  maxRetries    Int          @default(3) @map("max_retries")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  processedAt   DateTime?    @map("processed_at")
+  error         String?
+
+  @@index([status, createdAt])
+  @@map("outbox_messages")
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

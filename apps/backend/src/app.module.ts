@@ -29,6 +29,8 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { BarterBorsaModule } from './modules/barterborsa/barterborsa.module';
 import { TaxModule } from './modules/tax/tax.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
+import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor.service';
 
 @Module({
   imports: [
@@ -112,12 +114,14 @@ import { TaxModule } from './modules/tax/tax.module';
     AnalyticsModule,
     MediaModule,
     InventoryModule,
+    DeliveryModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    OutboxProcessorService,
   ],
 })
 export class AppModule {}

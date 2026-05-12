@@ -1,58 +1,30 @@
 // apps/backend/src/modules/menu/presentation/menu.controller.ts
+// BazarX Go: Restoran + menü browsing artık vendor/listing modüllerinin sorumluluğunda.
+// Bu controller yalnızca QR sistem akışı + abonelik kredisi içindir.
 
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard, Public } from '@barterborsa/shared-security';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { BrowseRestaurantsQuery } from '../application/queries/browse-restaurants.query';
-import { GetRestaurantDetailQuery } from '../application/queries/get-restaurant-detail.query';
 import { GetMyPurchasesQuery } from '../application/queries/get-my-purchases.query';
 import { PurchaseMenuCommand } from '../application/commands/purchase-menu.command';
 import { ActivateOneFreeCommand } from '../application/commands/activate-one-free.command';
 import { MenuUsageTrackerService } from '../application/services/menu-usage-tracker.service';
 
-interface AuthenticatedUser { id: string; role: string; }
+interface AuthenticatedUser {
+  id:   string;
+  role: string;
+}
 
 @ApiTags('Menu')
 @Controller('menu')
 export class MenuController {
   constructor(
-    private readonly commandBus:    CommandBus,
-    private readonly queryBus:      QueryBus,
-    private readonly usageTracker:  MenuUsageTrackerService,
+    private readonly commandBus:   CommandBus,
+    private readonly queryBus:     QueryBus,
+    private readonly usageTracker: MenuUsageTrackerService,
   ) {}
-
-  @Public()
-  @ApiOperation({ summary: 'Restoranları listele (şehir/kategori filtreli)' })
-  @ApiQuery({ name: 'city',     required: false })
-  @ApiQuery({ name: 'district', required: false })
-  @ApiQuery({ name: 'category', required: false })
-  @ApiQuery({ name: 'search',   required: false })
-  @ApiQuery({ name: 'page',     required: false, type: Number })
-  @Get('restaurants')
-  async browseRestaurants(
-    @Query('city')     city?:     string,
-    @Query('district') district?: string,
-    @Query('category') category?: string,
-    @Query('search')   search?:   string,
-    @Query('page')     page?:     string,
-    @Query('limit')    limit?:    string,
-  ) {
-    const data = await this.queryBus.execute(
-      new BrowseRestaurantsQuery({ city, district, category, search,
-        page: Number(page) || 1, limit: Number(limit) || 20 }),
-    );
-    return { success: true, data };
-  }
-
-  @Public()
-  @ApiOperation({ summary: 'Restoran detayı ve menüleri' })
-  @Get('restaurants/:id')
-  async getRestaurantDetail(@Param('id') id: string) {
-    const data = await this.queryBus.execute(new GetRestaurantDetailQuery(id));
-    return { success: true, data };
-  }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -80,12 +52,12 @@ export class MenuController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Menü satın al (QR + 1+1 hak)' })
-  @Post('purchase/:menuId')
+  @Post('purchase/:listingId')
   async purchaseMenu(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('menuId') menuId: string,
+    @Param('listingId') listingId: string,
   ) {
-    return this.commandBus.execute(new PurchaseMenuCommand(user.id, menuId, true));
+    return this.commandBus.execute(new PurchaseMenuCommand(user.id, listingId, true));
   }
 
   @ApiBearerAuth()

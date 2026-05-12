@@ -65,6 +65,20 @@ export const useAdminProductService = () => {
         method: 'POST',
         body: { ids: productIds }
       })
+    },
+
+    async bulkImport(rows: Record<string, unknown>[]): Promise<ApiResponse<{ jobId: string }>> {
+      return await $api<{ jobId: string }>('/api/admin/products/bulk-import', {
+        method: 'POST',
+        body: { rows }
+      })
+    },
+
+    async importTrendyol(products: Record<string, unknown>[], defaultStock = 1): Promise<ApiResponse<{ jobId: string }>> {
+      return await $api<{ jobId: string }>('/api/admin/products/import-trendyol', {
+        method: 'POST',
+        body: { products, defaultStock }
+      })
     }
   }
 }

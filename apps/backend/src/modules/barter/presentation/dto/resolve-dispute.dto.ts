@@ -4,9 +4,9 @@ import { DisputeResolutionResult } from '../../domain/enums/dispute-resolution-r
 
 export class ResolveDisputeDto {
   @IsEnum(DisputeResolutionResult)
-  result: DisputeResolutionResult;
+  result!: DisputeResolutionResult;
 
   @IsString()
   @IsNotEmpty()
-  adminNote: string;
+  adminNote!: string;
 }

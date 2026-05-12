@@ -28,6 +28,20 @@ export class PrismaVendorRepository implements IVendorRepository {
   async findBySlug(slug: VendorSlug): Promise<Vendor | null> {
     const record = await this.prisma.vendor.findUnique({
       where: { slug: slug.value },
+      include: { profile: true },
+    });
+    return record ? VendorMapper.toDomain(record) : null;
+  }
+
+  async findByIdOrSlug(idOrSlug: string): Promise<Vendor | null> {
+    const record = await this.prisma.vendor.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug },
+        ],
+      },
+      include: { profile: true },
     });
     return record ? VendorMapper.toDomain(record) : null;
   }
@@ -62,6 +76,7 @@ export class PrismaVendorRepository implements IVendorRepository {
   async search(params: {
     status?: string;
     tier?: string;
+    vendorType?: string;
     city?: string;
     searchTerm?: string;
     skip?: number;
@@ -70,6 +85,7 @@ export class PrismaVendorRepository implements IVendorRepository {
     const where = {
       ...(params.status && { status: params.status as any }),
       ...(params.tier && { tier: params.tier as any }),
+      ...(params.vendorType && { vendorType: params.vendorType as any }),
       ...(params.city && { profile: { city: params.city as any } }),
       ...(params.searchTerm && {
         profile: {

@@ -5,7 +5,6 @@ import { Inject, BadRequestException, NotFoundException, Logger } from '@nestjs/
 import { ResolveOrderDisputeCommand, OrderDisputeResolution } from './resolve-order-dispute.command';
 import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
 import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
-import { OrderStatus } from '../../domain/enums/order-status.enum';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 
@@ -36,32 +35,24 @@ export class ResolveOrderDisputeHandler implements ICommandHandler<ResolveOrderD
     const holdId = order.getProps().escrowHoldId;
     const idempotencyKey = `resolve-dispute-${disputeId}`;
 
-    // 1. Finansal Aksiyon Al
+    // 1. Finansal Aksiyon Al — transaction öncesi, başarısız olursa sipariş güncellenmez
     if (resolution === OrderDisputeResolution.REFUND) {
       if (!holdId) throw new BadRequestException('Siparişin ödeme referansı (holdId) bulunamadı.');
       await this.financialGateway.refundFunds(holdId, idempotencyKey);
-      (order as any).props.status = OrderStatus.REFUNDED;
-    } 
+    }
     else if (resolution === OrderDisputeResolution.RELEASE) {
       if (!holdId) throw new BadRequestException('Siparişin ödeme referansı (holdId) bulunamadı.');
       await this.financialGateway.releaseFunds(holdId, idempotencyKey);
-      (order as any).props.status = OrderStatus.COMPLETED;
-    }
-    else if (resolution === OrderDisputeResolution.REJECT) {
-      // Sadece itirazı reddet, siparişi eski durumuna (DELIVERED) döndür
-      (order as any).props.status = OrderStatus.DELIVERED;
     }
 
-    // 2. İhtilaf Durumunu Güncelle
-    await this.disputeRepository.save({
-      id: disputeId,
-      status: 'RESOLVED',
-      adminNote,
-      resolutionType: resolution,
-      resolvedAt: new Date(),
-    });
-
-    // 3. Sipariş Durumunu Güncelle
+    // 2. Sipariş domain metodu ile güncellenir — invariant korunur
+    try {
+      order.resolveDispute(resolution);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Sipariş güncellenemedi ama finansal aksiyon yapıldı: ${message}`);
+      throw new BadRequestException('Sipariş güncellenemedi.');
+    }
     await this.orderRepository.save(order);
 
     // 4. Logla

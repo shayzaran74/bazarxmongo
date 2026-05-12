@@ -8,6 +8,7 @@ import { EscrowGrpcService } from './grpc/escrow-grpc.service';
 import { FinancialGatewayService } from './financial-gateway.service';
 import { WalletController } from './presentation/wallet.controller';
 import { WalletAdminController } from './presentation/wallet-admin.controller';
+import { CircuitBreakerService } from '../../common/resilience/circuit-breaker.service';
 
 // Query Handlers
 import { GetWalletBalanceHandler } from './application/queries/get-wallet-balance.handler';
@@ -47,6 +48,7 @@ const CommandHandlers = [
     WalletGrpcService,
     EscrowGrpcService,
     FinancialGatewayService,
+    CircuitBreakerService,
     ...QueryHandlers,
     ...CommandHandlers,
   ],

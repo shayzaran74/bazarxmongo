@@ -25,7 +25,7 @@ export const useAdminPendingProducts = () => {
     loading.value = true
     error.value = null
     try {
-      const res = await $api<any>('/api/admin/products', {
+      const res = await $api<any>('/api/v1/admin/products', {
         query: { status: 'PENDING', limit: 100 }
       })
       

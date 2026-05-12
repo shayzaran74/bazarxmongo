@@ -33,7 +33,7 @@ export const useAdminOrders = () => {
   const fetchOrders = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/orders', {
+      const res = await $api<any>('/api/v1/admin/orders', {
         query: {
           status: filterStatus.value || undefined,
           vendorId: filterVendorId.value || undefined,
@@ -50,7 +50,7 @@ export const useAdminOrders = () => {
 
   const fetchVendors = async () => {
     try {
-      const res = await $api<any>('/api/admin/vendors')
+      const res = await $api<any>('/api/v1/admin/vendors')
       vendors.value = (res.data || []).map((v: any) => ({
         id: v.id,
         businessName: v.company?.name || v.profile?.storeName || 'Bilinmeyen',

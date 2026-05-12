@@ -10,7 +10,7 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('admin/chats')
+@Controller('admin/chat')
 export class ChatAdminController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -19,7 +19,7 @@ export class ChatAdminController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200 })
-  @Get()
+  @Get('rooms')
   async getChats(
     @Query('status') status?: string,
     @Query('page') page = '1',
@@ -30,7 +30,7 @@ export class ChatAdminController {
     const where: any = {};
     if (status) where.status = status;
 
-    const [data, total] = await Promise.all([
+    const [chats, total] = await Promise.all([
       this.prisma.chatRoom.findMany({
         where,
         skip,
@@ -40,13 +40,40 @@ export class ChatAdminController {
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { content: true, createdAt: true, senderId: true },
           },
           _count: { select: { messages: true } },
         },
       }),
       this.prisma.chatRoom.count({ where }),
     ]);
+
+    const data = await Promise.all(
+      chats.map(async (room) => {
+        let tradeOffer: any = null;
+        if (room.tradeOfferId) {
+          tradeOffer = await this.prisma.tradeOffer.findUnique({
+            where: { id: room.tradeOfferId },
+            include: { fromCompany: true, toCompany: true },
+          });
+        }
+
+        // Fallback for UI stability if no trade offer is linked
+        if (!tradeOffer) {
+          tradeOffer = {
+            fromCompany: { name: 'Bilinmeyen Gönderici' },
+            toCompany: { name: 'Bilinmeyen Alıcı' },
+            status: 'unknown',
+          };
+        }
+
+        return {
+          ...room,
+          tradeOffer,
+          lastMessage: room.messages[0] || null,
+          riskScore: (room as any).riskScore || 0, // Fallback if risk engine not yet integrated
+        };
+      }),
+    );
 
     return {
       success: true,

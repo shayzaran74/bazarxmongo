@@ -48,6 +48,15 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 - **Imports:** Monorepo package isimleri `@barterborsa/` prefix'i ile olacak.
 
 ## 📜 Architecture Stabilization History
+
+### BazarX Go — Faz 1-4 Entegrasyonu (Mayıs 2026)
+**Amaç:** İki ayrı dünyayı (E-ticaret + Restoran) tek vendor dashboard altında birleştirme.
+
+- **Faz 1 — Schema:** `VendorType` enum, `Vendor.vendorType`, `OrderStatus` (PREPARING/READY/AWAITING_PICKUP/OUT_FOR_DELIVERY), `DeliveryType` enum, `DeliveryDispatch` Prisma modeli. ✅
+- **Faz 2 — Backend:** `VendorType` domain, restaurant VO, `register-vendor` vendorType desteği, `mark-preparing/mark-ready` endpoints, `checkout.service.ts` deliveryType setleme, Menu modülü Listing FK'larına geçiş. ✅
+- **Faz 3 — Frontend:** `StepVendorType.vue`, `useVendor`/`useOrderStatusLabel` composables, conditional VendorSidebar, ProductForm vendorType-aware (RESTAURANT: ingredients/prepTime/calories, dailyLimit, Logistics gizli), `RestaurantSettingsSection` (openingHours, deliveryRadius, holidayMode, acceptingOrders). ✅
+- **Faz 4 — Delivery:** `DeliveryModule` (DeliveryDispatch entity, `DispatchStatus` enum, `DispatchCourierCommand/Handler`, `MarkDeliveredCommand/Handler`, `DeliveryController`, `PrismaDeliveryDispatchRepository`). `POST /orders/:id/dispatch` endpoint'i eklendi. `tsc --noEmit` ✅ 0 hata. ⚠️ Migration gerekli: `pnpm prisma:migrate dev --name delivery_dispatch`. ⚠️ Kurye listesi stub — gerçek CourierUser tablosu sonraki sprint'te.
+
 ### B2B Entegrasyonu — Mayıs 2026 (Tek Sistem Birleştirme)
 - **SwapSessionController:** `GET /api/v1/barter/swap/:id`, `POST /ship`, `/confirm`, `/finalize`, `/dispute` — 5 endpoint + 4 command/handler sıfırdan yazıldı. ✅
 - **Faz Köprüsü:** `acceptOffer()` artık backend'den gelen `sessionId`'yi alıp `/ticaritakas/swap/:id`'ye navigate ediyor. ✅

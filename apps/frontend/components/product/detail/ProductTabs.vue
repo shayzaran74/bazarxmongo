@@ -29,13 +29,17 @@ const emit = defineEmits(['update:activeTab', 'submitReview', 'update:reviewDraf
     v-if="product"
     class="space-y-10"
   >
-    <!-- Premium Tabs Navigation -->
-    <div class="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
+    <!-- Trendyol tarzı tab navigasyonu -->
+    <div class="flex items-stretch border-b-2 border-slate-100 gap-0">
       <button
         v-for="tab in tabs"
         :key="tab.id"
-        class="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
-        :class="[activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700']"
+        class="relative px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap -mb-[2px]"
+        :class="[
+          activeTab === tab.id
+            ? 'text-orange-500 border-b-2 border-orange-500'
+            : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
+        ]"
         @click="emit('update:activeTab', tab.id)"
       >
         {{ tab.name }}
@@ -43,7 +47,7 @@ const emit = defineEmits(['update:activeTab', 'submitReview', 'update:reviewDraf
     </div>
 
     <!-- Tab Content -->
-    <div class="relative min-h-[400px]">
+    <div class="relative min-h-[400px] pt-2">
       <ProductDescription 
         v-if="activeTab === 'description'"
         :product="product"

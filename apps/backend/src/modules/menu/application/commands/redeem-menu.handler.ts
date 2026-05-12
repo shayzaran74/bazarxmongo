@@ -23,7 +23,15 @@ export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
           { oneFreeQrCode: qrCode, oneFreeActivatedAt: { not: null } },
         ],
       },
-      include: { menu: { include: { restaurant: { select: { name: true } } } } },
+      include: {
+        // BazarXMenu DROP edildi; QR Listing üzerinden çalışır
+        listing: {
+          select: {
+            title:  true,
+            vendor: { select: { profile: { select: { storeName: true } } } },
+          },
+        },
+      },
     });
 
     if (!purchase) throw new NotFoundException('Geçersiz QR kodu');
@@ -67,11 +75,11 @@ export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
       success: true,
       message: isOneFree ? '1+1 bedava menü onaylandı' : 'Menü QR onaylandı',
       data: {
-        menuTitle:   purchase.menu.title,
-        restaurant:  purchase.menu.restaurant.name,
+        menuTitle:  purchase.listing.title,
+        restaurant: purchase.listing.vendor.profile?.storeName ?? '',
         isOneFree,
-        userId:      purchase.userId,
-        redeemedAt:  new Date(),
+        userId:     purchase.userId,
+        redeemedAt: new Date(),
       },
     };
   }

@@ -94,6 +94,8 @@ export const useWallet = () => {
         await fetchWallet()
         await authStore.fetchUser()
         return true
+      } else {
+        toast.error(response.error || 'Aktarım başarısız oldu.')
       }
     } catch (e: any) {
       toast.error(e.data?.error || 'Aktarım sırasında bir hata oluştu')
@@ -116,6 +118,8 @@ export const useWallet = () => {
         await fetchWallet()
         await authStore.fetchUser()
         return true
+      } else {
+        toast.error(response.error || 'Para çekme başarısız oldu.')
       }
     } catch (e: any) {
       toast.error(e.data?.error || 'Para çekme sırasında bir hata oluştu')
@@ -157,21 +161,23 @@ export const useWallet = () => {
     userTier, tierConfig, 
     formatPrice, fetchWallet,
     registerForBarter, topUpBarter, withdrawBarter, redeemGiftCard, isCardWinner,
-    requestWithdrawal: async (data: any) => {
+    withdrawWallet: async (data: any) => {
       submitting.value = true
       try {
         const res = await walletService.withdraw(data)
         if (res.success) {
           toast.success(res.message || 'Para çekme talebi başarıyla iletildi.')
           await fetchWallet()
-          return true
+          return { success: true, message: res.message }
         }
+        return { success: false, error: res.message || 'İşlem başarısız' }
       } catch (e: any) {
-        toast.error(e.data?.message || 'Para çekme talebi sırasında bir hata oluştu.')
+        const errorMsg = e.data?.message || 'Para çekme talebi sırasında bir hata oluştu.'
+        toast.error(errorMsg)
+        return { success: false, error: errorMsg }
       } finally {
         submitting.value = false
       }
-      return false
     },
     fetchTransactions: walletService.getTransactions,
     fetchAccountTransactions: walletService.getAccountTransactions,

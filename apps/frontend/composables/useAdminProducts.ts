@@ -57,7 +57,7 @@ export const useAdminProducts = () => {
     loading.value = true
     pagination.page = page
     try {
-      const res = await $api<any>('/api/admin/products', {
+      const res = await $api<any>('/api/v1/admin/products', {
         query: {
           page,
           limit: pagination.limit,
@@ -80,7 +80,7 @@ export const useAdminProducts = () => {
   // ─── Fetch İstatistikler ────────────────────────────────────────────────────
   const fetchProductStats = async () => {
     try {
-      const res = await $api<any>('/api/admin/products/stats')
+      const res = await $api<any>('/api/v1/admin/products/stats')
       if (res?.data) {
         productStats.total   = res.data.total
         productStats.active  = res.data.active
@@ -93,7 +93,7 @@ export const useAdminProducts = () => {
   // DÜZELTİLDİ: Admin endpoint'i kullanılıyor (tüm kategoriler, sadece aktifler değil)
   const fetchCategories = async () => {
     try {
-      const res = await $api<any>('/api/admin/categories')
+      const res = await $api<any>('/api/v1/admin/categories')
       const tree = res.data || []
       console.log('[DEBUG] Admin Kategori Ağacı Yüklendi:', tree.length, 'ana kategori bulundu.')
 
@@ -131,7 +131,7 @@ export const useAdminProducts = () => {
   // ─── Fetch Markalar ────────────────────────────────────────────────────────
   const fetchBrands = async () => {
     try {
-      const res = await $api<any>('/api/admin/brands')
+      const res = await $api<any>('/api/v1/admin/brands')
       brands.value = Array.isArray(res.data) ? res.data : (res.data?.items || [])
     } catch { /* sessizce geç */ }
   }
@@ -139,7 +139,7 @@ export const useAdminProducts = () => {
   // ─── Fetch Satıcılar ───────────────────────────────────────────────────────
   const fetchVendors = async () => {
     try {
-      const res = await $api<any>('/api/admin/vendors')
+      const res = await $api<any>('/api/v1/admin/vendors')
       vendors.value = (res.data || []).map((v: any) => ({
         id: v.id,
         name: v.company?.name || v.profile?.storeName || 'Bilinmeyen',
@@ -342,7 +342,7 @@ export const useAdminProducts = () => {
           $toast.error(res.error || 'Güncelleme sırasında bir hata oluştu')
         }
       } else {
-        const res = await $api<any>('/api/admin/products', {
+        const res = await $api<any>('/api/v1/admin/products', {
           method: 'POST',
           body: formData.value
         })
@@ -403,7 +403,7 @@ export const useAdminProducts = () => {
     if (!selectedProductIds.value.length) return
     bulkProcessing.value = true
     try {
-      await $api('/api/admin/products/bulk-update', {
+      await $api('/api/v1/admin/products/bulk-update', {
         method: 'PUT',
         body: { ids: selectedProductIds.value, updates: { status: 'ACTIVE', isFeatured: true, isSpecialOffer: true } }
       })
@@ -423,7 +423,7 @@ export const useAdminProducts = () => {
     if (!confirm(`${selectedProductIds.value.length} ürün silinsin mi?`)) return
     bulkProcessing.value = true
     try {
-      await $api('/api/admin/products/bulk-delete', {
+      await $api('/api/v1/admin/products/bulk-delete', {
         method: 'POST',
         body: { ids: selectedProductIds.value }
       })
@@ -442,7 +442,7 @@ export const useAdminProducts = () => {
     if (!selectedProductIds.value.length) return
     bulkProcessing.value = true
     try {
-      await $api('/api/admin/products/bulk-update', {
+      await $api('/api/v1/admin/products/bulk-update', {
         method: 'PUT',
         body: { ids: selectedProductIds.value, updates }
       })

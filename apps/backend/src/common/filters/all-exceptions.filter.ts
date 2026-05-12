@@ -36,12 +36,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = exception.message;
     }
 
-    // Hata detaylarını terminale bas
-    const errorStack = exception instanceof Error ? exception.stack : JSON.stringify(exception);
-    this.logger.error(
-      `Hata: ${request?.method} ${request?.url} [${status}]`,
-      errorStack
-    );
+    // 4xx → WARN, 5xx → ERROR
+    const logMessage = `Hata: ${request?.method} ${request?.url} [${status}]`;
+    if (status >= 400 && status < 500) {
+      this.logger.warn(`${logMessage} — ${Array.isArray(message) ? message[0] : message}`);
+    } else {
+      const errorStack = exception instanceof Error ? exception.stack : JSON.stringify(exception);
+      this.logger.error(logMessage, errorStack);
+    }
 
     response.status(status).json({
       success: false,

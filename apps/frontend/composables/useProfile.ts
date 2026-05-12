@@ -13,7 +13,8 @@ import {
 
 export const useProfile = () => {
   const authStore = useAuthStore()
-  const activeTab = ref('profile')
+  const route = useRoute()
+  const activeTab = ref(route.query.tab?.toString() || 'profile')
   const showMobileMenu = ref(false)
 
   const account = useProfileAccount()

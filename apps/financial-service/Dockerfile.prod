@@ -22,35 +22,40 @@ RUN cd apps/financial-service && npx prisma@5.12.0 generate --schema=prisma/sche
 # Financial Service build
 RUN pnpm --filter @barterborsa/financial-service build
 
-# pnpm deploy ile izole et
-RUN pnpm --filter @barterborsa/financial-service --prod deploy /app/out
+# Copy generated prisma client and grpc proto to dist
+RUN mkdir -p apps/financial-service/dist/generated && \
+    cp -R apps/financial-service/src/generated/* apps/financial-service/dist/generated/ && \
+    mkdir -p apps/financial-service/dist/grpc && \
+    cp apps/financial-service/src/grpc/financial.proto apps/financial-service/dist/grpc/financial.proto
 
-# Generated client'ı out içine kopyala
-RUN mkdir -p /app/out/src/generated/client && \
-    cp -rv apps/financial-service/src/generated/client/* /app/out/src/generated/client/
+# Sadece production dependencyleri bırak
+RUN pnpm install --prod --no-frozen-lockfile
 
-RUN cp -rv /app/apps/financial-service/dist /app/out/dist
-RUN mkdir -p /app/out/dist/apps/financial-service/src/grpc && \
-    cp /app/apps/financial-service/src/grpc/financial.proto /app/out/dist/apps/financial-service/src/grpc/financial.proto
-RUN cp -rv /app/apps/financial-service/prisma /app/out/prisma
-
-# ─── Stage 3: Runtime ─────────────────────────────────────────────
+# ─── Stage 2: Runtime ─────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl netcat-openbsd
 
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-# İzole edilmiş bağımlılıkları ve build artifactlarını kopyalayalım
-COPY --from=builder --chown=nestjs:nodejs /app/out ./
+# Monorepo yapısındaki node_modules klasörlerini kopyala
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nestjs:nodejs /app/apps/financial-service/node_modules ./apps/financial-service/node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/apps/financial-service/dist ./apps/financial-service/dist
+COPY --from=builder --chown=nestjs:nodejs /app/apps/financial-service/prisma ./apps/financial-service/prisma
+COPY --from=builder --chown=nestjs:nodejs /app/apps/financial-service/package.json ./apps/financial-service/
+
 
 USER nestjs
 
 EXPOSE 50051
 
+WORKDIR /app/apps/financial-service
+
 # Prisma migrate + app başlat
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma && node dist/apps/financial-service/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/main.js"]

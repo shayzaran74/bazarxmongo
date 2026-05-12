@@ -51,7 +51,7 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
 
   const fetchProducts = async () => {
     try {
-      const response = await $api<any>('/api/admin/products', {
+      const response = await $api<any>('/api/v1/admin/products', {
         query: { limit: 100 }
       })
       products.value = response.data || []
@@ -100,7 +100,7 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
         toast.success('Açık artırma güncellendi!')
         emit('updated', response.data)
       } else {
-        const response = await $api<any>('/api/admin/auctions', {
+        const response = await $api<any>('/api/v1/admin/auctions', {
           method: 'POST',
           body: payload
         })

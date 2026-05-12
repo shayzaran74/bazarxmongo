@@ -121,4 +121,14 @@ export class FinancialGatewayService {
   async getGiftCard(id: string) {
     return this.walletService.getGiftCard(id);
   }
+  
+  async transferBetweenAccounts(data: {
+    userId: string;
+    fromAccountType: string;
+    toAccountType: string;
+    amount: string;
+    note?: string;
+  }) {
+    return this.walletService.transferBetweenAccounts(data);
+  }
 }

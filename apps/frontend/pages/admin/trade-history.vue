@@ -100,12 +100,12 @@
               {{ offer.toCompany?.name || '-' }}
             </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {{ offer.offeredItem?.title || '-' }}
-              <span class="text-xs text-gray-400 block">{{ offer.offeredQuantity }} Birim</span>
+              {{ offer.offeredItem?.title || offer.offeredItems?.[0]?.listing?.title || '-' }}
+              <span class="text-xs text-gray-400 block">{{ offer.offeredQuantity || offer.offeredItems?.[0]?.quantity || 0 }} Birim</span>
             </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {{ offer.requestedItem?.title || '-' }}
-              <span class="text-xs text-gray-400 block">{{ offer.requestedQuantity }} Birim</span>
+              {{ offer.requestedItem?.title || offer.requestedItems?.[0]?.listing?.title || '-' }}
+              <span class="text-xs text-gray-400 block">{{ offer.requestedQuantity || offer.requestedItems?.[0]?.quantity || 0 }} Birim</span>
             </td>
             <td
               class="px-4 py-3 whitespace-nowrap text-sm font-medium"
@@ -311,11 +311,11 @@ const fetchAllOffers = async () => {
         const params = {}
         if (statusFilter.value) params.status = statusFilter.value
 
-        const response = await $api('/api/v1/admin/offers/all', {
+        const response = await $api('/api/v1/admin/barter/offers', {
             params
         })
         if (response.success) {
-            offers.value = response.offers
+            offers.value = response.data
         }
     } catch (error) {
         console.error('Fetch offers error:', error)

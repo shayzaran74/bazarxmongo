@@ -4,11 +4,13 @@ export const useVendorApplication = () => {
   const authStore = useAuthStore()
 
   const currentStep = ref(0)
+  const totalSteps = ref(4) // 0: Vendor Type, 1: Business Info, 2: Contact, 3: Bank & Categories
   const loading = ref(false)
   const isApexPlus = ref(true)
   const applicationStatus = ref<string | null>(null)
 
   const formData = reactive({
+    vendorType: '' as '' | 'COMMERCE' | 'RESTAURANT' | 'MARKET' | 'SERVICE',
     businessName: '',
     businessType: '',
     taxId: '',
@@ -22,7 +24,15 @@ export const useVendorApplication = () => {
     bankAccountName: '',
     bankIban: '',
     categories: [] as string[],
+    // Restaurant-specific fields
+    cuisineType: '',
+    deliveryRadius: null as number | null,
+    minOrderAmount: null as number | null,
+    openingHours: null as any,
   })
+
+  const categories = ref<any[]>([])
+  const announcements = ref<any[]>([])
 
   const checkExistingApplication = async () => {
     try {
@@ -31,6 +41,17 @@ export const useVendorApplication = () => {
       )
       if (res.success && res.data) {
         applicationStatus.value = (res.data as any).status || null
+      }
+    } catch { /* ignore */ }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const res = await $api<{ success: boolean; data: any[] }>(
+        '/api/v1/categories?type=PRODUCT'
+      )
+      if (res.success) {
+        categories.value = res.data || []
       }
     } catch { /* ignore */ }
   }
@@ -61,10 +82,22 @@ export const useVendorApplication = () => {
   const nextStep = () => { currentStep.value++ }
   const prevStep = () => { currentStep.value-- }
 
-  onMounted(checkExistingApplication)
+  onMounted(async () => {
+    await checkExistingApplication()
+    await fetchCategories()
+  })
 
   return {
-    currentStep, loading, isApexPlus, applicationStatus, formData,
-    nextStep, prevStep, submitApplication,
+    currentStep,
+    totalSteps,
+    loading,
+    isApexPlus,
+    applicationStatus,
+    formData,
+    categories,
+    announcements,
+    nextStep,
+    prevStep,
+    submitApplication,
   }
 }

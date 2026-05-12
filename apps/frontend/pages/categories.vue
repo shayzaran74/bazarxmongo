@@ -268,11 +268,12 @@ const fetchCategories = async () => {
 onMounted(() => {
   fetchCategories()
   updateMobile()
-  window.addEventListener('resize', updateMobile)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateMobile)
+  if (process.client) {
+    window.removeEventListener('resize', updateMobile)
+  }
 })
 
 // Layout

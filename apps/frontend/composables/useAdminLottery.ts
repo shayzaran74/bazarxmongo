@@ -28,7 +28,7 @@ export const useAdminLottery = () => {
   const fetchLotteries = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/lotteries', {
+      const res = await $api<any>('/api/v1/admin/lotteries', {
         query: {
           status: filters.status || undefined,
           page: pagination.page,

@@ -8,5 +8,5 @@ export class SwapDisputeDto {
   @IsString()
   @MinLength(10)
   @MaxLength(1000)
-  reason: string;
+  reason!: string;
 }

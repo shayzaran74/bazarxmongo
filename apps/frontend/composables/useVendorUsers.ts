@@ -14,7 +14,7 @@ export const useVendorUsers = () => {
     loading.value = true
     try {
       const res = await $api<any>(
-        '/api/vendor/users',
+        '/api/vendors/users',
         { query: { ...filters } }
       )
       users.value = res.data || []
@@ -33,7 +33,7 @@ export const useVendorUsers = () => {
   const deleteUser = async (id: string) => {
     if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return
     try {
-      await $api(`/api/vendor/users/${id}`, { method: 'DELETE' })
+      await $api(`/api/vendors/users/${id}`, { method: 'DELETE' })
       $toast.success('Kullanıcı kaldırıldı')
       fetchUsers()
     } catch {

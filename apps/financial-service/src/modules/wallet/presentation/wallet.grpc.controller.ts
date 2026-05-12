@@ -264,8 +264,8 @@ export class WalletGrpcController {
     const skip = (page - 1) * limit;
 
     const where: TopUpRequestFilter = {};
-    if (data.userId) where.userId = data.userId;
-    if (data.status) where.status = data.status as TopUpStatus;
+    if (data.userId && data.userId.trim() !== '') where.userId = data.userId;
+    if (data.status && data.status.trim() !== '') where.status = data.status as TopUpStatus;
 
     const [items, total] = await Promise.all([
       this.prisma.accountTopUpRequest.findMany({
@@ -302,8 +302,8 @@ export class WalletGrpcController {
     const skip = (page - 1) * limit;
 
     const where: WithdrawalRequestFilter = {};
-    if (data.userId) where.userId = data.userId;
-    if (data.status) where.status = data.status as WithdrawalStatus;
+    if (data.userId && data.userId.trim() !== '') where.userId = data.userId;
+    if (data.status && data.status.trim() !== '') where.status = data.status as WithdrawalStatus;
 
     const [items, total] = await Promise.all([
       this.prisma.accountWithdrawalRequest.findMany({
@@ -592,5 +592,99 @@ export class WalletGrpcController {
       note: giftCard.note || '',
       createdAt: giftCard.createdAt.toISOString(),
     };
+  }
+  @GrpcMethod('FinancialService', 'TransferBetweenAccounts')
+  async transferBetweenAccounts(data: {
+    userId: string;
+    fromAccountType: string;
+    toAccountType: string;
+    amount: string;
+    note?: string;
+  }) {
+    try {
+      const amount = new Decimal(data.amount);
+      if (!amount.isPositive()) throw new Error('Transfer tutarı sıfırdan büyük olmalıdır.');
+
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Hesapları bul veya oluştur (findOrCreate mantığı)
+        let fromAccount = await tx.account.findFirst({
+          where: { userId: data.userId, type: data.fromAccountType as any },
+        });
+        
+        if (!fromAccount) {
+           throw new Error(`${data.fromAccountType} hesabı bulunamadı.`);
+        }
+
+        let toAccount = await tx.account.findFirst({
+          where: { userId: data.userId, type: data.toAccountType as any },
+        });
+
+        if (!toAccount) {
+          toAccount = await tx.account.create({
+            data: {
+              userId: data.userId,
+              type: data.toAccountType as any,
+              currency: 'TRY',
+              balance: 0,
+              availableBalance: 0,
+            }
+          });
+        }
+
+        if (fromAccount.availableBalance.lessThan(amount)) throw new Error('Yetersiz bakiye.');
+
+        // 1. Bakiyeleri güncelle
+        await tx.account.update({
+          where: { id: fromAccount.id },
+          data: {
+            balance: { decrement: amount },
+            availableBalance: { decrement: amount },
+          },
+        });
+
+        await tx.account.update({
+          where: { id: toAccount.id },
+          data: {
+            balance: { increment: amount },
+            availableBalance: { increment: amount },
+          },
+        });
+
+        // 2. İşlem kayıtlarını oluştur (Her iki hesap için de)
+        const referenceId = `trf-${Date.now()}`;
+        
+        await tx.accountTransaction.create({
+          data: {
+            accountId: fromAccount.id,
+            amount,
+            type: 'TRANSFER',
+            direction: 'DEBIT',
+            status: 'COMPLETED',
+            description: data.note || `${data.toAccountType} hesabına transfer`,
+            referenceId,
+            referenceType: 'INTERNAL_TRANSFER',
+          },
+        });
+
+        const txRecord = await tx.accountTransaction.create({
+          data: {
+            accountId: toAccount.id,
+            amount,
+            type: 'TRANSFER',
+            direction: 'CREDIT',
+            status: 'COMPLETED',
+            description: data.note || `${data.fromAccountType} hesabından transfer`,
+            referenceId,
+            referenceType: 'INTERNAL_TRANSFER',
+          },
+        });
+
+        return { transactionId: txRecord.id };
+      });
+
+      return { success: true, transactionId: result.transactionId };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
+    }
   }
 }

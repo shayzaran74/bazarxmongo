@@ -1,6 +1,8 @@
 // apps/backend/src/modules/vendor/application/commands/register-vendor.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@barterborsa/shared-core';
 import { RegisterVendorCommand } from './register-vendor.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IVendorProfileRepository } from '../../domain/repositories/vendor-profile.repository.interface';
@@ -10,8 +12,7 @@ import { Vendor } from '../../domain/entities/vendor.entity';
 import { VendorProfile } from '../../domain/entities/vendor-profile.entity';
 import { VendorSettings } from '../../domain/entities/vendor-settings.entity';
 import { VendorSlug } from '../../domain/value-objects/vendor-slug.vo';
-import { ConflictException, NotFoundException, DomainException } from '@barterborsa/shared-core';
-import { Inject } from '@nestjs/common';
+import { VendorType } from '../../domain/enums/vendor-type.enum';
 
 @CommandHandler(RegisterVendorCommand)
 export class RegisterVendorHandler implements ICommandHandler<RegisterVendorCommand> {
@@ -45,27 +46,39 @@ export class RegisterVendorHandler implements ICommandHandler<RegisterVendorComm
     const slug = VendorSlug.fromStoreName(dto.storeName);
     const slugExists = await this.vendorRepository.findBySlug(slug);
     if (slugExists) {
-       throw new ConflictException('Bu mağaza adı ile ilişkili slug zaten kullanımda.');
+      throw new ConflictException('Bu mağaza adı ile ilişkili slug zaten kullanımda.');
     }
 
-    // 4. Vendor Oluştur
-    const vendor = Vendor.create(userId, dto.companyId, slug, dto.storeName);
-    
-    // 5. Profil Oluştur
+    // 4. Vendor Oluştur (vendorType seçimi — varsayılan COMMERCE)
+    const vendorType = dto.vendorType ?? VendorType.COMMERCE;
+    const vendor = Vendor.create(userId, dto.companyId, slug, dto.storeName, vendorType);
+
+    // 5. Profil Oluştur (RESTAURANT ise restoran alanlarını da set et)
+    const restaurantFields = vendorType === VendorType.RESTAURANT && dto.restaurantProfile
+      ? {
+          openingHours:       dto.restaurantProfile.openingHours,
+          cuisineType:        dto.restaurantProfile.cuisineType,
+          deliveryRadius:     dto.restaurantProfile.deliveryRadius,
+          minOrderAmount:     dto.restaurantProfile.minOrderAmount,
+          avgPrepTimeMinutes: dto.restaurantProfile.avgPrepTimeMinutes,
+        }
+      : {};
+
     const profile = VendorProfile.create({
-      vendorId: vendor.id,
-      storeName: dto.storeName,
-      description: dto.description,
-      logo: dto.logo,
+      vendorId:     vendor.id,
+      storeName:    dto.storeName,
+      description:  dto.description,
+      logo:         dto.logo,
       supportEmail: dto.supportEmail,
-      city: dto.city,
-      district: dto.district,
+      city:         dto.city,
+      district:     dto.district,
+      ...restaurantFields,
     });
 
-    // 6. Ayarlar Oluştur
+    // 6. Ayarlar Oluştur (RESTAURANT için acceptingOrders=true default)
     const settings = VendorSettings.create(vendor.id);
 
-    // Kaydet (Gerçek senaryoda UnitOfWork kullanılmalı, burada repo bazlı ilerliyoruz)
+    // Kaydet
     await this.vendorRepository.save(vendor);
     await this.profileRepository.save(profile);
     await this.settingsRepository.save(settings);

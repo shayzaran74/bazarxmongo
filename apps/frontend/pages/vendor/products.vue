@@ -39,6 +39,14 @@
                     @change="handleExcelUpload"
                   >
                 </label>
+                <button
+                  class="bg-orange-500 text-white h-10 px-4 rounded-lg hover:bg-orange-600 transition-all font-bold flex items-center text-xs shadow-sm whitespace-nowrap"
+                  title="Trendyol JSON dosyasından ürün aktar"
+                  @click="showTrendyolModal = true"
+                >
+                  <HeroIcons.ArrowDownTrayIcon class="h-4 w-4 mr-2" />
+                  Trendyol'dan Aktar
+                </button>
               </div>
             </div>
           </div>
@@ -167,6 +175,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Trendyol İçe Aktarım Modalı -->
+  <TrendyolImportModal
+    v-model="showTrendyolModal"
+    mode="vendor"
+    @imported="refresh"
+  />
 </template>
 
 <script setup lang="ts">
@@ -185,6 +200,7 @@ useHead({
 const vendorService = useVendorService()
 const searchQuery = ref('')
 const loading = ref(false)
+const showTrendyolModal = ref(false)
 
 const { data: listingData, pending, refresh } = await useAsyncData('vendor-products', () => 
   vendorService.getMyListings({ 

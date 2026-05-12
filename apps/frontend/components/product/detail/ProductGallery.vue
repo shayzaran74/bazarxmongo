@@ -26,7 +26,7 @@ const handleImageError = (event: Event) => {
 <template>
   <div class="space-y-4">
     <!-- Main Image Display -->
-    <div class="relative aspect-square rounded-2xl bg-slate-100 overflow-hidden group border border-slate-200 shadow-sm">
+    <div class="relative aspect-[10/8] rounded-2xl bg-slate-100 overflow-hidden group border border-slate-200 shadow-sm">
       <img
         :src="selectedImage || (typeof product?.image === 'string' ? product.image : product?.image?.url)"
         :alt="product?.name"

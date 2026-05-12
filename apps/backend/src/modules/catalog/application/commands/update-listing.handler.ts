@@ -35,24 +35,37 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
     }
 
     // Güncelleme işlemi
+    const updateData: any = {
+      title: dto.title || dto.name,
+      description: dto.description,
+      price: dto.price !== undefined ? Number(dto.price) : undefined,
+      status: dto.status,
+      sku: dto.sku,
+      visibility: dto.visibility,
+      minMarketPrice: dto.minMarketPrice !== undefined ? Number(dto.minMarketPrice) : undefined,
+      maxPurchasePerMember: dto.maxPurchasePerMember !== undefined ? Number(dto.maxPurchasePerMember) : undefined,
+      originalPrice: dto.compareAtPrice !== undefined ? Number(dto.compareAtPrice) : undefined,
+      weight: dto.weight !== undefined ? Number(dto.weight) : undefined,
+      volume: dto.volume !== undefined ? Number(dto.volume) : undefined,
+      isDigital: dto.isDigital,
+      isB2BOnly: dto.isB2BOnly,
+    };
+
+    if (dto.stock !== undefined) {
+      const newStock = Number(dto.stock);
+      const stockDiff = newStock - listing.stock;
+      updateData.stock = newStock;
+      updateData.availableQuantity = listing.availableQuantity + stockDiff;
+      
+      // Eğer stok arttıysa ve status OUT_OF_STOCK ise ACTIVE yapalım
+      if (updateData.availableQuantity > 0 && listing.status === 'OUT_OF_STOCK') {
+        updateData.status = 'ACTIVE';
+      }
+    }
+
     const updatedListing = await this.prisma.listing.update({
       where: { id },
-      data: {
-        title: dto.title || dto.name, // Frontend sends 'name' in form
-        description: dto.description,
-        price: dto.price !== undefined ? Number(dto.price) : undefined,
-        stock: dto.stock !== undefined ? Number(dto.stock) : undefined,
-        status: dto.status,
-        sku: dto.sku,
-        visibility: dto.visibility,
-        minMarketPrice: dto.minMarketPrice !== undefined ? Number(dto.minMarketPrice) : undefined,
-        maxPurchasePerMember: dto.maxPurchasePerMember !== undefined ? Number(dto.maxPurchasePerMember) : undefined,
-        originalPrice: dto.compareAtPrice !== undefined ? Number(dto.compareAtPrice) : undefined,
-        weight: dto.weight !== undefined ? Number(dto.weight) : undefined,
-        volume: dto.volume !== undefined ? Number(dto.volume) : undefined,
-        isDigital: dto.isDigital,
-        isB2BOnly: dto.isB2BOnly,
-      }
+      data: updateData
     });
 
     // CatalogProduct güncellemesi (Kategori, isim vb. için)

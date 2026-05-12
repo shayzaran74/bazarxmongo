@@ -8,6 +8,7 @@ export const useHomeMenuItems = () => {
     { title: 'Çekiliş', icon: 'TicketIcon', path: '/lotteries', colorFrom: 'from-red-500', colorTo: 'to-red-600', shadowColor: 'shadow-red-200', hoverColor: 'hover:text-red-600' },
     { title: 'Grup Alımı', icon: 'UsersIcon', path: '/group-buys', colorFrom: 'from-pink-500', colorTo: 'to-pink-600', shadowColor: 'shadow-pink-200', hoverColor: 'hover:text-pink-600' },
     { title: 'Fırsatlar', icon: 'StarIcon', path: '/campaigns', colorFrom: 'from-yellow-500', colorTo: 'to-yellow-600', shadowColor: 'shadow-yellow-200', hoverColor: 'hover:text-yellow-600' },
+    { title: 'BazarX Go', icon: 'TruckIcon', path: '/bazarx-go', colorFrom: 'from-emerald-500', colorTo: 'to-emerald-600', shadowColor: 'shadow-emerald-200', hoverColor: 'hover:text-emerald-600' },
   ]
 }
 

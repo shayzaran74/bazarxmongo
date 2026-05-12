@@ -23,6 +23,15 @@ export interface AuctionProps {
   updatedAt: Date;
 }
 
+// State geçiş haritası
+const VALID_TRANSITIONS: Record<AuctionStatus, AuctionStatus[]> = {
+  [AuctionStatus.SCHEDULED]: [AuctionStatus.ACTIVE, AuctionStatus.CANCELLED],
+  [AuctionStatus.ACTIVE]: [AuctionStatus.ENDED, AuctionStatus.CANCELLED],
+  [AuctionStatus.ENDED]: [AuctionStatus.COMPLETED],
+  [AuctionStatus.COMPLETED]: [],
+  [AuctionStatus.CANCELLED]: [],
+};
+
 export class Auction extends AggregateRoot<AuctionProps> {
   private constructor(props: AuctionProps, id?: string) {
     super(props, id);
@@ -63,35 +72,64 @@ export class Auction extends AggregateRoot<AuctionProps> {
     return new Auction(props, id);
   }
 
+  // Merkezi state geçiş metodu
+  private transitionTo(newStatus: AuctionStatus): void {
+    const current = this.props.status;
+    const allowed = VALID_TRANSITIONS[current] || [];
+
+    if (!allowed.includes(newStatus)) {
+      throw new DomainException(
+        `Invalid state transition: ${current} → ${newStatus}`,
+      );
+    }
+
+    this.props.status = newStatus;
+    this.props.updatedAt = new Date();
+  }
+
   public start(): void {
     if (this.props.status !== AuctionStatus.SCHEDULED) {
       throw new DomainException('Only scheduled auctions can be started');
     }
-    this.props.status = AuctionStatus.ACTIVE;
-    this.props.updatedAt = new Date();
+    this.transitionTo(AuctionStatus.ACTIVE);
   }
 
   public placeBid(userId: string, amount: Prisma.Decimal): void {
-     if (this.props.status !== AuctionStatus.ACTIVE) {
-       throw new DomainException('Auction is not active');
-     }
+    if (this.props.status !== AuctionStatus.ACTIVE) {
+      throw new DomainException('Auction is not active');
+    }
 
-     const now = new Date();
-     if (now > this.props.endTime) {
-       throw new DomainException('Auction has ended');
-     }
+    const now = new Date();
+    if (now > this.props.endTime) {
+      throw new DomainException('Auction has ended');
+    }
 
-     const minRequired = this.props.currentPrice.plus(this.props.minBidIncrement);
-     if (amount.lt(minRequired)) {
-       throw new DomainException(`Bid must be at least ${minRequired.toString()}`);
-     }
+    const minRequired = this.props.currentPrice.plus(this.props.minBidIncrement);
+    if (amount.lt(minRequired)) {
+      throw new DomainException(`Bid must be at least ${minRequired.toString()}`);
+    }
 
-     this.props.currentPrice = amount;
-     this.props.updatedAt = new Date();
+    this.props.currentPrice = amount;
+    this.props.updatedAt = new Date();
   }
 
   public end(): void {
-    this.props.status = AuctionStatus.ENDED;
-    this.props.updatedAt = new Date();
+    // Sadece ACTIVE durumundan ENDED'e geçilebilir
+    if (this.props.status !== AuctionStatus.ACTIVE) {
+      throw new DomainException('Only active auctions can be ended');
+    }
+    this.transitionTo(AuctionStatus.ENDED);
+  }
+
+  public complete(): void {
+    this.transitionTo(AuctionStatus.COMPLETED);
+  }
+
+  public cancel(): void {
+    // SCHEDULED veya ACTIVE durumlarından iptal edilebilir
+    if (this.props.status === AuctionStatus.COMPLETED || this.props.status === AuctionStatus.ENDED) {
+      throw new DomainException('Ended or completed auctions cannot be cancelled');
+    }
+    this.transitionTo(AuctionStatus.CANCELLED);
   }
 }

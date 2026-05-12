@@ -8,7 +8,7 @@ export const useHomepageSettings = () => {
     loading.value = true
     try {
       const res = await $api<{ success: boolean; data: any }>(
-        '/api/admin/settings/homepage'
+        '/api/v1/admin/settings/homepage'
       )
       settings.value = res.data || {}
     } catch { /* ignore */ } finally {
@@ -19,7 +19,7 @@ export const useHomepageSettings = () => {
   const saveSettings = async (data: any) => {
     const { $toast } = useNuxtApp() as any
     try {
-      await $api('/api/admin/settings/homepage', {
+      await $api('/api/v1/admin/settings/homepage', {
         method: 'PUT',
         body: data
       })

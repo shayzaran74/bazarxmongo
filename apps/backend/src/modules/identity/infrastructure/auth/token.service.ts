@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '@barterborsa/shared-security';
+import { TOKEN_BLACKLIST_TTL_MS } from '@barterborsa/shared-core';
 
 @Injectable()
 export class TokenService {
@@ -83,7 +84,7 @@ export class TokenService {
     try {
       const payload = this.jwtService.decode(token) as any;
       if (payload && payload.jti) {
-        await this.blacklistToken(payload.jti, 7 * 24 * 60 * 60); // 7 days
+        await this.blacklistToken(payload.jti, Math.floor(TOKEN_BLACKLIST_TTL_MS / 1000)); // TOKEN_BLACKLIST_TTL_MS in ms, needs seconds
       }
     } catch (e) {
       // Ignore decode errors

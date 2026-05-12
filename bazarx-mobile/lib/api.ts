@@ -17,12 +17,31 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
-// Response interceptor — 401 → clear token
+// Response interceptor — 401 → try refresh, then clear token
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (err.response?.status === 401) {
-      await SecureStore.deleteItemAsync('access_token')
+      const refreshToken = await SecureStore.getItemAsync('refresh_token')
+      if (refreshToken) {
+        try {
+          const res = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, {
+            refreshToken,
+          })
+          if (res.data.success && res.data.data.accessToken) {
+            const newAccessToken = res.data.data.accessToken
+            await SecureStore.setItemAsync('access_token', newAccessToken)
+            err.config.headers.Authorization = `Bearer ${newAccessToken}`
+            return api(err.config)
+          }
+        } catch {
+          // Refresh başarısız, token'ları sil
+          await SecureStore.deleteItemAsync('access_token')
+          await SecureStore.deleteItemAsync('refresh_token')
+        }
+      } else {
+        await SecureStore.deleteItemAsync('access_token')
+      }
     }
     return Promise.reject(err)
   }

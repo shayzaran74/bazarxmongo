@@ -48,7 +48,8 @@ export default function LoginScreen() {
       
       if (res.data.success && res.data.data.accessToken) {
         const userData = res.data.data.user;
-        await login(res.data.data.accessToken, userData);
+        const refreshToken = res.data.data.refreshToken || null;
+        await login(res.data.data.accessToken, refreshToken, userData);
 
         // Rol bazlı yönlendirme — sadece login anında bir kez
         const role = userData?.role;

@@ -61,7 +61,23 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
         });
       }
 
-      // Muhasebe kaydı (General Ledger)
+      // 4. Hesap hareketi oluştur
+      if (mainAccount) {
+        await tx.accountTransaction.create({
+          data: {
+            accountId: mainAccount.id,
+            type: 'TOPUP',
+            direction: 'CREDIT',
+            amount,
+            status: 'COMPLETED',
+            description: `Cüzdan bakiye yükleme (${currency})`,
+            referenceId,
+            referenceType: 'TOPUP',
+          },
+        });
+      }
+
+      // 5. Muhasebe kaydı (General Ledger)
       await tx.generalLedger.create({
         data: {
           type: 'DEPOSIT',

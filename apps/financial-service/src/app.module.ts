@@ -1,6 +1,5 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DiscoveryModule } from '@nestjs/core';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
 import { LoggerModule, HealthModule } from '@barterborsa/shared-observability';
@@ -13,7 +12,6 @@ import { EscrowModule } from './modules/escrow/escrow.module';
 @Module({
   imports: [
     // Core Infrastructure
-    DiscoveryModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],

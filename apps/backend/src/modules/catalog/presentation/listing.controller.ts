@@ -13,6 +13,7 @@ import { ListCatalogListingsQuery } from '../application/queries/list-catalog-li
 import { GetListingBySlugQuery } from '../application/queries/get-listing-by-slug/get-listing-by-slug.query';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard, Roles, Public } from '@barterborsa/shared-security';
+import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Listings')
 @Controller('listings')
@@ -20,6 +21,7 @@ export class ListingController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Public()
@@ -33,24 +35,29 @@ export class ListingController {
     return { success: true, data };
   }
 
-  @ApiBearerAuth()
+  @Public()
   @ApiOperation({ summary: 'List products/listings' })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'vendorType', required: false, type: String })
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   async list(
     @CurrentUser() user: any,
     @Query('search') search?: string,
     @Query('limit') limit: string = '50',
-    @Query('page') page: string = '1'
+    @Query('page') page: string = '1',
+    @Query('vendorType') vendorType?: string,
+    @Query('scope') scope?: string
   ) {
     const data = await this.queryBus.execute(
-      new ListCatalogListingsQuery(user.id, user.role, {
+      new ListCatalogListingsQuery(user?.id, user?.role, {
         search,
         page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 50
+        limit: parseInt(limit, 10) || 50,
+        vendorType,
+        scope
       })
     );
     return { success: true, data };
@@ -64,8 +71,24 @@ export class ListingController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(@CurrentUser() user: any, @Body() dto: CreateListingDto) {
+    // VENDOR rolündeki kullanıcılar için vendorId'yi bulalım
+    let vendorId = user.id;
+    
+    if (user.role === 'VENDOR') {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { userId: user.id },
+        select: { id: true }
+      });
+      
+      if (!vendor) {
+        throw new Error('Satıcı profili bulunamadı. Lütfen önce satıcı başvurusu yapın.');
+      }
+      
+      vendorId = vendor.id;
+    }
+
     return this.commandBus.execute(
-      new CreateListingCommand(user.vendorId || user.id, dto)
+      new CreateListingCommand(vendorId, dto)
     );
   }
 

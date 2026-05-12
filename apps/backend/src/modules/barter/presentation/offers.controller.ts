@@ -15,6 +15,7 @@ import { AcceptTradeOfferCommand } from '../application/commands/accept-trade-of
 import { Prisma } from '@prisma/client';
 import { TradeOffer } from '../domain/entities/trade-offer.entity';
 import { TradeOfferItem } from '../domain/entities/trade-offer-item.entity';
+import { TRADE_OFFER_DEFAULT_TTL_MS } from '@barterborsa/shared-core';
 
 interface AuthenticatedUser {
   id: string;
@@ -168,7 +169,7 @@ export class OffersController {
         initiatorType: 'VENDOR',
         receiverId:    receiverId,
         receiverType:  'VENDOR',
-        expiresAt:     new Date(Date.now() + (body.expiresInDays ?? 7) * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7)),
       }
     });
 
@@ -234,7 +235,7 @@ export class OffersController {
         initiatorType:  'VENDOR',
         receiverId:     original.fromCompanyId!,
         receiverType:   'VENDOR',
-        expiresAt:      new Date(Date.now() + (body.expiresInDays ?? 7) * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7)),
       },
     });
 

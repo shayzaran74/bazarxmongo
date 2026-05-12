@@ -38,8 +38,8 @@ export const useAdminWallet = () => {
     loading.value = true
     try {
       const endpoint = activeTab.value === 'topup'
-        ? '/api/admin/wallet/requests'
-        : '/api/admin/wallet/withdrawals'
+        ? '/api/v1/admin/wallet/requests'
+        : '/api/v1/admin/wallet/withdrawals'
 
       const res = await $api<any>(endpoint, {
         params: {

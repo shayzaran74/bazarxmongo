@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { useProductForm } from '#imports'
+import { useVendor } from '~/composables/useVendor'
 
 // Props
 const props = defineProps({
   userRole: { type: String, required: true },
   productId: { type: String, default: null },
-  initialData: { type: Object, default: () => ({}) }
+  initialData: { type: Object, default: () => ({}) },
+  vendorTypeOverride: { type: String, default: null }
 })
 
 defineEmits(['save'])
+
+const { vendorType: contextVendorType } = useVendor()
+const vendorType = computed(() => props.vendorTypeOverride || contextVendorType.value || 'COMMERCE')
 
 // ViewModel
 const vm = useProductForm({
@@ -44,6 +49,14 @@ const {
   validateForm
 } = vm
 
+// Vendor-aware sections: inject restaurant section for RESTAURANT vendorType
+const sectionsForVendor = computed(() => {
+  if (vendorType.value === 'RESTAURANT') {
+    return [...sections, { id: 'restaurant-attributes', title: 'Menü Detayları', name: 'Menü Detayları', icon: 'ClipboardDocumentListIcon', required: false }]
+  }
+  return sections
+})
+
 // Exposed Methods
 defineExpose({
   form,
@@ -57,7 +70,7 @@ defineExpose({
   <div class="flex flex-col lg:flex-row gap-6">
     <!-- Left: Navigation (Sticky) -->
     <ProductFormNavigation
-      :sections="sections"
+      :sections="sectionsForVendor"
       :active-section="activeSection"
       :is-section-complete="isSectionComplete"
       @navigate="scrollToSection"
@@ -100,6 +113,14 @@ defineExpose({
         :is-editing="isEditing"
       />
 
+      <!-- 3b. RESTAURANT: Malzemeler, Hazırlama Süresi, Kalori -->
+      <ProductFormAttributesRestaurant
+        v-if="vendorType === 'RESTAURANT'"
+        v-model:ingredients="form.ingredients"
+        v-model:preparation-time="form.preparationTime"
+        v-model:calories="form.calories"
+      />
+
       <!-- 4. Content & Specs -->
       <ProductFormContent
         v-model:description="form.description"
@@ -120,8 +141,9 @@ defineExpose({
         @set-as-main="setAsMain"
       />
 
-      <!-- 6. Listing Details -->
+      <!-- 6. Listeleme ve Envanter Bilgileri (RESTAURANT hariç) -->
       <ProductFormInventory
+        v-if="vendorType !== 'RESTAURANT'"
         v-model:price="form.price"
         v-model:compare-at-price="form.compareAtPrice"
         v-model:cost-per-item="form.costPerItem"
@@ -132,8 +154,19 @@ defineExpose({
         :product-id="productId"
       />
 
-      <!-- 7. Logistics -->
+      <!-- 6b. RESTAURANT: Günlük Limit -->
+      <ProductFormInventoryRestaurant
+        v-if="vendorType === 'RESTAURANT'"
+        v-model:price="form.price"
+        v-model:stock="form.stock"
+        v-model:daily-limit="form.dailyLimit"
+        v-model:sku="form.sku"
+        :product-id="productId"
+      />
+
+      <!-- 7. Logistics (RESTAURANT hariç - restoranlar kuryeye verir) -->
       <ProductFormLogistics
+        v-if="vendorType !== 'RESTAURANT'"
         v-model:requires-shipping="form.requiresShipping"
         v-model:weight="form.weight"
         v-model:volume="form.volume"

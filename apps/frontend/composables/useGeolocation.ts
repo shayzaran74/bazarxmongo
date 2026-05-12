@@ -17,10 +17,12 @@ export const useGeolocation = () => {
 
     /**
      * Tarayıcı üzerinden kullanıcının konumunu al
+     * SSR Safety: navigator sadece client'da erişilebilir
      */
     const getCurrentPosition = (): Promise<GeolocationPosition> => {
         return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
+            // SSR Safety: navigator sadece client'da
+            if (!import.meta.client || !navigator.geolocation) {
                 reject(new Error('Tarayıcınız konum servisini desteklemiyor'))
                 return
             }
@@ -108,15 +110,18 @@ export const useGeolocation = () => {
             location.value = userLocation
 
             // Layout ile uyumlu olsun diye hem user_geolocation hem de detected_location'a kaydetmeyi düşünebiliriz
-            // Ama şimdilik kendi key'inde tutalım. Ancak formatı uyumlu yapalım. 
-            localStorage.setItem('user_geolocation', JSON.stringify(userLocation))
+            // Ama şimdilik kendi key'inde tutalım. Ancak formatı uyumlu yapalım.
+            // SSR Safety: localStorage sadece client'da
+            if (import.meta.client) {
+                localStorage.setItem('user_geolocation', JSON.stringify(userLocation))
 
-            // Layout (default.vue) tarafından kullanılan key
-            localStorage.setItem('detected_location', JSON.stringify({
-                city: city,
-                district: district,
-                timestamp: Date.now()
-            }))
+                // Layout (default.vue) tarafından kullanılan key
+                localStorage.setItem('detected_location', JSON.stringify({
+                    city: city,
+                    district: district,
+                    timestamp: Date.now()
+                }))
+            }
 
             return userLocation
         } catch (err: unknown) {
@@ -131,6 +136,9 @@ export const useGeolocation = () => {
      * Kaydedilmiş konumu yükle
      */
     const loadSavedLocation = (): UserLocation | null => {
+        // SSR Safety: localStorage sadece client'da
+        if (!import.meta.client) return null;
+
         try {
             // Önce kendi key'ine bak
             const saved = localStorage.getItem('user_geolocation')
@@ -168,15 +176,20 @@ export const useGeolocation = () => {
      */
     const clearLocation = () => {
         location.value = null
-        localStorage.removeItem('user_geolocation')
-        localStorage.removeItem('detected_location')
+        // SSR Safety: localStorage sadece client'da
+        if (import.meta.client) {
+            localStorage.removeItem('user_geolocation')
+            localStorage.removeItem('detected_location')
+        }
     }
 
     /**
      * Konum izni durumu
+     * SSR Safety: navigator.permissions sadece client'da
      */
     const checkPermission = async (): Promise<'granted' | 'denied' | 'prompt'> => {
-        if (!navigator.permissions) {
+        // SSR Safety: navigator sadece client'da
+        if (!import.meta.client || !navigator.permissions) {
             return 'prompt'
         }
 

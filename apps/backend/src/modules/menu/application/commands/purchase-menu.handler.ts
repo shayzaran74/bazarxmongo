@@ -1,5 +1,6 @@
 // apps/backend/src/modules/menu/application/commands/purchase-menu.handler.ts
 // Master Plan v4.3 §2.2 — QR satın alım + hizmet bedeli + KDV
+// BazarX Go: Restaurant + BazarXMenu DROP edildi; QR sistemi artık Listing üzerinden çalışır.
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
@@ -8,6 +9,14 @@ import { PurchaseMenuCommand } from './purchase-menu.command';
 import { QrGeneratorService } from '../services/qr-generator.service';
 import { MenuUsageTrackerService } from '../services/menu-usage-tracker.service';
 import { SubscriptionPricingService } from '../../../subscription/application/services/subscription-pricing.service';
+
+// Listing.metadata içinde restoran menü alanları (seed RESTAURANT_ATTRIBUTES ile uyumlu)
+interface RestaurantListingMetadata {
+  dailyLimit?:       number;
+  prepTimeMinutes?:  number;
+  ingredients?:      string;
+  calories?:         number;
+}
 
 @CommandHandler(PurchaseMenuCommand)
 export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand> {
@@ -21,28 +30,46 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
   ) {}
 
   async execute(command: PurchaseMenuCommand) {
-    const { userId, menuId, useMenuCredit } = command;
+    const { userId, listingId, useMenuCredit } = command;
 
-    const menu = await this.prisma.bazarXMenu.findUnique({
-      where:   { id: menuId },
-      include: { restaurant: { select: { id: true, name: true, city: true } } },
+    // Listing'i çek — RESTAURANT vendor'a ait ve aktif olmalı
+    const listing = await this.prisma.listing.findUnique({
+      where:   { id: listingId },
+      include: {
+        vendor: {
+          select: {
+            id:         true,
+            vendorType: true,
+            profile:    { select: { storeName: true, city: true } },
+          },
+        },
+      },
     });
-    if (!menu || !menu.isActive) throw new NotFoundException('Menü bulunamadı veya aktif değil');
+    if (!listing || !listing.isActive || listing.status !== 'ACTIVE') {
+      throw new NotFoundException('Menü bulunamadı veya aktif değil');
+    }
+    if (listing.vendor.vendorType !== 'RESTAURANT') {
+      throw new BadRequestException('Bu işlem yalnızca restoran menüleri için geçerlidir.');
+    }
 
-    // Günlük limit kontrolü
-    if (menu.dailyLimit) {
+    // Listing.metadata içinden günlük limit ve fiyat (metadata seed'le aynı şemada)
+    const metadata = (listing.metadata as RestaurantListingMetadata | null) ?? {};
+    const dailyLimit = metadata.dailyLimit;
+
+    if (dailyLimit && dailyLimit > 0) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayCount = await this.prisma.menuPurchase.count({
-        where: { menuId, createdAt: { gte: today }, status: { not: 'CANCELLED' } },
+        where: { listingId, createdAt: { gte: today }, status: { not: 'CANCELLED' } },
       });
-      if (todayCount >= menu.dailyLimit) {
+      if (todayCount >= dailyLimit) {
         throw new BadRequestException('Bu menü için günlük limit doldu');
       }
     }
 
     // Fiyat hesabı (%8 hizmet + %20 KDV)
-    const breakdown = this.pricing.calculateMenuPrice(Number(menu.originalPrice));
+    const originalPrice = Number(listing.price);
+    const breakdown = this.pricing.calculateMenuPrice(originalPrice);
 
     // Menü kredisi kontrolü (abonelik varsa)
     let subscriptionId: string | undefined;
@@ -63,7 +90,7 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
       const p = await tx.menuPurchase.create({
         data: {
           userId,
-          menuId,
+          listingId,
           subscriptionId: subscriptionId ?? null,
           paidAmount:     breakdown.totalPaid,
           serviceFee:     breakdown.serviceFee,
@@ -72,11 +99,10 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
           qrExpiresAt,
           oneFreeQrCode,
           status:         'ACTIVE',
-          xpEarned:       5, // Master Plan: her QR kullanımında 5 XP
+          xpEarned:       5,
         },
       });
 
-      // Aylık menü kredisini düş
       if (subscriptionId) {
         await this.usageTracker.deductCredit(userId, breakdown.totalPaid);
       }
@@ -88,25 +114,32 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
         create: { userId, currentXp: 5, lifetimeXp: 5, level: 1, isFirstOrder: true },
       });
       await tx.xpTransaction.create({
-        data: { userId, amount: 5, type: 'MENU_QR_USE', description: `Menü QR satın alımı: ${menu.title}`, referenceId: p.id, referenceType: 'MENU_PURCHASE' },
+        data: {
+          userId,
+          amount:        5,
+          type:          'MENU_QR_USE',
+          description:   `Menü QR satın alımı: ${listing.title}`,
+          referenceId:   p.id,
+          referenceType: 'MENU_PURCHASE',
+        },
       });
 
       return p;
     });
 
-    this.logger.log('Menü satın alındı', { userId, menuId, total: breakdown.totalPaid });
+    this.logger.log('Menü satın alındı', { userId, listingId, total: breakdown.totalPaid });
 
     return {
       success: true,
       data: {
-        purchaseId:      purchase.id,
-        restaurant:      menu.restaurant.name,
-        menuTitle:       menu.title,
-        pricing:         breakdown,
-        qrCode:          purchase.qrCode,
-        oneFreeQrCode:   purchase.oneFreeQrCode,
-        qrExpiresAt:     purchase.qrExpiresAt,
-        xpEarned:        5,
+        purchaseId:    purchase.id,
+        restaurant:    listing.vendor.profile?.storeName ?? '',
+        menuTitle:     listing.title,
+        pricing:       breakdown,
+        qrCode:        purchase.qrCode,
+        oneFreeQrCode: purchase.oneFreeQrCode,
+        qrExpiresAt:   purchase.qrExpiresAt,
+        xpEarned:      5,
       },
     };
   }

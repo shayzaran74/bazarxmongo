@@ -5,6 +5,88 @@ import {
   Delete, Param, Post, Body, Put,
   BadRequestException, Logger, NotFoundException,
 } from '@nestjs/common';
+import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsObject, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// Trendyol title'ındaki tekrarlanan model adını temizler; 100 karakter üstünü kırpar
+function cleanTrendyolTitle(raw: string): string {
+  const s = (raw ?? '').trim()
+  if (s.length <= 100) return s
+
+  // Trendyol title'ı genellikle "Brand Model Specs Model Specs" şeklinde tekrarlıdır.
+  // Orta noktaya yakın bir boşlukta ikinci kısım birinci kısımın başını içeriyorsa tekrar var demektir.
+  const mid = Math.floor(s.length / 2)
+  for (let offset = 0; offset <= 30; offset++) {
+    for (const pos of [mid + offset, mid - offset]) {
+      if (pos <= 0 || pos >= s.length) continue
+      if (s[pos] !== ' ') continue
+      const first = s.slice(0, pos).trim()
+      const second = s.slice(pos).trim()
+      const probe = second.slice(0, Math.min(20, second.length)).toLowerCase()
+      if (probe.length > 5 && first.toLowerCase().includes(probe)) {
+        // İkinci kısım birincide var → birinci kısmı döndür
+        return first
+      }
+      const probe2 = first.slice(0, Math.min(20, first.length)).toLowerCase()
+      if (probe2.length > 5 && second.toLowerCase().includes(probe2)) {
+        return first
+      }
+    }
+    if (offset === 0) continue
+  }
+  // Tekrar yoksa 100 karakterde kelime sınırında kes
+  const cut = s.slice(0, 100)
+  const lastSpace = cut.lastIndexOf(' ')
+  return lastSpace > 50 ? cut.slice(0, lastSpace) : cut
+}
+
+// Trendyol ham açıklamasını temizler; boilerplate satırları platform bilgisi olarak ayırır
+function parseTrendyolDescription(raw: string): { cleanDescription: string; platformInfo: string; stock: number } {
+  if (!raw?.trim()) return { cleanDescription: '', platformInfo: '', stock: 1 };
+
+  // Stok miktarını metinden çıkar
+  let stock = 1;
+  const moreMatch = raw.match(/(\d+)\s*adetten fazla stok/i);
+  if (moreMatch) stock = Math.max(parseInt(moreMatch[1], 10), 1);
+  const lessMatch = raw.match(/(\d+)\s*adetten az stok/i);
+  if (lessMatch && !moreMatch) stock = Math.max(parseInt(lessMatch[1], 10), 1);
+
+  // "Ürün Özellikleri:" bölümü attributes'da zaten var — öncesini al
+  const specsIdx = raw.indexOf('Ürün Özellikleri:');
+  const relevantPart = specsIdx >= 0 ? raw.slice(0, specsIdx) : raw;
+
+  const BOILERPLATE = [
+    /^Bu ürün\b/i,
+    /tarafından gönderilecektir/i,
+    /^Kampanya fiyatından/i,
+    /^Ürüne ait garanti belgesi/i,
+    /^Ürün teslimi sonrası/i,
+    /^Bir ürün, birden fazla satıcı/i,
+    /^Bu üründen en fazla/i,
+    /^Belirlenen bu limit/i,
+    /adetten fazla stok/i,
+    /adetten az stok/i,
+    /link ve karekod/i,
+    /sıralanmaktadır\.?\s*$/i,
+  ];
+
+  const platformLines: string[] = [];
+  const cleanLines: string[] = [];
+
+  for (const line of relevantPart.split(/\n/).map(l => l.trim()).filter(Boolean)) {
+    if (BOILERPLATE.some(p => p.test(line))) {
+      platformLines.push(line);
+    } else {
+      cleanLines.push(line);
+    }
+  }
+
+  return {
+    cleanDescription: cleanLines.join('\n').trim(),
+    platformInfo: platformLines.join('\n').trim(),
+    stock,
+  };
+}
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
@@ -24,6 +106,50 @@ import { QueueImportProductsCommand } from '../application/commands/queue-import
 interface AuthenticatedUser {
   id: string;
   role: string;
+}
+
+// Trendyol JSON çıktısının tek ürün şeması
+class TrendyolProductDto {
+  @IsString()
+  external_id!: string;
+
+  @IsString()
+  title!: string;
+
+  @IsNumber()
+  price!: number;
+
+  @IsString()
+  @IsOptional()
+  image_url?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @IsObject()
+  @IsOptional()
+  attributes?: Record<string, string>;
+}
+
+class ImportTrendyolDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TrendyolProductDto)
+  products!: TrendyolProductDto[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  defaultStock?: number;
+
+  @IsString()
+  @IsOptional()
+  vendorType?: string; // 'COMMERCE' | 'RESTAURANT'
 }
 
 @ApiTags('Product Admin')
@@ -89,12 +215,16 @@ export class ProductAdminController {
     },
   })
   @Post('bulk-import')
-  async bulkImport(@Body('rows') rows: unknown[], @CurrentUser() user: AuthenticatedUser) {
+  async bulkImport(
+    @Body('rows') rows: unknown[],
+    @Query('vendorType') vendorType: string = 'COMMERCE',
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     if (!Array.isArray(rows)) {
       throw new BadRequestException('rows alanı bir dizi olmalıdır');
     }
-    this.logger.log(`Bulk import isteği: ${rows.length} satır — admin: ${user.id}`);
-    return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id));
+    this.logger.log(`Bulk import isteği: ${rows.length} satır — type: ${vendorType} — admin: ${user.id}`);
+    return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id, vendorType));
   }
 
   // ─── Import Job Durumu (Polling endpoint) ───────────────────────────────────
@@ -133,6 +263,53 @@ export class ProductAdminController {
       data: result.items,
       pagination: { total: result.total, page: result.page, limit: result.limit },
     };
+  }
+
+  // ─── Trendyol JSON İçe Aktarım ─────────────────────────────────────────────
+
+  @ApiOperation({
+    summary: 'Trendyol JSON formatından toplu ürün içe aktarımı',
+    description: 'Trendyol scraper çıktısı olan JSON dizisini mevcut bulk-import kuyruğuna dönüştürür.',
+  })
+  @ApiBody({ type: ImportTrendyolDto })
+  @Post('import-trendyol')
+  async importFromTrendyol(
+    @Body() dto: ImportTrendyolDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!Array.isArray(dto.products) || dto.products.length === 0) {
+      throw new BadRequestException('products dizisi boş olamaz');
+    }
+
+    // Trendyol şemasını mevcut bulk-import satır formatına dönüştür
+    const rows = dto.products.map((p) => {
+      const cleanTitle = cleanTrendyolTitle(p.title);
+      const { cleanDescription, platformInfo, stock: parsedStock } = parseTrendyolDescription(p.description ?? '');
+      const finalStock = parsedStock > 1 ? parsedStock : (dto.defaultStock ?? 1);
+      // Temiz açıklama yoksa temizlenmiş ürün adını kullan; platform bilgisini specs'e göm
+      const description = cleanDescription || cleanTitle;
+      const specs: Record<string, unknown> = { ...(p.attributes ?? {}) };
+      if (platformInfo) specs['_platformInfo'] = platformInfo;
+      // Marka: subcategory daha temiz (ör: "Apple"), p.brand genellikle tam title tekrarı
+      const trendyolSub = (p as unknown as { subcategory?: string }).subcategory ?? ''
+      const brandName = trendyolSub || p.brand || '';
+      // categoryId geçilmez → worker kendi varsayılanını kullanır (subcategory kategori olarak yazılmaz)
+
+      return {
+        name: cleanTitle,
+        description,
+        price: p.price,
+        stock: finalStock,
+        sku: `TY-${p.external_id}`,
+        brandName,
+        status: 'ACTIVE',
+        productImages: p.image_url ? [p.image_url] : [],
+        specs,
+      };
+    });
+
+    this.logger.log(`Trendyol import: ${rows.length} ürün — type: ${dto.vendorType || 'COMMERCE'} — admin: ${user.id}`);
+    return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id, dto.vendorType || 'COMMERCE'));
   }
 
   // ─── CRUD endpointleri ──────────────────────────────────────────────────────

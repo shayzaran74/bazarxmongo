@@ -43,7 +43,11 @@ export class AdminUserController {
         limit: parseInt(limit, 10) || 10,
       }),
     );
-    return { success: true, ...result };
+    return { 
+      success: true, 
+      data: result.items,
+      pagination: result.pagination
+    };
   }
 
   @ApiOperation({ summary: 'Update user status' })

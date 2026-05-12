@@ -56,6 +56,11 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     variants: initialData?.variants || [],
     inventory: initialData?.inventory || [],
     shipping: initialData?.shipping || [],
+    // RESTAURANT specific fields
+    ingredients: initialData?.ingredients || [],
+    preparationTime: initialData?.preparationTime || 0,
+    calories: initialData?.calories || 0,
+    dailyLimit: initialData?.dailyLimit || 0,
   })
 
   const sections = [

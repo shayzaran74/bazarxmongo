@@ -1,6 +1,7 @@
 import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { Response } from 'express';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -45,17 +46,37 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Geçersiz veri veya e-posta zaten kullanımda.' })
   @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('register')
-  async register(@Body() dto: RegisterUserDto) {
+  async register(@Body() dto: RegisterUserDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.commandBus.execute(new RegisterUserCommand(dto));
-    
+
     if (!result.success) {
       throw new HttpException(result.error.message, HttpStatus.BAD_REQUEST);
     }
 
+    const user = result.data;
+
+    // httpOnly cookie'ye token'ları set et
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    res.cookie('access_token', user.accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', user.refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return {
       success: true,
       message: 'Kullanıcı başarıyla oluşturuldu.',
-      data: result.data,
+      data: { user: user.user },
     };
   }
 
@@ -75,37 +96,75 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Hatalı e-posta veya şifre.' })
   @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  async login(@Body() input: any, @Req() req: any) {
+  async login(@Body() input: any, @Req() req: any, @Res({ passthrough: true }) res: Response) {
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.connection.remoteAddress;
     const authData = await this.authService.login(input, userAgent, ipAddress);
 
+    // httpOnly cookie'ye token'ları set et
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    res.cookie('access_token', authData.accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 dakika
+    });
+
+    res.cookie('refresh_token', authData.refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 gün
+    });
+
     return {
       success: true,
       message: 'Giriş başarılı.',
-      data: authData,
+      data: { user: authData.user },
     };
   }
 
   @Public()
   @ApiOperation({ summary: 'Refresh access token', description: 'Refresh token kullanarak yeni bir access token alır.' })
-  @ApiBody({ 
-    schema: {
-      type: 'object',
-      properties: {
-        refreshToken: { type: 'string' }
-      },
-      required: ['refreshToken']
-    }
-  })
   @ApiResponse({ status: 200, description: 'Token yenileme başarılı.' })
   @ApiResponse({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' })
   @Post('refresh')
-  async refresh(@Body('refreshToken') refreshToken: string) {
+  async refresh(
+    @Req() req: any,
+    @Body('refreshToken') bodyRefreshToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Önce cookie'den oku (httpOnly), yoksa body'den fallback (mobile / API client'lar için)
+    const refreshToken = req.cookies?.refresh_token || bodyRefreshToken;
+    if (!refreshToken) {
+      throw new HttpException('Refresh token bulunamadı.', HttpStatus.UNAUTHORIZED);
+    }
+
     const tokens = await this.authService.refresh(refreshToken);
+
+    // Yeni token'ları httpOnly cookie'ye set et
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    res.cookie('access_token', tokens.accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', tokens.refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return {
       success: true,
-      data: tokens
+      data: tokens,
     };
   }
 
@@ -113,8 +172,24 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user', description: 'Kullanıcı oturumunu sonlandırır ve refresh token\'ı geçersiz kılar.' })
   @ApiResponse({ status: 200, description: 'Çıkış yapıldı.' })
   @Post('logout')
-  async logout(@Req() req: any, @Body('refreshToken') refreshToken?: string) {
+  async logout(
+    @Req() req: any,
+    @Body('refreshToken') bodyRefreshToken: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token || bodyRefreshToken;
     await this.authService.logout(req.user.id, refreshToken);
+
+    // httpOnly cookie'leri temizle
+    const clearOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+    res.clearCookie('access_token', clearOptions);
+    res.clearCookie('refresh_token', clearOptions);
+
     return {
       success: true,
       message: 'Çıkış yapıldı.',

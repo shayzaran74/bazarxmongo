@@ -118,8 +118,8 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
       offer.getProps().fromCompanyId,
     );
 
-    // ─── Atomik DB yazımı ─────────────────────────────────────────────────────
-    await this.prisma.$transaction(async (tx) => {
+    // ─── Atomik DB yazımı — Outbox ile event'lertransaction içinde yazılır ───
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await this.offerRepository.save(offer);
 
       await tx.swapSession.create({
@@ -160,21 +160,29 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
           },
         ],
       });
-    });
 
-    // ─── RabbitMQ downstream bildirimi ─────────────────────────────────────────
-    await this.rabbitMQ.publish('barter.events', 'offer.accepted', {
-      offerId: offer.id,
-      sessionId: session.id,
-      fromCompanyId: offer.getProps().fromCompanyId,
-      toCompanyId: offer.getProps().toCompanyId,
-      initiatorId: offer.getProps().initiatorId,
-      receiverId: offer.getProps().receiverId,
-      fromAddress: {},
-      toAddress: {},
-      collateralAmount: session.getProps().collateralAmount,
-      fromCollateralHoldId: fromHoldId,
-      toCollateralHoldId: toHoldId,
+      // Transactional outbox — event'i transaction içinde kaydet
+      await this.rabbitMQ.publishTransactional(
+        tx,
+        offer.id,
+        'TradeOffer',
+        'offer.accepted',
+        'barter.events',
+        'offer.accepted',
+        {
+          offerId: offer.id,
+          sessionId: session.id,
+          fromCompanyId: offer.getProps().fromCompanyId,
+          toCompanyId: offer.getProps().toCompanyId,
+          initiatorId: offer.getProps().initiatorId,
+          receiverId: offer.getProps().receiverId,
+          fromAddress: {},
+          toAddress: {},
+          collateralAmount: session.getProps().collateralAmount,
+          fromCollateralHoldId: fromHoldId,
+          toCollateralHoldId: toHoldId,
+        },
+      );
     });
 
     await this.auditLog.log({

@@ -174,6 +174,8 @@
 <script setup lang="ts">
 import * as HeroIcons from '@heroicons/vue/24/outline'
 import { useVendorOrders } from '~/composables/useVendorOrders'
+import { useVendor } from '~/composables/useVendor'
+import { useOrderStatusLabel } from '~/composables/useOrderStatusLabel'
 
 definePageMeta({
   layout: 'vendor',

@@ -1,5 +1,6 @@
 // apps/backend/src/modules/menu/application/commands/distribute-free-menu.handler.ts
 // Master Plan v4.3 §2.8 — 60 menü taahhüdü: bedava dağıtım
+// BazarX Go: LaunchPartner.vendorId + MenuPurchase.listingId üzerinden çalışır
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
@@ -17,12 +18,12 @@ export class DistributeFreeMenuHandler implements ICommandHandler<DistributeFree
   ) {}
 
   async execute(command: DistributeFreeMenuCommand) {
-    const { restaurantId, menuId, userIds, adminId } = command;
+    const { vendorId, listingId, userIds, adminId } = command;
 
     if (!userIds.length) throw new BadRequestException('En az bir kullanıcı belirtilmeli');
 
     const partner = await this.prisma.launchPartner.findUnique({
-      where: { restaurantId },
+      where: { vendorId },
     });
     if (!partner) throw new NotFoundException('Lansman ortağı bulunamadı');
 
@@ -33,11 +34,11 @@ export class DistributeFreeMenuHandler implements ICommandHandler<DistributeFree
       );
     }
 
-    const menu = await this.prisma.bazarXMenu.findUnique({
-      where: { id: menuId },
-      select: { id: true, title: true, originalPrice: true, discountedPrice: true },
+    const listing = await this.prisma.listing.findFirst({
+      where:  { id: listingId, vendorId },
+      select: { id: true, title: true, price: true },
     });
-    if (!menu) throw new NotFoundException('Menü bulunamadı');
+    if (!listing) throw new NotFoundException('Menü (listing) bulunamadı');
 
     let distributed = 0;
 
@@ -49,27 +50,26 @@ export class DistributeFreeMenuHandler implements ICommandHandler<DistributeFree
         await tx.menuPurchase.create({
           data: {
             userId,
-            menuId,
-            paidAmount:  0,   // bedava
+            listingId,
+            paidAmount:  0,
             serviceFee:  0,
             vatAmount:   0,
             qrCode,
             qrExpiresAt,
             status:      'ACTIVE',
-            xpEarned:    0,   // bedava menülerde XP verilmez
+            xpEarned:    0,
           },
         });
         distributed++;
       }
 
-      // Dağıtım sayısını güncelle
       await tx.launchPartner.update({
-        where: { restaurantId },
+        where: { vendorId },
         data:  { distributedCount: { increment: distributed } },
       });
     });
 
-    this.logger.log('Ücretsiz menü dağıtıldı', { restaurantId, menuId, count: distributed, adminId });
+    this.logger.log('Ücretsiz menü dağıtıldı', { vendorId, listingId, count: distributed, adminId });
 
     return {
       success: true,
@@ -77,7 +77,7 @@ export class DistributeFreeMenuHandler implements ICommandHandler<DistributeFree
       data: {
         distributed,
         remaining: remaining - distributed,
-        menuTitle: menu.title,
+        menuTitle: listing.title,
       },
     };
   }

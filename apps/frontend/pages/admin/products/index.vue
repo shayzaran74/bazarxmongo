@@ -19,9 +19,17 @@
             <ClockIcon class="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
             ONAY BEKLEYENLER
           </NuxtLink>
-          <button 
+          <button
             v-if="!showForm"
-            class="bg-primary-600 text-white px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary-500/30 flex items-center group" 
+            class="bg-orange-500 text-white px-5 py-2.5 rounded-xl hover:bg-orange-600 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-orange-500/20 flex items-center group"
+            @click="showTrendyolModal = true"
+          >
+            <CloudArrowUpIcon class="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            TRENDYOLʼDAN AKTAR
+          </button>
+          <button
+            v-if="!showForm"
+            class="bg-primary-600 text-white px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary-500/30 flex items-center group"
             @click="showForm = true; resetForm()"
           >
             <PlusIcon class="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
@@ -324,11 +332,18 @@
     </div>
 
     <!-- Bulk Edit Modal -->
-    <AdminBulkUpdateModal 
+    <AdminBulkUpdateModal
       v-model="showBulkEditModal"
       :selected-count="selectedProductIds.length"
       :loading="bulkProcessing"
       @save="executeBulkUpdate"
+    />
+
+    <!-- Trendyol İçe Aktarım Modalı -->
+    <TrendyolImportModal
+      v-model="showTrendyolModal"
+      mode="admin"
+      @imported="fetchProducts(1)"
     />
   </div>
 </template>
@@ -371,6 +386,7 @@ const {
 } = useAdminProducts()
 
 const newImageUrl = ref('')
+const showTrendyolModal = ref(false)
 
 
 

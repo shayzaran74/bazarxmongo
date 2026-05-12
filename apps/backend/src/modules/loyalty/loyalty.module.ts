@@ -45,10 +45,18 @@ const Repositories = [
 
 import { BadgeAdminController } from './presentation/badge-admin.controller';
 import { TierController } from './presentation/tier.controller';
+import { AdminTierController } from './presentation/admin-tier.controller';
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [XpController, MissionController, LoyaltyAdminController, BadgeAdminController, TierController],
+  controllers: [
+    XpController, 
+    MissionController, 
+    LoyaltyAdminController, 
+    BadgeAdminController, 
+    TierController,
+    AdminTierController
+  ],
   providers: [
     ...Handlers,
     ...Repositories,

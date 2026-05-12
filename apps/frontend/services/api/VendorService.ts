@@ -49,7 +49,7 @@ export const useVendorService = () => {
         },
 
         async getAnalytics(): Promise<ApiResponse<VendorAnalytics>> {
-            return await $api<VendorAnalytics>('/api/vendor/analytics/dashboard')
+            return await $api<VendorAnalytics>('/api/vendors/analytics/dashboard')
         },
 
         async apply(data: any): Promise<ApiResponse<Vendor>> {
@@ -60,7 +60,7 @@ export const useVendorService = () => {
         },
 
         async getMyListings(params: any = {}): Promise<ApiResponse<PaginatedResponse<any>>> {
-            return await $api<PaginatedResponse<any>>('/api/listings', { query: params })
+            return await $api<PaginatedResponse<any>>('/api/listings', { query: { ...params, scope: 'vendor' } })
         },
 
         async createListing(data: any): Promise<ApiResponse<any>> {
@@ -97,6 +97,13 @@ export const useVendorService = () => {
             return await $api<any>('/api/vendors/inventory/import-excel', {
                 method: 'POST',
                 body: formData
+            })
+        },
+
+        async importTrendyol(products: Record<string, unknown>[], defaultStock = 1): Promise<ApiResponse<{ results: { success: number; failed: number; errors: string[] } }>> {
+            return await $api('/api/vendors/inventory/import-trendyol', {
+                method: 'POST',
+                body: { products, defaultStock }
             })
         },
 

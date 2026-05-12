@@ -1,3 +1,4 @@
+import { ref, reactive, computed } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 
 export const useAdminUsers = () => {
@@ -37,7 +38,7 @@ export const useAdminUsers = () => {
   const fetchUsers = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/users', {
+      const res = await $api<any[]>('/api/v1/admin/users', {
         query: {
           page: filters.page,
           limit: filters.limit,
@@ -46,8 +47,17 @@ export const useAdminUsers = () => {
           role: filters.role || undefined,
         }
       })
-      users.value = res.data || []
-      const p = res.pagination as any || {}
+      
+      const items = res.data || []
+      const p = (res.pagination as any) || {}
+      
+      users.value = items.map((u: any) => ({
+        ...u,
+        computedRole: u.role === 'SUPER_ADMIN' ? 'SÜPER ADMİN' : 
+                      u.role === 'ADMIN' ? 'ADMİN' : 
+                      u.role === 'VENDOR' ? 'SATICİ' : 'MÜŞTERİ'
+      }))
+      
       pagination.value = {
         page: p.page || filters.page,
         pages: p.totalPages || 1,
@@ -81,7 +91,7 @@ export const useAdminUsers = () => {
   const deleteUser = async (userId: string) => {
     if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return
     try {
-      await $api(`/api/admin/users/${userId}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/users/${userId}`, { method: 'DELETE' })
       $toast.success('Kullanıcı silindi')
       fetchUsers()
     } catch {
@@ -93,7 +103,7 @@ export const useAdminUsers = () => {
     if (!selectedUser.value) return
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${selectedUser.value.vendor?.id}/approve`, {
+      await $api(`/api/v1/admin/vendors/${selectedUser.value.vendor?.id}/approve`, {
         method: 'PUT'
       })
       $toast.success('Satıcı onaylandı')
@@ -110,7 +120,7 @@ export const useAdminUsers = () => {
     if (!selectedUser.value) return
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${selectedUser.value.vendor?.id}/reject`, {
+      await $api(`/api/v1/admin/vendors/${selectedUser.value.vendor?.id}/reject`, {
         method: 'PUT',
         body: { rejectionReason: vendorApprovalReason.value }
       })

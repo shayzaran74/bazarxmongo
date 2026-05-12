@@ -23,7 +23,7 @@
           <span v-else class="text-xs font-black">{{ step }}</span>
         </div>
         <span class="absolute top-12 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">
-          {{ stepNames[step - 1] }}
+          {{ totalSteps === 4 ? stepNames[step - 1] : stepNames[step - 2] }}
         </span>
       </div>
     </div>
@@ -36,5 +36,5 @@ defineProps<{
   totalSteps: number
 }>()
 
-const stepNames = ['İşletme Profili', 'İletişim & Adres', 'Banka & Sektör']
+const stepNames = ['Mağaza Tipi', 'İşletme Profili', 'İletişim & Adres', 'Banka & Sektör']
 </script>

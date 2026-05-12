@@ -67,7 +67,23 @@ export class ApproveTopUpHandler implements ICommandHandler<ApproveTopUpCommand>
         });
       }
 
-      // 4. Muhasebe kaydı (General Ledger)
+      // 4. Hesap hareketi oluştur (Kullanıcının 'Hareketlerim' listesinde görmesi için)
+      if (mainAccount) {
+        await tx.accountTransaction.create({
+          data: {
+            accountId: mainAccount.id,
+            type: 'TOPUP',
+            direction: 'CREDIT',
+            amount: request.amount,
+            status: 'COMPLETED',
+            description: `Banka transferi ile bakiye yükleme (Onaylandı)`,
+            referenceId: requestId,
+            referenceType: 'TOPUP_REQUEST',
+          },
+        });
+      }
+
+      // 5. Muhasebe kaydı (General Ledger)
       await tx.generalLedger.create({
         data: {
           type: 'DEPOSIT',

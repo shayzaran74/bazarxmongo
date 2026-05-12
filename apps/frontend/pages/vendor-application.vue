@@ -27,7 +27,10 @@
       <!-- Form Container -->
       <div class="bg-white rounded-[3rem] shadow-2xl shadow-gray-200 border border-white p-10 lg:p-14">
         <form @submit.prevent="currentStep === totalSteps ? submitApplication() : nextStep()">
-          
+
+          <!-- Step 0: Vendor Type -->
+          <StepVendorType v-if="currentStep === 0" v-model="formData" />
+
           <!-- Step 1: Business Info -->
           <StepBusinessInfo v-if="currentStep === 1" v-model="formData" />
 
@@ -86,6 +89,7 @@ import { useVendorApplication } from '~/composables/useVendorApplication'
 
 // Components
 import ApplicationStepper from '~/components/vendor/application/ApplicationStepper.vue'
+import StepVendorType from '~/components/vendor/application/StepVendorType.vue'
 import StepBusinessInfo from '~/components/vendor/application/StepBusinessInfo.vue'
 import StepContactAddress from '~/components/vendor/application/StepContactAddress.vue'
 import StepBankCategories from '~/components/vendor/application/StepBankCategories.vue'

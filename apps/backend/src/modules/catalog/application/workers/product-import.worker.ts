@@ -12,9 +12,10 @@ import { SystemVendorService } from '../../infrastructure/services/system-vendor
 // ─── Job veri tipi ────────────────────────────────────────────────────────────
 
 export interface ProductImportJobData {
-  jobId: string;       // ImportJob.id — ilerleme buraya yazılır
+  jobId: string;
   adminId: string;
   rows: any[];
+  vendorType?: string;
 }
 
 // ─── Sabitler ─────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ function parseStock(val: any): number {
 
 // ─── Worker ───────────────────────────────────────────────────────────────────
 
-@Processor(PRODUCT_IMPORT_QUEUE, {
+@Processor('product-import', {
   concurrency: 2, // aynı anda maksimum 2 import job çalışır
 })
 export class ProductImportWorker extends WorkerHost {
@@ -77,12 +78,28 @@ export class ProductImportWorker extends WorkerHost {
     });
 
     // ── 2. Vendor ID'yi bir kez al ────────────────────────────────────────────
+    const vendorType = job.data.vendorType || 'COMMERCE';
+    
+    // Admin vendor'ını bul veya oluştur (vendorType'a göre)
     const adminVendor = await this.prisma.vendor.findUnique({
       where: { userId: adminId },
-      select: { id: true },
+      select: { id: true, vendorType: true },
     });
-    const vendorId =
-      adminVendor?.id ?? this.systemVendorService.getSystemVendorId();
+
+    let vendorId: string;
+    
+    if (adminVendor) {
+      vendorId = adminVendor.id;
+      // Eğer vendor tipi farklıysa güncelle (Örn: Eskiden COMMERCE idi, şimdi RESTAURANT yüklüyor)
+      if (adminVendor.vendorType !== vendorType) {
+        await this.prisma.vendor.update({
+          where: { id: vendorId },
+          data: { vendorType: vendorType as any },
+        });
+      }
+    } else {
+      vendorId = this.systemVendorService.getSystemVendorId();
+    }
 
     // ── 3. Batch'ler halinde işle ─────────────────────────────────────────────
     let processedRows = 0;
@@ -96,7 +113,7 @@ export class ProductImportWorker extends WorkerHost {
       const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
       const batch = rows.slice(i, i + BATCH_SIZE);
 
-      const result = await this.processBatch(batch, vendorId, i);
+      const result = await this.processBatch(batch, vendorId, i, vendorType);
       createdRows += result.created;
       failedRows += result.failed;
       errors.push(...result.errors);
@@ -144,6 +161,7 @@ export class ProductImportWorker extends WorkerHost {
     batch: any[],
     vendorId: string,
     offset: number,
+    vendorType: string,
   ): Promise<{ created: number; failed: number; errors: string[] }> {
     const prepared = batch.map((row, idx) => ({
       row,
@@ -193,7 +211,7 @@ export class ProductImportWorker extends WorkerHost {
           let images: string[] = [];
           
           // 1. Öncelikli kolonları kontrol et
-          const primaryImageCols = ['productImages', 'Ana Resim', 'Resim', 'Görsel', 'Medya', 'Image', 'Product Image', 'Medya (3-5 Görsel, virgüle ayırın)'];
+          const primaryImageCols = ['image_urls', 'productImages', 'Ana Resim', 'Resim', 'Görsel', 'Medya', 'Image', 'Product Image', 'Medya (3-5 Görsel, virgüle ayırın)'];
           for (const col of primaryImageCols) {
             if (row[col]) {
               const val = String(row[col]);
@@ -254,6 +272,7 @@ export class ProductImportWorker extends WorkerHost {
             stock: parseStock(row.stock),
             status: ListingStatus.ACTIVE,
             sku: row.sku,
+            listingType: vendorType === 'RESTAURANT' ? 'GO_FOOD' : 'SELL',
           });
         }
         if (listingData.length > 0) {

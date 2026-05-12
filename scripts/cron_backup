@@ -1,0 +1,9 @@
+# scripts/cron_backup
+# Cron job for PostgreSQL backup
+# Add to crontab: crontab -e
+#
+# Daily backup at 2 AM
+# 0 2 * * * /bin/bash /path/to/scripts/backup.sh >> /var/log/backup.log 2>&1
+#
+# Weekly backup rotation (keep 30 days)
+# 0 2 * * 0 /bin/bash /path/to/scripts/backup.sh 30 >> /var/log/backup.log 2>&1

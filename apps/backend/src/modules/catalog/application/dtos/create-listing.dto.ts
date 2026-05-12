@@ -6,8 +6,8 @@ import { ProductCondition } from '../../domain/enums/product-condition.enum';
 
 export class CreateListingDto {
   @IsString()
-  @IsNotEmpty()
-  catalogProductId!: string;
+  @IsOptional()
+  catalogProductId?: string;
 
   @IsString()
   @IsNotEmpty()

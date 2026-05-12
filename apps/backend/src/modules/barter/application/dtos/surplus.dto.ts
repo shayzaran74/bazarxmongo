@@ -10,7 +10,7 @@ import { SurplusStatus } from '../../domain/enums/surplus-status.enum';
 
 export class SurplusCreateDto {
   @IsString() @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsOptional() @IsString()
   category?: string;
@@ -19,10 +19,10 @@ export class SurplusCreateDto {
   categoryId?: string;
 
   @IsNumber() @Min(0) @Type(() => Number)
-  quantity: number;
+  quantity!: number;
 
   @IsString() @IsNotEmpty()
-  unit: string;
+  unit!: string;
 
   @IsOptional() @IsEnum(PilotCity)
   city?: PilotCity;
@@ -99,15 +99,15 @@ export class SurplusUpdateDto {
 // Sadece admin statü güncellemesi için
 export class SurplusAdminStatusDto {
   @IsEnum(SurplusStatus)
-  status: SurplusStatus;
+  status!: SurplusStatus;
 }
 
 export class SurplusRejectDto {
   @IsString() @IsNotEmpty()
-  reason: string;
+  reason!: string;
 }
 
 export class SurplusReactivateDto {
   @IsNumber() @Min(0.01) @Type(() => Number)
-  quantity: number;
+  quantity!: number;
 }

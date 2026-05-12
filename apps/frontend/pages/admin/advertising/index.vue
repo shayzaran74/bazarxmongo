@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { CurrencyDollarIcon } from '@heroicons/vue/24/outline'
 
 // Modüler Bileşenler

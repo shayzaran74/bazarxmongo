@@ -6,6 +6,8 @@ export class ListCatalogListingsQuery {
       search?: string;
       page?: number;
       limit?: number;
+      vendorType?: string;
+      scope?: string;
     }
   ) {}
 }

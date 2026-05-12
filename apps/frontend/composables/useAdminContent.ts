@@ -9,14 +9,14 @@ export const useAdminContent = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const res = await $api<any>('/api/admin/announcements')
+      const res = await $api<any>('/api/v1/admin/announcements')
       announcements.value = res.data || []
     } catch { /* ignore */ }
   }
 
   const fetchPolicies = async () => {
     try {
-      const res = await $api<any>('/api/admin/policies')
+      const res = await $api<any>('/api/v1/admin/policies')
       policies.value = res.data || []
     } catch { /* ignore */ }
   }
@@ -28,7 +28,7 @@ export const useAdminContent = () => {
           method: 'PUT', body: data
         })
       } else {
-        await $api('/api/admin/announcements', {
+        await $api('/api/v1/admin/announcements', {
           method: 'POST', body: data
         })
       }
@@ -46,7 +46,7 @@ export const useAdminContent = () => {
           method: 'PUT', body: data
         })
       } else {
-        await $api('/api/admin/policies', {
+        await $api('/api/v1/admin/policies', {
           method: 'POST', body: data
         })
       }

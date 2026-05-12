@@ -16,13 +16,29 @@ export const useVendorSettings = () => {
     address: '', city: '', country: 'Türkiye', zipCode: '',
     bankName: '', bankAccountName: '', bankIban: '',
     adProductIdLeft: '', adProductIdRight: '',
-    showAd: false, showFlashSales: false, flashProductIds: [] as string[]
+    showAd: false, showFlashSales: false, flashProductIds: [] as string[],
+    // RESTAURANT specific
+    openingHours: {
+      Pazartesi: { open: '09:00', close: '22:00' },
+      Salı: { open: '09:00', close: '22:00' },
+      Çarşamba: { open: '09:00', close: '22:00' },
+      Perşembe: { open: '09:00', close: '22:00' },
+      Cuma: { open: '09:00', close: '22:00' },
+      Cumartesi: { open: '09:00', close: '22:00' },
+      Pazar: { open: '09:00', close: '22:00' },
+    },
+    deliveryRadius: 5,
+    minOrderAmount: 0,
+    avgDeliveryTime: 30,
+    acceptingOrders: true,
+    holidayMode: false,
+    holidayMessage: '',
   })
 
   const fetchProfile = async () => {
     loading.value = true
     try {
-      const res: any = await $api(`/api/vendors/profile/${authStore.user?.id}`)
+      const res: any = await $api('/api/vendors/profile/me')
       if (res.success && res.data) {
         vendor.value = res.data
         Object.keys(form.value).forEach(key => {

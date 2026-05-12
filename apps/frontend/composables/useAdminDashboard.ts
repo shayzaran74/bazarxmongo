@@ -30,11 +30,11 @@ export const useAdminDashboard = () => {
     loading.value = true
     try {
       const [products, users, orders, auctions, lotteries] = await Promise.allSettled([
-        $api<any>('/api/admin/products', { query: { limit: 1 } }),
-        $api<any>('/api/admin/users', { query: { limit: 1 } }),
-        $api<any>('/api/admin/orders', { query: { limit: 1 } }),
-        $api<any>('/api/admin/auctions', { query: { limit: 1 } }),
-        $api<any>('/api/admin/lotteries', { query: { limit: 1 } }),
+        $api<any>('/api/v1/admin/products', { query: { limit: 1 } }),
+        $api<any>('/api/v1/admin/users', { query: { limit: 1 } }),
+        $api<any>('/api/v1/admin/orders', { query: { limit: 1 } }),
+        $api<any>('/api/v1/admin/auctions', { query: { limit: 1 } }),
+        $api<any>('/api/v1/admin/lotteries', { query: { limit: 1 } }),
       ])
 
       if (products.status === 'fulfilled')
@@ -57,7 +57,7 @@ export const useAdminDashboard = () => {
     // Şimdilik sıfır dönüyor, gerçek entegrasyon Faz 6'da yapıldı
     // Bu composable gelecekte financial gateway'e bağlanacak
     try {
-      const res = await $api<any>('/api/admin/wallet/transactions', {
+      const res = await $api<any>('/api/v1/admin/wallet/transactions', {
         query: { limit: 5 }
       })
       recentActivities.value = res?.data?.items || []

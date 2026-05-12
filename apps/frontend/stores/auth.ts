@@ -44,14 +44,12 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async init() {
       if (this.isInitialized) return
-      
-      const token = useCookie('access_token').value
-      if (token) {
-        this.token = token
-        this.isAuthenticated = true
-        await this.fetchUser(true)
-      }
-      
+
+      // httpOnly cookie'leri JavaScript'ten okuyamayız — doğrudan backend'e sor.
+      // fetchUser, cookie ile gelen access_token'ı backend'de doğrular.
+      // 401 dönerse kullanıcı zaten logged out demektir.
+      await this.fetchUser(true)
+
       this.isInitialized = true
     },
     async login(credentials: any) {
@@ -61,13 +59,12 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await $api<any>('/api/auth/login', { method: 'POST', body: credentials })
         if (res.success && res.data) {
-          this.token = res.data.accessToken
+          // Backend httpOnly cookie'de token'ı set etti — store sadece user state tutuyor
           this.user = res.data.user
           this.isAuthenticated = true
-          useCookie('access_token', { maxAge: 60 * 15, path: '/' }).value = this.token
-          if (res.data.refreshToken) {
-            useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value = res.data.refreshToken
-          }
+          // Cookie'den token'ı oku (backend set etti)
+          const accessToken = useCookie('access_token').value
+          this.token = accessToken ?? null
           useCookie('user').value = JSON.stringify(this.user)
           return true
         }
@@ -101,13 +98,11 @@ export const useAuthStore = defineStore('auth', {
         })
 
         if (res.success && res.data) {
-          this.token = res.data.accessToken
+          // Backend httpOnly cookie'de token'ı set etti
           this.user = res.data.user
           this.isAuthenticated = true
-          useCookie('access_token', { maxAge: 60 * 15, path: '/' }).value = this.token
-          if (res.data.refreshToken) {
-            useCookie('refresh_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value = res.data.refreshToken
-          }
+          const accessToken = useCookie('access_token').value
+          this.token = accessToken ?? null
           useCookie('user').value = JSON.stringify(this.user)
           return true
         }
@@ -121,17 +116,21 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       const { $api } = useApi()
-      const refreshToken = useCookie('refresh_token').value
-      try { 
-        await $api('/api/auth/logout', { 
-          method: 'POST', 
-          body: { refreshToken } 
-        }) 
-      } catch (e) { }
+
+      const wasLoggedIn = this.isAuthenticated
       this.reset()
-      useCookie('access_token').value = null
-      useCookie('refresh_token').value = null
       useCookie('user').value = null
+
+      if (wasLoggedIn) {
+        try {
+          // httpOnly refresh_token cookie'si tarayıcı tarafından otomatik gönderilir
+          // Backend cookie'leri temizler
+          await $api('/api/auth/logout', { method: 'POST' })
+        } catch (e) {
+          console.warn('Backend logout failed, local state cleared.')
+        }
+      }
+
       navigateTo('/auth/login')
     },
     async fetchUser(silent = false) {
@@ -153,16 +152,10 @@ export const useAuthStore = defineStore('auth', {
       if (refreshPromise) return refreshPromise
       refreshPromise = (async () => {
         try {
-          const refreshToken = useCookie('refresh_token').value
-          if (!refreshToken) return false
+          // httpOnly refresh_token cookie'si tarayıcı tarafından otomatik gönderilir
           const { $api } = useApi()
-          const res = await $api<any>('/api/auth/refresh', { method: 'POST', body: { refreshToken } })
-          if (res.success && res.data) {
-            this.token = res.data.accessToken
-            useCookie('access_token').value = this.token
-            return true
-          }
-          return false
+          const res = await $api<any>('/api/auth/refresh', { method: 'POST' })
+          return !!(res.success && res.data)
         } catch { return false } finally { refreshPromise = null }
       })()
       return refreshPromise

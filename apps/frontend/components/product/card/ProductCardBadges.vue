@@ -54,7 +54,7 @@
       <slot name="favorite" />
     </div>
 
-    <!-- Bottom Badges (Hide on hover handled by parent) -->
+    <!-- Bottom Badges -->
     <div class="absolute inset-x-4 bottom-4 flex justify-between items-end pointer-events-none badges-bottom transition-opacity duration-300">
       <div v-if="displayBadges?.bottomLeft" :class="[displayBadges.bottomLeft.class || 'bg-sky-500 text-white', 'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg border border-white/20']" :style="displayBadges.bottomLeft.style as any">
         {{ displayBadges.bottomLeft.text }}
@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import SparklesIcon from '@heroicons/vue/24/outline/SparklesIcon'
 import MapPinIcon from '@heroicons/vue/24/outline/MapPinIcon'
 import type { DynamicBadges } from '@barterborsa/shared-types'

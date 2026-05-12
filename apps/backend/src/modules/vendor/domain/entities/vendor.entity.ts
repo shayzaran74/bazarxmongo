@@ -3,6 +3,7 @@
 import { AggregateRoot } from '@barterborsa/shared-core';
 import { VendorStatus } from '../enums/vendor-status.enum';
 import { VendorTier } from '../enums/vendor-tier.enum';
+import { VendorType } from '../enums/vendor-type.enum';
 import { VendorSlug } from '../value-objects/vendor-slug.vo';
 import { VendorRegisteredEvent } from '../events/vendor-registered.event';
 import { VendorApprovedEvent } from '../events/vendor-approved.event';
@@ -14,6 +15,7 @@ export interface VendorProps {
   companyId: string;
   status: VendorStatus;
   tier: VendorTier;
+  vendorType: VendorType;
   slug: VendorSlug;
   isVerified: boolean;
   rejectionReason?: string;
@@ -22,6 +24,19 @@ export interface VendorProps {
   membershipTierId?: string;
   lastAuditAt?: Date;
   verifiedAt?: Date;
+  profile?: {
+    storeName: string;
+    description?: string;
+    city?: string;
+    cuisineType?: string;
+    rating: number;
+    reviewCount: number;
+    avgPrepTimeMinutes?: number;
+    minOrderAmount?: number;
+    deliveryRadius?: number;
+    isFeatured: boolean;
+    imageUrl?: string;
+  };
 }
 
 export class Vendor extends AggregateRoot<VendorProps> {
@@ -33,13 +48,20 @@ export class Vendor extends AggregateRoot<VendorProps> {
     return new Vendor(props, id);
   }
 
-  public static create(userId: string, companyId: string, slug: VendorSlug, storeName: string): Vendor {
+  public static create(
+    userId: string,
+    companyId: string,
+    slug: VendorSlug,
+    storeName: string,
+    vendorType: VendorType = VendorType.COMMERCE,
+  ): Vendor {
     const vendor = new Vendor({
       userId,
       companyId,
       slug,
       status: VendorStatus.PENDING,
       tier: VendorTier.CORE,
+      vendorType,
       isVerified: false,
     });
 
@@ -86,10 +108,16 @@ export class Vendor extends AggregateRoot<VendorProps> {
     return this.props.status === VendorStatus.APPROVED;
   }
 
+  public isRestaurant(): boolean {
+    return this.props.vendorType === VendorType.RESTAURANT;
+  }
+
   // Getters
   get userId(): string { return this.props.userId; }
   get companyId(): string { return this.props.companyId; }
   get status(): VendorStatus { return this.props.status; }
   get tier(): VendorTier { return this.props.tier; }
+  get vendorType(): VendorType { return this.props.vendorType; }
   get slug(): VendorSlug { return this.props.slug; }
+  get profile() { return this.props.profile; }
 }

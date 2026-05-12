@@ -5,6 +5,7 @@ import { CreateListingCommand } from './create-listing.command';
 import { IListingRepository } from '../../domain/repositories/listing.repository.interface';
 import { ICatalogProductRepository } from '../../domain/repositories/catalog-product.repository.interface';
 import { Listing } from '../../domain/entities/listing.entity';
+import { CatalogProduct } from '../../domain/entities/catalog-product.entity';
 import { Slug } from '../../domain/value-objects/slug.vo';
 import { Price } from '../../domain/value-objects/price.vo';
 import { NotFoundException, DomainException, isErr } from '@barterborsa/shared-core';
@@ -26,10 +27,28 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
   async execute(command: CreateListingCommand): Promise<string> {
     const { vendorId, dto } = command;
 
-    // 1. Ürün var mı?
-    const product = await this.productRepository.findById(dto.catalogProductId);
-    if (!product) {
-      throw new NotFoundException('Katalog ürünü bulunamadı.');
+    // 1. Katalog Ürünü Kontrolü veya Oluşturma
+    let catalogProductId = dto.catalogProductId;
+
+    if (!catalogProductId) {
+      // Eğer catalogProductId yoksa, yeni bir Katalog Ürünü oluşturalım
+      const newProduct = CatalogProduct.create({
+        name: dto.title,
+        slug: Slug.fromText(dto.title),
+        brand: 'Bilinmeyen',
+        description: dto.description || '',
+        categoryId: (dto as any).categoryId || 'other',
+        attributes: (dto as any).attributes || {}
+      });
+
+      await this.productRepository.save(newProduct);
+      catalogProductId = newProduct.id;
+    } else {
+      // Eğer varsa doğrula
+      const product = await this.productRepository.findById(catalogProductId);
+      if (!product) {
+        throw new NotFoundException('Belirtilen katalog ürünü bulunamadı.');
+      }
     }
 
     // 2. Slug üret (Mağaza başlığı + Ürün adı) - Basitleştirilmiş
@@ -44,7 +63,7 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
     // 4. Listing oluştur
     const listing = Listing.create({
       vendorId,
-      catalogProductId: dto.catalogProductId,
+      catalogProductId: catalogProductId,
       title: dto.title,
       description: dto.description,
       price: priceResult.data,

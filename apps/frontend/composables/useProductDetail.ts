@@ -32,11 +32,28 @@ export const useProductDetail = () => {
 
   const allImages = computed(() => {
     if (!product.value) return []
-    const imgs = []
-    if (product.value.image) imgs.push(product.value.image)
-    if (product.value.media) imgs.push(...product.value.media.map((m: any) => m.url))
-    return [...new Set(imgs)]
+    const imgs: string[] = []
+    const rawProduct = product.value
+    // 1. images dizisi (backend handler'dan gelir) - Vue Proxy'siz raw hali
+    const imagesArr = Array.isArray(rawProduct.images) ? rawProduct.images : []
+    if (imagesArr.length) imgs.push(...imagesArr)
+    // 2. Tek image alanı
+    if (rawProduct.image) imgs.push(rawProduct.image)
+    // 3. media dizisi (Prisma media tablosu - productMedia)
+    const mediaArr = Array.isArray(rawProduct.media) ? rawProduct.media : []
+    if (mediaArr.length) imgs.push(...mediaArr.map((m: { url: string }) => m.url))
+    // 4. productMedia dizisi (alternatif ad)
+    const pmArr = Array.isArray(rawProduct.productMedia) ? rawProduct.productMedia : []
+    if (pmArr.length) imgs.push(...pmArr.map((m: { url: string }) => m.url))
+    return [...new Set(imgs.filter(Boolean))]
   })
+
+  // İlk görsel hazır olduğunda selectedImage'ı otomatik doldur
+  watch(allImages, (imgs) => {
+    if (imgs.length && !selectedImage.value) {
+      selectedImage.value = imgs[0]
+    }
+  }, { immediate: true })
 
   const displayPrice = computed(() => {
     if (listing.value?.price) return Number(listing.value.price)
@@ -53,11 +70,15 @@ export const useProductDetail = () => {
     }
   }, { immediate: true })
   
+  const reviewCount = computed(() => {
+    const r = product.value
+    return r?.reviews_count ?? r?.reviewsCount ?? r?.Review?.length ?? 0
+  })
+
   const tabs = computed(() => [
-    { id: 'description', name: 'Açıklama' },
-    { id: 'features', name: 'Özellikler' },
-    { id: 'reviews', name: `Değerlendirmeler (${product.value?.reviewsCount || 0})` },
-    { id: 'vendor', name: 'Satıcı Bilgisi' }
+    { id: 'description', name: 'Ürün Açıklaması' },
+    { id: 'specifications', name: 'Ürün Özellikleri' },
+    { id: 'reviews', name: `Yorumlar (${reviewCount.value})` },
   ])
 
   const slug = computed(() => {

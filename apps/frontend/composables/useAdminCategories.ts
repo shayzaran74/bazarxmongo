@@ -94,7 +94,7 @@ export const useAdminCategories = () => {
           body: data
         })
       } else {
-        await $api('/api/admin/categories', {
+        await $api('/api/v1/admin/categories', {
           method: 'POST',
           body: data
         })

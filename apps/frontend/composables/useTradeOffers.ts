@@ -44,19 +44,19 @@ export const useTradeOffers = () => {
     loading.value = true
     try {
       if (!myCompany.value) {
-        const compRes = await $api<{ success: boolean; company: Company }>(
-          `${config.public.apiBase}/api/v1/companies/me`
-        )
-        if (compRes.success) myCompany.value = compRes.company
+        const compRes = await $api<Company>('/api/companies/me')
+        if (compRes.success && (compRes.data || (compRes as any).company)) {
+          myCompany.value = compRes.data || (compRes as any).company
+        }
       }
 
       if (myCompany.value) {
-        const res = await $api<{ success: boolean; data: TradeOfferRow[]; offers?: TradeOfferRow[] }>(
-          `${config.public.apiBase}/api/v1/offers/my`,
+        const res = await $api<TradeOfferRow[]>(
+          '/api/offers/my',
           { query: { companyId: myCompany.value.id, type: activeTab.value } }
         )
-        if (res.success) {
-          offers.value = res.data ?? res.offers ?? []
+        if (res.success && res.data) {
+          offers.value = res.data
         }
       }
     } catch (err: unknown) {
@@ -75,24 +75,25 @@ export const useTradeOffers = () => {
     try {
       if (s === 'ACCEPTED') {
         const res = await $api<AcceptResponse>(
-          `${config.public.apiBase}/api/v1/offers/${id}/accept`,
+          `/api/offers/${id}/accept`,
           { method: 'POST' }
         )
-        if (res.success && res.sessionId) {
+        const sessionId = (res as any).sessionId || res.data?.sessionId
+        if (res.success && sessionId) {
           nuxt.$toast?.success('Teklif kabul edildi! Swap sürecine yönlendiriliyorsunuz...')
-          await navigateTo(`/ticaritakas/swap/${res.sessionId}`)
+          await navigateTo(`/ticaritakas/swap/${sessionId}`)
           return true
         } else if (res.success) {
           nuxt.$toast?.success('Teklif kabul edildi.')
           await fetchMyOffers()
           return true
         }
-        nuxt.$toast?.error(res.message ?? 'Bir hata oluştu.')
+        nuxt.$toast?.error((res as any).message || res.data?.message || 'Bir hata oluştu.')
         return false
       }
 
       const res = await $api<StatusResponse>(
-        `${config.public.apiBase}/api/v1/offers/${id}/status`,
+        `/api/offers/${id}/status`,
         { method: 'PATCH', body: { status: s } }
       )
       if (res.success) {
@@ -100,7 +101,7 @@ export const useTradeOffers = () => {
         await fetchMyOffers()
         return true
       }
-      nuxt.$toast?.error(res.message ?? 'Bir hata oluştu.')
+      nuxt.$toast?.error((res as any).message || res.data?.message || 'Bir hata oluştu.')
       return false
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message ?? 'İşlem sırasında hata oluştu.'

@@ -34,7 +34,7 @@ export const useAdminChat = () => {
     roomsLoading.value = true
     pagination.page = page
     try {
-      const res = await $api<any>('/api/admin/chat/rooms', {
+      const res = await $api<any>('/api/v1/admin/chat/rooms', {
         query: { page, limit: pagination.limit }
       })
       const response = res as any
@@ -49,7 +49,7 @@ export const useAdminChat = () => {
     auditLogsLoading.value = true
     auditLogsPagination.page = page
     try {
-      const res = await $api<any>('/api/admin/chat/audit-logs', {
+      const res = await $api<any>('/api/v1/admin/chat/audit-logs', {
         query: { page, limit: auditLogsPagination.limit }
       })
       auditLogs.value = res.data || []

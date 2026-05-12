@@ -1,6 +1,6 @@
 // apps/backend/src/modules/barter/domain/entities/swap-session.entity.ts
 
-import { AggregateRoot } from '@barterborsa/shared-core';
+import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
 import { Prisma } from '@prisma/client';
 import { SwapSessionStatus } from '../enums/swap-session-status.enum';
 import { BarterPart } from './barter-part.entity';
@@ -28,6 +28,36 @@ export interface SwapSessionProps {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// State geçiş haritası — SwapSessionStatus enum değerlerini kullanır
+const VALID_TRANSITIONS: Record<SwapSessionStatus, SwapSessionStatus[]> = {
+  [SwapSessionStatus.PENDING_COLLATERAL]: [
+    SwapSessionStatus.ACTIVE,
+    SwapSessionStatus.CANCELLED,
+    SwapSessionStatus.TIMEOUT,
+  ],
+  [SwapSessionStatus.ACTIVE]: [
+    SwapSessionStatus.SHIPPING,
+    SwapSessionStatus.DISPUTED,
+    SwapSessionStatus.TIMEOUT,
+  ],
+  [SwapSessionStatus.SHIPPING]: [
+    SwapSessionStatus.PARTIALLY_COMPLETED,
+    SwapSessionStatus.DISPUTED,
+    SwapSessionStatus.COMPLETED,
+  ],
+  [SwapSessionStatus.PARTIALLY_COMPLETED]: [
+    SwapSessionStatus.COMPLETED,
+    SwapSessionStatus.DISPUTED,
+  ],
+  [SwapSessionStatus.COMPLETED]: [],
+  [SwapSessionStatus.CANCELLED]: [],
+  [SwapSessionStatus.DISPUTED]: [
+    SwapSessionStatus.COMPLETED,
+    SwapSessionStatus.CANCELLED,
+  ],
+  [SwapSessionStatus.TIMEOUT]: [],
+};
 
 export class SwapSession extends AggregateRoot<SwapSessionProps> {
   private constructor(props: SwapSessionProps, id?: string) {
@@ -61,6 +91,26 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
     });
   }
 
+  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
+  public static createFrom(props: SwapSessionProps, id: string): SwapSession {
+    return new SwapSession(props, id);
+  }
+
+  // Merkezi state geçiş metodu — validasyonlu geçiş
+  public transitionTo(newStatus: SwapSessionStatus): void {
+    const current = this.props.status;
+    const allowed = VALID_TRANSITIONS[current] || [];
+
+    if (!allowed.includes(newStatus)) {
+      throw new DomainException(
+        `Invalid state transition: ${current} → ${newStatus}`,
+      );
+    }
+
+    this.props.status = newStatus;
+    this.props.updatedAt = new Date();
+  }
+
   // Her iki tarafın holdId'sini kaydeder ve collateral durumunu HELD'e geçirir
   public setHoldIds(fromHoldId: string, toHoldId: string): void {
     this.props.fromCollateralHoldId = fromHoldId;
@@ -70,26 +120,36 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
     this.props.updatedAt = new Date();
   }
 
-  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
-  public static createFrom(props: SwapSessionProps, id: string): SwapSession {
-    return new SwapSession(props, id);
+  public activate(): void {
+    this.transitionTo(SwapSessionStatus.ACTIVE);
+    this.props.collateralLockedAt = new Date();
   }
 
-  public activate(): void {
-    this.props.status = SwapSessionStatus.ACTIVE;
-    this.props.collateralLockedAt = new Date();
-    this.props.updatedAt = new Date();
+  public ship(): void {
+    this.transitionTo(SwapSessionStatus.SHIPPING);
+  }
+
+  public markPartiallyCompleted(): void {
+    this.transitionTo(SwapSessionStatus.PARTIALLY_COMPLETED);
   }
 
   public complete(): void {
-    this.props.status = SwapSessionStatus.COMPLETED;
+    this.transitionTo(SwapSessionStatus.COMPLETED);
     this.props.completedAt = new Date();
-    this.props.updatedAt = new Date();
+  }
+
+  public cancel(): void {
+    this.transitionTo(SwapSessionStatus.CANCELLED);
+    this.props.cancelledAt = new Date();
   }
 
   public dispute(): void {
-    this.props.status = SwapSessionStatus.DISPUTED;
+    this.transitionTo(SwapSessionStatus.DISPUTED);
     this.props.disputedAt = new Date();
-    this.props.updatedAt = new Date();
+  }
+
+  public markTimeout(): void {
+    this.transitionTo(SwapSessionStatus.TIMEOUT);
+    this.props.cancelledAt = new Date();
   }
 }

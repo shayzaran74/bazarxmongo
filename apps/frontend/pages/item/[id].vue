@@ -180,7 +180,7 @@ const addToCart = async () => {
   if (!product.value || !product.value.data) return
 
   try {
-    await cartStore.addToCart(String(product.value.data.id), 1)
+    await cartStore.addToCart(String(product.value.data.id), 1, undefined, product.value.data, (product.value.data as any).listingId)
     const toast = useNuxtApp().$toast
     toast.success(`${product.value.data.name} sepete eklendi!`)
   } catch (error) {

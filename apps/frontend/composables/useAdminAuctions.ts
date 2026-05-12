@@ -42,7 +42,7 @@ export const useAdminAuctions = () => {
   const fetchAuctions = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/auctions')
+      const res = await $api<any>('/api/v1/admin/auctions')
       
       // Admin tablosu için Product formatlaması
       const mapAuctionAdmin = (raw: any) => {
@@ -77,7 +77,7 @@ export const useAdminAuctions = () => {
   const fetchParticipations = async () => {
     participationsLoading.value = true
     try {
-      const res = await $api<any>('/api/admin/auctions/participations')
+      const res = await $api<any>('/api/v1/admin/auctions/participations')
       participations.value = res.data || []
       stats.pendingParticipations = participations.value.filter((p: any) => p.status === 'PENDING').length
     } catch { /* ignore */ } finally {

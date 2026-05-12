@@ -45,7 +45,7 @@ export class UpdateAdminProductHandler
       if (data.name || data.title) {
         const name = data.name || data.title;
         productUpdate.name = name;
-        productUpdate.slug = name.toLowerCase()
+        productUpdate.slug = name!.toLowerCase()
           .replace(/ /g, '-')
           .replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7);
       }

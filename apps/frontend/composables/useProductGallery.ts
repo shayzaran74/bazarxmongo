@@ -7,12 +7,22 @@ export const useProductGallery = (product: any) => {
 
   const allImages = computed(() => {
     if (!product.value) return []
-    if (product.value.images && product.value.images.length > 0) {
-      return product.value.images.map((img: string) => resolveImageUrl(img))
+    const imgs: string[] = []
+    // 1. images dizisi
+    if (Array.isArray(product.value.images) && product.value.images.length) {
+      imgs.push(...product.value.images)
     }
-    const images: string[] = []
-    if (product.value.image) images.push(resolveImageUrl(product.value.image))
-    return images
+    // 2. Tek image alanı
+    if (product.value.image) imgs.push(resolveImageUrl(product.value.image))
+    // 3. media dizisi (Prisma media tablosu)
+    if (Array.isArray(product.value.media) && product.value.media.length) {
+      imgs.push(...product.value.media.map((m: { url: string }) => resolveImageUrl(m.url)))
+    }
+    // 4. productMedia dizisi (alternatif ad)
+    if (Array.isArray(product.value.productMedia) && product.value.productMedia.length) {
+      imgs.push(...product.value.productMedia.map((m: { url: string }) => resolveImageUrl(m.url)))
+    }
+    return [...new Set(imgs.filter(Boolean))]
   })
 
   const setInitialImage = () => {

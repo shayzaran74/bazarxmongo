@@ -8,10 +8,10 @@ export class ResolveOrderDisputeDto {
   @ApiProperty({ description: 'Çözüm kararı', enum: OrderDisputeResolution })
   @IsEnum(OrderDisputeResolution)
   @IsNotEmpty()
-  resolution: OrderDisputeResolution;
+  resolution!: OrderDisputeResolution;
 
   @ApiProperty({ description: 'Admin notu / Karar gerekçesi' })
   @IsString()
   @IsNotEmpty()
-  adminNote: string;
+  adminNote!: string;
 }

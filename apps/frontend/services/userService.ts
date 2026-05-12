@@ -22,7 +22,7 @@ export const userService = {
 
   async changePassword(data: ChangePasswordData): Promise<ApiResponse<void>> {
     const { $api } = useApi()
-    return await $api<void>('/api/user/change-password', {
+    return await $api<void>('/api/user/profile/change-password', {
       method: 'POST',
       body: data
     })
@@ -30,22 +30,22 @@ export const userService = {
 
   async fetchUserStats(): Promise<ApiResponse<{ stats: UserProfileStats }>> {
     const { $api } = useApi()
-    return await $api<{ stats: UserProfileStats }>('/api/user/stats')
+    return await $api<{ stats: UserProfileStats }>('/api/user/profile/stats')
   },
 
   async fetchUserTier(): Promise<ApiResponse<unknown>> {
     const { $api } = useApi()
-    return await $api<unknown>('/api/tiers/user')
+    return await $api<unknown>('/api/tiers/me')
   },
 
   async fetchLoyaltyStatus(): Promise<ApiResponse<LoyaltyStatus>> {
     const { $api } = useApi()
-    return await $api<LoyaltyStatus>('/api/loyalty/status')
+    return await $api<LoyaltyStatus>('/api/xp/balance')
   },
 
   async fetchLoyaltyHistory(): Promise<ApiResponse<LoyaltyHistoryItem[]>> {
     const { $api } = useApi()
-    return await $api<LoyaltyHistoryItem[]>('/api/loyalty/history')
+    return await $api<LoyaltyHistoryItem[]>('/api/xp/history')
   },
 
   async uploadAvatar(formData: FormData): Promise<ApiResponse<{ url: string }>> {

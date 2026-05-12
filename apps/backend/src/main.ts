@@ -4,6 +4,8 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { join } from 'path';
@@ -15,10 +17,21 @@ async function bootstrap() {
   );
 
   // CORS: Frontend'in backend ile konuşabilmesi için şart
+  // Production'da origin whitelist kullan
+  const corsOrigin = process.env.CORS_ORIGIN || '';
   app.enableCors({
-    origin: true,
+    origin: corsOrigin ? corsOrigin.split(',') : true,
     credentials: true,
   });
+
+  // Cookie parser: httpOnly cookie'leri req.cookies olarak parse eder (JWT cookie auth için şart)
+  app.use(cookieParser());
+
+  // Security headers (Helmet)
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production',
+    crossOriginEmbedderPolicy: false,
+  }));
 
   // Global prefix: /api/v1
   app.setGlobalPrefix('api/v1');

@@ -15,6 +15,7 @@ import { GetBarterInfoQuery } from '../application/queries/get-barter-info.query
 import { GetMyBarterChainsQuery } from '../application/queries/get-my-barter-chains.query';
 import { GetMyBarterOffersQuery } from '../application/queries/get-my-barter-offers.query';
 import { RegisterBarterCommand } from '../application/commands/register-barter.command';
+import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 
 interface AuthenticatedUser {
   id: string;
@@ -30,6 +31,7 @@ export class BarterController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly financialGateway: FinancialGatewayService,
   ) {}
 
   // ─── Barter bilgisi ───────────────────────────────────────────────────────
@@ -78,16 +80,14 @@ export class BarterController {
     if (!body.amount || body.amount <= 0) {
       throw new BadRequestException('Geçersiz miktar');
     }
-    // TODO: FinancialGatewayService.topup(user.id, body.amount)
-    return {
-      success: true,
-      message: 'Para yükleme isteği alındı',
-      data: {
-        transactionId: `topup_${Date.now()}`,
-        amount:        body.amount,
-        status:        'PENDING',
-      },
-    };
+    
+    return this.financialGateway.transferBetweenAccounts({
+      userId: user.id,
+      fromAccountType: 'MAIN',
+      toAccountType: 'BARTER',
+      amount: body.amount.toString(),
+      note: 'Barter havuzuna bakiye aktarımı',
+    });
   }
 
   @ApiOperation({ summary: 'Barter cüzdanından para çek' })
@@ -96,16 +96,14 @@ export class BarterController {
     if (!body.amount || body.amount <= 0) {
       throw new BadRequestException('Geçersiz miktar');
     }
-    // TODO: FinancialGatewayService.withdraw(user.id, body.amount)
-    return {
-      success: true,
-      message: 'Para çekme isteği alındı',
-      data: {
-        transactionId: `withdraw_${Date.now()}`,
-        amount:        body.amount,
-        status:        'PENDING',
-      },
-    };
+    
+    return this.financialGateway.transferBetweenAccounts({
+      userId: user.id,
+      fromAccountType: 'BARTER',
+      toAccountType: 'MAIN',
+      amount: body.amount.toString(),
+      note: 'Barter havuzundan nakit iadesi',
+    });
   }
 
   @ApiOperation({ summary: 'Barter transferi başlat' })

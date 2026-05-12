@@ -23,13 +23,15 @@ export class ChangePasswordHandler implements ICommandHandler<ChangePasswordComm
     if (user.passwordHash) {
       const isValid = await this.hashingService.compare(dto.currentPassword, user.passwordHash);
       if (!isValid) {
-        return Err(new DomainException('Mevcut şifre hatalı.'));
+        return Err(new DomainException('Mevcut şifre hatalı. Lütfen kontrol edip tekrar deneyin.'));
       }
+    } else if (dto.currentPassword) {
+       // Kullanıcının şifresi yok (Google ile kayıt olmuş olabilir) ama bir mevcut şifre girmiş
+       return Err(new DomainException('Hesabınızda kayıtlı bir şifre bulunamadı. Lütfen destek ile iletişime geçin.'));
     }
 
     const newHash = await this.hashingService.hash(dto.newPassword);
-    // Update password hash logic
-    (user as any).props.passwordHash = newHash;
+    user.changePassword(newHash);
 
     await this.userRepository.update(user);
 

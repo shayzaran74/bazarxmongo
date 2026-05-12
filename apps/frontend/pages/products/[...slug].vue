@@ -237,6 +237,17 @@ const {
 if (productData.value?.success && productData.value?.data) {
   product.value = productData.value.data
   loading.value = false
+  // SSR hydration sonrası selectedImage composable watch'ından önce gelebilir;
+  // nextTick ile allImages hesaplandıktan sonra ilk görseli ata
+  if (import.meta.client) {
+    nextTick(() => {
+      if (!selectedImage.value && allImages.value.length) {
+        selectedImage.value = allImages.value[0]
+      }
+    })
+  } else if (allImages.value.length) {
+    selectedImage.value = allImages.value[0]
+  }
 } else if (productData.value?.error) {
   error.value = productData.value.error
   loading.value = false

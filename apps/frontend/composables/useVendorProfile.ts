@@ -32,7 +32,9 @@ export const useVendorProfile = () => {
     const fetchVendor = async () => {
         loading.value = true
         try {
+            console.log('Calling fetchVendor for:', route.params.id);
             const response = await vendorService.getVendorPublic(route.params.id as string)
+            console.log('fetchVendor response:', response);
             if (response.success && response.data) {
                 vendor.value = response.data
                 if (response.data.products && products.value.length === 0) {

@@ -53,16 +53,19 @@ export const useCartStore = defineStore('cart', {
         console.error('Fetch cart error:', err)
       } finally { this.loading = false }
     },
-    async addToCart(productId: string | number, quantity = 1, variantId?: string, product?: any) {
-       return await this.addItem(productId.toString(), quantity, variantId, product)
+    async addToCart(productId: string | number, quantity = 1, variantId?: string, product?: any, listingId?: string) {
+       return await this.addItem(productId.toString(), quantity, variantId, product, listingId)
     },
-    async addItem(productId: string, quantity = 1, variantId?: string, product?: any) {
+    async addItem(productId: string, quantity = 1, variantId?: string, product?: any, listingId?: string) {
       const authStore = useAuthStore()
       const { $api } = useApi()
       this.loading = true
       try {
         if (authStore.isLoggedIn) {
-          const res = await $api<any>('/api/cart', { method: 'POST', body: { productId, quantity, variantId } })
+          const body: any = { productId, quantity, variantId }
+          if (listingId) body.listingId = listingId
+
+          const res = await $api<any>('/api/cart', { method: 'POST', body })
           if (res.success) {
             await this.fetchCart()
             return res
@@ -140,6 +143,22 @@ export const useCartStore = defineStore('cart', {
       const res = await $api<any>('/api/cart/escrow-coupons', { method: 'DELETE' })
       if (res.success) await this.fetchCart()
       return res
+    },
+    async clearCart() {
+      const { $api } = useApi()
+      const authStore = useAuthStore()
+      this.loading = true
+      try {
+        if (authStore.isLoggedIn) {
+          await $api('/api/cart', { method: 'DELETE' })
+          await this.fetchCart()
+        } else {
+          this.items = []
+          this.saveLocal()
+        }
+      } finally {
+        this.loading = false
+      }
     },
     saveLocal() { 
       if (process.client) {

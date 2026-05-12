@@ -55,10 +55,14 @@ export class User extends AggregateRoot<UserProps> {
     return Ok(user);
   }
 
-  // Domain Logic
   public updateProfile(firstName: string, lastName: string): void {
     this.props.firstName = firstName;
     this.props.lastName = lastName;
+  }
+
+  public changePassword(newHash: string): void {
+    this.props.passwordHash = newHash;
+    this.props.lockoutUntil = undefined; // Reset lockout on successful change
   }
 
   public verifyEmail(): void {

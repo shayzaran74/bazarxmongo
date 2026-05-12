@@ -27,7 +27,7 @@ export const useAdminBrands = () => {
   const fetchBrands = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/brands', {
+      const res = await $api<any>('/api/v1/admin/brands', {
         query: {
           q: filters.search || undefined,
           limit: 100,

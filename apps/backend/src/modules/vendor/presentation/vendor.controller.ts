@@ -8,7 +8,9 @@ import {
 } from '@nestjs/swagger';
 import { RegisterVendorCommand } from '../application/commands/register-vendor.command';
 import { UpdateStockCommand } from '../application/commands/update-stock.command';
+import { UpdateRestaurantSettingsCommand } from '../application/commands/update-restaurant-settings.command';
 import { RegisterVendorDto } from '../application/dtos/register-vendor.dto';
+import { UpdateRestaurantSettingsDto } from '../application/dtos/update-restaurant-settings.dto';
 import { ListVendorsQuery } from '../application/queries/list-vendors.query';
 import { GetVendorBySlugQuery } from '../application/queries/get-vendor-by-slug.query';
 import { GetVendorProductsQuery } from '../application/queries/get-vendor-products.query';
@@ -159,6 +161,22 @@ export class VendorController {
     return { success: true, data };
   }
 
+  // ─── BazarX Go — Restoran ayarları ─────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Restoran ayarlarını güncelle (çalışma saatleri, tatil modu, sipariş kabulü)' })
+  @ApiBody({ type: UpdateRestaurantSettingsDto })
+  @Patch('me/restaurant-settings')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async updateRestaurantSettings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateRestaurantSettingsDto,
+  ) {
+    const data = await this.commandBus.execute(new UpdateRestaurantSettingsCommand(user.id, dto));
+    return { success: true, data };
+  }
+
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Transfer listesi' })
   @Get('transfers')
@@ -236,7 +254,17 @@ export class VendorController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Slug ile satıcı getir' })
+  @ApiOperation({ summary: 'Slug veya ID ile halka açık satıcı getir' })
+  @ApiParam({ name: 'idOrSlug' })
+  @Get('public/:idOrSlug')
+  async getVendorPublic(@Param('idOrSlug') idOrSlug: string) {
+    console.log('Fetching public vendor:', idOrSlug);
+    const data = await this.queryBus.execute(new GetVendorBySlugQuery(idOrSlug));
+    return { success: true, data };
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Slug ile satıcı getir (legacy)' })
   @ApiParam({ name: 'slug' })
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {

@@ -8,6 +8,7 @@ import {
   ApiBody 
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import { 
   UpdateProfileDto, 
   UpdateProfileCommand, 
@@ -23,7 +24,8 @@ import {
 export class ProfileController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   @ApiOperation({ summary: 'Get user profile', description: 'Kullanıcının detaylı profil bilgilerini döner.' })
@@ -32,6 +34,30 @@ export class ProfileController {
   async getProfile(@Req() req: any) {
     const userId = req.user.id;
     return this.queryBus.execute(new GetProfileQuery(userId));
+  }
+
+  @ApiOperation({ summary: 'Get user statistics', description: 'Kullanıcının sipariş ve harcama istatistiklerini döner.' })
+  @ApiResponse({ status: 200, description: 'İstatistik verileri.' })
+  @Get('stats')
+  async getStats(@Req() req: any) {
+    const userId = req.user.id;
+    const [orderCount, totalSpentResult] = await Promise.all([
+      this.prisma.order.count({ where: { userId } }),
+      this.prisma.order.aggregate({
+        where: { userId, status: 'COMPLETED' },
+        _sum: { totalAmount: true }
+      })
+    ]);
+
+    return {
+      success: true,
+      data: {
+        stats: {
+          orderCount,
+          totalSpent: Number(totalSpentResult._sum.totalAmount || 0)
+        }
+      }
+    };
   }
 
   @ApiOperation({ summary: 'Update user profile', description: 'Kullanıcının profil bilgilerini günceller.' })

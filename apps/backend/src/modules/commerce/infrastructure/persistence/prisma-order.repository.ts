@@ -7,6 +7,7 @@ import { OrderItem } from '../../domain/entities/order-item.entity';
 import { OrderNumber } from '../../domain/value-objects/order-number.vo';
 import { ShippingAddress } from '../../domain/value-objects/shipping-address.vo';
 import { OrderStatus } from '../../domain/enums/order-status.enum';
+import { DeliveryType } from '../../domain/enums/delivery-type.enum';
 
 // Prisma'nın ürettiği tam tip - orderItems ilişkisiyle birlikte
 type OrderRecord = Prisma.OrderGetPayload<{ include: { orderItems: true } }>;
@@ -64,6 +65,7 @@ export class PrismaOrderRepository implements IOrderRepository {
       metadata: record.metadata as Record<string, unknown> | undefined,
       couponCode: record.couponCode || undefined,
       expiresAt: record.expiresAt || undefined,
+      deliveryType: record.deliveryType as DeliveryType,
       items,
     };
 

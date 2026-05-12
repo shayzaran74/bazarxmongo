@@ -5,6 +5,7 @@ import { Module, Global } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 
 export const PRODUCT_IMPORT_QUEUE = 'product-import';
+export const DELIVERY_DISPATCH_QUEUE = 'delivery-dispatch';
 
 @Global()
 @Module({
@@ -19,12 +20,21 @@ export const PRODUCT_IMPORT_QUEUE = 'product-import';
       }),
     }),
     BullModule.registerQueue({
-      name: PRODUCT_IMPORT_QUEUE,
+      name: 'product-import',
       defaultJobOptions: {
-        attempts: 3,                    // hata olursa 3 deneme
+        attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: 100,          // tamamlanan son 100 job'ı tut
-        removeOnFail: 200,              // başarısız son 200 job'ı tut
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'delivery-dispatch',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 3000 },
+        removeOnComplete: 50,
+        removeOnFail: 100,
       },
     }),
   ],

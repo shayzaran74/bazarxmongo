@@ -121,22 +121,22 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <span class="text-sm font-bold text-gray-900 italic">
-                      {{ getMonthName(invoice.metadata?.month) }} {{ invoice.metadata?.year }}
+                      {{ getMonthNameFromDate(invoice.issuedAt) }} {{ getYearFromDate(invoice.issuedAt) }}
                     </span>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex flex-col">
-                    <span class="text-xs font-medium text-gray-600 truncate max-w-[200px]">{{ invoice.fileName }}</span>
-                    <span class="text-[10px] text-gray-400 uppercase tracking-tighter">{{ formatFileSize(invoice.fileSize) }}</span>
+                    <span class="text-xs font-medium text-gray-600 truncate max-w-[200px]">{{ invoice.invoiceNumber }}</span>
+                    <span class="text-[10px] text-gray-400 uppercase tracking-tighter">{{ invoice.status }}</span>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right">
-                  <span class="text-sm font-black text-gray-900">₺{{ formatAmount(invoice.metadata?.totalAmount) }}</span>
+                  <span class="text-sm font-black text-gray-900">₺{{ formatAmount(invoice.totalAmount) }}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <a 
-                    :href="invoice.viewUrl" 
+                    :href="invoice.pdfUrl" 
                     target="_blank"
                     class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-md transition-colors"
                   >
@@ -203,14 +203,11 @@ definePageMeta({
 
 interface Invoice {
   id: string;
-  fileName: string;
-  fileSize: number;
-  viewUrl: string;
-  metadata?: {
-    month: number;
-    year: number;
-    totalAmount: number;
-  };
+  invoiceNumber: string;
+  totalAmount: number;
+  pdfUrl: string;
+  status: string;
+  issuedAt: string | Date;
 }
 
 const loading = ref<boolean>(false)
@@ -220,9 +217,9 @@ const fetchInvoices = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const res = await $api<Invoice[]>('/api/vendors/invoices')
+    const res = await $api<any>('/api/vendors/invoices')
     if (res.success && res.data) {
-      invoices.value = res.data
+      invoices.value = res.data.items || []
     }
   } catch (err: unknown) {
     console.error('Failed to fetch invoices:', err)
@@ -234,17 +231,23 @@ const fetchInvoices = async () => {
 }
 
 const lastMonthAmount = computed(() => {
-  if (invoices.value.length === 0) return 0
-  return invoices.value[0].metadata?.totalAmount || 0
+  if (!invoices.value || invoices.value.length === 0) return 0
+  return invoices.value[0].totalAmount || 0
 })
 
-const getMonthName = (month?: number) => {
-  if (!month) return 'Bilinmeyen'
+const getMonthNameFromDate = (dateStr?: string | Date) => {
+  if (!dateStr) return 'Bilinmeyen'
+  const date = new Date(dateStr)
   const months = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
   ]
-  return months[month - 1] || 'Bilinmeyen'
+  return months[date.getMonth()] || 'Bilinmeyen'
+}
+
+const getYearFromDate = (dateStr?: string | Date) => {
+  if (!dateStr) return ''
+  return new Date(dateStr).getFullYear()
 }
 
 const formatAmount = (val?: number | string) => {
@@ -253,7 +256,7 @@ const formatAmount = (val?: number | string) => {
 }
 
 const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes'
+  if (!bytes || bytes === 0) return ''
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))

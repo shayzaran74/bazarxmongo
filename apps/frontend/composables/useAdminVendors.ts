@@ -31,7 +31,7 @@ export const useAdminVendors = () => {
   const fetchVendors = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/vendors')
+      const res = await $api<any>('/api/v1/admin/vendors')
       vendors.value = res.data || []
     } catch {
       $toast.error('Satıcılar yüklenemedi')

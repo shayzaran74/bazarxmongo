@@ -27,7 +27,7 @@ export const useAdminAuditLogs = () => {
   const fetchLogs = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/audit-logs', {
+      const res = await $api<any>('/api/v1/admin/audit-logs', {
         query: {
           page: filters.page,
           limit: filters.limit,

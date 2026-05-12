@@ -69,6 +69,15 @@ export class BulkImportVendorProductsHandler
     const categoryId = row['categoryid'] || row['category_id'] || null;
     const brand = row['brand'] || row['marka'] || 'Genel';
     const description = row['description'] || row['açıklama'] || '';
+    const rowType = row['type'] || row['vendortype'] || row['vendor_type'] || null;
+
+    // Geçerli vendorType değeri kontrolü
+    const validVendorTypes = ['COMMERCE', 'RESTAURANT', 'MARKET', 'SERVICE'];
+    if (rowType && !validVendorTypes.includes(rowType)) {
+      results.failed++;
+      results.errors.push(`Satır ${rowNum}: Geçersiz 'type' değeri '${rowType}' — geçerli: ${validVendorTypes.join(', ')}`);
+      return;
+    }
 
     // Barkod veya SKU ile mevcut listing'i bul → güncelle
     const lookupKey = barcode || sku;

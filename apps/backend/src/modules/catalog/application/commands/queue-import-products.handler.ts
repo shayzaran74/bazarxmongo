@@ -19,7 +19,7 @@ export class QueueImportProductsHandler
 
   constructor(
     private readonly prisma: PrismaService,
-    @InjectQueue(PRODUCT_IMPORT_QUEUE) private readonly importQueue: Queue,
+    @InjectQueue('product-import') private readonly importQueue: Queue,
   ) {}
 
   async execute(command: QueueImportProductsCommand) {
@@ -51,6 +51,7 @@ export class QueueImportProductsHandler
       jobId: importJob.id,
       adminId,
       rows,
+      vendorType: command.vendorType,
     };
 
     await this.importQueue.add(

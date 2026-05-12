@@ -12,7 +12,20 @@ export const useProfileAddress = () => {
   const showAddressModal = ref(false)
   const isEditingAddress = ref(false)
   const addressForm = ref<Address>({ 
-    id: '', userId: '', name: '', city: '', district: '', address: '', isDefault: false 
+    id: '', 
+    userId: '', 
+    name: '', 
+    title: '',
+    fullName: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    city: '', 
+    district: '', 
+    address: '', 
+    addressLine: '',
+    addressLine1: '',
+    isDefault: false 
   })
 
   const openAddressModal = (address: Address | null = null) => {
@@ -21,7 +34,10 @@ export const useProfileAddress = () => {
       addressForm.value = { ...address }
     } else {
       isEditingAddress.value = false
-      addressForm.value = { id: '', userId: '', name: '', city: '', district: '', address: '', isDefault: false }
+      addressForm.value = { 
+        id: '', userId: '', name: '', title: '', fullName: '', firstName: '', lastName: '', 
+        phone: '', city: '', district: '', address: '', addressLine: '', addressLine1: '', isDefault: false 
+      }
     }
     showAddressModal.value = true
   }

@@ -110,7 +110,7 @@ const summaryStats = computed<SummaryStat[]>(() => {
 const fetchData = async () => {
     try {
         // Explicitly type the API calls to avoid tuple inference issues
-        const adsRes = await ads.fetchAds() as any
+        const adsRes = await ads.fetchCampaigns() as any
         const summaryRes = await ads.getAdSummary(30) as any
         const productsRes = await $api<any[]>('/api/vendors/products', { params: { limit: 500 } })
 

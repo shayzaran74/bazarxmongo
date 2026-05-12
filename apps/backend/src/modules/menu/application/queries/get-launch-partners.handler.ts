@@ -1,5 +1,9 @@
+// apps/backend/src/modules/menu/application/queries/get-launch-partners.handler.ts
+// BazarX Go: LaunchPartner.restaurantId → vendorId
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import type { Prisma } from '@prisma/client';
 import { GetLaunchPartnersQuery } from './get-launch-partners.query';
 
 @QueryHandler(GetLaunchPartnersQuery)
@@ -10,32 +14,40 @@ export class GetLaunchPartnersHandler implements IQueryHandler<GetLaunchPartners
     const { phase, city, page = 1, limit = 20 } = query.filters;
     const skip = (page - 1) * limit;
 
+    const where: Prisma.LaunchPartnerWhereInput = {
+      ...(phase ? { phase: phase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3' } : {}),
+      ...(city
+        ? { vendor: { profile: { city: { contains: city, mode: 'insensitive' } } } }
+        : {}),
+    };
+
     const [items, total] = await Promise.all([
       this.prisma.launchPartner.findMany({
-        where: {
-          ...(phase ? { phase: phase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3' } : {}),
-          ...(city  ? { restaurant: { city: { contains: city, mode: 'insensitive' } } } : {}),
-        },
+        where,
         skip,
         take: limit,
         include: {
-          restaurant: {
-            select: { id: true, name: true, city: true, district: true, category: true },
+          vendor: {
+            select: {
+              id:      true,
+              profile: { select: { storeName: true, city: true, district: true } },
+            },
           },
         },
         orderBy: { startDate: 'desc' },
       }),
-      this.prisma.launchPartner.count({
-        where: {
-          ...(phase ? { phase: phase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3' } : {}),
-        },
-      }),
+      this.prisma.launchPartner.count({ where }),
     ]);
 
     return {
       items: items.map((lp) => ({
-        id:               lp.id,
-        restaurant:       lp.restaurant,
+        id: lp.id,
+        restaurant: {
+          id:       lp.vendor.id,
+          name:     lp.vendor.profile?.storeName ?? '',
+          city:     lp.vendor.profile?.city ?? null,
+          district: lp.vendor.profile?.district ?? null,
+        },
         phase:            lp.phase,
         pledgedMenuCount: lp.pledgedMenuCount,
         distributedCount: lp.distributedCount,

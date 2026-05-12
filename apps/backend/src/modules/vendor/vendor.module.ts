@@ -3,7 +3,6 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@barterborsa/shared-persistence';
-import { CommerceModule } from '../commerce/commerce.module';
 
 // Controllers
 import { CompanyController } from './presentation/company.controller';
@@ -13,7 +12,6 @@ import { VendorProductController } from './presentation/vendor-product.controlle
 import { EcosystemController } from './presentation/ecosystem.controller';
 import { VendorBannersController } from './presentation/vendor-banners.controller';
 import { VendorBrandsController } from './presentation/vendor-brands.controller';
-import { AdsController } from './presentation/ads.controller';
 import { VendorAdsController } from './presentation/vendor-ads.controller';
 
 // Command handlers
@@ -39,6 +37,7 @@ import { DeleteBrandHandler } from './application/commands/delete-brand.handler'
 import { CreateBannerHandler } from './application/commands/create-banner.handler';
 import { UpdateBannerHandler } from './application/commands/update-banner.handler';
 import { DeleteBannerHandler } from './application/commands/delete-banner.handler';
+import { UpdateRestaurantSettingsHandler } from './application/commands/update-restaurant-settings.handler';
 
 // Query handlers
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -98,6 +97,7 @@ const CommandHandlers = [
   CreateBannerHandler,
   UpdateBannerHandler,
   DeleteBannerHandler,
+  UpdateRestaurantSettingsHandler,
 ];
 
 const QueryHandlers = [
@@ -131,6 +131,8 @@ const Repositories = [
   { provide: 'IVendorSettingsRepository', useClass: PrismaVendorSettingsRepository },
 ];
 
+import { CommerceModule } from '../commerce/commerce.module';
+
 @Module({
   imports: [
     CqrsModule,
@@ -145,7 +147,6 @@ const Repositories = [
     EcosystemController,
     VendorBannersController,
     VendorBrandsController,
-    AdsController,
     VendorAdsController,
     CommissionController,
   ],

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { 
+import {
   CheckIcon, InformationCircleIcon, EyeIcon, XCircleIcon
 } from '@heroicons/vue/24/outline'
 
@@ -7,6 +7,8 @@ import BrandIdentitySection from '~/components/vendor/settings/BrandIdentitySect
 import StoreCustomizationSection from '~/components/vendor/settings/StoreCustomizationSection.vue'
 import ContactInfoSection from '~/components/vendor/settings/ContactInfoSection.vue'
 import BankInfoSection from '~/components/vendor/settings/BankInfoSection.vue'
+import RestaurantSettingsSection from '~/components/vendor/settings/RestaurantSettingsSection.vue'
+import { useVendor } from '~/composables/useVendor'
 
 definePageMeta({
   layout: 'vendor',
@@ -14,6 +16,8 @@ definePageMeta({
 })
 
 useHead({ title: 'Mağaza Kontrol Merkezi - BazarX Satıcı' })
+
+const { vendorType } = useVendor()
 
 const {
   loading, saving, vendor, vendorProducts, form,
@@ -68,11 +72,14 @@ onMounted(async () => {
 
     <form v-if="!loading" class="space-y-12 pb-32" @submit.prevent="saveSettings">
       <BrandIdentitySection :form="form" @upload="handleFileUpload" />
-      
+
       <StoreCustomizationSection :form="form" :vendorProducts="vendorProducts" @toggleFlash="toggleFlashProduct" />
-      
+
+      <!-- RESTAURANT: Restaurant-specific settings -->
+      <RestaurantSettingsSection v-if="vendorType === 'RESTAURANT'" :form="form" />
+
       <ContactInfoSection :form="form" />
-      
+
       <BankInfoSection :form="form" />
 
       <!-- Sticky Action Bar -->

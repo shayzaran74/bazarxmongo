@@ -2,17 +2,34 @@
 
 import { AggregateRoot } from '@barterborsa/shared-core';
 
+// Restoran çalışma saatleri (haftanın günleri için open/close çiftleri)
+export interface OpeningHours {
+  monday?:    { open: string; close: string } | null;
+  tuesday?:   { open: string; close: string } | null;
+  wednesday?: { open: string; close: string } | null;
+  thursday?:  { open: string; close: string } | null;
+  friday?:    { open: string; close: string } | null;
+  saturday?:  { open: string; close: string } | null;
+  sunday?:    { open: string; close: string } | null;
+}
+
 export interface VendorProfileProps {
-  vendorId: string;
-  storeName: string;
-  description?: string;
-  logo?: string;
-  banner?: string;
-  supportEmail?: string;
-  isFeatured: boolean;
-  featuredUntil?: Date;
-  city?: string; // PilotCity enum can be used if preferred
-  district?: string;
+  vendorId:           string;
+  storeName:          string;
+  description?:       string;
+  logo?:              string;
+  banner?:            string;
+  supportEmail?:      string;
+  isFeatured:         boolean;
+  featuredUntil?:     Date;
+  city?:              string;
+  district?:          string;
+  // Restoran-özel alanlar (vendorType=RESTAURANT için doldurulur)
+  openingHours?:       OpeningHours;
+  cuisineType?:        string;
+  deliveryRadius?:     number;
+  minOrderAmount?:     number;
+  avgPrepTimeMinutes?: number;
 }
 
 export class VendorProfile extends AggregateRoot<VendorProfileProps> {
@@ -33,6 +50,18 @@ export class VendorProfile extends AggregateRoot<VendorProfileProps> {
 
   public update(props: Partial<VendorProfileProps>): void {
     Object.assign(this.props, props);
+    this._updatedAt = new Date();
+  }
+
+  // Restoran ayarlarını günceller (RESTAURANT vendorType için)
+  public updateRestaurantSettings(settings: {
+    openingHours?:       OpeningHours;
+    cuisineType?:        string;
+    deliveryRadius?:     number;
+    minOrderAmount?:     number;
+    avgPrepTimeMinutes?: number;
+  }): void {
+    Object.assign(this.props, settings);
     this._updatedAt = new Date();
   }
 

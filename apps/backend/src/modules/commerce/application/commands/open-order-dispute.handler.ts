@@ -51,8 +51,12 @@ export class OpenOrderDisputeHandler implements ICommandHandler<OpenOrderDispute
     });
 
     // 2. Sipariş durumunu güncelle
-    // Aggregate üzerinden yapmak daha sağlıklı ama şu an hızlı aksiyon alıyoruz
-    (order as any).props.status = OrderStatus.DISPUTED;
+    // Order domain metodunu kullan — invariant korunmalı
+    try {
+      order.dispute();
+    } catch (e) {
+      throw new BadRequestException('Sipariş bu aşamada ihtilafa açılamaz.');
+    }
     await this.orderRepository.save(order);
 
     // 3. Logla

@@ -31,6 +31,8 @@ import { GenerateInvoiceHandler } from './application/commands/generate-invoice.
 import { MergeCartHandler } from './application/commands/merge-cart.handler';
 import { OpenOrderDisputeHandler } from './application/commands/open-order-dispute.handler';
 import { ResolveOrderDisputeHandler } from './application/commands/resolve-order-dispute.handler';
+import { MarkOrderPreparingHandler } from './application/commands/mark-order-preparing.handler';
+import { MarkOrderReadyHandler } from './application/commands/mark-order-ready.handler';
 
 // Query handlers
 import { GetCartHandler } from './application/queries/get-cart.handler';
@@ -55,6 +57,8 @@ const CommandHandlers = [
   MergeCartHandler,
   OpenOrderDisputeHandler,
   ResolveOrderDisputeHandler,
+  MarkOrderPreparingHandler,
+  MarkOrderReadyHandler,
 ];
 
 const QueryHandlers = [

@@ -2,6 +2,7 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { JwtModule } from '@nestjs/jwt';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
 import { PrismaService, PrismaModule } from '@barterborsa/shared-persistence';
 
@@ -44,6 +45,7 @@ import { MailService } from './infrastructure/mail/mail.service';
     CqrsModule,
     RabbitMQModule,
     PrismaModule,
+    JwtModule.register({}),
   ],
   controllers: [
     ChatController, 

@@ -194,7 +194,7 @@ const loadTransactions = async () => {
       ? await fetchTransactions({ limit: 15 })
       : await fetchAccountTransactions(selectedAccountId.value, { limit: 15 })
     
-    if (res.success) transactions.value = res.data
+    if (res.success) transactions.value = res.data || []
   } finally {
     txLoading.value = false
   }

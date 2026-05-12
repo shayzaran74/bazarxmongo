@@ -7,10 +7,10 @@ export class SwapShippingDto {
   @ApiProperty({ description: 'Kargo takip numarası', example: 'MNG-123456' })
   @IsString()
   @MinLength(3)
-  trackingCode: string;
+  trackingCode!: string;
 
   @ApiProperty({ description: 'Kargo firması', example: 'MNG Kargo' })
   @IsString()
   @MinLength(2)
-  carrier: string;
+  carrier!: string;
 }

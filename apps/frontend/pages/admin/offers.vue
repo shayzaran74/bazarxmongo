@@ -60,12 +60,16 @@
               {{ offer.toCompany.name }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ offer.offeredItem ? offer.offeredItem.title : '-' }}
-              <span class="text-xs text-gray-400 block">{{ offer.offeredQuantity }} Birim</span>
+              <div v-for="item in offer.offeredItems" :key="item.id">
+                {{ item.listing?.title || item.surplusItem?.name || 'Ürün' }}
+                <span class="text-xs text-gray-400 block">{{ item.quantity }} Birim</span>
+              </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ offer.requestedItem ? offer.requestedItem.title : '-' }}
-              <span class="text-xs text-gray-400 block">{{ offer.requestedQuantity }} Birim</span>
+              <div v-for="item in offer.requestedItems" :key="item.id">
+                {{ item.listing?.title || item.surplusItem?.name || 'Ürün' }}
+                <span class="text-xs text-gray-400 block">{{ item.quantity }} Birim</span>
+              </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
               <button
@@ -172,9 +176,9 @@ const selectedOffer = ref(null)
 const fetchOffers = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/v1/admin/offers/pending')
+        const response = await $api('/api/v1/admin/barter/offers/pending')
         if (response.success) {
-            offers.value = response.offers
+            offers.value = response.data
         }
     } catch (error) {
         console.error('Fetch offers error:', error)
@@ -187,7 +191,7 @@ const approveOffer = async (id) => {
     if (!confirm('Bu teklifi onaylamak istediğinize emin misiniz?')) return
 
     try {
-        const response = await $api(`/api/v1/admin/offers/${id}/approve`, {
+        const response = await $api(`/api/v1/admin/barter/offers/${id}/approve`, {
             method: 'PATCH'
         })
 
@@ -205,7 +209,7 @@ const rejectOffer = async (id) => {
     if (!confirm('Bu teklifi reddetmek istediğinize emin misiniz?')) return
 
     try {
-        const response = await $api(`/api/v1/admin/offers/${id}/reject`, {
+        const response = await $api(`/api/v1/admin/barter/offers/${id}/reject`, {
             method: 'PATCH'
         })
 

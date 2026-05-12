@@ -25,7 +25,7 @@ export const useAdminGroupBuy = () => {
   const fetchGroupBuys = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/group-buys')
+      const res = await $api<any>('/api/v1/admin/group-buys')
       campaigns.value = res.data || []
     } catch { /* ignore */ } finally {
       loading.value = false
@@ -38,7 +38,7 @@ export const useAdminGroupBuy = () => {
       return
     }
     try {
-      const res = await $api<any>('/api/admin/products', {
+      const res = await $api<any>('/api/v1/admin/products', {
         query: { q: productSearch.value, limit: 10 }
       })
       // The API returns the array directly in res.data, or wrapped based on the exact endpoint structure.
@@ -94,7 +94,7 @@ export const useAdminGroupBuy = () => {
           method: 'PUT', body: form.value
         })
       } else {
-        await $api('/api/admin/group-buys', {
+        await $api('/api/v1/admin/group-buys', {
           method: 'POST', body: form.value
         })
       }

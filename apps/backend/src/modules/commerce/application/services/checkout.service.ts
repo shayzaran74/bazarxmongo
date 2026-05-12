@@ -13,7 +13,9 @@ import { ShippingAddress } from '../../domain/value-objects/shipping-address.vo'
 import { Order } from '../../domain/entities/order.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { OrderStatus } from '../../domain/enums/order-status.enum';
+import { DeliveryType } from '../../domain/enums/delivery-type.enum';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { ORDER_PAYMENT_EXPIRY_MS } from '@barterborsa/shared-core';
 import { Decimal } from 'decimal.js';
 import { Prisma, OrderStatus as PrismaOrderStatus, PaymentMethod as PrismaPaymentMethod, PaymentStatus as PrismaPaymentStatus } from '@prisma/client';
 import { GenerateInvoiceCommand } from '../commands/generate-invoice.command';
@@ -75,6 +77,7 @@ export class CheckoutService {
         paidWithCash: record.paidWithCash,
         paidAt: record.paidAt ?? undefined,
         expiresAt: record.expiresAt ?? undefined,
+        deliveryType: record.deliveryType as DeliveryType,
         items,
       },
       record.id,
@@ -129,13 +132,21 @@ export class CheckoutService {
       vendorGroups.get(vendorId)!.push(entry);
     }
 
+    // BazarX Go — Vendor tipini önceden çek; RESTAURANT için LOCAL_COURIER kullanılır
+    const vendorIds = Array.from(vendorGroups.keys());
+    const vendorRecords = await this.prisma.vendor.findMany({
+      where:  { id: { in: vendorIds } },
+      select: { id: true, vendorType: true },
+    });
+    const vendorTypeMap = new Map<string, string>(vendorRecords.map((v) => [v.id, v.vendorType]));
+
     const isWalletPayment = paymentMethod.toLowerCase() === 'wallet' || useWallet;
     const createdOrders: Order[] = [];
 
     // Cüzdan dışı ödemeler için 30 dakika ödeme süresi tanı; süre geçince stok serbest bırakılır
     const orderExpiresAt = isWalletPayment
       ? undefined
-      : new Date(Date.now() + 30 * 60 * 1000);
+      : new Date(Date.now() + ORDER_PAYMENT_EXPIRY_MS);
 
     // FAZE 1: Atomik DB işlemi - stok rezervasyon + sipariş oluşturma + sepet temizleme
     // holdFunds BURADA DEĞİL - bağlantı havuzunu tıkamaması için transaction dışında yapılacak
@@ -197,6 +208,11 @@ export class CheckoutService {
           );
         });
 
+        // BazarX Go — Vendor tipine göre teslim türü
+        const deliveryType = vendorTypeMap.get(vendorId) === 'RESTAURANT'
+          ? DeliveryType.LOCAL_COURIER
+          : DeliveryType.CARGO;
+
         const order = Order.create(
           userId,
           vendorId,
@@ -208,6 +224,7 @@ export class CheckoutService {
           totals,
           couponCode,
           orderExpiresAt,
+          deliveryType,
         );
 
         await tx.order.create({
@@ -230,6 +247,7 @@ export class CheckoutService {
             paidWithCash: new Decimal(order.getProps().paidWithCash),
             expiresAt: order.getProps().expiresAt ?? null,
             idempotencyKey: clientMutationId ?? null,
+            deliveryType: deliveryType,
             orderItems: {
               create: orderItems.map((oi) => ({
                 id: oi.id,
@@ -347,34 +365,45 @@ export class CheckoutService {
       }
     }
 
-    // FAZE 3: Event yayını ve fatura oluşturma (transaction sonrası)
-    for (const order of createdOrders) {
-      await this.rabbitMQ.publish('commerce.events', 'order.created', {
-        orderId: order.id,
-        id: order.id,
-        orderNumber: order.getProps().orderNumber.value,
-        userId,
-        buyerId: userId,
-        sellerId: order.getProps().vendorId,
-        vendorId: order.getProps().vendorId,
-        totalAmount: order.getProps().totalAmount.toString(),
-        shippingAddress: order.getProps().shippingAddress.toJson(),
-        billingAddress: order.getProps().billingAddress.toJson(),
-        items: order.getProps().items?.map((item) => ({
-          listingId: item.getProps().listingId,
-          quantity: item.getProps().quantity,
-          price: item.getProps().price.toString(),
-        })),
-        createdAt: new Date(),
-      });
+    // FAZE 3: Transactional outbox - event'ler DB transaction içinde yazılır
+    // Outbox processor bu event'leri RabbitMQ'ya publish eder
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      for (const order of createdOrders) {
+        await this.rabbitMQ.publishTransactional(
+          tx,
+          order.id,
+          'Order',
+          'order.created',
+          'commerce.events',
+          'order.created',
+          {
+            orderId: order.id,
+            id: order.id,
+            orderNumber: order.getProps().orderNumber.value,
+            userId,
+            buyerId: userId,
+            sellerId: order.getProps().vendorId,
+            vendorId: order.getProps().vendorId,
+            totalAmount: order.getProps().totalAmount.toString(),
+            shippingAddress: order.getProps().shippingAddress.toJson(),
+            billingAddress: order.getProps().billingAddress.toJson(),
+            items: order.getProps().items?.map((item) => ({
+              listingId: item.getProps().listingId,
+              quantity: item.getProps().quantity,
+              price: item.getProps().price.toString(),
+            })),
+            createdAt: new Date(),
+          },
+        );
 
-      try {
-        await this.commandBus.execute(new GenerateInvoiceCommand(order.id, true));
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Bilinmeyen hata';
-        this.logger.warn(`Otomatik fatura oluşturma başarısız: ${order.id}`, { error: msg });
+        try {
+          await this.commandBus.execute(new GenerateInvoiceCommand(order.id, true));
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : 'Bilinmeyen hata';
+          this.logger.warn(`Otomatik fatura oluşturma başarısız: ${order.id}`, { error: msg });
+        }
       }
-    }
+    });
 
     return createdOrders;
   }

@@ -9,7 +9,17 @@ import { AnalyticsEvent } from '../../domain/entities/analytics.entities';
 export class TrackEventHandler implements ICommandHandler<TrackEventCommand> {
   constructor(private readonly repository: PrismaAnalyticsRepository) {}
   async execute(command: TrackEventCommand) {
-    const event = AnalyticsEvent.track(command.event);
-    await this.repository.trackEvent(event);
+    try {
+      if (!command || !command.event) {
+        return;
+      }
+      const event = AnalyticsEvent.track(command.event);
+      await this.repository.trackEvent(event);
+      return { success: true };
+    } catch (error) {
+      // Analytics tracking should never crash the main process or block the user
+      console.error('TrackEventHandler Error:', error);
+      return { success: false, error: 'Failed to track event' };
+    }
   }
 }

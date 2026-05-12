@@ -23,7 +23,11 @@ export class CatalogProductController {
   @Get('homepage-bulk')
   async getHomepageBulk() {
     const result = await this.queryBus.execute(
-      new GetCatalogProductsQuery({ page: 1, limit: 8 })
+      new GetCatalogProductsQuery({ 
+        page: 1, 
+        limit: 8,
+        excludeVendorTypes: ['RESTAURANT']
+      })
     );
 
     const bestSellersByCategory: Record<string, any[]> = {};
@@ -90,6 +94,9 @@ export class CatalogProductController {
         isFeatured: query.isFeatured === 'true',
         isSpecialOffer: query.isSpecialOffer === 'true',
         isFlashSale: query.isFlashSale === 'true',
+        vendorId: query.vendorId,
+        vendorType: query.vendorType,
+        excludeVendorTypes: query.vendorType ? undefined : (query.excludeVendorTypes ? (Array.isArray(query.excludeVendorTypes) ? query.excludeVendorTypes : [query.excludeVendorTypes]) : ['RESTAURANT']),
         page: Number(query.page) || 1,
         limit: Number(query.limit) || 20,
       })

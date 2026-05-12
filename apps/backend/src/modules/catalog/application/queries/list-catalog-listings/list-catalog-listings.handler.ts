@@ -14,22 +14,31 @@ export class ListCatalogListingsHandler
     const { search, page = 1, limit = 50 } = filters;
     const skip = (page - 1) * limit;
 
-    // VENDOR kendi ilanlarını görür, ADMIN tümünü görür
-    const where: any = {};
+    // GÜVENLİK: Varsayılan olarak hiçbir şey gösterme (Default Deny)
+    const where: any = { status: 'ACTIVE' };
 
-    const isVendor = userRole === 'VENDOR' || (Array.isArray(userRole) && userRole.includes('VENDOR'));
-    const isAdmin = userRole === 'ADMIN' || (Array.isArray(userRole) && userRole.includes('ADMIN'));
-    
-    if (isVendor && !isAdmin) {
+    const roles = Array.isArray(userRole) ? userRole : (userRole ? [userRole] : []);
+    const isAdmin = roles.some(r => ['ADMIN', 'SUPER_ADMIN'].includes(r));
+    const isVendor = roles.includes('VENDOR');
+    const isVendorScope = filters.scope === 'vendor';
+
+    if (isAdmin) {
+      // Admin her şeyi görebilir
+    } else if (isVendor && isVendorScope && userId) {
+      // Sadece dashboard üzerinden (scope=vendor) bakılıyorsa satıcı filtrelemesi yap
       const vendor = await this.prisma.vendor.findUnique({
         where: { userId }
       });
+      
       if (vendor) {
         where.vendorId = vendor.id;
       } else {
-        // Vendor bulunamadıysa hiçbir şey dönme (güvenlik için)
-        where.vendorId = 'non-existent';
+        // Vendor profili yoksa hiçbir şey gösterme (Dashboard güvenliği)
+        return { items: [], pagination: { total: 0, page, limit, totalPages: 0 } };
       }
+    } else {
+      // Genel marketplace görünümü: Herkes (aktif satıcılar dahil) tüm aktif ürünleri görebilir
+      // 'where.status = ACTIVE' zaten yukarıda set edildi.
     }
 
     if (search) {
@@ -37,6 +46,12 @@ export class ListCatalogListingsHandler
         { title: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } }
       ];
+    }
+
+    if (filters.vendorType) {
+      where.vendor = {
+        vendorType: filters.vendorType
+      };
     }
 
     const [items, total] = await Promise.all([

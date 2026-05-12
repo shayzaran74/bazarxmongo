@@ -24,7 +24,7 @@
       v-if="categories.length === 0 && !loading"
       class="bg-white rounded-lg shadow-sm border border-gray-200"
     >
-      <EmptyState
+      <CommonEmptyState
         :icon="FolderIcon"
         title="Henüz barter kategorisi yok"
         description="Takas ürünlerinizi organize etmek için kategoriler oluşturun"
@@ -357,6 +357,7 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import * as HeroIcons from '@heroicons/vue/24/outline'
 const { PlusIcon, FolderIcon } = HeroIcons
 
@@ -388,7 +389,7 @@ const mainCategories = computed(() => {
 const fetchCategories = async () => {
     loading.value = true
     try {
-        const response = await $api('/api/v1/admin/surplus-categories?includeChildren=true')
+        const response = await $api('/api/v1/admin/barter/surplus-categories?includeChildren=true')
         categories.value = response.categories
     } catch (error) {
         console.error('Error fetching categories:', error)
@@ -426,8 +427,8 @@ const closeModal = () => {
 const saveCategory = async () => {
     try {
         const url = editingCategory.value
-            ? `/api/v1/admin/surplus-categories/${editingCategory.value.id}`
-            : '/api/v1/admin/surplus-categories'
+            ? `/api/v1/admin/barter/surplus-categories/${editingCategory.value.id}`
+            : '/api/v1/admin/barter/surplus-categories'
 
         const method = editingCategory.value ? 'PATCH' : 'POST'
 
@@ -455,7 +456,7 @@ const deleteCategory = async (id) => {
     if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return
 
     try {
-        await $api(`/api/v1/admin/surplus-categories/${id}`, {
+        await $api(`/api/v1/admin/barter/surplus-categories/${id}`, {
             method: 'DELETE'
         })
 

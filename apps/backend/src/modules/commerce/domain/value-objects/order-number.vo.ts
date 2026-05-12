@@ -1,6 +1,6 @@
 // apps/backend/src/modules/commerce/domain/value-objects/order-number.vo.ts
 
-import { ValueObject } from '@barterborsa/shared-core';
+import { ValueObject, ORDER_NUMBER_MIN, ORDER_NUMBER_MAX } from '@barterborsa/shared-core';
 
 interface OrderNumberProps {
   value: string;
@@ -21,7 +21,7 @@ export class OrderNumber extends ValueObject<OrderNumberProps> {
   public static generate(): OrderNumber {
     const now = new Date();
     const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomPart = Math.floor(10000 + Math.random() * 90000).toString();
+    const randomPart = Math.floor(ORDER_NUMBER_MIN + Math.random() * (ORDER_NUMBER_MAX - ORDER_NUMBER_MIN)).toString();
     return new OrderNumber({ value: `BB-${datePart}-${randomPart}` });
   }
 

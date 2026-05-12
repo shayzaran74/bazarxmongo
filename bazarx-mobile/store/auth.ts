@@ -26,8 +26,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  login: async (token, user) => {
+  login: async (token: string, refreshToken: string | null, user: User) => {
     await SecureStore.setItemAsync('access_token', token)
+    if (refreshToken) {
+      await SecureStore.setItemAsync('refresh_token', refreshToken)
+    }
     set({ token, user, isAuthenticated: true })
   },
 

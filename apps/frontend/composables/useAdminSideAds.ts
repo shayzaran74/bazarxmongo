@@ -14,7 +14,7 @@ export const useAdminSideAds = () => {
   const fetchSideAds = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/side-ads')
+      const res = await $api<any>('/api/v1/admin/side-ads')
       sideAds.value = res.data || []
     } catch { /* ignore */ } finally {
       loading.value = false
@@ -29,7 +29,7 @@ export const useAdminSideAds = () => {
           method: 'PUT', body: data
         })
       } else {
-        await $api('/api/admin/side-ads', {
+        await $api('/api/v1/admin/side-ads', {
           method: 'POST', body: data
         })
       }
@@ -55,7 +55,7 @@ export const useAdminSideAds = () => {
 
   const handleDragEnd = async (event: any) => {
     try {
-      await $api('/api/admin/side-ads/reorder', {
+      await $api('/api/v1/admin/side-ads/reorder', {
         method: 'POST',
         body: { ids: sideAds.value.map(a => a.id) }
       })

@@ -7,15 +7,14 @@ export const xpService = {
    */
   async getBurningRisk() {
     try {
-      // Create axios instance with config if not using Nuxt's strict $fetch but preserving user intent
-      const token = import.meta.client ? localStorage.getItem('token') : null;
-      
-      const response = await axios.get('http://localhost:3000/api/vendor/xp/burning-risk', {
+      const token = useCookie('access_token')?.value;
+
+      const response = await axios.get('/api/v1/vendors/xp/burning-risk', {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
-      return response.data; // Dönüş beklenen format: Array of XpBatch objects
+      return response.data;
     } catch (error) {
       console.error('Watchtower Risk Verisi Çekilemedi:', error);
       return [];

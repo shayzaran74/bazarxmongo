@@ -1,5 +1,6 @@
 // apps/backend/src/modules/menu/application/commands/advance-launch-partner-phase.handler.ts
 // Master Plan v4.3 §2.8 — 3 Fazlı Süreç Yönetimi
+// BazarX Go: LaunchPartner.restaurantId → vendorId
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
@@ -26,11 +27,11 @@ export class AdvanceLaunchPartnerPhaseHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: AdvanceLaunchPartnerPhaseCommand) {
-    const { restaurantId, adminId, notes } = command;
+    const { vendorId, adminId, notes } = command;
 
     const partner = await this.prisma.launchPartner.findUnique({
-      where:   { restaurantId },
-      include: { restaurant: { select: { name: true } } },
+      where:   { vendorId },
+      include: { vendor: { include: { profile: { select: { storeName: true } } } } },
     });
     if (!partner) throw new NotFoundException('Lansman ortağı bulunamadı');
 
@@ -56,20 +57,23 @@ export class AdvanceLaunchPartnerPhaseHandler
     if (nextPhase === 'PHASE_3') updateData.phase3StartDate = new Date();
 
     await this.prisma.launchPartner.update({
-      where: { restaurantId },
+      where: { vendorId },
       data:  updateData,
     });
 
+    const storeName = partner.vendor.profile?.storeName ?? 'Satıcı';
+
     this.logger.log('Lansman ortağı fazı ilerledi', {
-      restaurantId,
-      restaurant: partner.restaurant.name,
+      vendorId,
+      storeName,
+      adminId,
       from: currentPhase,
       to:   nextPhase,
     });
 
     return {
       success: true,
-      message: `${partner.restaurant.name} → ${PHASE_LABELS[nextPhase]}`,
+      message: `${storeName} → ${PHASE_LABELS[nextPhase]}`,
       data: { previousPhase: currentPhase, currentPhase: nextPhase },
     };
   }

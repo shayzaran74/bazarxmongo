@@ -12,11 +12,11 @@ export class GetCatalogProductsHandler
     const {
       search, categoryId,
       isFeatured, isSpecialOffer, isFlashSale,
-      page = 1, limit = 20
+      vendorType, excludeVendorTypes,
+      page = 1, limit = 48
     } = query.filters;
 
     const skip = (page - 1) * limit;
-
     const where: any = { status: 'ACTIVE' };
 
     if (search) {
@@ -77,6 +77,24 @@ export class GetCatalogProductsHandler
     if (isFeatured === true) where.isFeatured = true;
     if (isSpecialOffer === true) where.isSpecialOffer = true;
     if (isFlashSale === true) where.isFlashSale = true;
+    if (query.filters.vendorId) {
+      where.listings = {
+        some: {
+          vendorId: query.filters.vendorId,
+          status: 'ACTIVE'
+        }
+      };
+    } else if (vendorType || (excludeVendorTypes && excludeVendorTypes.length > 0)) {
+      where.listings = {
+        some: {
+          status: 'ACTIVE',
+          vendor: {
+            ...(vendorType && { vendorType: vendorType as any }),
+            ...(excludeVendorTypes && { vendorType: { notIn: excludeVendorTypes as any } })
+          }
+        }
+      };
+    }
 
     const [rawItems, total] = await Promise.all([
       this.prisma.catalogProduct.findMany({
@@ -85,7 +103,10 @@ export class GetCatalogProductsHandler
           category: true,
           media: { orderBy: { sortOrder: 'asc' } },
           listings: {
-            where: { status: 'ACTIVE' },
+            where: { 
+              status: 'ACTIVE',
+              ...(query.filters.vendorId && { vendorId: query.filters.vendorId })
+            },
             take: 1,
             orderBy: { price: 'asc' }
           },

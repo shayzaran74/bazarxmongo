@@ -11,6 +11,9 @@ export class GetCatalogProductsQuery {
       isFlashSale?: boolean;
       page?: number;
       limit?: number;
+      vendorId?: string;
+      vendorType?: string;
+      excludeVendorTypes?: string[];
     } = {}
   ) {}
 }

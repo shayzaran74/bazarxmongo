@@ -10,46 +10,60 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import { UsePipes, ValidationPipe, Logger } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { JwtService } from '@nestjs/jwt';
 import { SendMessageCommand } from '../../application/commands/send-message.command';
 import { SendMessageDto } from '../../application/dtos/send-message.dto';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
-import { Public } from '@barterborsa/shared-security';
+const WS_CORS_ORIGIN = process.env.WS_CORS_ORIGIN || '*';
 
-@Public()
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: WS_CORS_ORIGIN, credentials: true },
 })
+@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
+
   @WebSocketServer()
   server!: Server;
 
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly jwtService: JwtService,
   ) {}
 
   async handleConnection(client: Socket) {
     try {
-      // In real scenario, extract token from handshake: client.handshake.auth.token
-      // Verify JWT and attach userId to client
-      const userId = client.handshake.query.userId as string; // Placeholder for logic
-      if (!userId) {
+      // JWT token handshake.auth.token'dan alınır
+      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      if (!token) {
+        this.logger.warn(`WebSocket bağlantısı reddedildi: token yok (${client.id})`);
         client.disconnect();
         return;
       }
+
+      const payload = this.jwtService.verify(token);
+      const userId = payload.sub || payload.userId;
+      if (!userId) {
+        this.logger.warn(`WebSocket bağlantısı reddedildi: geçersiz payload (${client.id})`);
+        client.disconnect();
+        return;
+      }
+
       (client as any).userId = userId;
-      client.join(`user:${userId}`); // Kullanıcıya özel odaya katıl (bildirimler için)
-      console.log(`Client connected: ${client.id}, user: ${userId}`);
+      client.join(`user:${userId}`);
+      this.logger.log(`Client connected: ${client.id}, user: ${userId}`);
     } catch (err) {
+      this.logger.warn(`WebSocket bağlantısı reddedildi: auth hatası (${client.id})`);
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('room:join')
@@ -67,10 +81,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: string; content: string; type?: ChatMessageType }
+    @MessageBody() data: SendMessageDto & { roomId: string }
   ) {
     const userId = (client as any).userId;
-    
+
     const result = await this.commandBus.execute(
       new SendMessageCommand(
         data.roomId,

@@ -7,7 +7,7 @@ export class OpenDisputeDto {
   @ApiProperty({ description: 'İtiraz nedeni', example: 'Ürün hasarlı geldi' })
   @IsString()
   @IsNotEmpty()
-  reason: string;
+  reason!: string;
 
   @ApiPropertyOptional({ description: 'Detaylı açıklama' })
   @IsString()

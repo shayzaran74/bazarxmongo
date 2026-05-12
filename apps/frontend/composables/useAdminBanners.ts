@@ -50,7 +50,7 @@ export const useAdminBanners = () => {
   const fetchBanners = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/admin/banners')
+      const res = await $api<any>('/api/v1/admin/banners')
       banners.value = (res.data || []).map(mapBannerData)
     } catch {
       $toast.error('Bannerlar yüklenemedi')
@@ -163,7 +163,7 @@ export const useAdminBanners = () => {
           body: payload
         })
       } else {
-        await $api('/api/admin/banners', {
+        await $api('/api/v1/admin/banners', {
           method: 'POST',
           body: payload
         })

@@ -240,6 +240,7 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import {
   ArrowsRightLeftIcon,
   ArrowUpTrayIcon,
@@ -275,7 +276,7 @@ const handleFileUpload = async (event) => {
   formData.append('file', file)
 
   try {
-    const response = await $api('/api/v1/admin/transfers/import-excel', {
+    const response = await $api('/api/v1/admin/inventory/transfers/import-excel', {
       method: 'POST',
       body: formData
     })
@@ -305,9 +306,9 @@ const handleFileUpload = async (event) => {
 const fetchTransfers = async () => {
   loading.value = true
   try {
-    const response = await $api('/api/v1/admin/transfers')
+    const response = await $api('/api/v1/admin/inventory/transfers')
     if (response.success) {
-      transfers.value = response.data
+      transfers.value = response.data.items
     }
   } catch (error) {
     console.error('Fetch transfers error:', error)

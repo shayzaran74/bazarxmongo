@@ -31,7 +31,9 @@
 
       <!-- ── Ürünler ── -->
       <div class="pt-4 pb-1">
-        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ürünler</p>
+        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          {{ isRestaurant ? 'Menüler' : 'Ürünler' }}
+        </p>
       </div>
 
       <NuxtLink
@@ -39,7 +41,7 @@
         class="flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
         :class="{ 'bg-gray-800': route.path.startsWith('/vendor/products') }"
       >
-        <div class="flex items-center"><ShoppingBagIcon class="h-5 w-5 mr-3" />Ürünler</div>
+        <div class="flex items-center"><ShoppingBagIcon class="h-5 w-5 mr-3" />{{ isRestaurant ? 'Menüler' : 'Ürünler' }}</div>
       </NuxtLink>
 
       <NuxtLink
@@ -71,7 +73,22 @@
         <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Siparişler</p>
       </div>
 
+      <!-- Restaurant: Canlı Siparişler -->
       <NuxtLink
+        v-if="isRestaurant"
+        to="/vendor/orders"
+        class="flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+        :class="{ 'bg-gray-800': route.path.startsWith('/vendor/order') }"
+      >
+        <div class="flex items-center"><FireIcon class="h-5 w-5 mr-3" />Canlı Siparişler</div>
+        <span v-if="pendingOrderCount > 0" class="pending-badge">
+          {{ pendingOrderCount > 99 ? '99+' : pendingOrderCount }}
+        </span>
+      </NuxtLink>
+
+      <!-- Commerce/Market: Regular Orders -->
+      <NuxtLink
+        v-else
         to="/vendor/orders"
         class="flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
         :class="{ 'bg-gray-800': route.path.startsWith('/vendor/order') }"
@@ -189,8 +206,9 @@
 import {
   HomeIcon, ShoppingBagIcon, CubeIcon, DocumentTextIcon, ChartBarIcon, CogIcon,
   ArrowRightOnRectangleIcon, ArrowsRightLeftIcon, SparklesIcon, PhotoIcon,
-  MegaphoneIcon, TagIcon, ShieldCheckIcon, DocumentDuplicateIcon
+  MegaphoneIcon, TagIcon, ShieldCheckIcon, DocumentDuplicateIcon, FireIcon
 } from '@heroicons/vue/24/outline'
+import { useVendor } from '~/composables/useVendor'
 
 defineProps<{
   pendingOrderCount: number
@@ -202,6 +220,7 @@ defineProps<{
 defineEmits<{ (e: 'logout'): void }>()
 
 const route = useRoute()
+const { vendorType, isRestaurant } = useVendor()
 </script>
 
 <style scoped>

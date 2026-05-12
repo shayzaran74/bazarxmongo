@@ -104,12 +104,17 @@ export interface Address {
   id: string;
   userId: string;
   name: string;
+  title?: string;
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   city: string;
   district: string;
   address: string;
   addressLine?: string;
+  addressLine1?: string;
+  addressLine2?: string;
   isDefault: boolean;
 }
 

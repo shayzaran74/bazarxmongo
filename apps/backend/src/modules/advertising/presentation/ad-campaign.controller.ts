@@ -15,6 +15,13 @@ import { AdSlotType } from '../domain/enums/advertising.enums';
 @Controller('ads')
 export class AdCampaignController {
   constructor(private readonly queryBus: QueryBus) {}
+  
+  @Public()
+  @ApiOperation({ summary: 'List all active ads (public)' })
+  @Get()
+  async findAll() {
+    return { success: true, data: [] };
+  }
 
   @Public()
   @ApiOperation({ summary: 'Get ads for a specific slot', description: 'Belirli bir reklam alanı (örn: HOME_HERO, SIDEBAR) için aktif reklamları döner.' })

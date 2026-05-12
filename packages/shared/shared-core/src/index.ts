@@ -8,3 +8,4 @@ export * from './messaging/event-bus.interface';
 export * from './types/result.type';
 export * from './types/exceptions';
 export * from './domain/repository.interface';
+export * from './common/constants';

@@ -2,11 +2,7 @@
 
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
-
-// PENDING siparişler için maksimum bekleme süresi (30 dk)
-const EXPIRY_WINDOW_MS = 30 * 60 * 1000;
-// Kontrol aralığı: her 5 dakikada bir çalışır
-const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+import { ORDER_PAYMENT_EXPIRY_MS, ORDER_EXPIRY_CHECK_INTERVAL_MS } from '@barterborsa/shared-core';
 
 @Injectable()
 export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
@@ -20,7 +16,7 @@ export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
     void this.cancelExpiredOrders();
     this.intervalHandle = setInterval(
       () => void this.cancelExpiredOrders(),
-      CHECK_INTERVAL_MS,
+      ORDER_EXPIRY_CHECK_INTERVAL_MS,
     );
   }
 
