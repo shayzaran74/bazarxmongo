@@ -162,7 +162,7 @@
           
           <!-- Satıcı Tipi Ayarları -->
           <div
-            v-if="vendor && vendor.status === 'APPROVED'"
+            v-if="vendor"
             class="bg-orange-50 border border-orange-200 rounded-lg p-4"
           >
             <h3 class="font-bold text-orange-900 mb-2">
