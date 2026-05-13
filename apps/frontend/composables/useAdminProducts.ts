@@ -63,7 +63,9 @@ export const useAdminProducts = () => {
           limit: pagination.limit,
           q: searchQuery.value || undefined,
           categoryId: selectedFilterCategoryId.value || undefined,
+          vendorId: selectedFilterVendorId.value || undefined,
           status: showPendingProducts.value ? 'PENDING' : undefined,
+          vendorOnly: showVendorProducts.value ? true : undefined,
         }
       })
       products.value      = Array.isArray(res.data) ? res.data : (res.data?.items || [])

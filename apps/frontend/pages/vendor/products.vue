@@ -61,10 +61,10 @@
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters & Bulk Actions -->
       <div class="bg-white rounded-lg shadow p-6 mb-8 border border-gray-100">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="md:col-span-3">
+        <div class="flex flex-col md:flex-row md:items-end gap-4">
+          <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-1">Ara</label>
             <div class="relative">
               <input
@@ -72,17 +72,25 @@
                 type="text"
                 placeholder="İsim, Barkod, SKU..."
                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                @keyup.enter="() => refresh()"
+                @keyup.enter="refresh()"
               >
               <HeroIcons.MagnifyingGlassIcon class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
-          <div class="flex items-end text-right">
+          <div class="flex gap-2">
             <button
-              class="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-semibold"
-              @click="() => refresh()"
+              class="bg-primary-600 text-white py-2 px-6 rounded-lg hover:bg-primary-700 transition-colors font-semibold"
+              @click="refresh()"
             >
               Filtrele
+            </button>
+            <button
+              v-if="selectedIds.length > 0"
+              class="bg-red-500 text-white py-2 px-6 rounded-lg hover:bg-red-600 transition-colors font-semibold flex items-center"
+              @click="handleBulkDelete"
+            >
+              <HeroIcons.TrashIcon class="h-5 w-5 mr-2" />
+              Seçilenleri Sil ({{ selectedIds.length }})
             </button>
           </div>
         </div>
@@ -113,6 +121,14 @@
           <table class="w-full text-left">
             <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-widest font-black">
               <tr>
+                <th class="px-6 py-5 w-10">
+                  <input 
+                    type="checkbox" 
+                    class="rounded border-gray-700 text-primary-600 focus:ring-primary-500 h-4 w-4"
+                    :checked="isAllSelected"
+                    @change="toggleSelectAll"
+                  >
+                </th>
                 <th class="px-6 py-5">Ürün Bilgisi</th>
                 <th class="px-6 py-5">Fiyat / Stok</th>
                 <th class="px-6 py-5">Durum</th>
@@ -124,7 +140,16 @@
                 v-for="product in products"
                 :key="product.id"
                 class="group hover:bg-primary-50/30 transition-all duration-300"
+                :class="{ 'bg-primary-50/50': selectedIds.includes(product.id) }"
               >
+                <td class="px-6 py-5">
+                  <input 
+                    type="checkbox" 
+                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-4 w-4"
+                    :checked="selectedIds.includes(product.id)"
+                    @change="toggleSelect(product.id)"
+                  >
+                </td>
                 <td class="px-6 py-5">
                   <div class="flex items-center space-x-4">
                     <div class="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 border">
@@ -135,7 +160,7 @@
                     </div>
                     <div>
                       <h4 class="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-primary-600">
-                        {{ product.name }}
+                        {{ product.name || product.title }}
                       </h4>
                       <p class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-widest">
                         SKU: {{ product.sku || '-' }}
@@ -148,8 +173,29 @@
                   <p class="text-[10px] font-black uppercase text-gray-500">{{ product.stock }} ADET</p>
                 </td>
                 <td class="px-6 py-5">
-                  <span class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-green-100 text-green-700">
+                  <span 
+                    v-if="product.status === 'ACTIVE'"
+                    class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-green-100 text-green-700"
+                  >
                     AKTİF
+                  </span>
+                  <span 
+                    v-else-if="product.status === 'PENDING'"
+                    class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700"
+                  >
+                    ONAY BEKLİYOR
+                  </span>
+                  <span 
+                    v-else-if="product.status === 'OUT_OF_STOCK'"
+                    class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-red-100 text-red-700"
+                  >
+                    STOK YOK
+                  </span>
+                  <span 
+                    v-else
+                    class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-700"
+                  >
+                    {{ product.status }}
                   </span>
                 </td>
                 <td class="px-6 py-5 text-right">
@@ -172,6 +218,40 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Toplam {{ totalCount }} ürün | Sayfa {{ currentPage }} / {{ totalPages }}
+          </p>
+          <div class="flex items-center space-x-2">
+            <button
+              class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              <HeroIcons.ChevronLeftIcon class="h-5 w-5 text-gray-600" />
+            </button>
+            <div class="flex items-center space-x-1">
+              <button
+                v-for="p in displayedPages"
+                :key="p"
+                class="w-10 h-10 rounded-lg text-xs font-black transition-all"
+                :class="p === currentPage ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'"
+                @click="currentPage = p"
+              >
+                {{ p }}
+              </button>
+            </div>
+            <button
+              class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+              :disabled="currentPage === totalPages"
+              @click="currentPage++"
+            >
+              <HeroIcons.ChevronRightIcon class="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -180,7 +260,7 @@
   <TrendyolImportModal
     v-model="showTrendyolModal"
     mode="vendor"
-    @imported="refresh"
+    @imported="() => refresh()"
   />
 </template>
 
@@ -201,22 +281,59 @@ const vendorService = useVendorService()
 const searchQuery = ref('')
 const loading = ref(false)
 const showTrendyolModal = ref(false)
+const currentPage = ref(1)
+const itemsPerPage = 50
+const selectedIds = ref<string[]>([])
 
 const { data: listingData, pending, refresh } = await useAsyncData('vendor-products', () => 
   vendorService.getMyListings({ 
     search: searchQuery.value,
-    limit: 50 
-  })
+    page: currentPage.value,
+    limit: itemsPerPage
+  }),
+  { watch: [currentPage] }
 )
 
-watchEffect(() => {
-  console.log('[ProductsPage] listingData changed:', listingData.value)
+const products = computed(() => listingData.value?.data?.items || [])
+const totalCount = computed(() => {
+  const data = listingData.value?.data as any
+  return data?.pagination?.total ?? data?.total ?? 0
+})
+const totalPages = computed(() => {
+  const data = listingData.value?.data as any
+  return data?.pagination?.totalPages ?? data?.totalPages ?? 1
 })
 
-const products = computed(() => {
-  const items = listingData.value?.data?.items || []
-  console.log('[ProductsPage] computed products:', items)
-  return items
+const isAllSelected = computed(() => {
+  return products.value.length > 0 && products.value.every(p => selectedIds.value.includes(p.id))
+})
+
+const toggleSelect = (id: string) => {
+  const index = selectedIds.value.indexOf(id)
+  if (index === -1) selectedIds.value.push(id)
+  else selectedIds.value.splice(index, 1)
+}
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedIds.value = selectedIds.value.filter(id => !products.value.some(p => p.id === id))
+  } else {
+    products.value.forEach(p => {
+      if (!selectedIds.value.includes(p.id)) selectedIds.value.push(p.id)
+    })
+  }
+}
+
+const displayedPages = computed(() => {
+  const pages = []
+  const max = 5
+  let start = Math.max(1, currentPage.value - 2)
+  let end = Math.min(totalPages.value, start + max - 1)
+  
+  if (end - start < max - 1) start = Math.max(1, end - max + 1)
+  
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
 })
 
 const formatPrice = (value: number) => {
@@ -232,40 +349,53 @@ const toast = useNuxtApp().$toast
 const deleteProduct = async (id: string) => {
   if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return
   try {
-    const res = await $api(`/api/listings/${id}`, {
-      method: 'DELETE'
-    })
-    
+    const res = await $api(`/api/listings/${id}`, { method: 'DELETE' })
     if (res.success) {
-      toast.success('Ürün başarıyla silindi')
+      toast.success('Ürün silindi')
+      selectedIds.value = selectedIds.value.filter(sid => sid !== id)
       refresh()
-    } else {
-      toast.error(res.error || 'Silme işlemi başarısız oldu')
     }
   } catch (err: any) {
-    console.error('Delete error:', err)
-    toast.error(err.data?.message || 'Bir hata oluştu')
+    toast.error('Silme hatası')
+  }
+}
+
+const handleBulkDelete = async () => {
+  if (!confirm(`${selectedIds.value.length} ürünü silmek istediğinize emin misiniz?`)) return
+  
+  loading.value = true
+  let successCount = 0
+  
+  try {
+    for (const id of selectedIds.value) {
+      const res = await $api(`/api/listings/${id}`, { method: 'DELETE' })
+      if (res.success) successCount++
+    }
+    
+    toast.success(`${successCount} ürün başarıyla silindi.`)
+    selectedIds.value = []
+    refresh()
+  } catch (err: any) {
+    toast.error('Bazı ürünler silinemedi.')
+  } finally {
+    loading.value = false
   }
 }
 
 const handleExcelUpload = async (event: any) => {
   const file = event.target.files[0]
   if (!file) return
-
   const formData = new FormData()
   formData.append('file', file)
-
   loading.value = true
   try {
     const res = await vendorService.importExcel(formData)
     if (res.success) {
       alert('Ürünler başarıyla yüklendi!')
       refresh()
-    } else {
-      alert('Yükleme sırasında hata: ' + (res.error || 'Bilinmeyen hata'))
     }
   } catch (err: any) {
-    alert('Bir hata oluştu: ' + (err.data?.message || err.message))
+    alert('Hata oluştu')
   } finally {
     loading.value = false
     event.target.value = ''

@@ -185,7 +185,7 @@ export class ProductImportWorker extends WorkerHost {
             description: row.description || name,
             gtin: row.gtin || row.barcode || null,
             categoryId: row.categoryId && row.categoryId !== '' ? row.categoryId : null,
-            status: row.status || 'ACTIVE',
+            status: row.status || 'PENDING',
             isFeatured: parseBool(row.isFeatured),
             isSpecialOffer: parseBool(row.isSpecialOffer),
             isFlashSale: parseBool(row.isFlashSale),
@@ -270,7 +270,8 @@ export class ProductImportWorker extends WorkerHost {
             description: row.description,
             price: parsePrice(row.price),
             stock: parseStock(row.stock),
-            status: ListingStatus.ACTIVE,
+            availableQuantity: parseStock(row.stock), // Bu alan Admin paneli için kritik
+            status: ListingStatus.PENDING,
             sku: row.sku,
             listingType: vendorType === 'RESTAURANT' ? 'GO_FOOD' : 'SELL',
           });

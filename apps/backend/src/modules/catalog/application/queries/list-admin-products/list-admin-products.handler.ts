@@ -9,18 +9,52 @@ export class ListAdminProductsHandler
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: ListAdminProductsQuery) {
-    const { search, status, page = 1, limit = 50 } = query.filters;
+    const { search, status, page = 1, limit = 50, vendorOnly } = query.filters;
+    const vendorId = query.filters.vendorId;
+    const categoryId = query.filters.categoryId;
     const skip = Math.max(0, (page - 1) * limit);
     
-    const where: any = {};
+    const conditions: any[] = [];
+
+    // Arama: İsim, SKU veya ilan başlığı üzerinden
     if (search) {
-      where.name = { contains: search, mode: 'insensitive' as const };
+      conditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { gtin: { contains: search, mode: 'insensitive' as const } },
+          { listings: { some: { sku: { contains: search, mode: 'insensitive' as const } } } },
+          { listings: { some: { title: { contains: search, mode: 'insensitive' as const } } } },
+        ]
+      });
     }
+
+    // Kategori filtresi
+    if (categoryId) {
+      conditions.push({ categoryId });
+    }
+
+    // Belirli bir satıcıya göre filtre
+    if (vendorId) {
+      conditions.push({
+        listings: { some: { vendorId } }
+      });
+    }
+
+    // Statü filtresi (PENDING, ACTIVE vb.)
     if (status) {
-      where.listings = {
-        some: { status: status }
-      };
+      conditions.push({
+        listings: { some: { status: status as any } }
+      });
     }
+
+    // "Satıcı Ürünlerini Göster" — en az bir ilanı olan ürünler
+    if (vendorOnly && !vendorId) {
+      conditions.push({
+        listings: { some: {} }
+      });
+    }
+
+    const where: any = conditions.length > 0 ? { AND: conditions } : {};
 
     const [rawItems, total] = await Promise.all([
       this.prisma.catalogProduct.findMany({
@@ -29,7 +63,6 @@ export class ListAdminProductsHandler
           category: true,
           media: { orderBy: { sortOrder: 'asc' } },
           listings: { 
-            take: 1, 
             orderBy: { price: 'asc' },
             include: { 
               vendor: { 
@@ -51,6 +84,11 @@ export class ListAdminProductsHandler
 
     const items = rawItems.map(item => {
       const listing = item.listings?.[0] ?? null;
+      // Tüm ilanlardaki stokları topla
+      const totalStock = item.listings?.reduce((sum, l) => {
+        const qty = Number(l.availableQuantity) || Number(l.stock) || 0;
+        return sum + qty;
+      }, 0) ?? 0;
       return {
         ...item,
         Brand: item.brands?.[0] ?? null,
@@ -59,7 +97,7 @@ export class ListAdminProductsHandler
         image: item.media?.[0]?.url ?? null,
         images: item.media?.map(m => m.url) ?? [],
         price: listing ? listing.price : 0,
-        stock: listing?.availableQuantity ?? listing?.stock ?? 0,
+        stock: totalStock,
         sku: listing?.sku ?? ''
       };
     });

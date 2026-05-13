@@ -5,6 +5,9 @@ export class ListAdminProductsQuery {
       status?: string;
       page?: number;
       limit?: number;
+      vendorId?: string;
+      vendorOnly?: boolean;
+      categoryId?: string;
     }
   ) {}
 }

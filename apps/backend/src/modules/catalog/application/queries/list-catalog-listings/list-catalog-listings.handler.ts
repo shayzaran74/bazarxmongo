@@ -14,13 +14,18 @@ export class ListCatalogListingsHandler
     const { search, page = 1, limit = 50 } = filters;
     const skip = (page - 1) * limit;
 
-    // GÜVENLİK: Varsayılan olarak hiçbir şey gösterme (Default Deny)
-    const where: any = { status: 'ACTIVE' };
-
+    // GÜVENLİK: Varsayılan olarak sadece aktif ürünleri göster
+    const where: any = {};
+    
     const roles = Array.isArray(userRole) ? userRole : (userRole ? [userRole] : []);
     const isAdmin = roles.some(r => ['ADMIN', 'SUPER_ADMIN'].includes(r));
     const isVendor = roles.includes('VENDOR');
     const isVendorScope = filters.scope === 'vendor';
+
+    if (!isAdmin && !isVendorScope) {
+      // Genel marketplace görünümü: Sadece aktif ürünler
+      where.status = 'ACTIVE';
+    }
 
     if (isAdmin) {
       // Admin her şeyi görebilir

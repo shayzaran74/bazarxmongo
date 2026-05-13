@@ -327,11 +327,17 @@ export class ProductAdminController {
     @Query('limit') limit = 50,
     @Query('q') search?: string,
     @Query('status') status?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('vendorId') vendorId?: string,
+    @Query('vendorOnly') vendorOnly?: string,
   ) {
     const result = await this.queryBus.execute(
       new ListAdminProductsQuery({
         search,
         status,
+        categoryId,
+        vendorId,
+        vendorOnly: vendorOnly === 'true',
         page: Number(page) || 1,
         limit: Number(limit) || 50,
       }),

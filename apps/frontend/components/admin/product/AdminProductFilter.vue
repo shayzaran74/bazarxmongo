@@ -65,7 +65,8 @@
           id="show-vendor-products" 
           v-model="showVendorProducts" 
           type="checkbox"
-          class="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500" 
+          class="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+          @change="$emit('filter')"
         >
         <label
           for="show-vendor-products"
@@ -74,15 +75,13 @@
           Satıcı Ürünlerini Göster
         </label>
       </div>
-      <div
-        v-if="showVendorProducts"
-        class="flex items-center"
-      >
+      <div class="flex items-center">
         <input 
           id="show-pending-products" 
           v-model="showPendingProducts" 
           type="checkbox"
-          class="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500" 
+          class="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+          @change="$emit('filter')"
         >
         <label
           for="show-pending-products"
