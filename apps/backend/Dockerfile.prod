@@ -18,10 +18,7 @@ RUN pnpm install --no-frozen-lockfile
 RUN pnpm config set ignore-workspace-root-check true
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
-# TypeScript'in sembolik linklerde (pnpm virtual store) kaybolmasını önlemek için
-# hata veren shared paketlerin içine standart fiziki node_modules kuruyoruz
-RUN cd packages/shared/shared-observability && npm install --no-package-lock --legacy-peer-deps
-RUN cd packages/shared/shared-messaging && npm install --no-package-lock --legacy-peer-deps
+# Artık tsc modülleri pnpm yapısında bulabilecek
 
 # Artık tsc modülleri gerçek node_modules klasöründe bulabilecek
 RUN pnpm --filter "@barterborsa/shared-*" build
