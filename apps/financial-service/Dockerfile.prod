@@ -11,6 +11,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 
 # Bağımlılıkları yükle
+# Pnpm ayarları: Tüm paketleri düz bir yapıda kur (Docker için en stabil yöntem)
+RUN pnpm config set shamefully-hoist true && \
+    pnpm config set ignore-workspace-root-check true
+
 # Kök bağımlılıkları pnpm ile kur
 RUN pnpm install --no-frozen-lockfile
 
