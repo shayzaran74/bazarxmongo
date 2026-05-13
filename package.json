@@ -21,10 +21,13 @@
     "docker:status": "docker-compose -f infra/docker-compose.yml ps"
   },
   "dependencies": {
+    "@golevelup/nestjs-rabbitmq": "^4.1.0",
     "@nestjs/terminus": "^10.2.3",
     "nestjs-pino": "^4.0.0",
     "pino": "^8.19.0",
-    "pino-pretty": "^10.3.1"
+    "pino-pretty": "^10.3.1",
+    "amqplib": "^0.10.3",
+    "amqp-connection-manager": "^4.1.14"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
