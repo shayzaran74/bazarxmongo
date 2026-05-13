@@ -12,7 +12,7 @@ export class PrismaUserAddressRepository implements IUserAddressRepository {
     const records = await this.prisma.userAddress.findMany({
       where: { userId, deletedAt: null }
     });
-    return records.map(record => UserAddressMapper.toDomain(record));
+    return records.map((record: any) => UserAddressMapper.toDomain(record));
   }
 
   async findById(id: string): Promise<UserAddress | null> {

@@ -109,7 +109,7 @@ export class PrismaUserRepository implements IUserRepository {
       include: { profile: true, vendor: true }
     });
     
-    return records.map(r => UserMapper.toDomain(r));
+    return records.map((r: any) => UserMapper.toDomain(r));
   }
 
   async count(filters?: any): Promise<number> {

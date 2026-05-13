@@ -19,7 +19,8 @@ RUN pnpm config set shamefully-hoist true && \
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
 # Tüm paketleri build et (shared paketler dahil)
-RUN pnpm --filter "@barterborsa/shared-*" build && \
+RUN pnpm --filter "@barterborsa/shared-persistence" build && \
+    pnpm --filter "@barterborsa/shared-*" build && \
     pnpm --filter "@barterborsa/domain-*" build && \
     pnpm --filter @bazarx/backend build
 
