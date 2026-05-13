@@ -10,14 +10,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Gerekli tüm dosyaları kopyala
 COPY . .
 
-# Bağımlılıkları yükle (Tüm monorepo için)
-RUN pnpm install --no-frozen-lockfile
+# Bağımlılıkları yükle (shamefully-hoist: tüm bağımlılıklar kök node_modules'a düzleştirilir)
+RUN pnpm install --shamefully-hoist --no-frozen-lockfile
 
 # Prisma client generate
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
-
-# Shared paketlerin bağımlılıklarını ayrıca kur (Docker workspace link sorunu için)
-RUN cd packages/shared/shared-observability && pnpm install --no-frozen-lockfile && cd /app
 
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
