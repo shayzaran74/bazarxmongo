@@ -203,7 +203,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: bazarx_tunnel
     restart: unless-stopped
-    command: tunnel run bazarx-tunnel
+    command: tunnel --config /home/nonroot/.cloudflared/config.yml run bazarx-tunnel
     volumes:
       - /home/hayzaran/.cloudflared:/home/nonroot/.cloudflared
     depends_on:
