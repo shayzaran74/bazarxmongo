@@ -35,8 +35,8 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - NUXT_PUBLIC_API_BASE=https://bazarx.bazarx.info/api
-      - NUXT_PUBLIC_MINIO_BASE=https://bazarx.bazarx.info/bazarx-media
+      - NUXT_PUBLIC_API_BASE=https://bazarx.info/api
+      - NUXT_PUBLIC_MINIO_BASE=https://bazarx.info/bazarx-media
     expose:
       - "3000"
     networks:
@@ -59,13 +59,13 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       - JWT_ACCESS_SECRET=bazarx_access_secret_2026_safe_key
       - JWT_REFRESH_SECRET=bazarx_refresh_secret_2026_safe_key
-      - FRONTEND_URL=https://bazarx.bazarx.info
+      - FRONTEND_URL=https://bazarx.info
       - IYZICO_API_KEY=${IYZICO_API_KEY}
       - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY}
       - MINIO_ENDPOINT=minio
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - APP_BASE_URL=https://bazarx.bazarx.info
+      - APP_BASE_URL=https://bazarx.info
       - FINANCIAL_GRPC_URL=financial-service:50051
     volumes:
       - bazarx_uploads:/app/apps/backend/public/uploads
