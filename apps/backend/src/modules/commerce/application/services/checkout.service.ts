@@ -369,32 +369,55 @@ export class CheckoutService {
     // Outbox processor bu event'leri RabbitMQ'ya publish eder
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const order of createdOrders) {
-        await this.rabbitMQ.publishTransactional(
-          tx,
-          order.id,
-          'Order',
-          'order.created',
-          'commerce.events',
-          'order.created',
-          {
-            orderId: order.id,
-            id: order.id,
-            orderNumber: order.getProps().orderNumber.value,
-            userId,
-            buyerId: userId,
-            sellerId: order.getProps().vendorId,
-            vendorId: order.getProps().vendorId,
-            totalAmount: order.getProps().totalAmount.toString(),
-            shippingAddress: order.getProps().shippingAddress.toJson(),
-            billingAddress: order.getProps().billingAddress.toJson(),
-            items: order.getProps().items?.map((item) => ({
-              listingId: item.getProps().listingId,
-              quantity: item.getProps().quantity,
-              price: item.getProps().price.toString(),
-            })),
-            createdAt: new Date(),
-          },
-        );
+        // Transactional outbox pattern:
+        // Eğer this.rabbitMQ düzgün inject edilmemişse veya publishTransactional yoksa doğrudan fallback yap
+        if (typeof this.rabbitMQ?.publishTransactional === 'function') {
+          await this.rabbitMQ.publishTransactional(
+            tx,
+            order.id,
+            'Order',
+            'order.created',
+            'commerce.events',
+            'order.created',
+            {
+              orderId: order.id,
+              id: order.id,
+              orderNumber: order.getProps().orderNumber.value,
+              userId,
+              buyerId: userId,
+              sellerId: order.getProps().vendorId,
+              vendorId: order.getProps().vendorId,
+              totalAmount: order.getProps().totalAmount.toString(),
+              shippingAddress: order.getProps().shippingAddress.toJson(),
+              billingAddress: order.getProps().billingAddress.toJson(),
+              items: order.getProps().items?.map((item) => ({
+                listingId: item.getProps().listingId,
+                quantity: item.getProps().quantity,
+                price: item.getProps().price.toString(),
+              })),
+              createdAt: new Date(),
+            },
+          );
+        } else {
+          // Fallback: Doğrudan Prisma transaction ile Outbox tablosuna yaz
+          await tx.outboxMessage.create({
+            data: {
+              aggregateId: order.id,
+              aggregateType: 'Order',
+              eventType: 'order.created',
+              exchange: 'commerce.events',
+              routingKey: 'order.created',
+              payload: {
+                orderId: order.id,
+                id: order.id,
+                orderNumber: order.getProps().orderNumber.value,
+                userId,
+                vendorId: order.getProps().vendorId,
+              },
+              status: 'PENDING',
+            },
+          });
+        }
 
         try {
           await this.commandBus.execute(new GenerateInvoiceCommand(order.id, true));
