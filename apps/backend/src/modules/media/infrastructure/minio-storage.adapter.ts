@@ -90,22 +90,29 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
 
     await Promise.all(
       variants.map(async (v) => {
-        const processedBuffer = v.width !== null
-          ? await sharp(buffer)
-              .resize(v.width, undefined, { fit: 'inside', withoutEnlargement: true })
-              .webp({ quality: v.quality })
-              .toBuffer()
-          : await sharp(buffer)
-              .webp({ quality: v.quality })
-              .toBuffer();
+        try {
+          const processedBuffer = v.width !== null
+            ? await sharp(buffer)
+                .resize(v.width, undefined, { fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: v.quality })
+                .toBuffer()
+            : await sharp(buffer)
+                .webp({ quality: v.quality })
+                .toBuffer();
 
-        await this.minioClient.putObject(
-          this.bucketName,
-          `${prefix}/${v.name}.webp`,
-          processedBuffer,
-          processedBuffer.length,
-          { 'Content-Type': 'image/webp' },
-        );
+          await this.minioClient.putObject(
+            this.bucketName,
+            `${prefix}/${v.name}.webp`,
+            processedBuffer,
+            processedBuffer.length,
+            { 'Content-Type': 'image/webp' },
+          );
+        } catch (err) {
+          this.logger.error(`Varyant oluşturma hatası (${v.name}): ${err instanceof Error ? err.message : String(err)}`);
+          // Orijinal varyant ise hatayı fırlat ki işlem başarısız sayılsın, 
+          // ama thumb/medium gibi yan varyantlar ise devam etmeye çalışalım
+          if (v.name === 'original' || v.name === 'medium') throw err;
+        }
       }),
     );
 
