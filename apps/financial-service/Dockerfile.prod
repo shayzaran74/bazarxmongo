@@ -11,14 +11,15 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 
 # Bağımlılıkları yükle
+# Kök bağımlılıkları pnpm ile kur
 RUN pnpm install --no-frozen-lockfile
 
-# Kök node_modules'u shared paketlerin içine linkle (pnpm virtual store & tsc Cannot find module hatası için kesin çözüm)
-RUN for dir in packages/shared/*/; do \
-      ln -s /app/node_modules "$dir/node_modules" || true; \
-    done
+# TypeScript'in sembolik linklerde (pnpm virtual store) kaybolmasını önlemek için
+# hata veren shared paketlerin içine standart fiziki node_modules kuruyoruz
+RUN cd packages/shared/shared-observability && npm install --no-package-lock --legacy-peer-deps
+RUN cd packages/shared/shared-messaging && npm install --no-package-lock --legacy-peer-deps
 
-# Shared packages build
+# Artık tsc modülleri gerçek node_modules klasöründe bulabilecek
 RUN pnpm --filter "@barterborsa/shared-*" build
 
 # Prisma client generate (Build için gerekli)
