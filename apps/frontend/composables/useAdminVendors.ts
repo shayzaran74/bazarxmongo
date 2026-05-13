@@ -143,6 +143,24 @@ export const useAdminVendors = () => {
     }
   }
 
+  const updateVendorType = async (vendor: any) => {
+    if (!vendor || !vendor.id) return
+    
+    vendorActionLoading.value = true
+    try {
+      await $api(`/api/v1/admin/vendors/${vendor.id}`, {
+        method: 'PUT',
+        body: { vendorType: vendor.vendorType }
+      })
+      $toast.success('Satıcı tipi güncellendi')
+      fetchVendors()
+    } catch {
+      $toast.error('Güncelleme başarısız')
+    } finally {
+      vendorActionLoading.value = false
+    }
+  }
+
   const addCategory = async (vendor?: any) => {
     const target = vendor || selectedVendor.value
     if (!target || !selectedCategoryId.value) return
@@ -197,6 +215,6 @@ export const useAdminVendors = () => {
     fetchVendors, fetchCategories,
     openVendorDetail, closeVendorDetail,
     approveVendor, rejectVendor, toggleFeatured,
-    saveB2BSettings, addCategory, removeCategory,
+    saveB2BSettings, addCategory, removeCategory, updateVendorType,
   }
 }

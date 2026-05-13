@@ -37,6 +37,7 @@
         @toggle-featured="toggleFeatured"
         @remove-category="removeCategory"
         @add-category="addCategory"
+        @update-type="updateVendorType"
       />
     </div>
   </div>
@@ -67,7 +68,7 @@ const {
   filteredVendors, availableCategories,
   fetchVendors, fetchCategories, openVendorDetail, closeVendorDetail,
   approveVendor, rejectVendor, toggleFeatured, saveB2BSettings,
-  addCategory, removeCategory
+  addCategory, removeCategory, updateVendorType
 } = useAdminVendors()
 
 onMounted(async () => {
