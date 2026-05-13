@@ -72,6 +72,38 @@
             </div>
           </div>
 
+          <!-- Satıcı Tipi Ayarları (v1.2 - Kesin Çözüm) -->
+          <div
+            v-if="vendor"
+            class="bg-orange-50 border border-orange-200 rounded-lg p-4"
+          >
+            <h3 class="font-bold text-orange-900 mb-2 flex justify-between">
+              <span>🍴 Satıcı Tipi Ayarları (Restoran vb.)</span>
+              <span class="text-[10px] text-orange-400 font-normal italic">v1.2</span>
+            </h3>
+            <div class="flex gap-4 items-end">
+              <div class="flex-1">
+                <label class="block text-xs font-semibold text-orange-700 mb-1">Satıcı Kategorisi/Tipi</label>
+                <select
+                  :value="vendor.vendorType || 'INDIVIDUAL'"
+                  class="w-full px-3 py-2 border border-orange-200 rounded-lg bg-white"
+                  @change="vendor.vendorType = $event.target.value"
+                >
+                  <option value="INDIVIDUAL">Bireysel Satıcı</option>
+                  <option value="CORPORATE">Kurumsal Satıcı</option>
+                  <option value="RESTAURANT">Restoran / Yemek</option>
+                  <option value="SERVICE">Hizmet Sağlayıcı</option>
+                </select>
+              </div>
+              <button
+                class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 h-[42px]"
+                @click="$emit('update-type', vendor)"
+              >
+                Tipi Güncelle
+              </button>
+            </div>
+          </div>
+
           <!-- Kurumsal İş Ortağı Ayarları -->
           <div
             v-if="vendor && vendor.status === 'APPROVED'"
@@ -157,37 +189,6 @@
                   Ayarları Kaydet
                 </button>
               </div>
-            </div>
-          </div>
-          
-          <!-- Satıcı Tipi Ayarları -->
-          <div
-            v-if="vendor"
-            class="bg-orange-50 border border-orange-200 rounded-lg p-4"
-          >
-            <h3 class="font-bold text-orange-900 mb-2">
-              🍴 Satıcı Tipi Ayarları (Restoran vb.)
-            </h3>
-            <div class="flex gap-4 items-end">
-              <div class="flex-1">
-                <label class="block text-xs font-semibold text-orange-700 mb-1">Satıcı Kategorisi/Tipi</label>
-                <select
-                  :value="vendor.vendorType || 'INDIVIDUAL'"
-                  class="w-full px-3 py-2 border border-orange-200 rounded-lg bg-white"
-                  @change="vendor.vendorType = $event.target.value"
-                >
-                  <option value="INDIVIDUAL">Bireysel Satıcı</option>
-                  <option value="CORPORATE">Kurumsal Satıcı</option>
-                  <option value="RESTAURANT">Restoran / Yemek</option>
-                  <option value="SERVICE">Hizmet Sağlayıcı</option>
-                </select>
-              </div>
-              <button
-                class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 h-[42px]"
-                @click="$emit('update-type', vendor)"
-              >
-                Tipi Güncelle
-              </button>
             </div>
           </div>
 
