@@ -13,6 +13,12 @@ COPY . .
 # Bağımlılıkları yükle (shamefully-hoist: tüm bağımlılıklar kök node_modules'a düzleştirilir)
 RUN pnpm install --no-frozen-lockfile
 
+# Her shared paketin bağımlılıklarını ayrıca kur (pnpm virtual store sorunu için)
+RUN for dir in packages/shared/*/; do \
+      echo "Installing: $dir" && \
+      (cd "$dir" && pnpm install --no-frozen-lockfile 2>/dev/null || true); \
+    done
+
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
 
