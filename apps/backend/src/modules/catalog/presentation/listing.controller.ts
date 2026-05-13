@@ -35,8 +35,35 @@ export class ListingController {
     return { success: true, data };
   }
 
+  // ─── Genel Marketplace (Anonim erişim) ────────────────────────────────────
   @Public()
-  @ApiOperation({ summary: 'List products/listings' })
+  @ApiOperation({ summary: 'Public marketplace listings' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'vendorType', required: false, type: String })
+  @Get('marketplace')
+  async publicList(
+    @Query('search') search?: string,
+    @Query('limit') limit: string = '50',
+    @Query('page') page: string = '1',
+    @Query('vendorType') vendorType?: string,
+  ) {
+    const data = await this.queryBus.execute(
+      new ListCatalogListingsQuery( undefined, undefined, {
+        search,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 50,
+        vendorType,
+        scope: 'public'
+      })
+    );
+    return { success: true, data };
+  }
+
+  // ─── Yetkili Listeleme (Vendor/Admin — JWT zorunlu) ──────────────────────
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List products/listings (authenticated)' })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
