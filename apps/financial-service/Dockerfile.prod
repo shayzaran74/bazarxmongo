@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 
 # Bağımlılıkları yükle (shamefully-hoist: tüm bağımlılıklar kök node_modules'a düzleştirilir)
-RUN pnpm install --shamefully-hoist --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
