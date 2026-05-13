@@ -14,8 +14,8 @@ COPY . .
 # Kök bağımlılıkları pnpm ile kur
 RUN pnpm install --no-frozen-lockfile
 
-# Prisma client generate (pnpm dlx kullanarak ERR_PNPM_ADDING_TO_ROOT hatasını aşıyoruz)
-RUN pnpm dlx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
+# Prisma client generate
+RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
 # TypeScript'in sembolik linklerde (pnpm virtual store) kaybolmasını önlemek için
 # hata veren shared paketlerin içine standart fiziki node_modules kuruyoruz

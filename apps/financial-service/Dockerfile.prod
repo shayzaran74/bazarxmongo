@@ -23,7 +23,7 @@ RUN cd packages/shared/shared-messaging && npm install --no-package-lock --legac
 RUN pnpm --filter "@barterborsa/shared-*" build
 
 # Prisma client generate (Build için gerekli)
-RUN cd apps/financial-service && pnpm dlx prisma@5.12.0 generate --schema=prisma/schema.prisma
+RUN cd apps/financial-service && npx prisma@5.12.0 generate --schema=prisma/schema.prisma
 
 # Financial Service build
 RUN pnpm --filter @barterborsa/financial-service build
