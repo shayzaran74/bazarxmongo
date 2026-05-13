@@ -10,34 +10,23 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Gerekli tüm dosyaları kopyala
 COPY . .
 
-# Bağımlılıkları yükle
-# Pnpm ayarları: Tüm paketleri düz bir yapıda kur (Docker için en stabil yöntem)
+# Bağımlılıkları yükle (shamefully-hoist ile flat yapı kur)
 RUN pnpm config set shamefully-hoist true && \
-    pnpm config set ignore-workspace-root-check true
-
-# Kök bağımlılıkları pnpm ile kur
-RUN pnpm install --no-frozen-lockfile
+    pnpm config set ignore-workspace-root-check true && \
+    pnpm install --no-frozen-lockfile
 
 # Prisma client generate
-RUN pnpm config set ignore-workspace-root-check true
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
-# Artık tsc modülleri pnpm yapısında bulabilecek
-
-# Artık tsc modülleri gerçek node_modules klasöründe bulabilecek
-RUN pnpm --filter "@barterborsa/shared-*" build
-RUN pnpm --filter "@barterborsa/domain-*" build
-
-# Backend build
-RUN pnpm --filter @bazarx/backend build
+# Tüm paketleri build et (shared paketler dahil)
+RUN pnpm --filter "@barterborsa/shared-*" build && \
+    pnpm --filter "@barterborsa/domain-*" build && \
+    pnpm --filter @bazarx/backend build
 
 # Copy gRPC proto to dist
 RUN mkdir -p apps/backend/dist/apps/backend/src/modules/financial-gateway/grpc && \
     cp apps/backend/src/modules/financial-gateway/grpc/financial.proto \
        apps/backend/dist/apps/backend/src/modules/financial-gateway/grpc/financial.proto
-
-# Sadece production dependencyleri bırak
-RUN pnpm install --prod --no-frozen-lockfile
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────
 FROM node:20-alpine AS runner
@@ -50,18 +39,14 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-# Monorepo node_modules kopyala
+# Bütün bağımlılık yapısını kopyala (Sembolik linklerin kırılmaması için)
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./apps/backend/prisma
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/package.json ./apps/backend/
-
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend ./apps/backend
 
 WORKDIR /app/apps/backend
 
-# Banner/Resim yüklemeleri için gerekli klasörleri oluştur ve yetki ver
+# Banner/Resim yüklemeleri için gerekli klasörleri oluştur
 RUN mkdir -p public/uploads && chown -R nestjs:nodejs public
 
 USER nestjs
