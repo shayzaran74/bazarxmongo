@@ -29,11 +29,13 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
       'MINIO_CDN_BASE',
       'https://storage.bazarx.com.tr/bazarx-media',
     );
-    this.isProd = this.config.get<string>('NODE_ENV') === 'production';
+    const isProduction = process.env.NODE_ENV === 'production' || this.config.get('NODE_ENV') === 'production';
+    this.isProd = isProduction;
+
     // Local dev'de MinIO'nun doğrudan adresi (tarayıcının erişebileceği)
     const endpoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port     = this.config.get<string>('MINIO_PORT', '9000');
-    this.minioPublicEndpoint = `http://${endpoint}:${port}`;
+    this.minioPublicEndpoint = isProduction ? '' : `http://${endpoint}:${port}`;
   }
 
   async onModuleInit() {
@@ -150,7 +152,11 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
     const objectKey = `${mediaId}/${sizeFile}.webp`;
 
     if (this.isProd) {
-      // Production: Nginx CDN üzerinden erişim
+      // Production: Uygulamanın ana domaini üzerinden /bazarx-media/ path'i ile eriş
+      const appUrl = process.env.APP_BASE_URL || '';
+      if (appUrl) {
+        return `${appUrl}/bazarx-media/${objectKey}`;
+      }
       return `${this.cdnBase}/${objectKey}`;
     }
 
