@@ -16,6 +16,9 @@ RUN pnpm install --no-frozen-lockfile
 # Prisma client generate
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
+# Shared paketlerin bağımlılıklarını ayrıca kur (Docker workspace link sorunu için)
+RUN cd packages/shared/shared-observability && pnpm install --no-frozen-lockfile && cd /app
+
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
 RUN pnpm --filter "@barterborsa/domain-*" build

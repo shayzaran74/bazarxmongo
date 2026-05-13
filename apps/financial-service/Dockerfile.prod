@@ -10,8 +10,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Tüm dosyaları kopyala
 COPY . .
 
-# Bağımlılıkları yükle
+# Bağımlılıkları yükle (tüm workspace)
 RUN pnpm install --no-frozen-lockfile
+
+# Shared paketlerin bağımlılıklarını ayrıca kur (Docker workspace link sorunu için)
+RUN cd packages/shared/shared-observability && pnpm install --no-frozen-lockfile && cd /app
 
 # Shared packages build
 RUN pnpm --filter "@barterborsa/shared-*" build
