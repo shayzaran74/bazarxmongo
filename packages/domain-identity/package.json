@@ -15,6 +15,7 @@
     "@barterborsa/shared-core": "workspace:*",
     "@barterborsa/shared-types": "workspace:*",
     "@barterborsa/shared-security": "workspace:*",
+    "@barterborsa/shared-persistence": "workspace:*",
     "@prisma/client": "5.12.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/cqrs": "^10.0.0",
