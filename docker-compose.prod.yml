@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -62,11 +62,11 @@ services:
       - FRONTEND_URL=https://balmy-game-recount.ngrok-free.dev
       - IYZICO_API_KEY=${IYZICO_API_KEY}
       - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ENDPOINT=minio
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - APP_BASE_URL=https://balmy-game-recount.ngrok-free.dev
-      - FINANCIAL_GRPC_URL=${FINANCIAL_GRPC_URL}
+      - FINANCIAL_GRPC_URL=financial-service:50051
     volumes:
       - bazarx_uploads:/app/public/uploads
       - ./belge:/app/belge
@@ -99,7 +99,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - FINANCIAL_DATABASE_URL=${FINANCIAL_DATABASE_URL}
+      - FINANCIAL_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/barterborsa_financial?schema=public
       - GRPC_PORT=50051
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     expose:
