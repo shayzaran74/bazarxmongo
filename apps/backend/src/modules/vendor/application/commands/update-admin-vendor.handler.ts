@@ -18,7 +18,11 @@ export class UpdateAdminVendorHandler
     if (!existing) throw new NotFoundException('Vendor not found');
 
     const { isFeatured, storeName, description,
-            city, district, ...vendorFields } = data;
+            city, district, vendorType, ...vendorFields } = data;
+    
+    if (vendorType) {
+      (vendorFields as any).vendorType = vendorType;
+    }
 
     const profileFields: any = {};
     if (isFeatured !== undefined) profileFields.isFeatured = isFeatured;

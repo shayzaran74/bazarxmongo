@@ -29,13 +29,16 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
       'MINIO_CDN_BASE',
       'https://storage.bazarx.com.tr/bazarx-media',
     );
-    const isProduction = process.env.NODE_ENV === 'production' || this.config.get('NODE_ENV') === 'production';
+    const nodeEnv = process.env.NODE_ENV || this.config.get('NODE_ENV');
+    const minioEndpoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
+    
+    // Eğer NODE_ENV production ise VEYA minio endpoint 'minio' (docker internal) ise prod moduna geç
+    const isProduction = nodeEnv === 'production' || minioEndpoint === 'minio';
     this.isProd = isProduction;
 
     // Local dev'de MinIO'nun doğrudan adresi (tarayıcının erişebileceği)
-    const endpoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port     = this.config.get<string>('MINIO_PORT', '9000');
-    this.minioPublicEndpoint = isProduction ? '' : `http://${endpoint}:${port}`;
+    this.minioPublicEndpoint = isProduction ? '' : `http://${minioEndpoint}:${port}`;
   }
 
   async onModuleInit() {
