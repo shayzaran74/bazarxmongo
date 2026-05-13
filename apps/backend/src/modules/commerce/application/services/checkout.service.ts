@@ -160,11 +160,11 @@ export class CheckoutService {
           const reserveResult = await tx.listing.updateMany({
             where: {
               id: listingId,
-              availableQuantity: { gte: quantity },
+              stock: { gte: quantity },
               status: 'ACTIVE',
             },
             data: {
-              availableQuantity: { decrement: quantity },
+              stock: { decrement: quantity },
               reservedQuantity: { increment: quantity },
             },
           });
@@ -331,7 +331,7 @@ export class CheckoutService {
               .update({
                 where: { id: item.getProps().listingId },
                 data: {
-                  availableQuantity: { increment: item.getProps().quantity },
+                  stock: { increment: item.getProps().quantity },
                   reservedQuantity: { decrement: item.getProps().quantity },
                 },
               })

@@ -66,7 +66,7 @@ export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
                 reservedQuantity: { gte: item.quantity },
               },
               data: {
-                availableQuantity: { increment: item.quantity },
+                stock: { increment: item.quantity },
                 reservedQuantity: { decrement: item.quantity },
               },
             });

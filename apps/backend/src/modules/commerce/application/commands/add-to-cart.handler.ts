@@ -35,7 +35,7 @@ export class AddToCartHandler implements ICommandHandler<AddToCartCommand> {
     // Stok ve durum doğrulama - aktif olmayan veya yetersiz stoktaki ürünler sepete eklenemez
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
-      select: { status: true, availableQuantity: true, title: true },
+      select: { status: true, stock: true, title: true },
     });
 
     if (!listing || listing.status !== 'ACTIVE') {
@@ -49,9 +49,9 @@ export class AddToCartHandler implements ICommandHandler<AddToCartCommand> {
     const currentCartQty = existingItem?.quantity ?? 0;
     const totalRequested = currentCartQty + quantity;
 
-    if (listing.availableQuantity < totalRequested) {
+    if (listing.stock < totalRequested) {
       throw new BadRequestException(
-        `"${listing.title}" için yeterli stok bulunmamaktadır (mevcut: ${listing.availableQuantity})`,
+        `"${listing.title}" için yeterli stok bulunmamaktadır (mevcut: ${listing.stock})`,
       );
     }
 
