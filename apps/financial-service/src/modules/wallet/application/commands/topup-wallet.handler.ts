@@ -48,18 +48,22 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
       });
 
       // Modern Account tablosunu senkronize et (MAIN hesap)
-      const mainAccount = await tx.account.findFirst({
-        where: { userId, type: 'MAIN' },
+      const mainAccount = await tx.account.upsert({
+        where: { userId_type: { userId, type: 'MAIN' } },
+        update: {
+          balance: { increment: amount },
+          availableBalance: { increment: amount },
+        },
+        create: {
+          userId,
+          type: 'MAIN',
+          balance: amount,
+          availableBalance: amount,
+          currency: 'TRY',
+          status: 'ACTIVE',
+          ownerType: 'CUSTOMER'
+        },
       });
-      if (mainAccount) {
-        await tx.account.update({
-          where: { id: mainAccount.id },
-          data: {
-            balance: { increment: amount },
-            availableBalance: { increment: amount },
-          },
-        });
-      }
 
       // 4. Hesap hareketi oluştur
       if (mainAccount) {

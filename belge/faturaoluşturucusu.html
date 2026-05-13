@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fatura Oluşturucu</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #0a0a0a; color: #e5e5e5; min-height: 100vh; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 24px; border-bottom: 1px solid #222;
+            background: #0a0a0a; position: sticky; top: 0; z-index: 100;
+        }
+        .header h1 { font-size: 20px; font-weight: 600; color: #e5e5e5; }
+        .header-buttons { display: flex; gap: 10px; }
+        .btn {
+            padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+        }
+        .btn-primary { background: #14b8a6; color: #0a0a0a; border: none; }
+        .btn-primary:hover { background: #2dd4bf; }
+        .btn-outline { background: transparent; color: #e5e5e5; border: 1px solid #333; }
+        .btn-outline:hover { border-color: #14b8a6; color: #14b8a6; }
+
+        .main-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+            padding: 24px; max-width: 1600px; margin: 0 auto;
+        }
+        @media (max-width: 1024px) { .main-container { grid-template-columns: 1fr; } }
+
+        .editor-column { display: flex; flex-direction: column; gap: 16px; }
+        .card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+        .card-title { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+        .form-row.full { grid-template-columns: 1fr; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; color: #aaa; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea {
+            background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+            padding: 10px 12px; font-size: 14px; color: #e5e5e5;
+            font-family: 'DM Sans', sans-serif; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #14b8a6; }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-group input[type="number"] { -moz-appearance: textfield; }
+        .form-group input::-webkit-outer-spin-button, .form-group input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .currency-input { position: relative; }
+        .currency-input::after { content: attr(data-currency); position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 13px; pointer-events: none; }
+        .currency-input input { padding-right: 40px; }
+
+        .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .item-row {
+            display: grid; grid-template-columns: 2fr 70px 100px 70px 80px 40px;
+            gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #1a1a1a;
+        }
+        .item-row input, .item-row select {
+            width: 100%; background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+            padding: 8px; font-size: 13px; color: #e5e5e5; font-family: 'DM Sans', sans-serif;
+        }
+        .item-row input:focus, .item-row select:focus { outline: none; border-color: #14b8a6; }
+        .item-row input[readonly] { background: #0a0a0a; color: #888; }
+        .item-delete {
+            background: transparent; border: none; color: #666; cursor: pointer;
+            padding: 6px; border-radius: 4px; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .item-delete:hover { background: #1a1a1a; color: #ef4444; }
+        .add-item-btn {
+            width: 100%; padding: 10px; background: transparent;
+            border: 1px dashed #333; border-radius: 8px; color: #888;
+            font-size: 13px; cursor: pointer; transition: all 0.2s;
+            font-family: 'DM Sans', sans-serif; margin-top: 8px;
+        }
+        .add-item-btn:hover { border-color: #14b8a6; color: #14b8a6; }
+
+        .summary { background: #0a0a0a; border-radius: 8px; padding: 16px; margin-top: 16px; }
+        .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; color: #aaa; }
+        .summary-row.total { border-top: 1px solid #222; margin-top: 8px; padding-top: 16px; font-size: 18px; font-weight: 700; color: #14b8a6; }
+        .summary-row .amount { font-weight: 500; color: #e5e5e5; }
+        .summary-row.total .amount { color: #14b8a6; }
+
+        .notes-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .notes-section label { font-size: 12px; color: #aaa; font-weight: 500; }
+        .notes-section textarea {
+            background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+            padding: 10px 12px; font-size: 13px; color: #e5e5e5;
+            font-family: 'DM Sans', sans-serif; resize: vertical; min-height: 80px;
+        }
+        .notes-section textarea:focus { outline: none; border-color: #14b8a6; }
+
+        .currency-selector { display: flex; align-items: center; gap: 8px; }
+        .currency-selector select {
+            background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+            padding: 6px 10px; font-size: 13px; color: #e5e5e5; font-family: 'DM Sans', sans-serif; cursor: pointer;
+        }
+
+        .preview-column { position: sticky; top: 80px; height: fit-content; }
+        @media (max-width: 1024px) { .preview-column { position: static; } }
+
+        .preview-wrapper {
+            background: #ffffff; border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); overflow: hidden;
+            aspect-ratio: 595 / 842;
+        }
+
+        .fatura-preview { padding: 40px; font-family: 'DM Sans', sans-serif; color: #1a1a1a; font-size: 11px; line-height: 1.4; }
+        .fatura-preview .fatura-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .fatura-preview .sirket-bilgi h2 { font-size: 18px; font-weight: 700; color: #14b8a6; margin-bottom: 8px; }
+        .fatura-preview .sirket-bilgi p { font-size: 10px; color: #333; margin: 2px 0; }
+        .fatura-preview .fatura-meta { text-align: right; font-size: 10px; color: #333; }
+        .fatura-preview .fatura-meta h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+        .fatura-preview .fatura-meta p { margin: 2px 0; }
+        .fatura-preview .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 600; margin-top: 6px; }
+        .status-taslak { background: #e5e7eb; color: #666; }
+        .status-gonderildi { background: #dbeafe; color: #1d4ed8; }
+        .status-odendi { background: #dcfce7; color: #16a34a; }
+        .status-gecikti { background: #fee2e2; color: #dc2626; }
+
+        .fatura-preview .bolum-baslik { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+        .fatura-preview .alici-bilgi p { font-size: 10px; color: #333; margin: 2px 0; }
+        .fatura-preview .alici-bilgi strong { color: #1a1a1a; }
+
+        .fatura-preview table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10px; }
+        .fatura-preview table thead { background: #f3f4f6; }
+        .fatura-preview table th { padding: 8px 6px; text-align: left; font-weight: 600; color: #333; border: 1px solid #e5e7eb; }
+        .fatura-preview table td { padding: 8px 6px; border: 1px solid #e5e7eb; color: #1a1a1a; }
+        .fatura-preview table tr td:last-child, .fatura-preview table tr th:last-child { text-align: right; }
+
+        .fatura-preview .ozet { margin-left: auto; width: 200px; }
+        .fatura-preview .ozet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; color: #333; }
+        .fatura-preview .ozet-row.grand-total { border-top: 2px solid #1a1a1a; margin-top: 4px; padding-top: 8px; font-size: 14px; font-weight: 700; color: #1a1a1a; }
+
+        .fatura-preview .notlar { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+        .fatura-preview .notlar h4 { font-size: 10px; font-weight: 600; color: #333; margin-bottom: 6px; }
+        .fatura-preview .notlar p { font-size: 9px; color: #666; margin: 3px 0; white-space: pre-line; }
+
+        @media print {
+            body * { visibility: hidden; }
+            .preview-wrapper, .preview-wrapper * { visibility: visible; }
+            .preview-wrapper { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: none; background: white; }
+            .header { display: none; }
+            .main-container { padding: 0; }
+            .editor-column { display: none; }
+            .preview-column { position: static; }
+            .mobile-actions { display: none; }
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-actions { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #0a0a0a; border-top: 1px solid #222; display: flex; gap: 10px; z-index: 100; }
+            .mobile-actions .btn { flex: 1; }
+            .preview-column { margin-bottom: 80px; }
+        }
+        @media (min-width: 1025px) { .mobile-actions { display: none; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Fatura Oluşturucu</h1>
+        <div class="header-buttons">
+            <div class="currency-selector">
+                <select id="currencySelect">
+                    <option value="TL" selected>TL</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="printInvoice()">PDF İndir</button>
+            <button class="btn btn-outline" onclick="newInvoice()">Yeni Fatura</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="editor-column">
+            <div class="card">
+                <div class="form-row full">
+                    <div class="form-group"><label>Fatura No</label><input type="text" id="faturaNo"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Fatura Tarihi</label><input type="date" id="faturaTarih"></div>
+                    <div class="form-group"><label>Vade Tarihi</label><input type="date" id="vadeTarih"></div>
+                </div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>Durum</label>
+                        <select id="durum">
+                            <option value="Taslak">Taslak</option>
+                            <option value="Gonderildi">Gönderildi</option>
+                            <option value="Odendi">Ödendi</option>
+                            <option value="Gecikti">Gecikti</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Gönderen</div>
+                <div class="form-row full"><div class="form-group"><label>Şirket Adı</label><input type="text" id="gonderenAd" placeholder="Şirket adı"></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vergi Dairesi</label><input type="text" id="gonderenVergiDairesi" placeholder="Vergi dairesi"></div>
+                    <div class="form-group"><label>Vergi No</label><input type="text" id="gonderenVergiNo" placeholder="Vergi no"></div>
+                </div>
+                <div class="form-row full"><div class="form-group"><label>Adres</label><textarea id="gonderenAdres" placeholder="Adres"></textarea></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Telefon</label><input type="tel" id="gonderenTel" placeholder="+90 5XX XXX XX XX"></div>
+                    <div class="form-group"><label>E-posta</label><input type="email" id="gonderenEmail" placeholder="email@ornek.com"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Alıcı</div>
+                <div class="form-row full"><div class="form-group"><label>Şirket/Kişi Adı</label><input type="text" id="aliciAd" placeholder="Şirket veya kişi adı"></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vergi Dairesi</label><input type="text" id="aliciVergiDairesi" placeholder="Vergi dairesi"></div>
+                    <div class="form-group"><label>Vergi No</label><input type="text" id="aliciVergiNo" placeholder="Vergi no"></div>
+                </div>
+                <div class="form-row full"><div class="form-group"><label>Adres</label><textarea id="aliciAdres" placeholder="Adres"></textarea></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Telefon</label><input type="tel" id="aliciTel" placeholder="+90 5XX XXX XX XX"></div>
+                    <div class="form-group"><label>E-posta</label><input type="email" id="aliciEmail" placeholder="email@ornek.com"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Kalemler</div>
+                <div id="itemsContainer"></div>
+                <button class="add-item-btn" onclick="addItem()">+ Kalem Ekle</button>
+                <div class="summary">
+                    <div class="summary-row"><span>Ara Toplam</span><span class="amount" id="araToplam">0,00 TL</span></div>
+                    <div class="summary-row"><span>KDV (%10)</span><span class="amount" id="kdv10">0,00 TL</span></div>
+                    <div class="summary-row"><span>KDV (%20)</span><span class="amount" id="kdv20">0,00 TL</span></div>
+                    <div class="summary-row total"><span>Genel Toplam</span><span class="amount" id="genelToplam">0,00 TL</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Notlar</div>
+                <div class="notes-section">
+                    <div class="form-group"><label>Ek Notlar</label><textarea id="notlar" placeholder="Ödeme notları..."></textarea></div>
+                    <div class="form-group"><label>Banka Bilgileri</label><textarea id="bankaBilgileri" placeholder="Banka: Ziraat Bankası&#10;IBAN: TR..."></textarea></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-column">
+            <div class="preview-wrapper">
+                <div class="fatura-preview" id="faturaPreview"></div>
+            </div>
+        </div>
+    </main>
+
+    <div class="mobile-actions">
+        <button class="btn btn-outline" onclick="newInvoice()">Yeni Fatura</button>
+        <button class="btn btn-primary" onclick="printInvoice()">PDF İndir</button>
+    </div>
+
+    <script>
+        let currency = 'TL';
+        const currencySymbols = { TL: 'TL', USD: '$', EUR: '€' };
+        let items = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInvoiceNumber();
+            setDefaultDates();
+            addSampleData();
+            setupEventListeners();
+            renderPreview();
+        });
+
+        function loadInvoiceNumber() {
+            const stored = localStorage.getItem('lastInvoiceNumber');
+            let nextNum = 1;
+            if (stored) {
+                const match = stored.match(/FTR-(\d{4})-(\d+)/);
+                if (match) {
+                    const year = new Date().getFullYear();
+                    if (parseInt(match[1]) === year) nextNum = parseInt(match[2]) + 1;
+                }
+            }
+            document.getElementById('faturaNo').value = `FTR-${new Date().getFullYear()}-${String(nextNum).padStart(3, '0')}`;
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const later = new Date(today);
+            later.setDate(later.getDate() + 30);
+            document.getElementById('faturaTarih').value = today.toISOString().split('T')[0];
+            document.getElementById('vadeTarih').value = later.toISOString().split('T')[0];
+        }
+
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return 'XX.XX.XXXX';
+            const d = new Date(dateStr);
+            return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+        }
+
+        function addSampleData() {
+            document.getElementById('gonderenAd').value = 'Dijital Çözümler A.Ş.';
+            document.getElementById('gonderenVergiDairesi').value = 'Beşiktaş Vergi Dairesi';
+            document.getElementById('gonderenVergiNo').value = '1234567890';
+            document.getElementById('gonderenAdres').value = 'Barbaros Bulvarı No:42, Beşiktaş, İstanbul';
+            document.getElementById('gonderenTel').value = '+90 212 555 7890';
+            document.getElementById('gonderenEmail').value = 'info@dijitalcozumler.com';
+            document.getElementById('aliciAd').value = 'Anadolu Ticaret Ltd. Şti.';
+            document.getElementById('aliciVergiDairesi').value = 'Kadıköy Vergi Dairesi';
+            document.getElementById('aliciVergiNo').value = '9876543210';
+            document.getElementById('aliciAdres').value = 'Bağdat Caddesi No:128, Kadıköy, İstanbul';
+            document.getElementById('aliciTel').value = '+90 216 555 4321';
+            document.getElementById('aliciEmail').value = 'muhasebe@anadoluticaret.com';
+            document.getElementById('notlar').value = 'Ödeme fatura tarihinden itibaren 30 gün içinde yapılmalıdır.\nGecikme durumunda aylık %2 vade farkı uygulanır.';
+            document.getElementById('bankaBilgileri').value = 'Ziraat Bankası - Beşiktaş Şubesi\nHesap Sahibi: Dijital Çözümler A.Ş.\nIBAN: TR12 0001 0012 3456 7890 1234 56';
+            items = [
+                { aciklama: 'Web Sitesi Tasarımı ve Geliştirme', miktar: 1, birimFiyat: 15000, kdvOrani: 20 },
+                { aciklama: 'SEO Optimizasyon Paketi (Aylık)', miktar: 3, birimFiyat: 2500, kdvOrani: 20 },
+                { aciklama: 'Logo ve Kurumsal Kimlik Tasarımı', miktar: 1, birimFiyat: 5000, kdvOrani: 20 },
+                { aciklama: 'Web Hosting (Aylık)', miktar: 12, birimFiyat: 150, kdvOrani: 20 },
+                { aciklama: 'Dijital Pazarlama Danışmanlığı (Saat)', miktar: 5, birimFiyat: 1000, kdvOrani: 10 }
+            ];
+            renderItems();
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                el.addEventListener('input', () => { updateSummary(); renderPreview(); });
+            });
+            document.getElementById('currencySelect').addEventListener('change', (e) => {
+                currency = e.target.value;
+                updateSummary();
+                renderItems();
+                renderPreview();
+            });
+        }
+
+        function addItem() {
+            items.push({ aciklama: '', miktar: 1, birimFiyat: 0, kdvOrani: 20 });
+            renderItems();
+            renderPreview();
+        }
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+            updateSummary();
+            renderPreview();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center; padding: 20px;">Henüz kalem eklenmemiş</p>';
+                return;
+            }
+            container.innerHTML = items.map((item, i) => `
+                <div class="item-row">
+                    <input type="text" placeholder="Açıklama" value="${item.aciklama}" onchange="items[${i}].aciklama=this.value;updateSummary();renderPreview();">
+                    <input type="number" placeholder="Miktar" value="${item.miktar}" min="1" onchange="items[${i}].miktar=parseFloat(this.value)||0;updateSummary();renderPreview();">
+                    <div class="currency-input" data-currency="${currencySymbols[currency]}">
+                        <input type="number" placeholder="Birim Fiyat" value="${item.birimFiyat}" min="0" step="0.01" onchange="items[${i}].birimFiyat=parseFloat(this.value)||0;updateSummary();renderPreview();">
+                    </div>
+                    <select onchange="items[${i}].kdvOrani=parseInt(this.value);updateSummary();renderPreview();">
+                        <option value="0" ${item.kdvOrani===0?'selected':''}>%0</option>
+                        <option value="10" ${item.kdvOrani===10?'selected':''}>%10</option>
+                        <option value="20" ${item.kdvOrani===20?'selected':''}>%20</option>
+                    </select>
+                    <input type="text" value="${formatCurrency(item.miktar*item.birimFiyat)}" readonly>
+                    <button class="item-delete" onclick="removeItem(${i})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateSummary() {
+            let araToplam = 0, kdv10 = 0, kdv20 = 0;
+            items.forEach(item => {
+                const tutar = item.miktar * item.birimFiyat;
+                araToplam += tutar;
+                if (item.kdvOrani === 10) kdv10 += tutar * 0.10;
+                if (item.kdvOrani === 20) kdv20 += tutar * 0.20;
+            });
+            document.getElementById('araToplam').textContent = formatCurrency(araToplam);
+            document.getElementById('kdv10').textContent = formatCurrency(kdv10);
+            document.getElementById('kdv20').textContent = formatCurrency(kdv20);
+            document.getElementById('genelToplam').textContent = formatCurrency(araToplam + kdv10 + kdv20);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currencySymbols[currency];
+        }
+
+        function renderPreview() {
+            const faturaNo = document.getElementById('faturaNo').value;
+            const faturaTarih = formatDateDisplay(document.getElementById('faturaTarih').value);
+            const vadeTarih = formatDateDisplay(document.getElementById('vadeTarih').value);
+            const durum = document.getElementById('durum').value;
+            const durumClass = `status-${durum.toLowerCase().replace('ş','s').replace('ı','i')}`;
+
+            const gonderen = {
+                ad: document.getElementById('gonderenAd').value,
+                vd: document.getElementById('gonderenVergiDairesi').value,
+                vno: document.getElementById('gonderenVergiNo').value,
+                adres: document.getElementById('gonderenAdres').value,
+                tel: document.getElementById('gonderenTel').value,
+                email: document.getElementById('gonderenEmail').value
+            };
+
+            const alici = {
+                ad: document.getElementById('aliciAd').value,
+                vd: document.getElementById('aliciVergiDairesi').value,
+                vno: document.getElementById('aliciVergiNo').value,
+                adres: document.getElementById('aliciAdres').value,
+                tel: document.getElementById('aliciTel').value,
+                email: document.getElementById('aliciEmail').value
+            };
+
+            const notlar = document.getElementById('notlar').value;
+            const banka = document.getElementById('bankaBilgileri').value;
+
+            let araToplam = 0, kdv10 = 0, kdv20 = 0;
+            const itemsHTML = items.map((item, i) => {
+                const tutar = item.miktar * item.birimFiyat;
+                const kdvTutari = tutar * (item.kdvOrani / 100);
+                araToplam += tutar;
+                if (item.kdvOrani === 10) kdv10 += kdvTutari;
+                if (item.kdvOrani === 20) kdv20 += kdvTutari;
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${item.aciklama || '-'}</td>
+                        <td>${item.miktar}</td>
+                        <td>${formatCurrency(item.birimFiyat)}</td>
+                        <td>%${item.kdvOrani}</td>
+                        <td>${formatCurrency(tutar)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const genelToplam = araToplam + kdv10 + kdv20;
+
+            document.getElementById('faturaPreview').innerHTML = `
+                <div class="fatura-header">
+                    <div class="sirket-bilgi">
+                        <h2>${gonderen.ad || 'Şirket Adı'}</h2>
+                        <p>Vergi Dairesi: ${gonderen.vd || '-'}</p>
+                        <p>Vergi No: ${gonderen.vno || '-'}</p>
+                        <p>${gonderen.adres || '-'}</p>
+                        <p>Tel: ${gonderen.tel || '-'}</p>
+                        <p>${gonderen.email || '-'}</p>
+                    </div>
+                    <div class="fatura-meta">
+                        <h3> FATURA</h3>
+                        <p>Fatura No: ${faturaNo}</p>
+                        <p>Tarih: ${faturaTarih}</p>
+                        <p>Vade: ${vadeTarih}</p>
+                        <span class="status-badge ${durumClass}">${durum}</span>
+                    </div>
+                </div>
+
+                <div class="bolum-baslik">ALICI</div>
+                <div class="alici-bilgi">
+                    <p><strong>${alici.ad || '-'}</strong></p>
+                    <p>Vergi Dairesi: ${alici.vd || '-'}</p>
+                    <p>Vergi No: ${alici.vno || '-'}</p>
+                    <p>${alici.adres || '-'}</p>
+                    <p>Tel: ${alici.tel || '-'}</p>
+                    <p>${alici.email || '-'}</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Açıklama</th>
+                            <th>Miktar</th>
+                            <th>Birim Fiyat</th>
+                            <th>KDV</th>
+                            <th>Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHTML}</tbody>
+                </table>
+
+                <div class="ozet">
+                    <div class="ozet-row"><span>Ara Toplam:</span><span>${formatCurrency(araToplam)}</span></div>
+                    <div class="ozet-row"><span>KDV (%10):</span><span>${formatCurrency(kdv10)}</span></div>
+                    <div class="ozet-row"><span>KDV (%20):</span><span>${formatCurrency(kdv20)}</span></div>
+                    <div class="ozet-row grand-total"><span>GENEL TOPLAM:</span><span>${formatCurrency(genelToplam)}</span></div>
+                </div>
+
+                ${notlar || banka ? `
+                <div class="notlar">
+                    ${notlar ? `<div><h4>Notlar</h4><p>${notlar}</p></div>` : ''}
+                    ${banka ? `<div><h4>Banka Bilgileri</h4><p>${banka}</p></div>` : ''}
+                </div>` : ''}
+            `;
+        }
+
+        function printInvoice() {
+            localStorage.setItem('lastInvoiceNumber', document.getElementById('faturaNo').value);
+            window.print();
+        }
+
+        function newInvoice() {
+            if (confirm('Yeni fatura oluşturmak istediğinize emin misiniz?')) {
+                document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea').forEach(el => {
+                    if (el.id !== 'faturaNo') el.value = '';
+                });
+                document.getElementById('durum').value = 'Taslak';
+                setDefaultDates();
+                items = [];
+                renderItems();
+                updateSummary();
+                renderPreview();
+                loadInvoiceNumber();
+            }
+        }
+    </script>
+</body>
+</html>

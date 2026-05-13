@@ -28,9 +28,9 @@ export class ListCatalogListingsHandler
     }
 
     if (isAdmin) {
-      // Admin her şeyi görebilir
-    } else if (isVendor && isVendorScope && userId) {
-      // Sadece dashboard üzerinden (scope=vendor) bakılıyorsa satıcı filtrelemesi yap
+      // Admin can see everything
+    } else if (isVendor && userId) {
+      // Vendors should ALWAYS be isolated to their own products in this endpoint
       const vendor = await this.prisma.vendor.findUnique({
         where: { userId }
       });
@@ -38,12 +38,12 @@ export class ListCatalogListingsHandler
       if (vendor) {
         where.vendorId = vendor.id;
       } else {
-        // Vendor profili yoksa hiçbir şey gösterme (Dashboard güvenliği)
+        // If no vendor profile, show nothing for security
         return { items: [], pagination: { total: 0, page, limit, totalPages: 0 } };
       }
-    } else {
-      // Genel marketplace görünümü: Herkes (aktif satıcılar dahil) tüm aktif ürünleri görebilir
-      // 'where.status = ACTIVE' zaten yukarıda set edildi.
+    } else if (!isVendorScope) {
+      // Public marketplace view for other roles: Only ACTIVE products
+      where.status = 'ACTIVE';
     }
 
     if (search) {

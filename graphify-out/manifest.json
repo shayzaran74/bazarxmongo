@@ -492,8 +492,8 @@
     "hash": "4a46e8074498c5c59009efb1a31fee50"
   },
   "/Users/macbook/Desktop/bazarx/packages/domain-identity/src/application/dtos/update-address.dto.ts": {
-    "mtime": 1776931960.5430036,
-    "hash": "25c2eb03d505f4b4f810291fb60d077e"
+    "mtime": 1778619767.2174113,
+    "hash": "23f57fce4838b6e0692afc90cc40cbd6"
   },
   "/Users/macbook/Desktop/bazarx/packages/domain-identity/src/application/dtos/update-profile.dto.ts": {
     "mtime": 1776931960.5431828,
@@ -680,8 +680,8 @@
     "hash": "f01a28afaf7d8972e0a6f9d3353d6777"
   },
   "/Users/macbook/Desktop/bazarx/packages/domain-identity/src/domain/entities/user.entity.ts": {
-    "mtime": 1776931960.557173,
-    "hash": "9cd9ee5e6584f7f473fd3e9dfce5e1ab"
+    "mtime": 1778620018.1625693,
+    "hash": "6a7ae6361c5f80853b0dc1e3ccc9db33"
   },
   "/Users/macbook/Desktop/bazarx/packages/domain-identity/src/domain/entities/user.entity.d.ts": {
     "mtime": 1776931960.5573907,
@@ -728,8 +728,8 @@
     "hash": "626d4a1b5b6515594a5a6e98b3c92748"
   },
   "/Users/macbook/Desktop/bazarx/packages/shared/shared-types/src/index.ts": {
-    "mtime": 1776931960.5949788,
-    "hash": "b746c4288b7dbdbef28dc9b30a60bed1"
+    "mtime": 1778619640.7445097,
+    "hash": "ddf99f719fbe2ba77ec9738249248fb0"
   },
   "/Users/macbook/Desktop/bazarx/packages/shared/shared-types/src/index.d.ts": {
     "mtime": 1776931960.5952356,
@@ -892,8 +892,8 @@
     "hash": "c6baddf352ed72594e6e7c53e1418359"
   },
   "/Users/macbook/Desktop/bazarx/packages/shared/shared-queue/src/shared-queue.module.ts": {
-    "mtime": 1777288622.4141505,
-    "hash": "197f2b4b4c0e73dc5a5f1bf7f7c3f332"
+    "mtime": 1778614561.516515,
+    "hash": "33c0fc6752a97c79aa0b606a5155fccf"
   },
   "/Users/macbook/Desktop/bazarx/packages/shared/shared-queue/src/index.ts": {
     "mtime": 1777288828.3731604,
@@ -1464,8 +1464,8 @@
     "hash": "b8f9c99c10b574559903df7fe622c9e2"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useProfileAddress.ts": {
-    "mtime": 1778090204.5805833,
-    "hash": "3bb3ca3092c30129f23a3fb77a53f69c"
+    "mtime": 1778619653.080232,
+    "hash": "a9f2265d301ccdff9684aa2e7562d947"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAuctionOverview.ts": {
     "mtime": 1778090204.570065,
@@ -1492,20 +1492,24 @@
     "hash": "3d852d373b52a54adad7d75b0540ce9b"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorOrders.ts": {
-    "mtime": 1778090204.5874922,
-    "hash": "fe12a4cadc738f563100235731a4eba8"
+    "mtime": 1778524082.64102,
+    "hash": "6c37b92c14ab935dc1d9b519fca85d2a"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/usePremium.ts": {
     "mtime": 1778090204.5780234,
     "hash": "364bf663b6a9adbb454591215f599197"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useProductForm.ts": {
-    "mtime": 1778090204.5791743,
-    "hash": "886bb0a70354f46d0ef5d896a9c188f9"
+    "mtime": 1778524327.130542,
+    "hash": "f73164141c183e7dbc5f7045c356b93b"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useCheckoutCart.ts": {
     "mtime": 1778090204.572314,
     "hash": "655f260e022bce8d33482205071b8270"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendor.ts": {
+    "mtime": 1778523972.2498288,
+    "hash": "f75fd49c9907c206da2e1732d1da083a"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useCheckoutPayment.ts": {
     "mtime": 1778090204.5727077,
@@ -1520,8 +1524,8 @@
     "hash": "92c19ea7fe4cfd3304821f7c43d0727b"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorInventory.ts": {
-    "mtime": 1778090204.5872538,
-    "hash": "cdff94fce57bf5c74071f29c7eeaa4bd"
+    "mtime": 1778617903.676202,
+    "hash": "2e5038b563e770feffbfc9fe10b06cf4"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAdminChatWindow.ts": {
     "mtime": 1778090204.5628014,
@@ -1572,12 +1576,12 @@
     "hash": "94722c6332df7d384ce5c8733740eba3"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useHomeMenu.ts": {
-    "mtime": 1778090204.5753374,
-    "hash": "deddf3a0b652874afe3f58410b6b6049"
+    "mtime": 1778508305.086444,
+    "hash": "998787d4e55efcd9103e105a89b12c6c"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorSettings.ts": {
-    "mtime": 1778090204.5884476,
-    "hash": "22d8d286ad1cb7f0896ead9c691bd2a0"
+    "mtime": 1778618496.3049853,
+    "hash": "4021727894f43c17395bf10e803a38b3"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAuctionDetail.ts": {
     "mtime": 1778090204.569855,
@@ -1628,8 +1632,8 @@
     "hash": "463ac4be429bb0453c65baa3b030cf29"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorApplication.ts": {
-    "mtime": 1778090204.5857866,
-    "hash": "0202691a02253fdb7c43eb77089fd447"
+    "mtime": 1778523888.577139,
+    "hash": "c83a3f6bb94c50d464342a3544d587b3"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorDashboard.ts": {
     "mtime": 1778090204.5867858,
@@ -1700,8 +1704,8 @@
     "hash": "25abcf274736b873dd3574236a10986e"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorProfile.ts": {
-    "mtime": 1778090204.5877392,
-    "hash": "52289729e826b8a86e391dc0ef935146"
+    "mtime": 1778587444.0613484,
+    "hash": "f5ee349ad845369201da09f6497a8816"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAdminWallet.ts": {
     "mtime": 1778090204.5681,
@@ -1724,8 +1728,8 @@
     "hash": "c2e402932768923e02f23871611f6e32"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useProfile.ts": {
-    "mtime": 1778090204.5799866,
-    "hash": "8069595100c24852697a187868f446ef"
+    "mtime": 1778619373.0113266,
+    "hash": "917a4f4a6db402dc7723781bb5f02ced"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAdminHelp.ts": {
     "mtime": 1778090204.5642529,
@@ -1736,8 +1740,8 @@
     "hash": "97f42f8ccbf0ae388f12053725dae25f"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useWallet.ts": {
-    "mtime": 1778090204.5896168,
-    "hash": "74958d881589092b6cf78b09085a5a4b"
+    "mtime": 1778621996.4730153,
+    "hash": "9a341cd16ff7d20286ae30d69b37a08a"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useCurrentProduct.ts": {
     "mtime": 1778090204.5744178,
@@ -1780,8 +1784,8 @@
     "hash": "7e8e4799a94da4452cc4d37eaafe4dd1"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAdminProducts.ts": {
-    "mtime": 1778090204.5668707,
-    "hash": "fdb92637185c0ec0b5bdecb4db589417"
+    "mtime": 1778659140.0571687,
+    "hash": "8a936da28723ee83ad681c1dc9ae673e"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useProfileLoyalty.ts": {
     "mtime": 1778090204.5808325,
@@ -1808,16 +1812,16 @@
     "hash": "b9a451d1a88bd95ee4c11e8b5ec8fd0b"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useTradeOffers.ts": {
-    "mtime": 1778090204.5851102,
-    "hash": "40a3407c2315095f60c9360be06b978b"
+    "mtime": 1778618432.2914054,
+    "hash": "224ed070313d39676a5866c6ad883dd6"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useLottery.ts": {
     "mtime": 1778090204.5769436,
     "hash": "2ca67adcbe2bf09382ca5302036693ea"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendorUsers.ts": {
-    "mtime": 1778090204.5892875,
-    "hash": "14d61c4f7c4ef81fe603de5d821d55d7"
+    "mtime": 1778617998.4977038,
+    "hash": "af2a743295d7b064d5a6c6e095da2bab"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useSocket.ts": {
     "mtime": 1778090204.5816681,
@@ -1850,6 +1854,14 @@
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useAdminContent.ts": {
     "mtime": 1778090204.5631025,
     "hash": "5976d3beddb831d4e4b6c92007951096"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useVendors.ts": {
+    "mtime": 1778583988.840379,
+    "hash": "240ccf14707f6d7fb3b31898a80cbfae"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useOrderStatusLabel.ts": {
+    "mtime": 1778524002.9951847,
+    "hash": "5c280d38f3752c7d1b245336f1fe07b6"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/composables/useCheckoutLegal.ts": {
     "mtime": 1778090204.572517,
@@ -1940,8 +1952,8 @@
     "hash": "cde2662d2b2cee01ec9166ebdab92431"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/stores/cart.ts": {
-    "mtime": 1778010689.8026152,
-    "hash": "d55ebc7a23c383bae5e4f91e121a14d7"
+    "mtime": 1778618805.488655,
+    "hash": "f89734fdfa6c00600fd52a7cebf30ad1"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/stores/auth.ts": {
     "mtime": 1778267439.9966767,
@@ -2160,8 +2172,8 @@
     "hash": "9c63cf3754a413c9778e8f1e532ffeea"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/forms/ProductForm.vue": {
-    "mtime": 1776936782.6445122,
-    "hash": "b9abb743d8a4848cf946fb58a33e91e1"
+    "mtime": 1778525853.840073,
+    "hash": "734b777eacbdd61b2a6e5b0786353065"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/forms/HelpCalculators.vue": {
     "mtime": 1777738909.9055789,
@@ -2324,8 +2336,8 @@
     "hash": "e0eb3fa82fb8b052e07bca50c01de7f6"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/layout/vendor/VendorSidebar.vue": {
-    "mtime": 1777742157.008692,
-    "hash": "2abdb78bc22432d8789b0c7f31bd2db6"
+    "mtime": 1778524049.9843209,
+    "hash": "b2102656a5906049f39250ca03d67b82"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/layout/vendor/VendorHeader.vue": {
     "mtime": 1776931960.7695086,
@@ -2620,8 +2632,8 @@
     "hash": "548e731c25ece197861275275b00be14"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/admin/product/AdminProductFilter.vue": {
-    "mtime": 1776949801.0514917,
-    "hash": "ec955a814ca9fdee705a825c6b1f61bb"
+    "mtime": 1778656884.4282684,
+    "hash": "e32fe1a11c2f89f68c91401b737b6763"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/admin/product/AdminProductForm.vue": {
     "mtime": 1776931960.787205,
@@ -2967,6 +2979,10 @@
     "mtime": 1776931960.8121655,
     "hash": "375bfd9a54e6191700a8fd6b208ee6a4"
   },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/components/product/form/ProductFormAttributesRestaurant.vue": {
+    "mtime": 1778525840.3775685,
+    "hash": "1124033b41cbdc9613a35a8d451c03aa"
+  },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/product/form/ProductFormInventory.vue": {
     "mtime": 1776931960.8124042,
     "hash": "92707f776c8fed5df9b5c76bde4eec04"
@@ -3006,6 +3022,10 @@
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/product/form/ProductFormBasics.vue": {
     "mtime": 1776931960.814674,
     "hash": "7d84b723a87cfa1cf36b5047f0ef7b9f"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/components/product/form/ProductFormInventoryRestaurant.vue": {
+    "mtime": 1778524222.6932833,
+    "hash": "3cb1bc66a7a97b9e34228c812861b082"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/product/card/ProductCardImage.vue": {
     "mtime": 1778441435.9021835,
@@ -3344,8 +3364,8 @@
     "hash": "1c6e88a4e5ba8a95ae74e47f5cd115a3"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/wallet/WalletTransactions.vue": {
-    "mtime": 1777031408.2090364,
-    "hash": "f66dc19007923a48bfc548b2b156bca5"
+    "mtime": 1778620185.2792306,
+    "hash": "f984f404c021c01ea86952a633debced"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/wallet/WalletAuctionBids.vue": {
     "mtime": 1776931960.8363404,
@@ -3430,6 +3450,10 @@
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/settings/BrandIdentitySection.vue": {
     "mtime": 1776931960.8403993,
     "hash": "4433a266b0eaee66b49a442535e48e0e"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/settings/RestaurantSettingsSection.vue": {
+    "mtime": 1778524393.9457774,
+    "hash": "25cb87408c91cfeecb1b44b00d6eac81"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/settings/BankInfoSection.vue": {
     "mtime": 1776931960.8407063,
@@ -3548,16 +3572,20 @@
     "hash": "b09fcc2e4dce8bf05661a154cf4eaa56"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/application/ApplicationStepper.vue": {
-    "mtime": 1776934977.8790612,
-    "hash": "8cd5a07229c3984afa797e53de279aa0"
+    "mtime": 1778523934.6095884,
+    "hash": "feb20187aa9eebe55e503a461ebcb6af"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/application/StepContactAddress.vue": {
     "mtime": 1776931960.8497283,
     "hash": "cfbdd5613a14682035647c9c81456eee"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/application/StepBankCategories.vue": {
-    "mtime": 1776931960.849929,
-    "hash": "aa727bb775e320a3eb4400b4bf38a096"
+    "mtime": 1778525721.2269826,
+    "hash": "1067f7da72280955aa764cc59282e46d"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/application/StepVendorType.vue": {
+    "mtime": 1778525663.4046466,
+    "hash": "e62c1b82c2fe753c36bda635c0f82388"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/components/vendor/tier/TierProgress.vue": {
     "mtime": 1776931960.8503451,
@@ -3720,8 +3748,8 @@
     "hash": "4203436cdab054acaeac88e9fbb2a64c"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor-application.vue": {
-    "mtime": 1776931960.970088,
-    "hash": "fad78f7f93f430c39167064bfca85a63"
+    "mtime": 1778523910.4428854,
+    "hash": "f51dc0cc4b0814d34a1776cf450084e4"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/favorites.vue": {
     "mtime": 1776931960.970389,
@@ -4111,6 +4139,30 @@
     "mtime": 1777657363.6199944,
     "hash": "f430997a63241e6bf81d3108bb7960e7"
   },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/index.vue": {
+    "mtime": 1778585907.7763507,
+    "hash": "a3f6144a6c84855bbd6c304c871ba62a"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/cart.vue": {
+    "mtime": 1778619416.5936985,
+    "hash": "0104b0f70303c1ff1bd8dacc33ba87a1"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/checkout.vue": {
+    "mtime": 1778591352.7636747,
+    "hash": "9a4408f772a1897844bebc053c90239a"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/order-confirmation.vue": {
+    "mtime": 1778520159.3991454,
+    "hash": "5501eebafd8f8040787294d179be3060"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/live-tracking.vue": {
+    "mtime": 1778531041.881835,
+    "hash": "dfbc64920c015439e01088dceb5f0796"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/frontend/pages/bazarx-go/restaurant/[id].vue": {
+    "mtime": 1778618706.303653,
+    "hash": "b7b64ccf43e73484205199d7fdfd5385"
+  },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/profile/index.vue": {
     "mtime": 1776956801.10607,
     "hash": "962f716f06e41a05af0fc545583896ba"
@@ -4120,8 +4172,8 @@
     "hash": "0747b2252565e8907bab82d0b8e0f415"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/item/[id].vue": {
-    "mtime": 1776931960.9543052,
-    "hash": "f15b27b9d01e16012b8b660fb5fd5f12"
+    "mtime": 1778618639.9278986,
+    "hash": "9b5c3c4c4c4646cf3559536b26f8801b"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/ticaritakas/index.vue": {
     "mtime": 1777746513.5004227,
@@ -4196,8 +4248,8 @@
     "hash": "466286e81115505ba572913f631af8d6"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/wallet/index.vue": {
-    "mtime": 1776931960.9240289,
-    "hash": "13e3b86a673936843b6c3ae44120871a"
+    "mtime": 1778620191.3241389,
+    "hash": "f6879a34e78157d453b8267cae74ac42"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/wallet/transactions.vue": {
     "mtime": 1777027847.6432965,
@@ -4260,8 +4312,8 @@
     "hash": "da239469fa5165ccec013b040dbe94b5"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/settings.vue": {
-    "mtime": 1776931960.9639459,
-    "hash": "f847663963b0ffeada70b14ce7164ea2"
+    "mtime": 1778524438.6038117,
+    "hash": "6b80a4e83872fd090c622712ab0bd02e"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/inventory.vue": {
     "mtime": 1776931960.9642754,
@@ -4296,12 +4348,12 @@
     "hash": "e8046e3d4a586d1a9727c203b3c595d2"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/orders.vue": {
-    "mtime": 1776931960.9690506,
-    "hash": "a859e1d5330857b943eebdcb026ccd5c"
+    "mtime": 1778524060.4593074,
+    "hash": "585fd226814d9e4b7f27aa18a2cb0da8"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/products.vue": {
-    "mtime": 1778432121.5316207,
-    "hash": "fe020c756e0e4e615dbd68191fd6c83b"
+    "mtime": 1778656300.901065,
+    "hash": "c86b9151a57649d94d9ba6a967501e61"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/categories.vue": {
     "mtime": 1776931960.9697351,
@@ -4320,28 +4372,28 @@
     "hash": "4fc25805949f58e61d0af141c9f393e3"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/financial/invoices.vue": {
-    "mtime": 1776931960.9661958,
-    "hash": "7ee15a79d126bbea5fb9eefc9d67aea2"
+    "mtime": 1778618273.0071068,
+    "hash": "f89595fd8e55b05113b9cb6eddcd86a2"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/pages/vendor/advertising/index.vue": {
-    "mtime": 1776931960.9682462,
-    "hash": "aa07a94a5818d8865dc0fdca5c2f3620"
+    "mtime": 1778618178.6516743,
+    "hash": "7282e9d67126e4d3659080fb65cfe12a"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/xpService.js": {
-    "mtime": 1778188740.7700596,
-    "hash": "34513a0cba59c958d4a4104694190bf4"
+    "mtime": 1778618021.3953114,
+    "hash": "fc08b92a93d9862b671bb4eedd886b43"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/userService.ts": {
-    "mtime": 1776931960.9715836,
-    "hash": "a71b5afde29f4387273cb1e7884fa726"
+    "mtime": 1778619533.6379488,
+    "hash": "f684177002cdb063bab0f7cf2e7480d6"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/checkoutService.ts": {
     "mtime": 1776931960.9795349,
     "hash": "fc270f067f848ff6a8de9ca1bfeea070"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/api/VendorService.ts": {
-    "mtime": 1778435111.5314252,
-    "hash": "ccdaae98411b200a9d5dc2d6275dce7f"
+    "mtime": 1778617992.210886,
+    "hash": "79fa66199cc7347c8309feaf228bc792"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/api/CouponService.ts": {
     "mtime": 1776931960.9721906,
@@ -4384,8 +4436,8 @@
     "hash": "ead4ac72215ad276949aaf65fb9d8137"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/api/AddressService.ts": {
-    "mtime": 1776931960.9746265,
-    "hash": "a3851db9f539af0dae8b3d0db22857d8"
+    "mtime": 1778619760.6597686,
+    "hash": "b4931048a92f812798e3b1d0d2094757"
   },
   "/Users/macbook/Desktop/bazarx/apps/frontend/services/api/VendorOrderService.ts": {
     "mtime": 1776931960.9748387,
@@ -4528,8 +4580,12 @@
     "hash": "5c2c6e2bbb4c37f6cf81ce1336b116af"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/prisma/seed.ts": {
-    "mtime": 1777532819.1326723,
-    "hash": "61f83f6c4cc598b198dabf02cbb62db6"
+    "mtime": 1778523162.0011086,
+    "hash": "937b030fa22ca413e700ce17cb3348cf"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/prisma/migrations/20260511000000_vendor_type_restaurant/migration.sql": {
+    "mtime": 1778523117.3422863,
+    "hash": "e1b636050ebbd88c313bb72624a5fabc"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/prisma/migrations/20260429092903_bazarx/migration.sql": {
     "mtime": 1777454943.9346638,
@@ -4576,8 +4632,8 @@
     "hash": "68c73d41a45145a2a68896c124b36fbc"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/app.module.ts": {
-    "mtime": 1778181567.997703,
-    "hash": "759e4dc09431b27021ccf71e1e2949f3"
+    "mtime": 1778525014.5675483,
+    "hash": "0c661d72bcebac032c0e22cffd39dc84"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/common/filters/all-exceptions.filter.ts": {
     "mtime": 1778266909.4234385,
@@ -4588,16 +4644,16 @@
     "hash": "432c09597a4051a3992ea096945ce41b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/common/resilience/circuit-breaker.service.ts": {
-    "mtime": 1778188187.984993,
-    "hash": "76a3a515619d8630e72a9d7cb9153b70"
+    "mtime": 1778620544.932452,
+    "hash": "bb952993993d8c698b246a17af485909"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/infrastructure/outbox/outbox-processor.service.ts": {
     "mtime": 1778181540.52055,
     "hash": "f8de40b96d5d493d89616a83fede8447"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/commerce.module.ts": {
-    "mtime": 1778012175.3167362,
-    "hash": "8d9e405bf9a2f0e6a075a639c31204b3"
+    "mtime": 1778523575.8125079,
+    "hash": "1ac7c3d8330fd897591dd03865db1a49"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/queries/list-admin-orders.query.ts": {
     "mtime": 1776931961.5690944,
@@ -4663,9 +4719,17 @@
     "mtime": 1776931961.5707493,
     "hash": "7241484bdb28eee813bc3bfdfad9ca93"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/mark-order-preparing.command.ts": {
+    "mtime": 1778523514.918462,
+    "hash": "28c2601ebf1395c79ea68e6035c7de43"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/open-order-dispute.command.ts": {
     "mtime": 1778011729.2134917,
     "hash": "4ae86f2b4faf70134d6f12f44e0156ed"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/mark-order-preparing.handler.ts": {
+    "mtime": 1778523522.9173915,
+    "hash": "df3a01fad2924f5e4055c66d265dff9b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/open-order-dispute.handler.ts": {
     "mtime": 1778184064.9164047,
@@ -4704,8 +4768,8 @@
     "hash": "e5a389176a01f153f398293972aaf9b8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/add-to-cart.handler.ts": {
-    "mtime": 1777454337.7755492,
-    "hash": "f8885fa4ea55cd534d109fdb4d962a9c"
+    "mtime": 1778664953.8475475,
+    "hash": "49b4bad5de790e7290d6ef6ce2a19aeb"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/remove-cart-item.command.ts": {
     "mtime": 1778051045.1415613,
@@ -4719,17 +4783,25 @@
     "mtime": 1776931961.5723135,
     "hash": "a59699507510b08b5944061caf05cbb6"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/mark-order-ready.handler.ts": {
+    "mtime": 1778523528.1675122,
+    "hash": "f1a09ab2585215f6b416c056a05c8870"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/commands/mark-order-ready.command.ts": {
+    "mtime": 1778523516.4523637,
+    "hash": "bb7eeaee1cef4de5594d411636d907d0"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/services/invoice-pdf.service.ts": {
     "mtime": 1776931961.572557,
     "hash": "96ea5f77903de1aa2ad8b39cd59e6816"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/services/checkout.service.ts": {
-    "mtime": 1778188146.809339,
-    "hash": "09a7b60b5c24180f19f37caaf04d6a34"
+    "mtime": 1778665991.6336832,
+    "hash": "771f82d09e9adbd80384e3f773024d36"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/services/order-expiry.service.ts": {
-    "mtime": 1778188132.1034524,
-    "hash": "c06e5a811cbc1bb0a10539c241d51679"
+    "mtime": 1778664992.5964415,
+    "hash": "84e88cdd69d5f68bd55b886e68c2efd3"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/application/services/pricing.service.ts": {
     "mtime": 1776931961.5730042,
@@ -4752,8 +4824,8 @@
     "hash": "290cc5ef899cfa8ef6db821ac653c67f"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/infrastructure/persistence/prisma-order.repository.ts": {
-    "mtime": 1777455743.9191468,
-    "hash": "fde45fc09f4e6f0af6324ba578824e6d"
+    "mtime": 1778523545.7419653,
+    "hash": "77b965ae518abbf0347bd8cb4b51fe8c"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/infrastructure/persistence/prisma-cart.repository.ts": {
     "mtime": 1776931961.5739157,
@@ -4779,9 +4851,13 @@
     "mtime": 1776931961.5750155,
     "hash": "4b7804281381940173810e4445d82522"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/domain/enums/delivery-type.enum.ts": {
+    "mtime": 1778523429.435305,
+    "hash": "83bcc3f7d768a4bdc0fe8512c9a8c844"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/domain/enums/order-status.enum.ts": {
-    "mtime": 1778011747.4325752,
-    "hash": "feed5e9bba1c17318edaf74b775cd5d7"
+    "mtime": 1778523427.0829287,
+    "hash": "3939b35421bcfab0b5529d3fa49877b5"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/domain/repositories/dispute.repository.interface.ts": {
     "mtime": 1778011704.5877779,
@@ -4812,16 +4888,16 @@
     "hash": "b1c476d606dd43826964ac06a2a7c7a8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/domain/entities/order.entity.ts": {
-    "mtime": 1778184117.631815,
-    "hash": "62bd77334587d9dbd3a380bd36dd8c9f"
+    "mtime": 1778523467.274521,
+    "hash": "47debae6c91e8b601c29241191dc10aa"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/domain/entities/cart.entity.ts": {
     "mtime": 1776931961.5769813,
     "hash": "9e18d0aecc92fa15a3b927728c5a5787"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/presentation/order.controller.ts": {
-    "mtime": 1778012162.7772655,
-    "hash": "079108c21d52e746914bed91dd47971f"
+    "mtime": 1778525053.4953625,
+    "hash": "9a9479ad79161c575ef6232e113e7059"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/commerce/presentation/cart-escrow-coupon.controller.ts": {
     "mtime": 1777364373.86248,
@@ -4960,8 +5036,8 @@
     "hash": "0e241b983ca5e42f1984e89208814607"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/identity/profile.controller.ts": {
-    "mtime": 1777660182.1596193,
-    "hash": "72b47e555f53ca28ea935a2ce57b5faf"
+    "mtime": 1778619526.0575,
+    "hash": "0e12305008a3d789fe82e92cf8654675"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/identity/address.controller.ts": {
     "mtime": 1776965202.9091396,
@@ -5324,8 +5400,8 @@
     "hash": "ff4b0b46152df7747cc0ff84dad61950"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/barter/presentation/barter.controller.ts": {
-    "mtime": 1778013232.5297627,
-    "hash": "37e384c0801bb737338920a55f0b05f1"
+    "mtime": 1778621818.1390762,
+    "hash": "bca66f5b0abe9f8db256954b90902a03"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/barter/presentation/swap-session.controller.ts": {
     "mtime": 1778009514.2240336,
@@ -5408,12 +5484,12 @@
     "hash": "6c45e4575a285581c1740949b6aef454"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/get-catalog-products/get-catalog-products.handler.ts": {
-    "mtime": 1778444939.2740557,
-    "hash": "dacac6f759496058df9cf88b9aa3a9af"
+    "mtime": 1778595917.5537474,
+    "hash": "219f64d27a26842be193e97968325727"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/get-catalog-products/get-catalog-products.query.ts": {
-    "mtime": 1777234489.2783735,
-    "hash": "fbdbb8d284a6d995c6508d38892c01cf"
+    "mtime": 1778591763.6689487,
+    "hash": "dc6c9f4341a433bf9c9629e573433633"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/get-category-tree/get-category-tree.query.ts": {
     "mtime": 1776931961.5964181,
@@ -5424,12 +5500,12 @@
     "hash": "81793035e8b0c34f7467eb1cca9e7f53"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/list-catalog-listings/list-catalog-listings.handler.ts": {
-    "mtime": 1777287293.0258875,
-    "hash": "4b856086575180b67430cea346150b95"
+    "mtime": 1778656246.6643507,
+    "hash": "2f3b70a13af83b95c9b1117994e8a0b8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/list-catalog-listings/list-catalog-listings.query.ts": {
-    "mtime": 1776931961.5970614,
-    "hash": "fb74e4b3fb68e95f3439f2bcd722e32b"
+    "mtime": 1778660351.229348,
+    "hash": "60ac67bfa7809813f04a851fa636098b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/get-favorites/get-favorites.query.ts": {
     "mtime": 1776931961.5977795,
@@ -5440,12 +5516,12 @@
     "hash": "ffc63d0a91d4260260d95f2e22131cc4"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/list-admin-products/list-admin-products.query.ts": {
-    "mtime": 1776945460.9224617,
-    "hash": "87df57dd6c0fb669220149d472f1e5c3"
+    "mtime": 1778659170.1579905,
+    "hash": "c9fb9b4e1cacad81e8c129c85821bfaf"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/list-admin-products/list-admin-products.handler.ts": {
-    "mtime": 1777655063.0055804,
-    "hash": "12672365284be9ff68c27686cfc4ab0b"
+    "mtime": 1778659192.6932766,
+    "hash": "ac560665c3b163f5e9b6d5e09ffdfdb8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/queries/get-brands/get-brands.query.ts": {
     "mtime": 1776931961.5985386,
@@ -5480,8 +5556,8 @@
     "hash": "fefd6011cfdf52d64524a74eb313126b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/dtos/create-listing.dto.ts": {
-    "mtime": 1776931961.6009576,
-    "hash": "0b01f9075702c80bebcf208f5581b0d1"
+    "mtime": 1778599930.7304714,
+    "hash": "b2822a17e77df2606bdb13d89ffb7390"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/dtos/create-brand.dto.ts": {
     "mtime": 1776931961.6013792,
@@ -5492,12 +5568,12 @@
     "hash": "76fd16951f9e13318372f09dab086e5e"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/workers/product-import.worker.ts": {
-    "mtime": 1778437681.747253,
-    "hash": "5b91d6e55afd912ddc3f4b599ad3591c"
+    "mtime": 1778655790.3543391,
+    "hash": "d2290efa1a62f81b9252258bf07964b8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/create-listing.handler.ts": {
-    "mtime": 1776940499.8374503,
-    "hash": "7291ee0da3dea69f673c815caddcd658"
+    "mtime": 1778599959.9235842,
+    "hash": "ecce866c2343ab83d880dcb85abf1e95"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/delete-listing.command.ts": {
     "mtime": 1776945757.3047898,
@@ -5548,8 +5624,8 @@
     "hash": "c72a5bc68474228833b377a1507defe9"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/update-listing.handler.ts": {
-    "mtime": 1777406968.7189898,
-    "hash": "b31a3f0da0105cbd3857a4eb521ab205"
+    "mtime": 1778619019.336343,
+    "hash": "f0b5656e8041ac6f8b6238c5fcbb6b3c"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/bulk-delete-admin-products.command.ts": {
     "mtime": 1776931961.6034806,
@@ -5576,8 +5652,8 @@
     "hash": "7515b51ce572fb7a8620a7169abe353e"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/queue-import-products.command.ts": {
-    "mtime": 1777301618.9369965,
-    "hash": "8dc00933b5dfa68c7dc59a27001c22ac"
+    "mtime": 1778580804.9144561,
+    "hash": "3cb4560b3ee75c7e7e81688c0b2ea573"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/create-catalog-product.command.ts": {
     "mtime": 1776931961.605063,
@@ -5588,8 +5664,8 @@
     "hash": "71192607290259f47949556634ec8865"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/queue-import-products.handler.ts": {
-    "mtime": 1777301618.9403243,
-    "hash": "90c3ef2139ea53161bd0ce643a4f7ba7"
+    "mtime": 1778613252.5797505,
+    "hash": "3963625a1ef114c93a45c01652704012"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/application/commands/create-catalog-product.handler.ts": {
     "mtime": 1776931961.6055286,
@@ -5712,8 +5788,8 @@
     "hash": "849fdb6bebe021d45c04b72e581b4ef3"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/presentation/catalog-product.controller.ts": {
-    "mtime": 1778447157.181436,
-    "hash": "6c1a2ef5130bc12b2b8993ac05bbdc27"
+    "mtime": 1778591774.0641587,
+    "hash": "dec1f16cf04c89d090c765b10fbdb99d"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/presentation/brand.controller.ts": {
     "mtime": 1776963074.704651,
@@ -5736,8 +5812,8 @@
     "hash": "44d7988d39916d26a0269d4f7a556174"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/presentation/product-admin.controller.ts": {
-    "mtime": 1778436582.6623356,
-    "hash": "c1617a335b128e1cbc1a142eb302d931"
+    "mtime": 1778659157.8393207,
+    "hash": "0b2f145224ccffdf067a6ffecae8afb1"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/presentation/favorite.controller.ts": {
     "mtime": 1776963074.7060254,
@@ -5748,8 +5824,8 @@
     "hash": "5326244ebf1bea00caa34561fd5ce7a9"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/catalog/presentation/listing.controller.ts": {
-    "mtime": 1776963074.7065332,
-    "hash": "9abac706fa324d60e0a9c7d2f965a084"
+    "mtime": 1778660265.048211,
+    "hash": "3b87c8cd20fdfc88b4f1e559ad30b33d"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/tax/tax.module.ts": {
     "mtime": 1777536478.5062265,
@@ -6236,12 +6312,12 @@
     "hash": "2f560306d1ee727b679e1682b7c21ccb"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/financial-gateway/financial-gateway.service.ts": {
-    "mtime": 1777664193.9781837,
-    "hash": "a034c56d8082d71f48472e5889d29df1"
+    "mtime": 1778621808.5063093,
+    "hash": "0168f75a592eff8568f1949b8804ed80"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/financial-gateway/grpc/wallet-grpc.service.ts": {
-    "mtime": 1778181758.134422,
-    "hash": "997003e54148e18f9656e7e8068651b6"
+    "mtime": 1778621884.0882924,
+    "hash": "7e68d64c89b08e66d1e825c66c3e25cb"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/financial-gateway/grpc/financial-grpc.client.ts": {
     "mtime": 1776931961.6320517,
@@ -6356,36 +6432,20 @@
     "hash": "7630ae7443ec4663e80871909571e2f3"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/menu.module.ts": {
-    "mtime": 1777535136.699134,
-    "hash": "ae0229e85e6ebfb2c7d17048325e62be"
+    "mtime": 1778523708.6026924,
+    "hash": "839c3901c3e1d5497da3a9694e742237"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-my-purchases.handler.ts": {
-    "mtime": 1777534443.3067203,
-    "hash": "1dcc1ca726353843d7695992d94f1fd2"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/browse-restaurants.handler.ts": {
-    "mtime": 1777534415.7179818,
-    "hash": "594e6b8d5fc7cc3fa5adef7ef5225fb6"
+    "mtime": 1778523657.513462,
+    "hash": "72c46c8a70d69fcac954941866fb8ed5"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-launch-partners.handler.ts": {
-    "mtime": 1777535069.1872225,
-    "hash": "3b6f1c545200ed5760eb6173fd92d840"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/browse-restaurants.query.ts": {
-    "mtime": 1777534404.520995,
-    "hash": "eaa3420be86423b8dde6bf81b3a6bb44"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-restaurant-detail.handler.ts": {
-    "mtime": 1777534429.9997354,
-    "hash": "ba44b255855bf914af93178e9a1c09b6"
+    "mtime": 1778523664.106158,
+    "hash": "325a308925b752c558bcbf10689c476a"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-my-purchases.query.ts": {
     "mtime": 1777534434.24755,
     "hash": "b1a77a5cde406a0ca39c113bd5886aab"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-restaurant-detail.query.ts": {
-    "mtime": 1777534420.2441738,
-    "hash": "6ec3dd57708e4ae1f04b6e2d5e78bdbd"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/queries/get-launch-partners.query.ts": {
     "mtime": 1777535057.9641917,
@@ -6399,53 +6459,37 @@
     "mtime": 1777534380.150477,
     "hash": "3fd0db2916330f140633003254b61b96"
   },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/create-restaurant.command.ts": {
-    "mtime": 1777534310.725911,
-    "hash": "bf08e131baf106c02eb2a321401fec17"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/create-restaurant.handler.ts": {
-    "mtime": 1777534321.053884,
-    "hash": "18c6cfaf3c0fd21254fe3ac4b6c76f4d"
-  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/purchase-menu.command.ts": {
-    "mtime": 1777534339.8392625,
-    "hash": "b25372ab27ad7017c5ffa3c6e72c43b6"
+    "mtime": 1778523589.7802012,
+    "hash": "4555483143538d2a9f5971c02d19d0c5"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/distribute-free-menu.command.ts": {
-    "mtime": 1777535036.7387424,
-    "hash": "b16d6f7d9f7724e7365af6ac7300037b"
+    "mtime": 1778523691.1811028,
+    "hash": "d734188aea9c9e588b2bfade5ab5887c"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/distribute-free-menu.handler.ts": {
-    "mtime": 1777535052.4902177,
-    "hash": "1323985c0fef85fa030126a7b6835ddc"
+    "mtime": 1778523698.9033422,
+    "hash": "a945fd6a789d8bdf2896d0c5c0bdefd1"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/purchase-menu.handler.ts": {
-    "mtime": 1777534361.8577845,
-    "hash": "78da83f8f760a909b00658fb1f087f13"
+    "mtime": 1778523606.5727313,
+    "hash": "90a8149aca30e641293166e49b03f7c5"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/redeem-menu.handler.ts": {
-    "mtime": 1777534399.3737462,
-    "hash": "162a318139d5533cbffcc0c2d0f56825"
+    "mtime": 1778523620.4304044,
+    "hash": "6945bce73d550170ca6cb0670bfbb1e4"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/redeem-menu.command.ts": {
     "mtime": 1777534384.8738682,
     "hash": "ef014ff60b71daecc026245411ff1e61"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/advance-launch-partner-phase.handler.ts": {
-    "mtime": 1777535032.041742,
-    "hash": "ca86d9694a26a17073663f0e6f7e5354"
+    "mtime": 1778523689.525213,
+    "hash": "cfac5da801fe96f2140acb67ba565e71"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/advance-launch-partner-phase.command.ts": {
-    "mtime": 1777535014.2966979,
-    "hash": "9d78f17d34eebfd9c720e3551d2d9d2a"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/create-menu.command.ts": {
-    "mtime": 1777534326.3771584,
-    "hash": "204101f08ab70420c1ffe61b7b73afea"
-  },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/commands/create-menu.handler.ts": {
-    "mtime": 1777534334.8371325,
-    "hash": "e319a8e07028ecededb91b9675726c85"
+    "mtime": 1778523678.978656,
+    "hash": "f33b53e827a192242501290185212ac2"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/application/services/menu-usage-tracker.service.ts": {
     "mtime": 1777534301.5784264,
@@ -6455,17 +6499,57 @@
     "mtime": 1777534288.085095,
     "hash": "e2f813735274fdbd12f8217d6bd109ed"
   },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/presentation/restaurant-admin.controller.ts": {
-    "mtime": 1777535113.6336455,
-    "hash": "b3f0bc4a8af34822eb10e0ac29edae03"
-  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/presentation/menu-redeem.controller.ts": {
     "mtime": 1777534471.0987077,
     "hash": "36eacbdf4289fa82dba932793c5c3353"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/menu/presentation/menu.controller.ts": {
-    "mtime": 1777534462.1061358,
-    "hash": "25466cd5bf5b94e9d8eea349b3b64e0b"
+    "mtime": 1778523717.3170838,
+    "hash": "a4d89eaf410ad4a086fd17af2115a46a"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/delivery.module.ts": {
+    "mtime": 1778614553.9732568,
+    "hash": "18f1e86e2f08ef53049fda645ea8b21a"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/application/workers/dispatch-notification.processor.ts": {
+    "mtime": 1778613242.885291,
+    "hash": "bca9446a8b0f1881aa9cee6aed8799ab"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/application/commands/mark-delivered.handler.ts": {
+    "mtime": 1778525194.1248043,
+    "hash": "15408dbe65a54a18e84a19fc45706845"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/application/commands/mark-delivered.command.ts": {
+    "mtime": 1778524891.9358394,
+    "hash": "41026b548ad2180b0fa434f885b5b8ba"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/application/commands/dispatch-courier.command.ts": {
+    "mtime": 1778524864.9486256,
+    "hash": "cb38a174e62593cc9aff3da05a5ed837"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/application/commands/dispatch-courier.handler.ts": {
+    "mtime": 1778527109.5881538,
+    "hash": "9b023469917d68082a0d0723c6b446f9"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/infrastructure/persistence/prisma-delivery-dispatch.repository.ts": {
+    "mtime": 1778525159.7617118,
+    "hash": "ece4b090fce2111ed1526e7fe13fec91"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/domain/enums/dispatch-status.enum.ts": {
+    "mtime": 1778524834.020497,
+    "hash": "1441af5ff56a286ef990c81b25d60367"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/domain/repositories/delivery-dispatch.repository.interface.ts": {
+    "mtime": 1778524860.9352083,
+    "hash": "4b737f86601c51616ca8f380c35eac08"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/domain/entities/delivery-dispatch.entity.ts": {
+    "mtime": 1778525188.2904863,
+    "hash": "e9adac4f47642406eb50e1c79f36d81e"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/delivery/presentation/delivery.controller.ts": {
+    "mtime": 1778524924.3717682,
+    "hash": "b203f5862619ff749baab9756bfc4a48"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/advertising/advertising.module.ts": {
     "mtime": 1777359659.436355,
@@ -6580,8 +6664,8 @@
     "hash": "07a4561d826c46be6e46aed0cac1b986"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/advertising/presentation/ad-campaign.controller.ts": {
-    "mtime": 1777359768.4113183,
-    "hash": "fb2553e1f090a288971c9d007e2aea03"
+    "mtime": 1778618187.9127357,
+    "hash": "0c7ac71004710a257642f954328f477e"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/advertising/presentation/settings.controller.ts": {
     "mtime": 1777359768.4114134,
@@ -6896,8 +6980,8 @@
     "hash": "e54754463ae847ed60130e268c0b4584"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/vendor.module.ts": {
-    "mtime": 1778264264.7969482,
-    "hash": "86d72ca7fb6d0a771e9970c03b10708f"
+    "mtime": 1778618079.0552204,
+    "hash": "f6c846fd84849eaed6a87e8af7fb0957"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/queries/list-vendor-products.handler.ts": {
     "mtime": 1776931961.6543655,
@@ -6968,12 +7052,12 @@
     "hash": "67789928319a5660be6a9aff92ca08d6"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/queries/list-vendors.handler.ts": {
-    "mtime": 1776931961.6569707,
-    "hash": "92a61a88363e464d31538c240c813558"
+    "mtime": 1778583997.742801,
+    "hash": "8fad65175a7f07439ffe90968d8f45fd"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/queries/get-vendor-by-slug.handler.ts": {
-    "mtime": 1776940473.5815945,
-    "hash": "1736d920e934d1d6285d822f71828acc"
+    "mtime": 1778586823.066195,
+    "hash": "897c876ca2ab325c80dacdc6101f0160"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/queries/get-vendor-invoices.query.ts": {
     "mtime": 1776931961.657267,
@@ -7071,13 +7155,17 @@
     "mtime": 1777490372.9901788,
     "hash": "57ad6c4188cbb5c9e266f52667687c3a"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/dtos/update-restaurant-settings.dto.ts": {
+    "mtime": 1778523371.7512686,
+    "hash": "2ff9027ca05e16f02f62375d0538e60d"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/dtos/create-ecosystem.dto.ts": {
     "mtime": 1777614028.8963077,
     "hash": "ab97bae5782f7b06d1ee364c0c7597d3"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/dtos/register-vendor.dto.ts": {
-    "mtime": 1776931961.6602228,
-    "hash": "68b9fa79476069e397158a9e2a45d80c"
+    "mtime": 1778523303.4636686,
+    "hash": "524c7c12e92c36d768410c305da1e81d"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/dtos/create-company.dto.ts": {
     "mtime": 1776931961.660378,
@@ -7140,8 +7228,8 @@
     "hash": "249af96be17d55200e5570525018ab54"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/bulk-import-vendor-products.handler.ts": {
-    "mtime": 1777472646.109617,
-    "hash": "f3bbbcbf0e629507b0a83bed395f1e0f"
+    "mtime": 1778580998.9450443,
+    "hash": "d2953b7032e8c27303ae8d3822eabf41"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/add-ecosystem-member.command.ts": {
     "mtime": 1776931961.6616263,
@@ -7232,8 +7320,8 @@
     "hash": "da634939497bd9ea374699c225856240"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/register-vendor.handler.ts": {
-    "mtime": 1776931961.6643312,
-    "hash": "0e99dcd13057bc2847ab326ac71c0a05"
+    "mtime": 1778523318.9783282,
+    "hash": "af4d71d6cb786249f7139ce185f5a237"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/update-brand.command.ts": {
     "mtime": 1777490280.2385395,
@@ -7259,9 +7347,17 @@
     "mtime": 1776931961.6651082,
     "hash": "02f0bdc58352924a44cee74297392d2e"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/update-restaurant-settings.command.ts": {
+    "mtime": 1778523373.66215,
+    "hash": "a8b17df5ac82d4ea2ed7bb5f5a5d0c43"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/create-ecosystem.handler.ts": {
     "mtime": 1777614074.6837435,
     "hash": "c3fff608997c25de9d2835807cda28e7"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/update-restaurant-settings.handler.ts": {
+    "mtime": 1778523385.799,
+    "hash": "8df569ad60e478a97d724aac769b8ae2"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/application/commands/create-ecosystem.command.ts": {
     "mtime": 1776931961.6654415,
@@ -7280,24 +7376,24 @@
     "hash": "8f701c827836b0d79ecf2d3ed012d2a3"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/prisma-vendor.repository.ts": {
-    "mtime": 1776931961.6658678,
-    "hash": "83885d55cfeb07d7ba2c828406ec7d8f"
+    "mtime": 1778586815.997714,
+    "hash": "bdeb62fa95a1bc7b2f252d7878697a43"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/prisma-company.repository.ts": {
     "mtime": 1776931961.6660745,
     "hash": "2dcdab54beca2a18ba9062a32515cbc0"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/prisma-vendor-profile.repository.ts": {
-    "mtime": 1776931961.666239,
-    "hash": "4159bac37b98232dd2a71f8ee5fc8e11"
+    "mtime": 1778523343.4889214,
+    "hash": "8ad1db6a3863845875e311be3f064276"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/prisma-vendor-settings.repository.ts": {
-    "mtime": 1776931961.666971,
-    "hash": "831875de194ce554cc25cd5e031f4167"
+    "mtime": 1778523352.7691264,
+    "hash": "f95efaf1294dbc1d24ce1e5b52c8c2a8"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/mappers/vendor.mapper.ts": {
-    "mtime": 1776931961.6664248,
-    "hash": "d57021bd6d4099f1465c0d9acf2cdb94"
+    "mtime": 1778584223.0954857,
+    "hash": "2a8639dd953a0bfa9e99a73cb9ac23a9"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/infrastructure/persistence/mappers/company.mapper.ts": {
     "mtime": 1776940490.3036313,
@@ -7331,13 +7427,17 @@
     "mtime": 1776931961.6684556,
     "hash": "080359ee060ffba48798898db29ba3cc"
   },
+  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/enums/vendor-type.enum.ts": {
+    "mtime": 1778523227.1070507,
+    "hash": "89e9f56c7570af0b1dfd369ca697d546"
+  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/enums/b2b-tier.enum.ts": {
     "mtime": 1776931961.6686618,
     "hash": "4d6dd51a831df8fe037c30378ed8a529"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/repositories/vendor.repository.interface.ts": {
-    "mtime": 1776931961.6688251,
-    "hash": "abfe5da1fabc27cf00f06307251afc52"
+    "mtime": 1778586809.433926,
+    "hash": "994b351353008bf829e4fd68e97ab269"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/repositories/vendor-profile.repository.interface.ts": {
     "mtime": 1776931961.6690593,
@@ -7376,20 +7476,20 @@
     "hash": "852dc2c014de29ff1070d60a7782d54b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/entities/vendor-settings.entity.ts": {
-    "mtime": 1776931961.6709354,
-    "hash": "4dc0b97484e96480403ebe752904d5ea"
+    "mtime": 1778523294.1996274,
+    "hash": "9f0a14213251d697096fda1362d9008a"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/entities/vendor-profile.entity.ts": {
-    "mtime": 1776931961.6711314,
-    "hash": "6e0cae2681a2827d33439a5963492d9f"
+    "mtime": 1778523285.4412966,
+    "hash": "141e3241300e763aeadce3c1df134d8a"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/entities/company.entity.ts": {
     "mtime": 1776931961.671348,
     "hash": "1ae77cede8a6cc18ee2ca6fc988fd892"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/entities/vendor.entity.ts": {
-    "mtime": 1776931961.6715443,
-    "hash": "8382a59d27b09a5b85d3eb44c1ad671a"
+    "mtime": 1778584215.7418332,
+    "hash": "c00cddf521de6b5fab4768878a33af7a"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/domain/entities/vendor-bank-account.entity.ts": {
     "mtime": 1776931961.6717129,
@@ -7399,17 +7499,13 @@
     "mtime": 1777490426.6925704,
     "hash": "86124084b31bdd90689f62636ae49a29"
   },
-  "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/presentation/ads.controller.ts": {
-    "mtime": 1777304023.2019062,
-    "hash": "1b2b8e5cf8bea42f1dfb2be7c116a599"
-  },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/presentation/company.controller.ts": {
     "mtime": 1778014469.891826,
     "hash": "1feb739c9845d80e9ced59ba369ce1ab"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/presentation/vendor.controller.ts": {
-    "mtime": 1777490491.5074189,
-    "hash": "cb60b052d528b2c6826c83987e007984"
+    "mtime": 1778587405.5983796,
+    "hash": "3dce3efc06ec52fa7ee10fd8578f68cd"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/presentation/vendor-brands.controller.ts": {
     "mtime": 1777490335.1025722,
@@ -7432,8 +7528,8 @@
     "hash": "02414485f258ffe2164940843c39b54b"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/vendor/presentation/vendor-ads.controller.ts": {
-    "mtime": 1777304023.2074678,
-    "hash": "89745b7b713ce32bc43369a7c5a8445d"
+    "mtime": 1778618164.9886672,
+    "hash": "b5b6afe6eef11aaec77c4230467d765f"
   },
   "/Users/macbook/Desktop/bazarx/apps/backend/src/modules/analytics/analytics.module.ts": {
     "mtime": 1778090663.9875126,
@@ -7546,6 +7642,10 @@
   "/Users/macbook/Desktop/bazarx/apps/financial-service/scratch_check_db.ts": {
     "mtime": 1777028130.3513908,
     "hash": "f2a5070107761abbf1dddb8700de2e20"
+  },
+  "/Users/macbook/Desktop/bazarx/apps/financial-service/scratch_check_topups.ts": {
+    "mtime": 1778620673.170693,
+    "hash": "347d005ecbf7772b29ccc49d49879388"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/test/order-wallet-integration.spec.ts": {
     "mtime": 1776931961.678398,
@@ -7736,16 +7836,16 @@
     "hash": "13c58720543cb99344eb7cf4d735c046"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/wallet/application/commands/approve-topup.handler.ts": {
-    "mtime": 1777452282.979523,
-    "hash": "c68010c4ca37063093ca0369b0e4a212"
+    "mtime": 1778621166.0632408,
+    "hash": "f44e09438951142ab4af5b87c8bee3b1"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/wallet/application/commands/approve-topup.command.ts": {
     "mtime": 1776960880.7986517,
     "hash": "c4bb8cc1ef2c6e319e679142b5cb8964"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/wallet/application/commands/topup-wallet.handler.ts": {
-    "mtime": 1777452269.8639345,
-    "hash": "a2a6ab824a845460d0ae7511418b6fd7"
+    "mtime": 1778621179.866355,
+    "hash": "3f0161c3b8dcf43827fcfdb8fa536f11"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/wallet/application/commands/topup-wallet.command.ts": {
     "mtime": 1776931961.8714044,
@@ -7772,8 +7872,8 @@
     "hash": "a2de4de3006489da5f6455b90e146e47"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/wallet/presentation/wallet.grpc.controller.ts": {
-    "mtime": 1777664271.3103251,
-    "hash": "db0949bfee9da084413ce72bd4702af6"
+    "mtime": 1778621984.700472,
+    "hash": "1c694d283e0bf616b7738b289aaad080"
   },
   "/Users/macbook/Desktop/bazarx/apps/financial-service/src/modules/escrow/escrow.module.ts": {
     "mtime": 1778011316.8269238,
@@ -7971,10 +8071,6 @@
     "mtime": 1776936346.0726793,
     "hash": "cc39c848807907663997472008827654"
   },
-  "/Users/macbook/Desktop/bazarx/B2B_INTEGRATION_PLAN.md": {
-    "mtime": 1777741571.0378551,
-    "hash": "06fb21acfaead8f84af7094d2ac76136"
-  },
   "/Users/macbook/Desktop/bazarx/ENV_GUIDE.md": {
     "mtime": 1776933068.3509452,
     "hash": "c695dd904ee67185142e356c00716261"
@@ -7984,8 +8080,8 @@
     "hash": "f786c2cd9f5e430f740dd0290d3d9353"
   },
   "/Users/macbook/Desktop/bazarx/docker-compose.prod.yml": {
-    "mtime": 1778187433.5846646,
-    "hash": "c3d38629062b7a217e0e944b5566a93b"
+    "mtime": 1778676672.3043985,
+    "hash": "46865884c62a207ac6a9a4bcb4e2c6fe"
   },
   "/Users/macbook/Desktop/bazarx/BAZARX_PROD_REHBER.md": {
     "mtime": 1777629215.8434112,
@@ -7999,9 +8095,17 @@
     "mtime": 1776931960.66652,
     "hash": "d1a8e702324850ef1c3120343fe47532"
   },
+  "/Users/macbook/Desktop/bazarx/rehber.md": {
+    "mtime": 1778528137.5272634,
+    "hash": "53c6d5db6a175d25a113fdbf8333d806"
+  },
+  "/Users/macbook/Desktop/bazarx/BAZARX_GO_INTEGRATION_PLAN.md": {
+    "mtime": 1778526332.0999162,
+    "hash": "e5b8df39ebcbdc4f5fda04b78fe9cf5d"
+  },
   "/Users/macbook/Desktop/bazarx/CLAUDE.md": {
-    "mtime": 1777927585.7219083,
-    "hash": "afabbbaebe3cca60c06793d6d87e4073"
+    "mtime": 1778525251.548585,
+    "hash": "38f79a7c1664e9b6fd6987b09df745ac"
   },
   "/Users/macbook/Desktop/bazarx/pnpm-workspace.yaml": {
     "mtime": 1776931961.8751116,
@@ -8012,12 +8116,12 @@
     "hash": "0e41499e6fe882f54586ec7be7ed5186"
   },
   "/Users/macbook/Desktop/bazarx/infra/loki/loki-config.yaml": {
-    "mtime": 1778187425.4939244,
-    "hash": "da798099f0e4c05f3432adec32b7e36f"
+    "mtime": 1778612669.320101,
+    "hash": "c0f2a1da72c16c2db4472c263d63ad09"
   },
   "/Users/macbook/Desktop/bazarx/infra/promtail/promtail-config.yaml": {
-    "mtime": 1778187417.7358923,
-    "hash": "7dade7e4a7f0a285c2c320bb4edb53b3"
+    "mtime": 1778613749.5237606,
+    "hash": "27f3e6af63457d23de7e9b559eb3d246"
   },
   "/Users/macbook/Desktop/bazarx/infra/prometheus/prometheus.yml": {
     "mtime": 1778187410.0721567,
@@ -8027,20 +8131,28 @@
     "mtime": 1777923744.9825323,
     "hash": "2248e8d427760d67c0f7ac9a4349a50e"
   },
+  "/Users/macbook/Desktop/bazarx/belge/faturaolus\u0327turucusu.html": {
+    "mtime": 1778664248.281589,
+    "hash": "177c23b2e7120615f0f4898e16137c77"
+  },
   "/Users/macbook/Desktop/bazarx/belge/docker.md": {
     "mtime": 1777399314.1198542,
     "hash": "241809a6a2ceb70057028799b4744a2e"
   },
+  "/Users/macbook/Desktop/bazarx/belge/gitrepo/git.md": {
+    "mtime": 1778664321.8440156,
+    "hash": "dc8d2a365398b19021b98155628f4986"
+  },
   "/Users/macbook/Desktop/bazarx/graphify-out/converted/bazarx_urun_yukleme_sablonu (2)_dcb3f1d2.md": {
-    "mtime": 1778489078.1808653,
+    "mtime": 1778676749.4036162,
     "hash": "153decaad9c6ecf6e796333dee694c87"
   },
   "/Users/macbook/Desktop/bazarx/graphify-out/converted/bazarx_trendyol_sablonu_471de892.md": {
-    "mtime": 1778489078.1855023,
+    "mtime": 1778676749.4073427,
     "hash": "6d94e21a6cfbfa94df0e05d9ca1bc14f"
   },
   "/Users/macbook/Desktop/bazarx/graphify-out/converted/bazarx_urun_117f8990.md": {
-    "mtime": 1778489078.189926,
+    "mtime": 1778676749.4122388,
     "hash": "a57c658303244bb97a2a633a28274b23"
   },
   "/Users/macbook/Desktop/bazarx/belge/graphify/bazarx_graphify_audit_prompts.md": {
@@ -8050,66 +8162,6 @@
   "/Users/macbook/Desktop/bazarx/belge/graphify/\ud83d\udcca BazarX Mimari Denetimi Sonu\u00e7lar\u0131 (God Nodes & Finansal Ba\u011f\u0131ml\u0131l\u0131klar).md": {
     "mtime": 1778008392.3726256,
     "hash": "b4d75c3879fcb3bff7ed5f56c9b54a93"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/b.md": {
-    "mtime": 1778183717.2242346,
-    "hash": "bbec2fe5eeb7038cb297346148a9b7c1"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/f.md": {
-    "mtime": 1778185076.2498827,
-    "hash": "2f6301a14fe5e2a5d7126e4fb53994ed"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/g.md": {
-    "mtime": 1778185398.7290237,
-    "hash": "1f348d536dd8de7aba3a06cfdd3db2ce"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/c.md": {
-    "mtime": 1778184159.9056416,
-    "hash": "4f2516f748ad221a00608480dd28cf66"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/stabilization_report_2026_05_05.md": {
-    "mtime": 1778014687.9149292,
-    "hash": "9fa3b96168bfd3835e096d02325dd68a"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/h.md": {
-    "mtime": 1778185659.8551638,
-    "hash": "15364294b669e4372f4d4b957fa91235"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/l.md": {
-    "mtime": 1778187452.5434656,
-    "hash": "f963121e7abfcf2ce8caa0d1c538d7f9"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/m.md": {
-    "mtime": 1778187659.4447083,
-    "hash": "e15666cecfa669a05e7e8ea48fb4e401"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/bazarxminimax.md": {
-    "mtime": 1778182489.6408162,
-    "hash": "0be5b18c97c89a9c142f27c1afbc88c7"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/n.md": {
-    "mtime": 1778188919.3204734,
-    "hash": "385791c40bca76ab6efb95e27d1a56cf"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/j.md": {
-    "mtime": 1778186897.4857028,
-    "hash": "c61759f389b225d8b282f6e80b9aba36"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/k.md": {
-    "mtime": 1778186906.5912633,
-    "hash": "b656ce2a25a6fc90359ef08ad19549fa"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/d.md": {
-    "mtime": 1778184463.520472,
-    "hash": "0dfbc47e20c9f33143845e27facbf714"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/x.md": {
-    "mtime": 1778183690.0766034,
-    "hash": "20e872884e450bb9187ce64327d46379"
-  },
-  "/Users/macbook/Desktop/bazarx/belge/mini2.7d\u00fczenleme/e.md": {
-    "mtime": 1778184839.0263784,
-    "hash": "b05a9a01587a647ee665ae847f88b279"
   },
   "/Users/macbook/Desktop/bazarx/docs/adr/adr-004-turborepo-monorepo.md": {
     "mtime": 1778183074.7887018,

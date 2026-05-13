@@ -68,7 +68,7 @@ services:
       - APP_BASE_URL=https://balmy-game-recount.ngrok-free.dev
       - FINANCIAL_GRPC_URL=financial-service:50051
     volumes:
-      - bazarx_uploads:/app/public/uploads
+      - bazarx_uploads:/app/apps/backend/public/uploads
       - ./belge:/app/belge
     expose:
       - "3001"
