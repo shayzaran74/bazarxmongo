@@ -258,6 +258,35 @@ export class ContentAdminController {
     return { success: true };
   }
 
+  // ─── Listelemeler (GET) ──────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Tüm duyuruları listele' })
+  @Get('announcements')
+  async getAnnouncements() {
+    const data = await this.prisma.announcement.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Tüm politikaları listele' })
+  @Get('policies')
+  async getPolicies() {
+    const data = await this.prisma.policy.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Tüm dinamik içerikleri listele' })
+  @Get('dynamic')
+  async getDynamicContents() {
+    const data = await this.prisma.dynamicContent.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
+  }
+
   // ─── SEO ──────────────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'SEO metadata upsert' })
