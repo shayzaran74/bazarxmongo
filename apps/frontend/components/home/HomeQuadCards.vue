@@ -33,8 +33,10 @@ const fetchQuadCards = async () => {
   try {
     const { $api } = useApi()
     const data = await $api('/api/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
+    console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
       cards.value = data.data
+      console.log('[QuadCards] Cards loaded:', cards.value.length)
     }
   } catch (error) {
     console.error('Fetch quad cards error:', error)

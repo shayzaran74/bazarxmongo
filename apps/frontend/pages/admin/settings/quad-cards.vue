@@ -223,11 +223,13 @@ const fetchCards = async () => {
     loading.value = true
     try {
         const data = await $api('/api/v1/admin/content/quad-cards')
+        console.log('[AdminQuad] Data received:', data)
         if (data.success) {
             cards.value = data.data.map(c => ({
                 ...c,
                 items: fillItems(c.items || [])
             }))
+            console.log('[AdminQuad] Cards mapped:', cards.value.length)
 
             // If no cards, add one default
             if (cards.value.length === 0) {
