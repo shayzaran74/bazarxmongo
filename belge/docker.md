@@ -26,6 +26,10 @@ docker compose up -d
 Her şeyin doğru çalıştığından emin olmak için logları izleyebilirsin:
 docker compose logs -f
 
+# seed dosyasını sunucuda çalıştırmak için:
+docker exec -it bazarx_backend node /app/belge/seed/seed.js
+
+
 1. Dosyaları Sunucuya Kopyalama (rsync)
 Gereksiz dosyaları (node_modules, .git, vb.) hariç tutarak sadece kaynak kodları gönderiyoruz:
 

@@ -11,14 +11,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo('/auth/login')
     }
 
-    // Check if user is active and has Super Admin role
-    // We check for both isAdmin AND isSuperAdmin for maximum security
-    const isSuperAdmin = authStore.user?.isAdmin && authStore.user?.isSuperAdmin
-
-    if (!isSuperAdmin) {
-        console.warn('🔐 Access Denied: Super Admin role required for', to.path)
-        // Redirect to admin dashboard if they are a normal admin, otherwise to home
-        if (authStore.user?.isAdmin) {
+    // isSuperAdmin ve isAdmin store getter'larından okunur (user nesnesinde değil)
+    if (!authStore.isSuperAdmin) {
+        if (authStore.isAdmin) {
             return navigateTo('/admin')
         }
         return navigateTo('/')

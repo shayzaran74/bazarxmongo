@@ -21,6 +21,20 @@ let RabbitMQService = class RabbitMQService {
     async publish(exchange, routingKey, payload) {
         await this.amqpConnection.publish(exchange, routingKey, payload);
     }
+    // Transactional outbox: Event'i transaction içinde OutboxMessage tablosuna yazar
+    async publishTransactional(tx, aggregateId, aggregateType, eventType, exchange, routingKey, payload) {
+        await tx.outboxMessage.create({
+            data: {
+                aggregateId,
+                aggregateType,
+                eventType,
+                exchange,
+                routingKey,
+                payload,
+                status: 'PENDING',
+            },
+        });
+    }
 };
 exports.RabbitMQService = RabbitMQService;
 exports.RabbitMQService = RabbitMQService = __decorate([

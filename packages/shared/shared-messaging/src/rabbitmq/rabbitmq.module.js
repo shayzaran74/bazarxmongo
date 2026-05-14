@@ -19,14 +19,21 @@ exports.RabbitMQModule = RabbitMQModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
         imports: [
+            config_1.ConfigModule,
             nestjs_rabbitmq_1.RabbitMQModule.forRootAsync({
                 useFactory: (config) => ({
-                    uri: config.get('RABBITMQ_URL') || 'amqp://localhost:5672',
+                    uri: config.get('RABBITMQ_URL') || config.get('RABBITMQ_URI') || 'amqp://localhost:5672',
                     exchanges: [
                         { name: 'identity.events', type: 'topic' },
                         { name: 'commerce.events', type: 'topic' },
                         { name: 'financial.events', type: 'topic' },
                         { name: 'delivery.events', type: 'topic' },
+                        { name: 'barter.events', type: 'topic' },
+                        { name: 'auction.events', type: 'topic' },
+                        { name: 'order.events', type: 'topic' },
+                        { name: 'inventory.events', type: 'topic' },
+                        // İşlenemez mesajların yönlendirildiği dead-letter exchange'leri
+                        { name: 'financial.dead-letter', type: 'topic' },
                     ],
                     connectionInitOptions: { wait: true },
                 }),

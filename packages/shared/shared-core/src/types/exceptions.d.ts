@@ -7,3 +7,6 @@ export declare class NotFoundException extends DomainException {
 export declare class UnauthorizedException extends DomainException {
     constructor(message: string);
 }
+export declare class ConflictException extends DomainException {
+    constructor(message: string);
+}

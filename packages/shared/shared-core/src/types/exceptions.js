@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnauthorizedException = exports.NotFoundException = exports.DomainException = void 0;
+exports.ConflictException = exports.UnauthorizedException = exports.NotFoundException = exports.DomainException = void 0;
 class DomainException extends Error {
     constructor(message) {
         super(message);
@@ -22,4 +22,11 @@ class UnauthorizedException extends DomainException {
     }
 }
 exports.UnauthorizedException = UnauthorizedException;
+class ConflictException extends DomainException {
+    constructor(message) {
+        super(message);
+        this.name = 'ConflictException';
+    }
+}
+exports.ConflictException = ConflictException;
 //# sourceMappingURL=exceptions.js.map
