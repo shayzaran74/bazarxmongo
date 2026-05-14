@@ -50,9 +50,9 @@ const fetchQuadCards = async () => {
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
       // Map title to label for QuadCard component
-      cards.value = data.data.map(card => ({
+      cards.value = (data.data as HomeQuadCard[]).map((card: HomeQuadCard) => ({
         ...card,
-        items: (card.items || []).map(item => ({
+        items: (card.items || []).map((item: HomeQuadCardItem) => ({
           ...item,
           label: item.title // QuadCard.vue 'label' bekliyor
         }))
