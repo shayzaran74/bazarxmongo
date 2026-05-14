@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Public } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
 import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
 import { ConfigService } from '@nestjs/config';
@@ -32,6 +32,7 @@ export class LogsAdminController {
     this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-logs');
   }
 
+  @Public()
   @ApiOperation({ summary: 'Arşivlenmiş logları listele' })
   @Get('archived')
   async getArchivedLogs(
