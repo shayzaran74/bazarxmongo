@@ -31,6 +31,6 @@ import { MediaHealthIndicator } from './presentation/media-health.indicator';
       useClass: MediaService,
     },
   ],
-  exports: [MEDIA_SERVICE, MediaService, MediaHealthIndicator],
+  exports: [MEDIA_SERVICE, MediaService, MediaHealthIndicator, STORAGE_ADAPTER],
 })
 export class MediaModule {}
