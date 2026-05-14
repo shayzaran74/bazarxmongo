@@ -48,16 +48,20 @@ const fetchQuadCards = async () => {
     
     console.log('[QuadCards-Frontend] Ham Fetch Cevabı:', data)
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
-    if (data.success && data.data) {
-      // Map title to label for QuadCard component
-      cards.value = (data.data as HomeQuadCard[]).map((card: HomeQuadCard) => ({
-        ...card,
-        items: (card.items || []).map((item: HomeQuadCardItem) => ({
+    if (data && Array.isArray(data)) {
+      // Map title to label for QuadCard component, handling both wrapped (props) and flat structures
+      cards.value = data.map((item: any) => {
+        const raw = item.props || item
+        return {
           ...item,
-          label: item.title // QuadCard.vue 'label' bekliyor
-        }))
-      }))
-      console.log('[QuadCards] Cards loaded:', cards.value.length)
+          title: raw.title,
+          link: raw.link,
+          items: (raw.items || []).map((sub: any) => ({
+            ...sub,
+            label: sub.title // QuadCard.vue 'label' bekliyor
+          }))
+        }
+      })
     }
   } catch (error) {
     console.error('Fetch quad cards error:', error)

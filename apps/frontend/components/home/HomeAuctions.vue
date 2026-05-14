@@ -23,12 +23,12 @@
           </div>
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <GhostBadge variant="rose" glow>
+              <SharedGhostBadge variant="rose" glow>
                 <template #icon>
                   <span class="w-2 h-2 bg-rose-500 rounded-full animate-ping mr-2" />
                 </template>
                 {{ $t('auctionsHome.badge') }}
-              </GhostBadge>
+              </SharedGhostBadge>
             </div>
             <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">
               {{
@@ -81,12 +81,12 @@
 
             <!-- Floating Badges -->
             <div class="absolute top-6 left-6 flex flex-col gap-2">
-              <GhostBadge variant="rose" glow custom-class="!bg-rose-600 !text-white !border-rose-500">
+              <SharedGhostBadge variant="rose" glow custom-class="!bg-rose-600 !text-white !border-rose-500">
                 <template #icon>
                   <div class="w-1.5 h-1.5 bg-white rounded-full animate-ping mr-2" />
                 </template>
                 {{ $t('auctionsHome.live') }}
-              </GhostBadge>
+              </SharedGhostBadge>
             </div>
 
             <div class="absolute bottom-6 left-6 right-6">

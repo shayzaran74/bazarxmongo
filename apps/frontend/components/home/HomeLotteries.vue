@@ -14,12 +14,12 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col lg:flex-row items-center justify-between mb-12 gap-10">
         <div class="text-center lg:text-left">
-          <GhostBadge variant="ghost" glow custom-class="!bg-white/10 !border-white/20 !text-white px-5 py-2 text-xs mb-6 backdrop-blur-xl gap-3">
+          <SharedGhostBadge variant="ghost" glow custom-class="!bg-white/10 !border-white/20 !text-white px-5 py-2 text-xs mb-6 backdrop-blur-xl gap-3">
             <template #icon>
               <TicketIcon class="h-4 w-4" />
             </template>
             {{ $t('lotteriesHome.badge') }}
-          </GhostBadge>
+          </SharedGhostBadge>
           <h2 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase italic leading-[0.8]">
             {{ $t('lotteriesHome.title') }}
             <span
@@ -80,9 +80,9 @@
           <!-- Content Wrapper -->
           <div class="relative z-10 p-10 flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
-              <GhostBadge :variant="getLotteryStatusVariant(lottery.status || 'Active')" glow>
+              <SharedGhostBadge :variant="getLotteryStatusVariant(lottery.status || 'Active')" glow>
                 {{ getLotteryStatusText(lottery.status || 'Active') }}
-              </GhostBadge>
+              </SharedGhostBadge>
               <div class="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl flex flex-col items-center">
                 <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.tickets || 0) }}</span>
                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{{ $t('lotteriesHome.remaining') || 'KALAN' }}</span>
