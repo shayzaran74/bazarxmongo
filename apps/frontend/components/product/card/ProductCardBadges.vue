@@ -25,9 +25,9 @@
             <SparklesIcon class="w-3 h-3 animate-pulse" />
           </template>
           {{ $t('product.sponsored') }}
-        </GhostBadge>
+        </SharedGhostBadge>
 
-        <GhostBadge
+        <SharedGhostBadge
           v-if="distance !== undefined && distance !== null"
           key="distance"
           variant="ghost"
@@ -38,7 +38,7 @@
             <MapPinIcon class="w-3 h-3 text-primary-500" />
           </template>
           {{ formattedDistance }}
-        </GhostBadge>
+        </SharedGhostBadge>
       </TransitionGroup>
     </div>
 
