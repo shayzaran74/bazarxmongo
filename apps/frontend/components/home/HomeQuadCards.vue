@@ -40,9 +40,13 @@ const fetchQuadCards = async () => {
   try {
     const { $api } = useApi()
     const config = useRuntimeConfig()
-    const fullUrl = `http://localhost:3002/api/v1/home-quad-cards`
-    const data = await $api(fullUrl, { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
-    console.log('[QuadCards-Frontend] API Tam Cevap:', data)
+    const fullUrl = `http://localhost:3002/api/v1/home-quad-cards?platform=BAZARX`
+    
+    // Ham tarayıcı fetch'i kullanarak Nuxt yapılandırmasını tamamen baypas ediyoruz
+    const res = await fetch(fullUrl)
+    const data = await res.json()
+    
+    console.log('[QuadCards-Frontend] Ham Fetch Cevabı:', data)
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
       // Map title to label for QuadCard component
