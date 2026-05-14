@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards, Inject } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Public } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
 import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
@@ -22,11 +22,8 @@ export class LogsAdminController {
     const endPoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10);
     const useSSL = this.config.get<string>('MINIO_USE_SSL') === 'true';
-    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-media');
+    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-invoices');
 
-    console.log(`[Logs-Admin] Kontrolcü başlatılıyor... Endpoint: ${endPoint}:${port}, Bucket: ${this.bucketName}`);
-
-    // Audit logları için doğrudan MinIO client'ı kullanıyoruz (listeleme yeteneği için)
     this.minioClient = new Minio.Client({
       endPoint,
       port,
@@ -37,7 +34,7 @@ export class LogsAdminController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Arşivlenmiş logları listele' })
+  @ApiOperation({ summary: 'Arşivlenmiş logları/faturaları listele' })
   @Get('archived')
   async getArchivedLogs(
     @Query('page') page: number = 1,
@@ -45,39 +42,38 @@ export class LogsAdminController {
     @Query('category') category?: string,
   ) {
     try {
-      console.log(`[Logs-Admin] --- DEDEKTİF MODU BAŞLADI ---`);
-      const buckets = await this.minioClient.listBuckets();
-      console.log(`[Logs-Admin] Mevcut tüm bucketlar:`, buckets.map(b => b.name).join(', '));
-      
       const objects: any[] = [];
+      const bucketsToScan = [this.bucketName, 'bazarx-media'];
+      
+      for (const bucket of bucketsToScan) {
+        try {
+          const exists = await this.minioClient.bucketExists(bucket);
+          if (!exists) continue;
 
-      for (const bucket of buckets) {
-        console.log(`[Logs-Admin] "${bucket.name}" taranıyor...`);
-        const stream = this.minioClient.listObjectsV2(bucket.name, '', true);
-        
-        for await (const obj of stream) {
-          const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
-          if (!isImage && obj.name) {
-            console.log(`[Logs-Admin] [${bucket.name}] DOSYA BULUNDU: ${obj.name}`);
-            objects.push({
-              id: obj.etag,
-              fileName: obj.name.split('/').pop(),
-              fileSize: obj.size,
-              createdAt: obj.lastModified,
-              category: `${bucket.name} / ${this.detectCategory(obj.name)}`,
-              viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
-            });
+          const stream = this.minioClient.listObjectsV2(bucket, '', true);
+          for await (const obj of stream) {
+            const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+            if (!isImage && obj.name) {
+              objects.push({
+                id: obj.etag,
+                fileName: obj.name.split('/').pop(),
+                fileSize: obj.size,
+                createdAt: obj.lastModified,
+                category: this.detectCategory(obj.name),
+                viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
+              });
+            }
           }
+        } catch (e) {
+          console.error(`Bucket tarama hatası (${bucket}):`, e);
         }
       }
 
-      console.log(`[Logs-Admin] Toplam bulunan aday dosya: ${objects.length}`);
-
-      // Manuel sayfalama (MinIO stream için basit çözüm)
       const total = objects.length;
       const start = (page - 1) * limit;
-      const paginated = objects.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-                               .slice(start, start + limit);
+      const paginated = objects
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(start, start + limit);
 
       return {
         success: true,
@@ -85,7 +81,7 @@ export class LogsAdminController {
         pagination: { total, page, limit }
       };
     } catch (error: any) {
-      return { success: false, message: 'Arşivler listelenemedi', error: error.message || String(error) };
+      return { success: false, message: 'Arşivler listelenemedi', error: error.message };
     }
   }
 
@@ -103,20 +99,44 @@ export class LogsAdminController {
   @ApiOperation({ summary: 'Arşiv istatistiklerini getir' })
   @Get('stats')
   async getStats() {
-    return {
-      success: true,
-      stats: {
-        totalFiles: 0,
-        lastArchiveDate: new Date().toISOString(),
+    try {
+      const buckets = [this.bucketName, 'bazarx-media'];
+      let total = 0;
+      let lastArchived: Date | null = null;
+
+      for (const bucket of buckets) {
+        try {
+          const exists = await this.minioClient.bucketExists(bucket);
+          if (!exists) continue;
+          const stream = this.minioClient.listObjectsV2(bucket, '', true);
+          for await (const obj of stream) {
+            total++;
+            if (!lastArchived || obj.lastModified > lastArchived) {
+              lastArchived = obj.lastModified;
+            }
+          }
+        } catch (e) {}
       }
-    };
+
+      return {
+        success: true,
+        data: {
+          totalCount: total,
+          lastArchivedAt: lastArchived,
+          serviceStatus: 'active'
+        }
+      };
+    } catch (error) {
+      return { success: false, data: { totalCount: 0, lastArchivedAt: null, serviceStatus: 'error' } };
+    }
   }
 
-  private detectCategory(name: string): string {
-    if (name.includes('financial')) return 'FINANCIAL';
-    if (name.includes('system')) return 'SYSTEM_LOG';
-    if (name.includes('legal')) return 'LEGAL';
-    if (name.includes('trade')) return 'TRADE_PROOF';
-    return 'SYSTEM_LOG';
+  private detectCategory(fileName: string): string {
+    const name = fileName.toLowerCase();
+    if (name.includes('inv-') || name.endsWith('.pdf')) return 'INVOICE';
+    if (name.includes('financial') || name.includes('trade')) return 'FINANCIAL';
+    if (name.includes('error') || name.includes('exception')) return 'ERROR';
+    if (name.includes('auth') || name.includes('login')) return 'SECURITY';
+    return 'SYSTEM';
   }
 }
