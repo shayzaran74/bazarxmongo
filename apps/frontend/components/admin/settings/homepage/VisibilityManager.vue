@@ -37,16 +37,19 @@
 </template>
 
 <script setup>
-import { EyeIcon, BoltIcon, FireIcon, MegaphoneIcon, PhotoIcon, Squares2X2Icon } from '@heroicons/vue/24/outline'
+import { EyeIcon, BoltIcon, FireIcon, MegaphoneIcon, PhotoIcon, Squares2X2Icon, UserGroupIcon } from '@heroicons/vue/24/outline'
 
 defineProps({ modelValue: Object, ecosystem: String })
 defineEmits(['toggle'])
 
 const sections = [
+  { key: 'showHomeSlider', label: 'Ana Banner Slider', desc: 'En üstteki büyük slider alanı', icon: PhotoIcon, bg: 'bg-pink-500', link: '/admin/banners' },
   { key: 'showFlashSales', label: 'Flaş Ürünler', desc: 'Süreli indirimli ürünler bölümü', icon: BoltIcon, bg: 'bg-amber-500' },
   { key: 'showSpecialOffers', label: 'Özel Fırsatlar', desc: 'Sezona veya kategoriye özel fırsatlar', icon: FireIcon, bg: 'bg-red-500' },
   { key: 'showAds', label: 'Yan Reklamlar', desc: 'Dikey yan reklam blokları', icon: MegaphoneIcon, bg: 'bg-indigo-500', link: '/admin/settings/side-ads' },
-  { key: 'showHomeSlider', label: 'Ana Banner Slider', desc: 'En üstteki büyük slider alanı', icon: PhotoIcon, bg: 'bg-pink-500', link: '/admin/banners' },
-  { key: 'showQuadCards', label: 'Dörtlü Vitrin (Quad)', desc: 'Görsel ağırlıklı 4\'lü kartlar', icon: Squares2X2Icon, bg: 'bg-blue-500', link: '/admin/settings/quad-cards' }
+  { key: 'showQuadCards', label: 'Dörtlü Vitrin (Quad)', desc: 'Görsel ağırlıklı 4\'lü kartlar', icon: Squares2X2Icon, bg: 'bg-blue-500', link: '/admin/settings/quad-cards' },
+  { key: 'showVendors', label: 'Popüler Mağazalar', desc: 'Ekosistemdeki öne çıkan satıcılar', icon: UserGroupIcon, bg: 'bg-green-500' },
+  { key: 'showBrands', label: 'Markalar', desc: 'Anlaşmalı marka logoları', icon: Squares2X2Icon, bg: 'bg-slate-500' },
+  { key: 'showNewsletter', label: 'Bülten Kayıt', desc: 'E-posta abonelik alanı', icon: MegaphoneIcon, bg: 'bg-teal-500' }
 ]
 </script>

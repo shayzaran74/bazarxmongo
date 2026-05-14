@@ -3,22 +3,30 @@ import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from '@barterborsa/shared-security';
 import { GetSideAdsQuery } from '../application/queries/get-side-ads.query';
+import { PrismaService } from '@barterborsa/shared-persistence';
 
 @ApiTags('Settings')
 @Controller('settings')
 export class SettingsController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public()
   @ApiOperation({ summary: 'Get global settings', description: 'Ekosistem ayarlarını döner.' })
   @Get()
   async getSettings(@Query('ecosystem') ecosystem: string = 'BAZARX') {
+    const key = `homepageSettings_${ecosystem.toUpperCase()}`;
+    const row = await this.prisma.systemSetting.findUnique({ where: { key } });
+    const saved = (row?.value ?? {}) as Record<string, unknown>;
+
     return {
       success: true,
       data: {
-        siteName: ecosystem === 'BAZARX' ? 'BazarX' : 'BarterBorsa',
-        logo: '/logo.png',
-        primaryColor: '#0061ff',
+        siteName: (saved.siteName as string) || (ecosystem === 'BAZARX' ? 'BazarX' : 'BarterBorsa'),
+        siteLogo: saved.siteLogo as string,
+        ...saved,
         ecosystem
       }
     };

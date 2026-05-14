@@ -65,7 +65,9 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
           const visibilityKeys = [
             'showGroupBuy', 'showFlashSales', 'showSpecialOffers', 
             'showAuctions', 'showLotteries', 'showVendors', 
-            'showBrands', 'showNewsletter'
+            'showBrands', 'showNewsletter', 'showHomeSlider',
+            'showPersonalized', 'showQuadCards', 'showBarterPool',
+            'showPersonalizedProducts', 'showPerformance', 'showRestaurants'
           ]
           
           visibilityKeys.forEach(key => {

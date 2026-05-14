@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { PuzzlePieceIcon, TicketIcon, StarIcon, UserGroupIcon, BanknotesIcon } from '@heroicons/vue/24/outline'
+import { PuzzlePieceIcon, TicketIcon, StarIcon, UserGroupIcon, BanknotesIcon, SparklesIcon, ChartBarIcon, CakeIcon } from '@heroicons/vue/24/outline'
 
 defineProps({ modelValue: Object })
 defineEmits(['toggle'])
@@ -40,7 +40,10 @@ const modules = [
   { key: 'showAuctions', label: 'Açık Artırmalar', desc: 'Süreli teklif toplama sistemi', icon: TicketIcon, bg: 'bg-blue-500' },
   { key: 'showLotteries', label: 'Çekilişler', desc: 'Şans bazlı ödül mekanizması', icon: StarIcon, bg: 'bg-purple-500' },
   { key: 'showGroupBuy', label: 'Birlikte Al', desc: 'Grup satın alma kampanyaları', icon: UserGroupIcon, bg: 'bg-indigo-500' },
-  { key: 'showPersonalized', label: 'Sana Özel', desc: 'Kişiselleştirilmiş öneriler', icon: StarIcon, bg: 'bg-orange-500' },
-  { key: 'showBarterPool', label: 'Barter Havuzu', desc: 'Havuz tabanlı takas sistemi', icon: BanknotesIcon, bg: 'bg-cyan-500' }
+  { key: 'showPersonalized', label: 'Sana Özel Akış', desc: 'Kişiselleştirilmiş ana akış', icon: StarIcon, bg: 'bg-orange-500' },
+  { key: 'showPersonalizedProducts', label: 'Sana Özel Ürünler', desc: 'Yapay zeka tabanlı öneriler', icon: SparklesIcon, bg: 'bg-yellow-500' },
+  { key: 'showBarterPool', label: 'Barter Havuzu', desc: 'Havuz tabanlı takas sistemi', icon: BanknotesIcon, bg: 'bg-cyan-500' },
+  { key: 'showPerformance', label: 'Performans Vitrini', desc: 'Popüler kategoriler ve metrikler', icon: ChartBarIcon, bg: 'bg-emerald-500' },
+  { key: 'showRestaurants', label: 'Restoranlar', desc: 'Ekosistemdeki gıda işletmeleri', icon: CakeIcon, bg: 'bg-rose-500' }
 ]
 </script>
