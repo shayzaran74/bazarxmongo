@@ -38,15 +38,16 @@ export class LogsAdminController {
 
   @Public()
   @ApiOperation({ summary: 'Arşivlenmiş logları listele' })
-  @Get('archived')
+  @Get() // 'archived' kısmını sildim, direkt /admin/logs olarak deneyeceğiz
   async getArchivedLogs(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('category') category?: string,
   ) {
     try {
+      console.log(`[Logs-Admin] İstek geldi! Sayfa: ${page}, Limit: ${limit}`);
       const objects: any[] = [];
-      const prefix = category ? `archived/${category.toLowerCase()}/` : ''; // Eğer 'archived' klasöründeyse
+      const prefix = ''; // Şimdilik her şeyi tara
       
       const stream = this.minioClient.listObjectsV2(this.bucketName, prefix, true);
       
