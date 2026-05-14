@@ -19,15 +19,21 @@ export class LogsAdminController {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {
+    const endPoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
+    const port = parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10);
+    const useSSL = this.config.get<string>('MINIO_USE_SSL') === 'true';
+    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-logs');
+
+    console.log(`[Logs-Admin] Kontrolcü başlatılıyor... Endpoint: ${endPoint}:${port}, Bucket: ${this.bucketName}`);
+
     // Audit logları için doğrudan MinIO client'ı kullanıyoruz (listeleme yeteneği için)
     this.minioClient = new Minio.Client({
-      endPoint: this.config.get<string>('MINIO_ENDPOINT', 'localhost'),
-      port: parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10),
-      useSSL: this.config.get<string>('MINIO_USE_SSL') === 'true',
+      endPoint,
+      port,
+      useSSL,
       accessKey: this.config.get<string>('MINIO_ACCESS_KEY'),
       secretKey: this.config.get<string>('MINIO_SECRET_KEY'),
     });
-    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-logs');
   }
 
   @Public()
