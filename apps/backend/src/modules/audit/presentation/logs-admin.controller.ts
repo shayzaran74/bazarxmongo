@@ -9,8 +9,6 @@ import * as Minio from 'minio';
 
 @ApiTags('Admin Logs')
 @ApiBearerAuth()
-@Roles('SUPER_ADMIN')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/logs')
 export class LogsAdminController {
   private minioClient: Minio.Client;
