@@ -221,11 +221,11 @@ model Vendor {
   slug              String             @unique
   suspensionReason  String?            @map("suspension_reason")
   tier              VendorTier         @default(CORE)
-  vendorType        VendorType         @default(COMMERCE) @map("vendor_type")
   updatedAt         DateTime           @updatedAt @map("updated_at")
   userId            String             @unique @map("user_id")
   verifiedAt        DateTime?          @map("verified_at")
   barterEnabled     Boolean            @default(false) @map("barter_enabled")
+  vendorType        VendorType         @default(COMMERCE) @map("vendor_type")
   adCampaigns       AdCampaign[]
   brandEcosystem    BrandEcosystem?    @relation("EcosystemOwner")
   brands            Brand[]
@@ -268,7 +268,6 @@ model VendorProfile {
   featuredUntil      DateTime? @map("featured_until")
   city               String?   @map("city")
   district           String?   @map("district")
-  // Restoran-özel alanlar (vendorType=RESTAURANT için doldurulur, diğerleri için null)
   openingHours       Json?     @map("opening_hours")
   cuisineType        String?   @map("cuisine_type")
   deliveryRadius     Float?    @map("delivery_radius")
@@ -295,7 +294,6 @@ model VendorSettings {
   vacationEndAt         DateTime? @map("vacation_end_at")
   autoFulfill           Boolean   @default(false) @map("auto_fulfill")
   commissionAdjustments Json?     @map("commission_adjustments")
-  // Restoran canlı sipariş kontrolü
   holidayMode           Boolean   @default(false) @map("holiday_mode")
   acceptingOrders       Boolean   @default(true) @map("accepting_orders")
   vendor                Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
@@ -1055,12 +1053,13 @@ model Order {
   escrowStatus      String?              @default("NONE") @map("escrow_status")
   escrowReleaseAt   DateTime?            @map("escrow_release_at")
   payoutEligibleAt  DateTime?            @map("payout_eligible_at")
-  escrowHoldId      String?              @map("escrow_hold_id")
   shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(18, 2)
   orderNumber       String?              @unique @map("order_number")
   expiresAt         DateTime?            @map("expires_at")
   idempotencyKey    String?              @map("idempotency_key")
+  escrowHoldId      String?              @map("escrow_hold_id")
   deliveryType      DeliveryType         @default(CARGO) @map("delivery_type")
+  deliveryDispatch  DeliveryDispatch?
   dispute           Dispute?
   invoices          Invoice[]
   orderItems        OrderItem[]
@@ -1069,7 +1068,6 @@ model Order {
   user              User                 @relation(fields: [userId], references: [id])
   vendor            Vendor               @relation(fields: [vendorId], references: [id])
   reviews           Review[]
-  deliveryDispatch  DeliveryDispatch?
 
   @@index([userId])
   @@index([vendorId])
@@ -1622,6 +1620,7 @@ model HomeBanner {
 model HomeQuadCard {
   id        String             @id @default(cuid())
   title     String
+  link      String?
   order     Int                @default(0)
   createdAt DateTime           @default(now()) @map("created_at")
   isActive  Boolean            @default(true) @map("is_active")
@@ -2413,7 +2412,7 @@ model Referral {
 
 model LaunchPartner {
   id               String             @id @default(cuid())
-  vendorId         String             @unique @map("vendor_id")
+  vendorId         String             @unique(map: "launch_partners_restaurant_id_key") @map("vendor_id")
   phase            LaunchPartnerPhase @default(PHASE_1)
   pledgedMenuCount Int                @default(60) @map("pledged_menu_count")
   distributedCount Int                @default(0) @map("distributed_count")
@@ -2502,6 +2501,42 @@ model SystemSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("system_settings")
+}
+
+model DeliveryDispatch {
+  id          String         @id @default(cuid())
+  orderId     String         @unique @map("order_id")
+  courierId   String?        @map("courier_id")
+  status      DispatchStatus @default(PENDING_ASSIGN)
+  pickedUpAt  DateTime?      @map("picked_up_at")
+  deliveredAt DateTime?      @map("delivered_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([courierId])
+  @@index([status])
+  @@map("delivery_dispatches")
+}
+
+model OutboxMessage {
+  id            String       @id @default(cuid())
+  aggregateId   String       @map("aggregate_id")
+  aggregateType String       @map("aggregate_type")
+  eventType     String       @map("event_type")
+  exchange      String       @default("")
+  routingKey    String       @default("")
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0) @map("retry_count")
+  maxRetries    Int          @default(3) @map("max_retries")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  processedAt   DateTime?    @map("processed_at")
+  error         String?
+
+  @@index([status, createdAt])
+  @@map("outbox_messages")
 }
 
 enum UserRole {
@@ -2654,23 +2689,6 @@ enum DeliveryType {
   PICKUP
 }
 
-model DeliveryDispatch {
-  id            String         @id @default(cuid())
-  orderId       String         @unique @map("order_id")
-  courierId     String?        @map("courier_id")
-  status        DispatchStatus @default(PENDING_ASSIGN)
-  pickedUpAt   DateTime?      @map("picked_up_at")
-  deliveredAt  DateTime?      @map("delivered_at")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  order        Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([courierId])
-  @@index([status])
-  @@map("delivery_dispatches")
-}
-
 enum DispatchStatus {
   PENDING_ASSIGN
   ASSIGNED
@@ -2707,11 +2725,11 @@ enum PaymentStatus {
 enum SurplusStatus {
   PENDING_APPROVAL
   ACTIVE
-  REJECTED
   RESERVED
   TRADED
   EXPIRED
   DEACTIVATED
+  REJECTED
 }
 
 enum WantedItemStatus {
@@ -2955,26 +2973,6 @@ enum LaunchPartnerPhase {
   PHASE_1
   PHASE_2
   PHASE_3
-}
-
-// Outbox pattern: Event güvenilirliği için transactional outbox
-model OutboxMessage {
-  id            String       @id @default(cuid())
-  aggregateId   String       @map("aggregate_id")
-  aggregateType String       @map("aggregate_type")
-  eventType     String       @map("event_type")
-  exchange      String       @default("")
-  routingKey    String       @default("")
-  payload       Json
-  status        OutboxStatus @default(PENDING)
-  retryCount    Int          @default(0) @map("retry_count")
-  maxRetries    Int          @default(3) @map("max_retries")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  processedAt   DateTime?    @map("processed_at")
-  error         String?
-
-  @@index([status, createdAt])
-  @@map("outbox_messages")
 }
 
 enum OutboxStatus {

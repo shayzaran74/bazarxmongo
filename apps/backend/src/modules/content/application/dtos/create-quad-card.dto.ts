@@ -26,6 +26,10 @@ export class CreateQuadCardDto {
   @IsString()
   title!: string;
 
+  @IsString()
+  @IsOptional()
+  link?: string;
+
   @IsInt()
   @IsOptional()
   order: number = 0;
