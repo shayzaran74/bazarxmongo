@@ -51,10 +51,11 @@ export class LogsAdminController {
       const stream = this.minioClient.listObjectsV2(this.bucketName, prefix, true);
       
       for await (const obj of stream) {
-        // Sadece log formatındaki dosyaları kabul et
-        const isLogFile = obj.name?.endsWith('.gz') || obj.name?.endsWith('.log') || obj.name?.endsWith('.json');
+        // Resim dosyalarını (ürün resimleri vb.) gizleyelim, geri kalan her şeyi log olarak kabul edelim
+        const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
         
-        if (isLogFile) {
+        if (!isImage && obj.name) {
+          console.log(`[Logs-Admin] LOG ADAYI BULUNDU: ${obj.name}`);
           objects.push({
             id: obj.etag,
             fileName: obj.name.split('/').pop(),
@@ -63,8 +64,6 @@ export class LogsAdminController {
             category: this.detectCategory(obj.name),
             viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
           });
-        } else {
-          console.log(`[Logs-Admin] Dosya filtreye takıldı: ${obj.name}`);
         }
       }
 
