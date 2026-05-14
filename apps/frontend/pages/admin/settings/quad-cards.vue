@@ -307,11 +307,11 @@ const saveAll = async () => {
     try {
         const payload = {
             cards: cards.value.map(c => ({
-                id: c.id,
                 title: c.title,
                 link: c.link,
                 order: c.order,
                 isActive: c.isActive,
+                platform: 'BAZARX',
                 items: c.items.map(i => ({
                     productId: i.productId,
                     title: i.customTitle || (i.Product ? i.Product.name : ''),
