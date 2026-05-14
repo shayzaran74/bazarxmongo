@@ -245,7 +245,14 @@ const fetchCards = async () => {
 }
 
 const fillItems = (existing) => {
-    const items = [...existing]
+    // Veritabanından gelen 'title' alanını 'customTitle' olarak eşle
+    const items = (existing || []).map(i => ({
+        ...i,
+        customTitle: i.title || '',
+        // Eğer productId varsa ve Product objesi yoksa bile görseli koru
+        Product: i.Product || { image: i.image, name: i.title }
+    }))
+    
     while (items.length < 4) {
         items.push({ productId: null, customTitle: '', Product: null, results: [], searchText: '' })
     }

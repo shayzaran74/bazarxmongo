@@ -81,7 +81,7 @@ defineProps({
     items: {
         type: Array,
         required: true,
-        validator: (value) => value.length === 4
+        validator: (value) => value.length > 0
     },
     link: {
         type: String,

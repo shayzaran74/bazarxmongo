@@ -35,7 +35,14 @@ const fetchQuadCards = async () => {
     const data = await $api('/api/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
-      cards.value = data.data
+      // Map title to label for QuadCard component
+      cards.value = data.data.map(card => ({
+        ...card,
+        items: (card.items || []).map(item => ({
+          ...item,
+          label: item.title // QuadCard.vue 'label' bekliyor
+        }))
+      }))
       console.log('[QuadCards] Cards loaded:', cards.value.length)
     }
   } catch (error) {
