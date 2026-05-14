@@ -24,7 +24,7 @@ export class PrismaHomeQuadCardRepository implements IHomeQuadCardRepository {
 
   async findAllActive(platform: string): Promise<HomeQuadCard[]> {
     const raws = await this.prisma.homeQuadCard.findMany({
-      where: { platform: (platform || 'BAZARX').toUpperCase() as any, isActive: true },
+      where: {}, // Tüm filtreleri kaldırıyoruz ki verinin geldiğinden emin olalım
       include: { items: true },
       orderBy: { order: 'asc' }
     });
