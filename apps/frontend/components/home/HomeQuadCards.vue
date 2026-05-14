@@ -32,7 +32,7 @@ const fetchQuadCards = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const data = await $api('/api/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
+    const data = await $api('/api/v1/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
       // Map title to label for QuadCard component
