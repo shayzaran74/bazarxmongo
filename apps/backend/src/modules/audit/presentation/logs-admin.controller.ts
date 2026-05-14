@@ -4,6 +4,7 @@ import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
 import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@barterborsa/shared-persistence';
 import * as Minio from 'minio';
 
 @ApiTags('Admin Logs')
@@ -18,6 +19,7 @@ export class LogsAdminController {
   constructor(
     @Inject(STORAGE_ADAPTER) private readonly storage: IStorageAdapter,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
   ) {
     // Audit logları için doğrudan MinIO client'ı kullanıyoruz (listeleme yeteneği için)
     this.minioClient = new Minio.Client({
@@ -71,6 +73,16 @@ export class LogsAdminController {
     } catch (error: any) {
       return { success: false, message: 'Arşivler listelenemedi', error: error.message || String(error) };
     }
+  }
+
+  @ApiOperation({ summary: 'Audit loglarını listele' })
+  @Get('audit')
+  async getAuditLogs(@Query('limit') limit: number = 20) {
+    const data = await this.prisma.auditLog.findMany({
+      take: Number(limit),
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Arşiv istatistiklerini getir' })

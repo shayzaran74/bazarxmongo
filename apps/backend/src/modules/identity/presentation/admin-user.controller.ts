@@ -8,6 +8,7 @@ import { ListAdminUsersQuery } from '../application/queries/list-admin-users.que
 import { UpdateUserStatusCommand } from '../application/commands/update-user-status.command';
 import { UpdateUserRoleCommand } from '../application/commands/update-user-role.command';
 import { DeleteAdminUserCommand } from '../application/commands/delete-admin-user.command';
+import { PrismaService } from '@barterborsa/shared-persistence';
 
 interface AuthenticatedUser {
   id: string;
@@ -23,7 +24,22 @@ export class AdminUserController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @ApiOperation({ summary: 'Get user statistics for admin' })
+  @Get('stats')
+  async getStats() {
+    const [total, active, vendors] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { role: 'VENDOR' } }),
+    ]);
+    return {
+      success: true,
+      data: { total, active, vendors }
+    };
+  }
 
   @ApiOperation({ summary: 'List all users for admin' })
   @Get()
