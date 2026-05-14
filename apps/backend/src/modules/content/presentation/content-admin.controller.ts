@@ -69,7 +69,7 @@ export class ContentAdminController {
             title: card.title,
             order: card.order,
             isActive: card.isActive,
-            platform: card.platform,
+            platform: card.platform as any,
             items: {
               create: card.items.map(item => ({
                 title: item.title,
