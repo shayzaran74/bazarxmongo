@@ -42,6 +42,9 @@
           <option value="">
             Tüm Kategoriler
           </option>
+          <option value="invoice">
+            Faturalar
+          </option>
           <option value="financial">
             Finansal
           </option>

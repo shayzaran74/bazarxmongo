@@ -42,6 +42,7 @@ export class LogsAdminController {
     @Query('category') category?: string,
   ) {
     try {
+      console.log(`[Logs-Admin] İstek geldi! Kategori Filtresi: ${category || 'YOK'}`);
       const objects: any[] = [];
       const bucketsToScan = [this.bucketName, 'bazarx-media'];
       
