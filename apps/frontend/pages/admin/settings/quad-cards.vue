@@ -314,9 +314,9 @@ const saveAll = async () => {
                 platform: 'BAZARX',
                 items: c.items.map(i => ({
                     productId: i.productId,
-                    title: i.customTitle || (i.Product ? i.Product.name : ''),
-                    image: i.Product ? i.Product.image : null,
-                    order: i.order || 0
+                    title: String(i.customTitle || (i.Product ? i.Product.name : '') || 'Ürün'),
+                    image: String(i.Product ? i.Product.image : '') || '',
+                    order: Number(i.order || 0)
                 })).filter(i => i.productId)
             }))
         }
