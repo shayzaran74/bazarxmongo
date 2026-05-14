@@ -69,9 +69,14 @@ export class LogsAdminController {
         }
       }
 
-      const total = objects.length;
+      // Kategoriye göre filtrele (eğer kategori seçilmişse)
+      const filteredObjects = category 
+        ? objects.filter(obj => obj.category.toLowerCase() === category.toLowerCase())
+        : objects;
+
+      const total = filteredObjects.length;
       const start = (page - 1) * limit;
-      const paginated = objects
+      const paginated = filteredObjects
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(start, start + limit);
 
