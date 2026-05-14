@@ -124,4 +124,13 @@ import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor
     OutboxProcessorService,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: any) {
+    consumer
+      .apply((req: any, res: any, next: any) => {
+        console.log(`[HTTP] ${req.method} ${req.url}`);
+        next();
+      })
+      .forRoutes('*');
+  }
+}
