@@ -45,6 +45,9 @@
           <option value="invoice">
             Faturalar
           </option>
+          <option value="image">
+            Fotoğraflar
+          </option>
           <option value="financial">
             Finansal İşlemler
           </option>
@@ -161,24 +164,40 @@
       <!-- Pagination -->
       <div
         v-if="pagination.total > pagination.limit"
-        class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between"
+        class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4"
       >
         <div class="text-sm text-gray-700">
           Toplam <strong>{{ pagination.total }}</strong> kayıttan <strong>{{ (pagination.page - 1) *
             pagination.limit + 1 }}</strong> - <strong>{{ Math.min(pagination.page * pagination.limit,
                                                                  pagination.total) }}</strong> arası gösteriliyor
         </div>
-        <div class="flex space-x-2">
+        <div class="flex space-x-1 items-center">
           <button
             :disabled="pagination.page === 1"
-            class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm disabled:opacity-50"
+            class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm disabled:opacity-50 hover:bg-gray-50"
             @click="changePage(pagination.page - 1)"
           >
             Geri
           </button>
+
+          <!-- Page Numbers -->
           <button
-            :disabled="pagination.page * pagination.limit >= pagination.total"
-            class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm disabled:opacity-50"
+            v-for="p in pageNumbers"
+            :key="p"
+            @click="changePage(p)"
+            :class="[
+              'px-3 py-1 border rounded-md text-sm transition-colors',
+              p === pagination.page 
+                ? 'bg-blue-600 text-white border-blue-600 font-medium' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            ]"
+          >
+            {{ p }}
+          </button>
+
+          <button
+            :disabled="pagination.page >= totalPages"
+            class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm disabled:opacity-50 hover:bg-gray-50"
             @click="changePage(pagination.page + 1)"
           >
             İleri
@@ -215,6 +234,26 @@ const pagination = ref({
     page: 1,
     limit: 50,
     total: 0
+})
+
+const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.limit))
+
+const pageNumbers = computed(() => {
+    const ObjectPages = []
+    const total = totalPages.value
+    const current = pagination.value.page
+    
+    let start = Math.max(1, current - 2)
+    let end = Math.min(total, start + 4)
+    
+    if (end - start < 4) {
+        start = Math.max(1, end - 4)
+    }
+    
+    for (let i = start; i <= end; i++) {
+        ObjectPages.push(i)
+    }
+    return ObjectPages
 })
 
 const fetchLogs = async () => {

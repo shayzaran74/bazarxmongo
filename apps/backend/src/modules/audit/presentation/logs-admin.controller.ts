@@ -53,8 +53,7 @@ export class LogsAdminController {
 
           const stream = this.minioClient.listObjectsV2(bucket, '', true);
           for await (const obj of stream) {
-            const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
-            if (!isImage && obj.name) {
+            if (obj.name) {
               objects.push({
                 id: obj.etag,
                 fileName: obj.name.split('/').pop(),
@@ -139,6 +138,7 @@ export class LogsAdminController {
 
   private detectCategory(fileName: string): string {
     const name = fileName.toLowerCase();
+    if (name.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)) return 'IMAGE';
     if (name.includes('inv-') || name.endsWith('.pdf')) return 'INVOICE';
     if (name.includes('financial') || name.includes('trade')) return 'FINANCIAL';
     if (name.includes('error') || name.includes('exception')) return 'ERROR';
