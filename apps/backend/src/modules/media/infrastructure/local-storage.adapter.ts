@@ -66,4 +66,8 @@ export class LocalStorageAdapter implements IStorageAdapter {
       this.logger.warn(`Silinecek dosya bulunamadı: ${targetPath}`);
     }
   }
+
+  async getPresignedUrl(objectKey: string): Promise<string> {
+    return `${this.baseUrl}/uploads/${objectKey}`;
+  }
 }
