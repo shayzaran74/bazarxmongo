@@ -1,13 +1,11 @@
 <template>
-  <AccessGuard :requiresAuth="true" :requiresVendor="true">
-    <div class="min-h-screen bg-[#000814]">
-      <TtHero />
-      <TtBento />
-      <TtTiers />
-      <TtTrust />
-      <TtApply />
-    </div>
-  </AccessGuard>
+  <div class="min-h-screen bg-[#000814]">
+    <TtHero />
+    <TtBento />
+    <TtTiers />
+    <TtTrust />
+    <TtApply />
+  </div>
 </template>
 
 <script setup lang="ts">
