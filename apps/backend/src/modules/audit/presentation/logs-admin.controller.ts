@@ -45,34 +45,41 @@ export class LogsAdminController {
     @Query('category') category?: string,
   ) {
     try {
-      console.log(`[Logs-Admin] İstek alındı. Bucket: ${this.bucketName}, Kategori: ${category || 'Hepsi'}`);
+      console.log(`[Logs-Admin] --- DEBUG BAŞLADI ---`);
       
+      // Mevcut tüm bucketları listele (Hangi bucketları görebiliyoruz?)
+      const buckets = await this.minioClient.listBuckets();
+      console.log(`[Logs-Admin] Erişilebilir Bucketlar:`, buckets.map(b => b.name).join(', '));
+
       const exists = await this.minioClient.bucketExists(this.bucketName);
-      console.log(`[Logs-Admin] Bucket var mı?: ${exists}`);
+      console.log(`[Logs-Admin] Hedef Bucket (${this.bucketName}) var mı?: ${exists}`);
+      
       if (!exists) {
-        return { success: false, message: `Bucket bulunamadı: ${this.bucketName}` };
+        return { success: false, message: `Bucket bulunamadı: ${this.bucketName}`, availableBuckets: buckets.map(b => b.name) };
       }
 
       const objects: any[] = [];
-      const prefix = category ? `archived/${category.toLowerCase()}/` : 'archived/';
-      console.log(`[Logs-Admin] Prefix taranıyor: ${prefix}`);
+      // Test için prefix'i boşaltalım, her şeyi görelim
+      const prefix = ''; 
+      console.log(`[Logs-Admin] Bucket içeriği taranıyor (Prefix: "${prefix}")...`);
       
-      // MinIO'dan objeleri listele
       const stream = this.minioClient.listObjectsV2(this.bucketName, prefix, true);
       
       for await (const obj of stream) {
-        console.log(`[Logs-Admin] Obje bulundu: ${obj.name} (${obj.size} bytes)`);
-        if (obj.name?.endsWith('.gz') || obj.name?.endsWith('.log') || obj.name?.endsWith('.json')) {
-          objects.push({
-            id: obj.etag,
-            fileName: obj.name.split('/').pop(),
-            fileSize: obj.size,
-            createdAt: obj.lastModified,
-            category: this.detectCategory(obj.name),
-            viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
-          });
-        }
+        console.log(`[Logs-Admin] HAM OBJE: ${obj.name} - Boyut: ${obj.size}`);
+        
+        // Frontend'in beklediği filtrelemeyi burada esnetelim ki bir şeyler görelim
+        objects.push({
+          id: obj.etag,
+          fileName: obj.name.split('/').pop(),
+          fileSize: obj.size,
+          createdAt: obj.lastModified,
+          category: this.detectCategory(obj.name),
+          viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
+        });
       }
+
+      console.log(`[Logs-Admin] Toplam bulunan obje sayısı: ${objects.length}`);
 
       console.log(`[Logs-Admin] Toplam geçerli dosya sayısı: ${objects.length}`);
 
