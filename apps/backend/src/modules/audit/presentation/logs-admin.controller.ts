@@ -38,7 +38,7 @@ export class LogsAdminController {
 
   @Public()
   @ApiOperation({ summary: 'Arşivlenmiş logları listele' })
-  @Get() // 'archived' kısmını sildim, direkt /admin/logs olarak deneyeceğiz
+  @Get('archived')
   async getArchivedLogs(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
