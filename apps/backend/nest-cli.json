@@ -6,7 +6,7 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
-    "tsConfigPath": "tsconfig.build.json",
+    "tsConfigPath": "tsconfig.prod.json",
     "assets": [
       {
         "include": "modules/financial-gateway/grpc/*.proto",

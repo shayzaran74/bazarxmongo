@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "noImplicitAny": false,
+    "paths": {
+      "@barterborsa/shared-core": ["../../packages/shared/shared-core/dist/index"],
+      "@barterborsa/shared-types": ["../../packages/shared/shared-types/dist/index"],
+      "@barterborsa/shared-persistence": ["../../packages/shared/shared-persistence/dist/index"],
+      "@barterborsa/shared-security": ["../../packages/shared/shared-security/dist/index"],
+      "@barterborsa/shared-messaging": ["../../packages/shared/shared-messaging/dist/index"],
+      "@barterborsa/shared-observability": ["../../packages/shared/shared-observability/dist/index"],
+      "@barterborsa/shared-queue": ["../../packages/shared/shared-queue/dist/index"],
+      "@barterborsa/shared-nest": ["../../packages/shared/shared-nest/dist/index"],
+      "@barterborsa/domain-identity": ["../../packages/domain/domain-identity/dist/index"]
+    }
+  },
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
