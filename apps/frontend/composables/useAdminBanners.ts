@@ -158,7 +158,7 @@ export const useAdminBanners = () => {
       }
 
       if (isEditing.value) {
-        await $api(`/api/admin/banners/${formData.id}`, {
+        await $api(`/api/v1/admin/banners/${formData.id}`, {
           method: 'PUT',
           body: payload
         })
@@ -183,7 +183,7 @@ export const useAdminBanners = () => {
     if (deleting.value) return
     deleting.value = true
     try {
-      await $api(`/api/admin/banners/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/banners/${id}`, { method: 'DELETE' })
       $toast.success('Banner silindi')
       showDeleteModal.value = false
       fetchBanners()
@@ -196,7 +196,7 @@ export const useAdminBanners = () => {
 
   const toggleStatus = async (banner: any) => {
     try {
-      await $api(`/api/admin/banners/${banner.id}`, {
+      await $api(`/api/v1/admin/banners/${banner.id}`, {
         method: 'PUT',
         body: { isActive: !banner.isActive }
       })

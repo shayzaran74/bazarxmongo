@@ -55,7 +55,7 @@ export const useAds = () => {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const res = await $api<any>('/api/upload', {
+      const res = await $api<any>('/api/v1/upload', {
         method: 'POST',
         body: formData
       })

@@ -178,7 +178,7 @@ const fetchBanners = async () => {
         params.append('locale', locale.value)
         const query = params.toString() ? `?${params.toString()}` : ''
 
-        const data = await $api(`/api/banners${query}`)
+        const data = await $api(`/api/v1/banners${query}`)
 
         // Backend raw array döndürüyor (wrapper yok)
         const rawBanners = Array.isArray(data) ? data : (data?.data || [])

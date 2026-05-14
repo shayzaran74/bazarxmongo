@@ -65,7 +65,7 @@ export const useVendorSettings = () => {
     formData.append('file', file)
     try {
       $toast.info('Yükleniyor...')
-      const res: any = await $api(`/api/upload?type=${type}`, { method: 'POST', body: formData })
+      const res: any = await $api(`/api/v1/upload?type=${type}`, { method: 'POST', body: formData })
       if (res.success && res.data?.url) {
         if (type === 'logo') form.value.logoUrl = res.data.url
         else if (type === 'banner') form.value.coverImageUrl = res.data.url

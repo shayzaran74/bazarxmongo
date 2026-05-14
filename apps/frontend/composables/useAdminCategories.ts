@@ -54,7 +54,7 @@ export const useAdminCategories = () => {
     data.append('file', file)
     
     try {
-      const res = await $api<any>('/api/upload?subPath=categories', {
+      const res = await $api<any>('/api/v1/upload?subPath=categories', {
         method: 'POST',
         body: data
       })
