@@ -314,8 +314,9 @@ const saveAll = async () => {
                 isActive: c.isActive,
                 items: c.items.map(i => ({
                     productId: i.productId,
-                    customTitle: i.customTitle || (i.Product ? i.Product.name : ''),
-                    customImage: i.Product ? i.Product.image : null
+                    title: i.customTitle || (i.Product ? i.Product.name : ''),
+                    image: i.Product ? i.Product.image : null,
+                    order: i.order || 0
                 })).filter(i => i.productId)
             }))
         }
