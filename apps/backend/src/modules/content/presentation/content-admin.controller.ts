@@ -67,7 +67,7 @@ export class ContentAdminController {
         await tx.homeQuadCard.create({
           data: {
             title: card.title,
-            link: card.link,
+            link: card.link as any,
             order: card.order,
             isActive: card.isActive,
             platform: card.platform as any,
