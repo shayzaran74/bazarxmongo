@@ -1,0 +1,52 @@
+# apps/backend/Dockerfile.prod
+# Multi-stage build — NestJS monorepo
+
+# ─── Stage 1: Build ───────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Gerekli tüm dosyaları kopyala
+COPY . .
+
+# Bağımlılıkları yükle
+RUN pnpm config set shamefully-hoist true && \
+    pnpm config set ignore-workspace-root-check true && \
+    pnpm install --no-frozen-lockfile
+
+# Prisma client generate
+RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
+
+# Tüm paketleri build et
+RUN pnpm --filter @bazarx/backend... build
+
+# Copy gRPC proto to dist
+RUN mkdir -p apps/backend/dist/apps/backend/src/modules/financial-gateway/grpc && \
+    cp apps/backend/src/modules/financial-gateway/grpc/financial.proto \
+       apps/backend/dist/apps/backend/src/modules/financial-gateway/grpc/financial.proto
+
+# ─── Stage 2: Runtime ─────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN apk add --no-cache openssl netcat-openbsd libc6-compat vips vips-dev
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+# Bütün bağımlılık yapısını kopyala
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend ./apps/backend
+
+# Banner/Resim yüklemeleri için gerekli klasörleri oluştur (Ana dizinden oluşturuyoruz)
+RUN mkdir -p apps/backend/public/uploads && chown -R nestjs:nodejs apps/backend/public
+
+USER nestjs
+EXPOSE 3001
+
+# Not: docker-compose bu CMD'yi ezecek, ama burada da doğru kalmalı
+CMD ["node", "apps/backend/dist/apps/backend/src/main.js"]
