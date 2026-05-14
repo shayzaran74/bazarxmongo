@@ -63,6 +63,8 @@ export class LogsAdminController {
             category: this.detectCategory(obj.name),
             viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
           });
+        } else {
+          console.log(`[Logs-Admin] Dosya filtreye takıldı: ${obj.name}`);
         }
       }
 
