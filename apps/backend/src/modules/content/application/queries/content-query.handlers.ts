@@ -33,7 +33,11 @@ export class GetHomeBannersHandler implements IQueryHandler<GetHomeBannersQuery>
 @QueryHandler(GetHomeQuadCardsQuery)
 export class GetHomeQuadCardsHandler implements IQueryHandler<GetHomeQuadCardsQuery> {
   constructor(@Inject('IHomeQuadCardRepository') private readonly repository: IHomeQuadCardRepository) {}
-  async execute(query: GetHomeQuadCardsQuery) { return this.repository.findAllActive(query.platform); }
+  async execute(query: GetHomeQuadCardsQuery) { 
+    const result = await this.repository.findAllActive(query.platform);
+    console.log(`[Handler-Quad] Handler'a ulaşan sonuç sayısı: ${result?.length || 0}`);
+    return result; 
+  }
 }
 
 @QueryHandler(GetHelpCategoriesQuery)

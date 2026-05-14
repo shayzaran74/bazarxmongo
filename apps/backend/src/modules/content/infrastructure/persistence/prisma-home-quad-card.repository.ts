@@ -28,6 +28,10 @@ export class PrismaHomeQuadCardRepository implements IHomeQuadCardRepository {
       include: { items: true },
       orderBy: { order: 'asc' }
     });
+    console.log(`[Repo-Quad] Veritabanından gelen ham satır sayısı: ${raws.length}`);
+    if (raws.length > 0) {
+      console.log(`[Repo-Quad] İlk kart başlığı: ${raws[0].title}, Ürün sayısı: ${raws[0].items?.length}`);
+    }
     
     return raws.map((raw: any) => {
       const card = (HomeQuadCard as any).create(raw, raw.id);
