@@ -46,8 +46,6 @@ const fetchQuadCards = async () => {
     const res = await fetch(fullUrl)
     const data = await res.json()
     
-    console.log('[QuadCards-Frontend] Ham Fetch Cevabı:', data)
-    console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data && Array.isArray(data)) {
       // Map title to label for QuadCard component, handling both wrapped (props) and flat structures
       cards.value = data.map((item: any) => {
@@ -61,12 +59,11 @@ const fetchQuadCards = async () => {
             return {
               ...sub,
               label: subRaw.title,
-              image: subRaw.image // Resim yolunu garantiye alıyoruz
+              image: subRaw.image
             }
           })
         }
       })
-      console.log('[QuadCards] Mapped items sample:', cards.value[0]?.items[0])
     }
   } catch (error) {
     console.error('Fetch quad cards error:', error)
