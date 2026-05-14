@@ -40,13 +40,23 @@ export class LogsAdminController {
     @Query('category') category?: string,
   ) {
     try {
+      console.log(`[Logs-Admin] İstek alındı. Bucket: ${this.bucketName}, Kategori: ${category || 'Hepsi'}`);
+      
+      const exists = await this.minioClient.bucketExists(this.bucketName);
+      console.log(`[Logs-Admin] Bucket var mı?: ${exists}`);
+      if (!exists) {
+        return { success: false, message: `Bucket bulunamadı: ${this.bucketName}` };
+      }
+
       const objects: any[] = [];
       const prefix = category ? `archived/${category.toLowerCase()}/` : 'archived/';
+      console.log(`[Logs-Admin] Prefix taranıyor: ${prefix}`);
       
       // MinIO'dan objeleri listele
       const stream = this.minioClient.listObjectsV2(this.bucketName, prefix, true);
       
       for await (const obj of stream) {
+        console.log(`[Logs-Admin] Obje bulundu: ${obj.name} (${obj.size} bytes)`);
         if (obj.name?.endsWith('.gz') || obj.name?.endsWith('.log') || obj.name?.endsWith('.json')) {
           objects.push({
             id: obj.etag,
@@ -58,6 +68,8 @@ export class LogsAdminController {
           });
         }
       }
+
+      console.log(`[Logs-Admin] Toplam geçerli dosya sayısı: ${objects.length}`);
 
       // Manuel sayfalama (MinIO stream için basit çözüm)
       const total = objects.length;
