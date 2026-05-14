@@ -45,28 +45,33 @@ export class LogsAdminController {
     @Query('category') category?: string,
   ) {
     try {
-      console.log(`[Logs-Admin] İstek geldi! Sayfa: ${page}, Limit: ${limit}`);
+      console.log(`[Logs-Admin] --- DEDEKTİF MODU BAŞLADI ---`);
+      const buckets = await this.minioClient.listBuckets();
+      console.log(`[Logs-Admin] Mevcut tüm bucketlar:`, buckets.map(b => b.name).join(', '));
+      
       const objects: any[] = [];
-      const prefix = ''; // Şimdilik her şeyi tara
-      
-      const stream = this.minioClient.listObjectsV2(this.bucketName, prefix, true);
-      
-      for await (const obj of stream) {
-        // Resim dosyalarını (ürün resimleri vb.) gizleyelim, geri kalan her şeyi log olarak kabul edelim
-        const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+
+      for (const bucket of buckets) {
+        console.log(`[Logs-Admin] "${bucket.name}" taranıyor...`);
+        const stream = this.minioClient.listObjectsV2(bucket.name, '', true);
         
-        if (!isImage && obj.name) {
-          console.log(`[Logs-Admin] LOG ADAYI BULUNDU: ${obj.name}`);
-          objects.push({
-            id: obj.etag,
-            fileName: obj.name.split('/').pop(),
-            fileSize: obj.size,
-            createdAt: obj.lastModified,
-            category: this.detectCategory(obj.name),
-            viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
-          });
+        for await (const obj of stream) {
+          const isImage = obj.name?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+          if (!isImage && obj.name) {
+            console.log(`[Logs-Admin] [${bucket.name}] DOSYA BULUNDU: ${obj.name}`);
+            objects.push({
+              id: obj.etag,
+              fileName: obj.name.split('/').pop(),
+              fileSize: obj.size,
+              createdAt: obj.lastModified,
+              category: `${bucket.name} / ${this.detectCategory(obj.name)}`,
+              viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
+            });
+          }
         }
       }
+
+      console.log(`[Logs-Admin] Toplam bulunan aday dosya: ${objects.length}`);
 
       // Manuel sayfalama (MinIO stream için basit çözüm)
       const total = objects.length;
