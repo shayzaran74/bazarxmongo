@@ -46,10 +46,16 @@
             Faturalar
           </option>
           <option value="financial">
-            Finansal
+            Finansal İşlemler
+          </option>
+          <option value="security">
+            Güvenlik Logları
+          </option>
+          <option value="error">
+            Hata Kayıtları
           </option>
           <option value="system">
-            Sistem
+            Sistem Logları
           </option>
           <option value="legal">
             Hukuki
