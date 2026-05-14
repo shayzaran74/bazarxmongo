@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "src",
     "baseUrl": ".",
     "paths": {
       "@barterborsa/domain-identity": ["../../packages/domain-identity/src/index.ts"],
