@@ -7,7 +7,12 @@
     ]"
   >
     <!-- Tüm reklamlar görünür — 10s'de bir en alt en üste gelir -->
-    <TransitionGroup name="conveyor" tag="div" class="flex flex-col gap-4">
+    <TransitionGroup 
+      name="conveyor" 
+      tag="div" 
+      class="flex flex-col gap-4 relative w-full"
+      :style="{ minHeight: displayedAds.length > 0 ? `${(displayedAds.length * 560) + ((displayedAds.length - 1) * 16)}px` : 'auto' }"
+    >
       <div
         v-for="ad in displayedAds"
         :key="ad.id"
