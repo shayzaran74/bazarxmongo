@@ -22,7 +22,7 @@ export class LogsAdminController {
     const endPoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10);
     const useSSL = this.config.get<string>('MINIO_USE_SSL') === 'true';
-    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-logs');
+    this.bucketName = this.config.get<string>('MINIO_LOG_BUCKET', 'bazarx-media');
 
     console.log(`[Logs-Admin] Kontrolcü başlatılıyor... Endpoint: ${endPoint}:${port}, Bucket: ${this.bucketName}`);
 
