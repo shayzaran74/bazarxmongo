@@ -10,17 +10,15 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Gerekli tüm dosyaları kopyala
 COPY . .
 
-# Bağımlılıkları yükle (shamefully-hoist ile flat yapı kur)
+# Bağımlılıkları yükle
 RUN pnpm config set shamefully-hoist true && \
     pnpm config set ignore-workspace-root-check true && \
     pnpm install --no-frozen-lockfile
 
 # Prisma client generate
-# Prisma client generate (Shared persistence ve backend için gerekli)
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
-# Tüm paketleri build et (bağımlılık ağacını otomatik çözen pnpm filtresi)
-# @bazarx/backend... -> backend ve TÜM bağımlılıklarını (shared/domain) build eder
+# Tüm paketleri build et
 RUN pnpm --filter @bazarx/backend... build
 
 # Copy gRPC proto to dist
@@ -39,18 +37,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-# Bütün bağımlılık yapısını kopyala (Sembolik linklerin kırılmaması için)
+# Bütün bağımlılık yapısını kopyala
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
 COPY --from=builder --chown=nestjs:nodejs /app/apps/backend ./apps/backend
 
-WORKDIR /app/apps/backend
-
-# Banner/Resim yüklemeleri için gerekli klasörleri oluştur
-RUN mkdir -p public/uploads && chown -R nestjs:nodejs public
+# Banner/Resim yüklemeleri için gerekli klasörleri oluştur (Ana dizinden oluşturuyoruz)
+RUN mkdir -p apps/backend/public/uploads && chown -R nestjs:nodejs apps/backend/public
 
 USER nestjs
 EXPOSE 3001
 
-# Prisma generate + migrate + app başlat
-CMD ["sh", "-c", "npx prisma@5.12.0 generate --schema=prisma/schema.prisma && npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/apps/backend/src/main.js"]
+# Not: docker-compose bu CMD'yi ezecek, ama burada da doğru kalmalı
+CMD ["node", "apps/backend/dist/apps/backend/src/main.js"]
