@@ -318,11 +318,12 @@
         <span class="absolute right-full mr-4 bg-md3-primary text-on-primary text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Yeni Bayi Ekle</span>
       </button>
     </div>
-  </AccessGuard>
+  </div>
+</AccessGuard>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({ layout: false, middleware: ['auth', 'barterborsa-apex'] })
 
 useHead({
   title: 'Bayi Yönetim Paneli — BarterBorsa',

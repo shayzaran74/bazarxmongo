@@ -1,9 +1,15 @@
 <template>
-  <div class="flex h-screen bg-[#F8FAFC] font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
-    <B2BSidebar />
-    <TtAccessBarrier v-if="!isVendor" />
+  <AccessGuard :requiresAuth="true" :requiresVendor="true">
+    <div class="flex h-screen bg-[#F8FAFC] font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      <B2BSidebar 
+        :pendingOrderCount="0"
+        :fullName="authStore.fullName"
+        :userEmail="authStore.user?.email"
+        :avatarUrl="authStore.user?.avatar"
+        @logout="authStore.logout()"
+      />
 
-    <div class="flex-1 flex flex-col min-h-0 overflow-hidden" :class="{ 'blur-md pointer-events-none': !isVendor }">
+      <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Top Navigation / Header -->
       <header class="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 flex-shrink-0">
         <div class="flex items-center gap-4">
@@ -242,8 +248,9 @@
           </div>
         </div>
       </main>
+      </div>
     </div>
-  </div>
+  </AccessGuard>
 </template>
 
 <script setup lang="ts">

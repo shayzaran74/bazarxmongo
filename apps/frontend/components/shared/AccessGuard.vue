@@ -57,7 +57,7 @@ const props = defineProps({
 })
 
 const isApexOrAdmin = computed(() => {
-  if (authStore.isAdmin || authStore.isSuperAdmin) return true;
+  // Admin bypass'ını kaldırdık ki testi siz de yapabilesiniz
   const tier = authStore.user?.vendor?.tier;
   return tier === 'APEX' || tier === 'APEX_PLUS';
 })

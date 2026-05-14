@@ -12,4 +12,8 @@ import { MediaModule } from '../media/media.module';
   providers: [AuditLogService],
   exports: [AuditLogService],
 })
-export class AuditModule {}
+export class AuditModule {
+  constructor() {
+    console.log('[AuditModule] Modül yüklendi.');
+  }
+}

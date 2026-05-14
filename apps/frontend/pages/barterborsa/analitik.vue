@@ -314,12 +314,14 @@
         </div>
       </main>
     </div>
-  </AccessGuard>
+  </div>
+</AccessGuard>
 </template>
 
 <script setup lang="ts">
 definePageMeta({
-  layout: false, // Kendi sidebar layout'u var
+  layout: false,
+  middleware: ['auth', 'barterborsa-apex'],
 })
 
 useHead({

@@ -321,12 +321,14 @@
         </div>
       </main>
     </div>
-  </AccessGuard>
+  </div>
+</AccessGuard>
 </template>
 
 <script setup lang="ts">
 definePageMeta({
   layout: false,
+  middleware: ['auth', 'barterborsa-apex'],
 })
 
 useHead({
