@@ -38,7 +38,7 @@ export class LogsAdminController {
   @Get('archived')
   async getArchivedLogs(
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('limit') limit: number = 50,
     @Query('category') category?: string,
   ) {
     try {
