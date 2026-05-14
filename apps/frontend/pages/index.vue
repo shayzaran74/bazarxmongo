@@ -10,13 +10,17 @@
       ecosystem="BAZARX"
     />
 
+    <!-- Dörtlü Vitrin (Quad Cards) - Hemen Banner Altında -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <HomeQuadCards :show="settingsStore.homepageSettings.showQuadCards" />
+    </div>
+
     <!-- Quick Access Menu -->
     <HomeQuickMenu :items="quickAccessMenuItems" />
 
-    <!-- Personalized Feed & Quad Cards -->
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 space-y-4">
+    <!-- Personalized Feed -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
       <LayoutPersonalizedFeed v-if="settingsStore.homepageSettings.showPersonalized === 'true'" />
-      <HomeQuadCards :show="settingsStore.homepageSettings.showQuadCards" />
     </div>
 
     <!-- Main Sections -->

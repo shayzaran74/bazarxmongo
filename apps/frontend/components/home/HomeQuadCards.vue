@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="cards.length > 0 && show !== 'false'"
+    v-if="cards.length > 0"
     class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4"
   >
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
