@@ -63,7 +63,10 @@ export class SearchHelpArticlesHandler implements IQueryHandler<SearchHelpArticl
 @QueryHandler(GetAnnouncementsQuery)
 export class GetAnnouncementsHandler implements IQueryHandler<GetAnnouncementsQuery> {
   constructor(@Inject('IAnnouncementRepository') private readonly repository: IAnnouncementRepository) {}
-  async execute() { return this.repository.findAllActive(); }
+  async execute() { 
+    const announcements = await this.repository.findAllActive();
+    return announcements.map(a => ({ id: a.id.toString(), ...a.getProps() }));
+  }
 }
 
 @QueryHandler(GetPoliciesQuery)

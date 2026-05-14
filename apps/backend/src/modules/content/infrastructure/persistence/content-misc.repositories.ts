@@ -21,7 +21,16 @@ export class PrismaAnnouncementRepository implements repo.IAnnouncementRepositor
   async findAllActive() {
     const now = new Date();
     const rs = await this.prisma.announcement.findMany({
-      where: { isActive: true, startDate: { lte: now }, OR: [{ endDate: null }, { endDate: { gte: now } }] },
+      where: { 
+        isActive: true, 
+        OR: [
+          { startDate: null }, 
+          { startDate: { lte: now } }
+        ], 
+        AND: [
+          { OR: [{ endDate: null }, { endDate: { gte: now } }] }
+        ]
+      },
       orderBy: { priority: 'desc' }
     });
     return rs.map(r => (Announcement as any).create(r, r.id));
