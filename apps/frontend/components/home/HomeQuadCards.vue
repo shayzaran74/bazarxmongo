@@ -32,7 +32,7 @@ const fetchQuadCards = async () => {
   loading.value = true
   try {
     const { $api } = useApi()
-    const data = await $api('/api/home-quad-cards') as ApiResponse<HomeQuadCard[]>
+    const data = await $api('/api/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
     if (data.success && data.data) {
       cards.value = data.data
     }
