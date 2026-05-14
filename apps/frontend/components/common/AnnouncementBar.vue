@@ -75,9 +75,15 @@ let announcementTimer = null
 
 const fetchAnnouncements = async () => {
   try {
-    const data = await useApi().$api(`/api/dynamic/announcements?page=${props.page}&locale=${locale.value}`)
-    if (data?.success) {
-      activeAnnouncements.value = data.data
+    const url = `/api/dynamic/announcements?page=${props.page}&locale=${locale.value}`
+    console.log('[Announcement-Frontend] İstek atılıyor:', url)
+    const data = await useApi().$api(url)
+    console.log('[Announcement-Frontend] Gelen veri:', data)
+    
+    if (data?.success || Array.isArray(data)) {
+      const list = Array.isArray(data) ? data : data.data
+      activeAnnouncements.value = list || []
+      console.log('[Announcement-Frontend] Aktif duyuru sayısı:', activeAnnouncements.value.length)
       if (activeAnnouncements.value.length > 1) {
         startAnnouncementRotation()
       }
