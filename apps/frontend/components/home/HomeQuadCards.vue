@@ -28,8 +28,8 @@ import { ref, onMounted } from 'vue'
 import { navigateTo } from '#imports'
 import type { HomeQuadCard, ApiResponse, HomeQuadCardItem } from '@barterborsa/shared-types'
 
-defineProps<{
-  show?: string
+const props = defineProps<{
+  show?: string | boolean
 }>()
 
 const cards = ref<HomeQuadCard[]>([])
