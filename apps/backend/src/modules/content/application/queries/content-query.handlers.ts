@@ -65,12 +65,7 @@ export class GetAnnouncementsHandler implements IQueryHandler<GetAnnouncementsQu
   constructor(@Inject('IAnnouncementRepository') private readonly repository: IAnnouncementRepository) {}
   async execute() { 
     const announcements = await this.repository.findAllActive();
-    console.log(`[Backend-Announcements] Bulunan aktif duyuru sayısı: ${announcements.length}`);
-    const mapped = announcements.map(a => ({ id: a.id.toString(), ...a.getProps() }));
-    if (mapped.length > 0) {
-      console.log(`[Backend-Announcements] İlk duyuru örneği:`, JSON.stringify(mapped[0]));
-    }
-    return mapped;
+    return announcements.map(a => ({ id: a.id.toString(), ...a.getProps() }));
   }
 }
 
