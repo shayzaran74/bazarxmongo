@@ -23,13 +23,8 @@ export class PrismaAnnouncementRepository implements repo.IAnnouncementRepositor
     const rs = await this.prisma.announcement.findMany({
       where: { 
         isActive: true, 
-        OR: [
-          { startDate: null }, 
-          { startDate: { lte: now } }
-        ], 
-        AND: [
-          { OR: [{ endDate: null }, { endDate: { gte: now } }] }
-        ]
+        startDate: { lte: now },
+        OR: [{ endDate: null }, { endDate: { gte: now } }]
       },
       orderBy: { priority: 'desc' }
     });
