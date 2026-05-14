@@ -56,12 +56,17 @@ const fetchQuadCards = async () => {
           ...item,
           title: raw.title,
           link: raw.link,
-          items: (raw.items || []).map((sub: any) => ({
-            ...sub,
-            label: sub.title // QuadCard.vue 'label' bekliyor
-          }))
+          items: (raw.items || []).map((sub: any) => {
+            const subRaw = sub.props || sub
+            return {
+              ...sub,
+              label: subRaw.title,
+              image: subRaw.image // Resim yolunu garantiye alıyoruz
+            }
+          })
         }
       })
+      console.log('[QuadCards] Mapped items sample:', cards.value[0]?.items[0])
     }
   } catch (error) {
     console.error('Fetch quad cards error:', error)
