@@ -16,7 +16,11 @@
     <!-- Main Content Grid -->
     <div class="relative flex justify-center">
       <ClientOnly>
-        <LayoutPremiumSideAd v-if="sideAds.length" side="left" :ads="sideAds.filter(a => a.side === 'LEFT')" />
+        <LayoutPremiumSideAd 
+          v-if="sideAds.length && settingsStore.homepageSettings.showAds !== 'false'" 
+          side="left" 
+          :ads="sideAds.filter(a => a.side === 'LEFT')" 
+        />
       </ClientOnly>
 
       <main class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 relative z-[1]">
@@ -24,7 +28,11 @@
       </main>
 
       <ClientOnly>
-        <LayoutPremiumSideAd v-if="sideAds.length" side="right" :ads="sideAds.filter(a => a.side === 'RIGHT')" />
+        <LayoutPremiumSideAd 
+          v-if="sideAds.length && settingsStore.homepageSettings.showAds !== 'false'" 
+          side="right" 
+          :ads="sideAds.filter(a => a.side === 'RIGHT')" 
+        />
       </ClientOnly>
     </div>
 
@@ -70,6 +78,9 @@ import { cities as citiesList } from '@/data/turkey_locations'
 import LocationModal from '~/components/layout/LocationModal.vue'
 import VendorUpsellModal from '~/components/layout/VendorUpsellModal.vue'
 
+import { useSiteSettingsStore } from '~/stores/siteSettings'
+
+const settingsStore = useSiteSettingsStore()
 const {
   currentEcosystem, ecosystemHomeLink, siteLogoUrl,
   brandName, brandSubtitle, categories,
