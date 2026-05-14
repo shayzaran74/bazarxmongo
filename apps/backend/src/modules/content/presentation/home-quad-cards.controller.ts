@@ -14,6 +14,8 @@ export class HomeQuadCardsController {
   @ApiResponse({ status: 200, description: 'Kart listesi.' })
   @Get()
   async getQuadCards(@Query('platform') platform: string = 'BAZARX') {
-    return this.queryBus.execute(new GetHomeQuadCardsQuery(platform));
+    const result = await this.queryBus.execute(new GetHomeQuadCardsQuery(platform));
+    console.log(`[Backend-Quad] Platform: ${platform}, Found: ${result?.length || 0}`);
+    return result;
   }
 }
