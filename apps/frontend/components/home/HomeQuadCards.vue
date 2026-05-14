@@ -40,9 +40,9 @@ const fetchQuadCards = async () => {
   try {
     const { $api } = useApi()
     const config = useRuntimeConfig()
-    const apiBase = config.public.apiBase || 'http://localhost:3002'
-    const data = await $api('/home-quad-cards', { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
-    console.log('[QuadCards-Frontend] API Tam Cevap:', JSON.stringify(data))
+    const fullUrl = `http://localhost:3002/api/v1/home-quad-cards`
+    const data = await $api(fullUrl, { query: { platform: 'BAZARX' } }) as ApiResponse<HomeQuadCard[]>
+    console.log('[QuadCards-Frontend] API Tam Cevap:', data)
     console.log('[QuadCards] Show:', props.show, 'Data:', data)
     if (data.success && data.data) {
       // Map title to label for QuadCard component
