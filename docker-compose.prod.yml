@@ -65,6 +65,7 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - APP_BASE_URL=https://bazarx.info
       - FINANCIAL_GRPC_URL=financial-service:50051
+    command: sh -c "npx prisma generate --schema=prisma/schema.prisma && node dist/apps/backend/src/main.js"
     volumes:
       - bazarx_uploads:/app/apps/backend/public/uploads
       - ./belge:/app/belge
