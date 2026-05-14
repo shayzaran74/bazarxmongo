@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-surface text-on-surface flex">
+  <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
+    <div class="min-h-screen bg-surface text-on-surface flex">
     <!-- Sidebar -->
     <aside class="fixed left-0 top-0 bottom-0 flex flex-col z-50 bg-white border-r border-slate-200 w-64 shadow-sm">
       <div class="p-6">
@@ -285,7 +286,7 @@
         </div>
       </main>
     </div>
-  </div>
+  </AccessGuard>
 </template>
 
 <script setup lang="ts">

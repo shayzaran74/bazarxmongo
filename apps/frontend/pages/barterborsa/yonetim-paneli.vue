@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-surface text-on-surface flex">
+  <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
+    <div class="min-h-screen bg-surface text-on-surface flex">
     <!-- Sidebar -->
     <aside class="fixed left-0 top-0 bottom-0 flex flex-col z-50 bg-white border-r border-slate-200 w-64 shadow-sm p-4 gap-2">
       <div class="mb-8 px-2 flex items-center gap-3">
@@ -317,7 +318,7 @@
         <span class="absolute right-full mr-4 bg-md3-primary text-on-primary text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Yeni Bayi Ekle</span>
       </button>
     </div>
-  </div>
+  </AccessGuard>
 </template>
 
 <script setup lang="ts">
