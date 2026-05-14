@@ -22,6 +22,7 @@ import { CreatePolicyCommand } from '../application/commands/create-policy.comma
 import { CreateDynamicContentCommand } from '../application/commands/create-dynamic-content.command';
 import { UpsertSeoMetadataCommand } from '../application/commands/upsert-seo-metadata.command';
 import { CreateQuadCardDto } from '../application/dtos/create-quad-card.dto';
+import { UpdateQuadCardsDto } from '../application/dtos/update-quad-cards.dto';
 import { CreateHelpCategoryDto, CreateHelpArticleDto } from '../application/dtos/create-help.dtos';
 import {
   CreateAnnouncementDto, CreatePolicyDto,
@@ -51,12 +52,38 @@ export class ContentAdminController {
     return { success: true, data };
   }
 
-  @ApiOperation({ summary: 'Quad card oluştur' })
-  @ApiBody({ type: CreateQuadCardDto })
+  @ApiOperation({ summary: 'Quad cardları toplu güncelle/oluştur' })
+  @ApiBody({ type: UpdateQuadCardsDto })
   @ApiResponse({ status: 201 })
   @Post('quad-cards')
-  async createQuadCard(@Body() dto: CreateQuadCardDto) {
-    return this.commandBus.execute(new CreateQuadCardCommand(dto));
+  async updateQuadCards(@Body() dto: UpdateQuadCardsDto) {
+    // Önce eskileri temizle (basit batch mantığı)
+    await this.prisma.homeQuadCardItem.deleteMany({});
+    await this.prisma.homeQuadCard.deleteMany({});
+
+    // Yenileri tek tek oluştur (Transaction içinde)
+    return this.prisma.$transaction(async (tx) => {
+      for (const card of dto.cards) {
+        await tx.homeQuadCard.create({
+          data: {
+            title: card.title,
+            order: card.order,
+            isActive: card.isActive,
+            platform: card.platform,
+            items: {
+              create: card.items.map(item => ({
+                title: item.title,
+                image: item.image,
+                link: item.link,
+                productId: item.productId,
+                order: item.order
+              }))
+            }
+          }
+        });
+      }
+      return { success: true };
+    });
   }
 
   @ApiOperation({ summary: 'Quad card sil' })
