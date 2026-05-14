@@ -120,10 +120,9 @@ export class LogsAdminController {
 
       return {
         success: true,
-        data: {
+        stats: {
           totalFiles: total,
-          totalCount: total, // Geriye dönük uyumluluk için ikisi de kalsın
-          lastArchivedAt: lastArchived,
+          lastArchiveDate: lastArchived ? lastArchived.toISOString() : '-',
           serviceStatus: 'active'
         }
       };
