@@ -1,9 +1,16 @@
 <template>
   <div
-    v-if="cards.length > 0"
     class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4"
   >
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <!-- DEBUG: Veri yoksa bile bu yazıyı görmeliyiz -->
+    <div v-if="cards.length === 0" class="text-center py-4 text-gray-500 text-xs font-bold border-2 border-dashed border-gray-200 rounded-xl mb-4">
+      [QUAD DEBUG] Veri Bekleniyor... (Platform: BAZARX)
+    </div>
+
+    <div 
+      v-if="cards.length > 0"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
+    >
       <LayoutQuadCard
         v-for="(card, index) in cards"
         :key="index"

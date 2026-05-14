@@ -14,7 +14,7 @@
           {{ displayBadges.topLeft.text }}
         </div>
 
-        <GhostBadge
+        <SharedGhostBadge
           v-if="isSponsored"
           key="sponsored"
           variant="ghost"
