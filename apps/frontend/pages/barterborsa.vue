@@ -1,5 +1,5 @@
 <template>
-  <AccessGuard :requiresAuth="true" :requiresVendor="true">
+  <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
     <NuxtPage />
   </AccessGuard>
 </template>
