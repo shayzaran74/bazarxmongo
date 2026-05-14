@@ -67,7 +67,7 @@ export class LocalStorageAdapter implements IStorageAdapter {
     }
   }
 
-  async getPresignedUrl(objectKey: string): Promise<string> {
+  async getPresignedUrl(objectKey: string, _expiry?: number, _bucket?: string): Promise<string> {
     return `${this.baseUrl}/uploads/${objectKey}`;
   }
 }

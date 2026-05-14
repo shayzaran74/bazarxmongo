@@ -60,7 +60,7 @@ export class LogsAdminController {
                 fileSize: obj.size,
                 createdAt: obj.lastModified,
                 category: this.detectCategory(obj.name),
-                viewUrl: await this.storage.getPresignedUrl(obj.name, 3600),
+                viewUrl: await this.storage.getPresignedUrl(obj.name, 3600, bucket),
               });
             }
           }

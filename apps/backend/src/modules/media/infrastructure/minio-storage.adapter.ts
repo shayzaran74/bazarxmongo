@@ -175,7 +175,8 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
   }
 
   /** Presigned URL üret (private bucket'lar için) */
-  async getPresignedUrl(objectKey: string, expirySeconds = 3600): Promise<string> {
-    return this.minioClient.presignedGetObject(this.bucketName, objectKey, expirySeconds);
+  async getPresignedUrl(objectKey: string, expirySeconds = 3600, bucketName?: string): Promise<string> {
+    const targetBucket = bucketName || this.bucketName;
+    return this.minioClient.presignedGetObject(targetBucket, objectKey, expirySeconds);
   }
 }

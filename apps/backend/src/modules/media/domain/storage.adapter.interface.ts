@@ -14,5 +14,5 @@ export interface IStorageAdapter {
   ): Promise<StorageUploadResult>;
   getUrl(mediaId: string, size?: string): Promise<string>;
   delete(mediaId: string): Promise<void>;
-  getPresignedUrl(objectKey: string, expirySeconds?: number): Promise<string>;
+  getPresignedUrl(objectKey: string, expirySeconds?: number, bucketName?: string): Promise<string>;
 }
