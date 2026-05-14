@@ -93,6 +93,7 @@ export class LogsAdminController {
     return { success: true, data };
   }
 
+  @Public()
   @ApiOperation({ summary: 'Arşiv istatistiklerini getir' })
   @Get('stats')
   async getStats() {
