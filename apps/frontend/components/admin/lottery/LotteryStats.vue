@@ -1,6 +1,10 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 italic">
-    <div v-for="stat in dynamicStats" :key="stat.label" class="group bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-gray-100 transition-all flex flex-col gap-4 relative overflow-hidden">
+    <div
+      v-for="stat in dynamicStats"
+      :key="stat.label"
+      class="group bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-gray-100 transition-all flex flex-col gap-4 relative overflow-hidden"
+    >
       <div class="flex items-center justify-between relative z-10">
         <div :class="stat.iconBg" class="p-4 rounded-2xl shadow-sm transition-transform group-hover:scale-110">
           <component :is="stat.icon" class="h-6 w-6" :class="stat.iconColor" />
@@ -17,15 +21,49 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from '#imports'
 import { TicketIcon, FireIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/vue/24/outline'
 
-const props = defineProps({ stats: Object })
+interface Stats {
+  total: number
+  active: number
+  ended: number
+  drawn: number
+  totalPrizeValue: number
+  totalParticipants: number
+}
+
+const props = defineProps<{ stats: Stats }>()
 
 const dynamicStats = computed(() => [
-  { label: 'TOPLAM ÇEKİLİŞ', value: props.stats.total || 0, icon: TicketIcon, iconBg: 'bg-pink-50', iconColor: 'text-pink-600' },
-  { label: 'AKTİF ÇEKİLİŞ', value: props.stats.active || 0, icon: FireIcon, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
-  { label: 'ÖDÜL DEĞERİ', value: `₺${(props.stats.totalPrizeValue || 0).toLocaleString('tr-TR')}`, icon: CurrencyDollarIcon, iconBg: 'bg-green-50', iconColor: 'text-green-600' },
-  { label: 'TOPLAM KATILIM', value: props.stats.totalParticipants || 0, icon: UsersIcon, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' }
+  {
+    label: 'TOPLAM ÇEKİLİŞ',
+    value: props.stats.total || 0,
+    icon: TicketIcon,
+    iconBg: 'bg-pink-50',
+    iconColor: 'text-pink-600',
+  },
+  {
+    label: 'AKTİF ÇEKİLİŞ',
+    value: props.stats.active || 0,
+    icon: FireIcon,
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+  },
+  {
+    label: 'TOPLAM ÖDÜL DEĞERİ',
+    value: `₺${(props.stats.totalPrizeValue || 0).toLocaleString('tr-TR')}`,
+    icon: CurrencyDollarIcon,
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-600',
+  },
+  {
+    label: 'TOPLAM KATILIM',
+    value: props.stats.totalParticipants || 0,
+    icon: UsersIcon,
+    iconBg: 'bg-indigo-50',
+    iconColor: 'text-indigo-600',
+  },
 ])
 </script>

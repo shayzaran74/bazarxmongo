@@ -68,9 +68,10 @@
                 v-model="form.status"
                 class="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="Active">Aktif (Devam Ediyor)</option>
-                <option value="Completed">Tamamlandı</option>
-                <option value="Cancelled">İptal Edildi</option>
+                <option value="ACTIVE">Aktif (Devam Ediyor)</option>
+                <option value="ENDED">Bitti</option>
+                <option value="COMPLETED">Tamamlandı</option>
+                <option value="CANCELLED">İptal Edildi</option>
               </select>
             </div>
 

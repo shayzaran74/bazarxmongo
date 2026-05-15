@@ -58,10 +58,11 @@ model UserProfile {
   bio       String?
   birthday  DateTime?
   gender    String?
-  city      String?
-  district  String?
-  phone     String?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city         String?
+  district     String?
+  neighborhood String?
+  phone        String?
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([firstName])
   @@index([lastName])
@@ -302,19 +303,27 @@ model VendorSettings {
 }
 
 model VendorB2BData {
-  id                  String   @id @default(cuid())
-  vendorId            String   @unique @map("vendor_id")
-  isB2B               Boolean  @default(false) @map("is_b2b")
-  b2bTier             B2BTier  @default(NONE) @map("b2b_tier")
-  wholesaleEnabled    Boolean  @default(false) @map("wholesale_enabled")
-  isBrandOwner        Boolean  @default(false) @map("is_brand_owner")
-  authorizedBrands    String[] @default([]) @map("authorized_brands")
-  corporateCode       String?  @unique @map("corporate_code")
-  barterLimitOverride Decimal? @map("barter_limit_override") @db.Decimal(18, 2)
-  b2bWalletLimit      Decimal? @map("b2b_wallet_limit") @db.Decimal(18, 2)
-  b2bCommRate         Decimal? @map("b2b_comm_rate") @db.Decimal(5, 2)
-  vendor              Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id                     String                 @id @default(cuid())
+  vendorId               String                 @unique @map("vendor_id")
+  isB2B                  Boolean                @default(false) @map("is_b2b")
+  b2bTier                B2BTier                @default(NONE) @map("b2b_tier")
+  wholesaleEnabled       Boolean                @default(false) @map("wholesale_enabled")
+  isBrandOwner           Boolean                @default(false) @map("is_brand_owner")
+  authorizedBrands       String[]               @default([]) @map("authorized_brands")
+  corporateCode          String?                @unique @map("corporate_code")
+  barterLimitOverride    Decimal?               @map("barter_limit_override") @db.Decimal(18, 2)
+  b2bWalletLimit         Decimal?               @map("b2b_wallet_limit") @db.Decimal(18, 2)
+  b2bCommRate            Decimal?               @map("b2b_comm_rate") @db.Decimal(5, 2)
+  // Master Plan v4.3 §3.1 — Aidat ödeme durumu (havuza erişim için zorunlu)
+  subscriptionStatus     B2BSubscriptionStatus  @default(EXPIRED) @map("subscription_status")
+  subscriptionStartedAt  DateTime?              @map("subscription_started_at")
+  subscriptionExpiresAt  DateTime?              @map("subscription_expires_at")
+  lastPaidAt             DateTime?              @map("last_paid_at")
+  // Master Plan v4.3 §3.4 — İlk işlem kuralı (XP kapalı)
+  firstTransactionAt     DateTime?              @map("first_transaction_at")
+  vendor                 Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
+  @@index([subscriptionStatus, subscriptionExpiresAt])
   @@map("vendor_b2b_data")
 }
 
@@ -1464,7 +1473,7 @@ model BarterDisputeLog {
   tradeValueInKurus    Int            @map("trade_value_kurus")
   reason               String
   evidence             Json?
-  status               String         @default("OPEN")
+  status               DisputeResolutionStatus @default(OPEN)
   arbitratorType       ArbitratorType @default(INTERNAL)
   arbitratorId         String?        @map("arbitrator_id")
   resolution           String?
@@ -2438,6 +2447,7 @@ model TrustScore {
   isFrozen           Boolean  @default(false) @map("is_frozen")
   violationCount     Int      @default(0) @map("violation_count")
   inactiveDays       Int      @default(0) @map("inactive_days")
+  level              String?  @default("GOOD") @map("level")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -2585,6 +2595,23 @@ enum B2BTier {
   STARTER
   GROWTH
   ENTERPRISE
+}
+
+// Master Plan v4.3 §3.1 — B2B aidat ödeme durumu
+enum B2BSubscriptionStatus {
+  ACTIVE       // Aidat ödendi, havuza erişim açık
+  GRACE_PERIOD // Vade geçti ama 14 gün ek süre
+  EXPIRED      // Aidat ödenmedi/yenilenmedi, havuz kapalı
+  SUSPENDED    // Watchtower/admin tarafından askıya alındı
+}
+
+enum DisputeResolutionStatus {
+  OPEN
+  AUTO_REVIEW
+  MANUAL_REVIEW
+  ARBITRATION
+  RESOLVED
+  CANCELLED
 }
 
 enum AdStatus {

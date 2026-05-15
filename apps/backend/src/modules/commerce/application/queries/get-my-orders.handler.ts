@@ -12,7 +12,22 @@ export class GetMyOrdersHandler implements IQueryHandler<GetMyOrdersQuery> {
     const orders = await this.prisma.order.findMany({
       where: { userId: query.userId },
       include: { 
-        orderItems: true,
+        orderItems: {
+          include: {
+            listing: {
+              include: {
+                catalogProduct: {
+                  include: {
+                    media: {
+                      orderBy: { sortOrder: 'asc' },
+                      take: 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         dispute: {
           select: { id: true, status: true }
         }

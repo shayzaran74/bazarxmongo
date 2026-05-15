@@ -11,6 +11,7 @@
         "delete": "Delete",
         "edit": "Edit",
         "loading": "Loading...",
+        "processing": "Processing...",
         "error": "An error occurred",
         "success": "Successful",
         "close": "Close",
@@ -194,6 +195,7 @@
         "accountStatus": "Account Status",
         "updating": "Updating...",
         "updateProfile": "Update Profile",
+        "updateCompanyInfo": "Update Company Information",
         "registeredAddresses": "Registered Addresses",
         "addNewAddress": "Add New Address",
         "noAddressFound": "You haven't added an address yet.",
@@ -239,7 +241,9 @@
         "addressUpdatedSuccess": "Address updated",
         "addressAddedSuccess": "New address added",
         "deleteConfirm": "Are you sure you want to delete?",
-        "addressDeletedSuccess": "Address deleted"
+        "addressDeletedSuccess": "Address deleted",
+        "vendorStatusNote": "Your store and tax information may be submitted for administrator approval after updating.",
+        "selectNeighborhood": "Select Neighborhood"
     },
     "location": {
         "title": "Where should we deliver?",

@@ -4,13 +4,12 @@ import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/co
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { Prisma } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
-import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
+import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { PlaceBidCommand } from './application/commands/place-bid.command';
-import { DrawLotteryCommand } from './application/commands/draw-lottery.command';
 import { PlaceBidDto } from './place-bid.dto';
-import { DrawLotteryDto } from './draw-lottery.dto';
+import { AuctionStatus } from './domain/enums/auction-status.enum';
 import { FinancialGatewayService } from '../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../audit/application/audit-log.service';
 
@@ -47,13 +46,16 @@ export class AuctionController {
     const limit = parseInt(query.limit ?? '20', 10) || 20;
     const skip  = (page - 1) * limit;
 
-    const statusFilter = (query.status ?? 'ACTIVE').toUpperCase();
+    const requestedStatus = (query.status ?? 'ACTIVE').toUpperCase();
+    const validStatus = Object.values(AuctionStatus).includes(requestedStatus as AuctionStatus)
+      ? (requestedStatus as AuctionStatus)
+      : AuctionStatus.ACTIVE;
     const now = new Date();
 
     const where: Prisma.AuctionWhereInput =
-      statusFilter === 'ACTIVE'
-        ? { status: 'ACTIVE', startTime: { lte: now }, endTime: { gte: now } }
-        : { status: statusFilter as any };
+      validStatus === AuctionStatus.ACTIVE
+        ? { status: AuctionStatus.ACTIVE, startTime: { lte: now }, endTime: { gte: now } }
+        : { status: validStatus };
 
     const [items, total] = await Promise.all([
       this.prisma.auction.findMany({
@@ -242,12 +244,4 @@ export class AuctionController {
     return { success: true, message: 'Kazanım onaylandı' };
   }
 
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @ApiOperation({ summary: 'Piyango çekilişi (Admin)' })
-  @Post('draw')
-  async drawLottery(@Body() dto: DrawLotteryDto) {
-    return this.commandBus.execute(new DrawLotteryCommand(dto.lotteryId));
-  }
 }

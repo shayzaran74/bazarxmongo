@@ -29,7 +29,7 @@ export const useVendorOrders = () => {
   })
 
   const pendingCount = computed(() =>
-    orders.value.filter((o: any) => ['PENDING', 'PROCESSING', 'PREPARING'].includes(o.status)).length
+    orders.value.filter((o: any) => ['PENDING', 'PAID', 'PROCESSING', 'PREPARING'].includes(o.status)).length
   )
 
   const shippedCount = computed(() =>
@@ -38,7 +38,7 @@ export const useVendorOrders = () => {
 
   const totalRevenue = computed(() =>
     orders.value
-      .filter((o: any) => o.status === 'COMPLETED' || o.status === 'DELIVERED')
+      .filter((o: any) => ['COMPLETED', 'DELIVERED', 'PAID'].includes(o.status))
       .reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0)
   )
 
@@ -48,7 +48,7 @@ export const useVendorOrders = () => {
       const res = await $api<any>(
         '/api/vendors/orders'
       )
-      orders.value = res.data || []
+      orders.value = res.data?.items || []
     } catch {
       $toast.error('Siparişler yüklenemedi')
     } finally {
@@ -62,7 +62,7 @@ export const useVendorOrders = () => {
     item: any
   ) => {
     try {
-      await $api(`/api/orders/items/${item.id}/ship`, {
+      await $api(`/api/orders/${item.id}/ship`, {
         method: 'POST',
         body: {
           trackingNumber: item.trackingNumber,

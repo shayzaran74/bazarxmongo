@@ -104,14 +104,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 import {
   ChevronRightIcon,
   PrinterIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
-  TrashIcon
+  TrashIcon,
 } from '@heroicons/vue/24/outline'
 import AdminOrderItemList from '~/components/admin/order/AdminOrderItemList.vue'
 import AdminOrderShippingForm from '~/components/admin/order/AdminOrderShippingForm.vue'
@@ -121,21 +121,19 @@ import { useAdminOrderDetail } from '~/composables/useAdminOrderDetail'
 
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin'
+  middleware: 'admin',
 })
 
 const route = useRoute()
 const {
   order, loading, updating, shippingUpdate,
   parsedAddress, subTotal, shippingCost,
-  fetchOrder, deleteOrder, rejectOrder, updateStatus
-} = useAdminOrderDetail(route.params.id)
+  fetchOrder, deleteOrder, rejectOrder, updateStatus,
+} = useAdminOrderDetail(route.params.id as string)
 
 const handleDelete = async () => {
   const success = await deleteOrder()
-  if (success) {
-    navigateTo('/admin/orders')
-  }
+  if (success) navigateTo('/admin/orders')
 }
 
 const printOrder = () => {

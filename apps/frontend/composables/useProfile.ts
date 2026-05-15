@@ -8,11 +8,12 @@ import { useProfileSecurity } from './useProfileSecurity'
 import { useWallet } from './useWallet'
 import { 
   UserIcon, SparklesIcon, MapPinIcon, WalletIcon, 
-  LockClosedIcon, ChartBarIcon, AdjustmentsHorizontalIcon 
+  BuildingOfficeIcon, LockClosedIcon, ChartBarIcon, AdjustmentsHorizontalIcon 
 } from '@heroicons/vue/24/outline'
 
 export const useProfile = () => {
   const authStore = useAuthStore()
+  const user = computed(() => authStore.user)
   const route = useRoute()
   const activeTab = ref(route.query.tab?.toString() || 'profile')
   const showMobileMenu = ref(false)
@@ -23,18 +24,26 @@ export const useProfile = () => {
   const security = useProfileSecurity()
   const wallet = useWallet()
 
-  const tabs = [
-    { id: 'profile', name: 'Profil Bilgileri', icon: UserIcon },
-    { id: 'loyalty', name: 'Sadakat & XP', icon: SparklesIcon },
-    { id: 'addresses', name: 'Adreslerim', icon: MapPinIcon },
-    { id: 'wallet', name: 'Cüzdan & İşlemler', icon: WalletIcon },
-    { id: 'security', name: 'Güvenlik', icon: LockClosedIcon },
-    { id: 'activity', name: 'Aktivite', icon: ChartBarIcon },
-    { id: 'preferences', name: 'Tercihler', icon: AdjustmentsHorizontalIcon }
-  ]
+  const tabs = computed(() => {
+    const baseTabs = [
+      { id: 'profile', name: 'Profil Bilgileri', icon: UserIcon },
+      { id: 'loyalty', name: 'Sadakat & XP', icon: SparklesIcon },
+      { id: 'addresses', name: 'Adreslerim', icon: MapPinIcon },
+      { id: 'wallet', name: 'Cüzdan & İşlemler', icon: WalletIcon },
+      { id: 'security', name: 'Güvenlik', icon: LockClosedIcon },
+      { id: 'activity', name: 'Aktivite', icon: ChartBarIcon },
+      { id: 'preferences', name: 'Tercihler', icon: AdjustmentsHorizontalIcon }
+    ]
+
+    if (user.value?.role === 'VENDOR') {
+      baseTabs.splice(1, 0, { id: 'company', name: 'Firma Bilgileri', icon: BuildingOfficeIcon })
+    }
+
+    return baseTabs
+  })
 
   const activeTabData = computed(() => 
-    tabs.find(t => t.id === activeTab.value) || tabs[0]
+    tabs.value.find(t => t.id === activeTab.value) || tabs.value[0]
   )
 
   const handleTabClick = (tabId: string) => {

@@ -11,6 +11,12 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 
+interface WalletBalance {
+  balanceTL: string | number;
+}
+
+const VALID_PARTICIPATION_STATUSES = ['DEPOSIT_HELD', 'APPROVED', 'ACTIVE'] as const;
+
 @CommandHandler(PlaceBidCommand)
 export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
   constructor(
@@ -30,15 +36,14 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
         auctionId_userId: { auctionId: command.auctionId, userId: command.userId },
       },
     });
-    const geçerliDurumlar = ['DEPOSIT_HELD', 'APPROVED', 'ACTIVE'];
-    if (!participation || !geçerliDurumlar.includes(participation.status)) {
+    if (!participation || !VALID_PARTICIPATION_STATUSES.includes(participation.status as typeof VALID_PARTICIPATION_STATUSES[number])) {
       throw new DomainException('Bu açık artırmaya katılım kaydınız bulunmuyor');
     }
 
     const amount = new Prisma.Decimal(command.amount);
 
     // Cüzdan bakiyesi kontrolü
-    const wallet: any = await this.financialGateway.getWallet(command.userId);
+    const wallet = (await this.financialGateway.getWallet(command.userId)) as WalletBalance;
     const balance = new Prisma.Decimal(wallet.balanceTL);
     if (balance.lessThan(amount)) {
       throw new DomainException(`Yetersiz bakiye. Mevcut: ${balance.toString()} TL, Teklif: ${amount.toString()} TL`);
@@ -49,7 +54,7 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     const createdBid = await this.prisma.$transaction(async (tx) => {
       // 1. Önceki en yüksek teklifi bul (iade için)
-      const previousBid: any = await tx.auctionBid.findFirst({
+      const previousBid = await tx.auctionBid.findFirst({
         where: { auctionId: auction.id },
         orderBy: { amount: 'desc' },
       });
@@ -66,28 +71,28 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
         idempotencyKey,
       );
 
-      // 3. Önceki teklif sahibinin parasını iade et (eğer varsa ve farklı kişiyse)
-      if (previousBid && previousBid.holdId) {
+      // 3. Önceki teklif sahibinin parasını iade et (eğer varsa)
+      if (previousBid?.holdId) {
         await this.financialGateway.releaseFunds(
           previousBid.holdId,
-          `release-bid-${previousBid.id}`
+          `release-bid-${previousBid.id}`,
         );
       }
 
       // 4. Teklifi ve artırmayı kaydet
       await tx.auction.update({
         where: { id: auction.id },
-        data: { 
+        data: {
           currentPrice: auction.getProps().currentPrice,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       const bid = AuctionBid.create(
-        auction.id, 
-        command.userId, 
-        amount, 
-        holdResult.holdId as string
+        auction.id,
+        command.userId,
+        amount,
+        holdResult.holdId as string,
       );
 
       return tx.auctionBid.create({
@@ -97,14 +102,14 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
           userId: bid.getProps().userId,
           amount: bid.getProps().amount,
           holdId: bid.getProps().holdId,
-        } as any,
+        },
         include: {
           user: {
             select: {
-              profile: { select: { firstName: true, lastName: true } }
-            }
-          }
-        }
+              profile: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
       });
     });
 
@@ -116,14 +121,14 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
       newValue: {
         amount: command.amount,
         bidId: createdBid.id,
-        holdId: (createdBid as any).holdId,
+        holdId: createdBid.holdId,
       },
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: createdBid,
-      currentPrice: auction.getProps().currentPrice.toString() 
+      currentPrice: auction.getProps().currentPrice.toString(),
     };
   }
 }

@@ -41,19 +41,29 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  user: {
-    type: Object,
-    default: () => ({})
-  },
-  parsedAddress: {
-    type: Object,
-    default: () => ({})
-  },
-  rawAddress: {
-    type: String,
-    default: ''
-  }
+<script setup lang="ts">
+interface CustomerUser {
+  email?: string
+  name?: string
+  avatar?: string
+  profile?: { firstName?: string; lastName?: string; avatar?: string }
+}
+
+interface ParsedAddress {
+  name?: string
+  address?: string
+  postalCode?: string
+  city?: string
+  country?: string
+}
+
+withDefaults(defineProps<{
+  user?: CustomerUser | null
+  parsedAddress?: ParsedAddress | null
+  rawAddress?: string
+}>(), {
+  user: () => ({}),
+  parsedAddress: () => ({}),
+  rawAddress: '',
 })
 </script>

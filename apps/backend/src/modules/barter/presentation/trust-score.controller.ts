@@ -11,6 +11,7 @@ import { RecordTrustViolationCommand, ViolationType } from '../application/comma
 import { TrustScoreCalculatorService } from '../application/services/trust-score-calculator.service';
 import { WatchtowerService } from '../application/services/watchtower.service';
 import { B2BXpRulesService, B2BXpUsageType } from '../application/services/b2b-xp-rules.service';
+import { OffboardVendorCommand } from '../application/commands/offboard-vendor.command';
 
 interface AuthenticatedUser { id: string; role: string; }
 
@@ -113,5 +114,34 @@ export class TrustScoreController {
   ) {
     const data = await this.watchtower.getFlags(vendorId, Number(limit) || 50);
     return { success: true, data };
+  }
+
+  // Master Plan v4.3 §3.4 — Çıkış mekanizması
+  // Vendor sistemi terk ederken XP komisyon payı 90 gün korunur, kalan silinir.
+  @ApiOperation({ summary: 'B2B sistemden çık — 90 gün XP koruma aktif edilir' })
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @Post('offboard')
+  async offboardVendor(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { vendorId?: string; reason?: string },
+  ) {
+    // Vendor kendi çıkışını yapabilir veya admin başkası için yapabilir
+    const targetVendorId = body.vendorId ?? (
+      await this.prisma.vendor.findFirst({ where: { userId: user.id }, select: { id: true } })
+    )?.id;
+
+    if (!targetVendorId) {
+      return { success: false, message: 'Vendor bulunamadı' };
+    }
+
+    // Sadece admin başkası için çıkış yapabilir
+    if (body.vendorId && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      return { success: false, message: 'Başka vendor için çıkış yapma yetkiniz yok.' };
+    }
+
+    const result = await this.commandBus.execute(
+      new OffboardVendorCommand(user.id, targetVendorId, body.reason),
+    );
+    return { success: true, data: result };
   }
 }

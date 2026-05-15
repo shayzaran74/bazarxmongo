@@ -45,7 +45,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
-    forbidNonWhitelisted: true,
+    forbidNonWhitelisted: false,
   }));
 
   // Global Exception Filter: Tüm 500 hatalarını detaylı loglamak için
@@ -65,6 +65,11 @@ async function bootstrap() {
 
   const port = process.env.BACKEND_PORT || 3001;
   await app.listen(port, '0.0.0.0');
+  
+  console.log('\x1b[33m%s\x1b[0m', '================================================');
+  console.log('\x1b[33m%s\x1b[0m', '   BAZARX BACKEND BAŞLADI - PORT: ' + port);
+  console.log('\x1b[33m%s\x1b[0m', '   LOGLAR AKTIF - ' + new Date().toISOString());
+  console.log('\x1b[33m%s\x1b[0m', '================================================');
   
   logger.log(`Backend ${port} portunda (Express) çalışmaya başladı.`);
 }

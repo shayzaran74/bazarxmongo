@@ -64,7 +64,7 @@
           <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ödeme Metodu</p>
             <p class="font-bold text-gray-900 uppercase text-sm">
-              {{ order.paymentMethod || 'Kredi Kartı' }}
+              {{ getPaymentMethodText(order.paymentMethod) }}
             </p>
           </div>
         </div>
@@ -76,7 +76,7 @@
           </div>
           <div class="divide-y divide-gray-100">
             <div
-              v-for="item in (order.orderItems || order.OrderItem || [])"
+              v-for="item in (order.orderItems || [])"
               :key="item.id"
               class="p-6"
             >
@@ -84,13 +84,13 @@
                 <div class="flex gap-4 items-center">
                   <div class="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
                     <img
-                      :src="resolveImageUrl(item.productImage || item.Listing?.CatalogProduct?.images?.[0])"
+                      :src="resolveImageUrl(item.productImage || item.listing?.catalogProduct?.media?.[0]?.url)"
                       class="w-full h-full object-cover"
                     >
                   </div>
                   <div>
                     <h3 class="font-bold text-gray-900 leading-tight mb-1">
-                      {{ item.productName || item.Listing?.CatalogProduct?.name }}
+                      {{ item.productName || item.listing?.catalogProduct?.name }}
                     </h3>
                     <p class="text-sm text-gray-500">Adet: {{ item.quantity }}</p>
                     <p class="text-sm font-bold text-primary-600">{{ formatPrice(item.price) }}</p>
@@ -150,6 +150,7 @@ const getStatusBadgeClass = (status: string) => {
     case 'PROCESSING': return `${base} bg-blue-100 text-blue-700`
     case 'SHIPPED': return `${base} bg-purple-100 text-purple-700`
     case 'DELIVERED': return `${base} bg-green-100 text-green-700`
+    case 'PAID': return `${base} bg-emerald-100 text-emerald-700`
     case 'CANCELLED': return `${base} bg-red-100 text-red-700`
     default: return `${base} bg-gray-100 text-gray-700`
   }
@@ -161,8 +162,19 @@ const getStatusText = (status: string) => {
     'PROCESSING': 'Hazırlanıyor',
     'SHIPPED': 'Kargoya Verildi',
     'DELIVERED': 'Teslim Edildi',
+    'PAID': 'Ödendi',
     'CANCELLED': 'İptal Edildi'
   }
   return map[(status || '').toUpperCase()] || status
+}
+
+const getPaymentMethodText = (method?: string) => {
+  const map: Record<string, string> = {
+    'WALLET': 'Cüzdan',
+    'CREDIT_CARD': 'Kredi Kartı',
+    'BARTER': 'Barter',
+    'CASH_ON_DELIVERY': 'Kapıda Ödeme'
+  }
+  return map[(method || '').toUpperCase()] || method || 'Kredi Kartı'
 }
 </script>

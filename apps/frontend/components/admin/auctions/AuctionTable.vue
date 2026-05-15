@@ -8,20 +8,24 @@ defineProps<{
 
 const emit = defineEmits(['edit', 'view', 'delete', 'advance'])
 
-const getStatusText = (status: string) => {
-  const map: Record<string, string> = { 'Active': 'Aktif', 'Ended': 'Bitti', 'Completed': 'Tamamlandı', 'Cancelled': 'İptal' }
-  return map[status] || status
+const STATUS_TEXT: Record<string, string> = {
+  SCHEDULED: 'Planlandı',
+  ACTIVE: 'Aktif',
+  ENDED: 'Bitti',
+  COMPLETED: 'Tamamlandı',
+  CANCELLED: 'İptal',
 }
 
-const getStatusClass = (status: string) => {
-  const map: Record<string, string> = {
-    'Active': 'bg-green-50 text-green-600',
-    'Ended': 'bg-amber-50 text-amber-600',
-    'Completed': 'bg-blue-50 text-blue-600',
-    'Cancelled': 'bg-red-50 text-red-600'
-  }
-  return map[status] || 'bg-gray-50 text-gray-600'
+const STATUS_CLASS: Record<string, string> = {
+  SCHEDULED: 'bg-indigo-50 text-indigo-600',
+  ACTIVE: 'bg-green-50 text-green-600',
+  ENDED: 'bg-amber-50 text-amber-600',
+  COMPLETED: 'bg-blue-50 text-blue-600',
+  CANCELLED: 'bg-red-50 text-red-600',
 }
+
+const getStatusText = (status: string) => STATUS_TEXT[status] ?? status
+const getStatusClass = (status: string) => STATUS_CLASS[status] ?? 'bg-gray-50 text-gray-600'
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '-'
@@ -80,7 +84,7 @@ const formatDate = (dateString: string) => {
             </td>
             <td class="px-8 py-5 text-right">
               <div class="flex items-center justify-end gap-2">
-                <button v-if="auction.status === 'Completed'" class="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:scale-110 transition-transform" @click="$emit('advance', auction.id)" title="Sonraki Kazana Geç">
+                <button v-if="auction.status === 'ENDED' || auction.status === 'COMPLETED'" class="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:scale-110 transition-transform" title="Sıradaki Kazana Geç" @click="$emit('advance', auction.id)">
                   <ForwardIcon class="w-4 h-4" />
                 </button>
                 <button class="p-2.5 bg-gray-50 text-gray-400 hover:text-primary-600 rounded-xl hover:scale-110 transition-transform" @click="$emit('edit', auction)">

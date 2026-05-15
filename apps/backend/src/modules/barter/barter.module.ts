@@ -27,6 +27,7 @@ import { FinalizeSwapHandler } from './application/commands/finalize-swap.handle
 import { OpenDisputeHandler } from './application/commands/open-dispute.handler';
 import { ResolveDisputeHandler } from './application/commands/resolve-dispute.handler';
 import { RegisterBarterHandler } from './application/commands/register-barter.handler';
+import { OffboardVendorHandler } from './application/commands/offboard-vendor.handler';
 
 // Query handlers
 import { GetVendorTrustScoreHandler } from './application/queries/get-vendor-trust-score.handler';
@@ -42,6 +43,7 @@ import { TrustScoreCalculatorService } from './application/services/trust-score-
 import { TrustScoreRecalculationService } from './application/services/trust-score-recalculation.service';
 import { WatchtowerService } from './application/services/watchtower.service';
 import { B2BXpRulesService } from './application/services/b2b-xp-rules.service';
+import { DisputeResolutionSchedulerService } from './application/services/dispute-resolution-scheduler.service';
 
 // Repositories & Mappers
 import { PrismaTradeOfferRepository } from './infrastructure/persistence/prisma-trade-offer.repository';
@@ -72,6 +74,7 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     TrustScoreRecalculationService,
     WatchtowerService,
     B2BXpRulesService,
+    DisputeResolutionSchedulerService,
     // Handlers
     AcceptTradeOfferHandler,
     CreateSurplusItemHandler,
@@ -86,6 +89,7 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     OpenDisputeHandler,
     ResolveDisputeHandler,
     RegisterBarterHandler,
+    OffboardVendorHandler,
     GetBarterInfoHandler,
     GetMyBarterChainsHandler,
     GetMyBarterOffersHandler,

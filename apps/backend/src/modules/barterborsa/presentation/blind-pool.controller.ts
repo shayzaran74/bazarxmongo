@@ -89,13 +89,15 @@ export class BlindPoolController {
     const unitPrice  = Number(pool?.entries[0]?.listing?.price ?? 0);
     const totalValue = unitPrice * body.quantity;
 
+    // Master Plan v4.3 §4 — BarterBorsa: tier'dan bağımsız sabit %6 sistem yönetim bedeli
     const commBreakdown = await this.commission.calculate({
       vendorId:           vendor.id,
       transactionAmount:  totalValue,
-      isGroupTransaction: true,  // BarterBorsa = grup içi → %6
-      xpToApply:          body.xpToApply ?? 0,
+      isGroupTransaction: true,
+      xpToApply:          0,          // BarterBorsa havuz işleminde XP indirimi yok
       referenceId:        poolId,
       referenceType:      'TRADE',
+      overrideRate:       6,          // §4 sabit oran
     });
 
     return {

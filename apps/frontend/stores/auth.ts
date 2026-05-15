@@ -31,7 +31,12 @@ export const useAuthStore = defineStore('auth', {
     isSuperAdmin: (state) => state.user?.role === 'SUPER_ADMIN',
     isVendor: (state) => state.user?.role === 'VENDOR' || state.user?.role === 'ADMIN',
     isPremium: (state) => !!state.user?.isPremium,
-    fullName: (state) => state.user ? `${state.user.firstName} ${state.user.lastName}` : '',
+    fullName: (state) => {
+      if (!state.user) return ''
+      const firstName = state.user.firstName || (state.user as any).profile?.firstName || ''
+      const lastName = state.user.lastName || (state.user as any).profile?.lastName || ''
+      return (firstName || lastName) ? `${firstName} ${lastName}`.trim() : 'İsimsiz Kullanıcı'
+    },
     avatarUrl: (state) => state.user?.avatar || '',
     currentXP: (state) => state.user?.loyalty?.xp || 0,
     currentLevel: (state) => state.user?.loyalty?.level || 1,

@@ -8,6 +8,7 @@ import { AdCampaignController } from './presentation/ad-campaign.controller';
 import { AdCampaignVendorController } from './presentation/ad-campaign-vendor.controller';
 import { AdvertisingAdminController } from './presentation/advertising-admin.controller';
 import { SettingsController } from './presentation/settings.controller';
+import { B2BAdPackageController } from './presentation/b2b-ad-package.controller';
 
 import { CreateAdCampaignHandler } from './application/commands/create-ad-campaign.handler';
 import { ApproveAdCampaignHandler, RecordImpressionHandler, RecordClickHandler } from './application/commands/ad-lifecycle.handlers';
@@ -16,6 +17,7 @@ import { GetAdsForSlotHandler, GetVendorCampaignsHandler, GetAdsAdminHandler, Ge
 
 import { AdAuctionService } from './application/services/ad-auction.service';
 import { BudgetManagerService } from './application/services/budget-manager.service';
+import { B2BAdPackageService } from './application/services/b2b-ad-package.service';
 
 import { PrismaAdCampaignRepository } from './infrastructure/persistence/prisma-ad-campaign.repository';
 import { PrismaAdSlotRepository, PrismaSideAdRepository, PrismaAdCampaignMetricRepository } from './infrastructure/persistence/ad-misc.repositories';
@@ -43,14 +45,15 @@ const Repositories = [
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController],
+  controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController, B2BAdPackageController],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
     ...Repositories,
     AdAuctionService,
     BudgetManagerService,
+    B2BAdPackageService,
   ],
-  exports: [AdAuctionService],
+  exports: [AdAuctionService, B2BAdPackageService],
 })
 export class AdvertisingModule {}

@@ -1,12 +1,15 @@
 // apps/backend/src/modules/barterborsa/application/services/blind-pool.service.ts
 // Master Plan v4.3 §4 — BarterBorsa Kör Havuz + Akıllı Kota
 
-import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { WatchtowerService } from '../../../barter/application/services/watchtower.service';
 import { Decimal } from 'decimal.js';
 
 const SMART_CAP_PCT = 0.25; // Tek işlemde max %25
+
+// Master Plan v4.3 §3.1 — Havuz erişimine izin veren aidat durumları
+const POOL_ACCESS_STATUSES = ['ACTIVE', 'GRACE_PERIOD'] as const;
 
 @Injectable()
 export class BlindPoolService {
@@ -65,6 +68,10 @@ export class BlindPoolService {
     vendorId:  string;  // talep eden vendor
     quantity:  number;
   }): Promise<{ approved: boolean; maxAllowed: number; requestedQty: number }> {
+    // Master Plan v4.3 §3.1 — Aidat ödeme doğrulaması
+    // "Aidat ödemeyenler tedarik havuzuna erişemez."
+    await this.assertActiveSubscription(data.vendorId);
+
     const pool = await this.prisma.blindPool.findUnique({
       where: { id: data.poolId },
       select: { id: true, totalStock: true, availableStock: true, smartCapPct: true, isActive: true },
@@ -104,10 +111,28 @@ export class BlindPoolService {
   }
 
   // Havuz görünümü — vendor kimliği gizli, sadece stok ve kategori görünür
+  // R2 — vendorId kesinlikle response'a dahil edilmez (Blind Pool gizlilik kuralı §4)
   async getPoolView(poolId: string, requestingVendorId: string) {
     const pool = await this.prisma.blindPool.findUnique({
-      where: { id: poolId },
-      include: { entries: { include: { listing: { select: { title: true, price: true, catalogProductId: true } } } } },
+      where:   { id: poolId },
+      select: {
+        id:             true,
+        name:           true,
+        totalStock:     true,
+        availableStock: true,
+        smartCapPct:    true,
+        isActive:       true,
+        // Gizli: entries'de vendorId SEÇİLMEZ — sadece stok ve listing başlığı
+        entries: {
+          select: {
+            vendorId:  true,   // sadece isOwnEntry hesabı için; response'a dahil edilmez
+            quantity:  true,
+            listing: {
+              select: { title: true, price: true, catalogProductId: true },
+            },
+          },
+        },
+      },
     });
     if (!pool) throw new NotFoundException('Havuz bulunamadı');
 
@@ -119,15 +144,53 @@ export class BlindPoolService {
       name:           pool.name,
       totalStock:     total,
       availableStock: Number(pool.availableStock),
-      maxOrderQty:    maxOrder,  // Smart Cap limiti
+      maxOrderQty:    maxOrder,
       isActive:       pool.isActive,
-      // Gizli: her giriş için vendor kimliği saklanır
+      // vendorId hiçbir zaman dışa yansımaz — sadece "kendi girişi mi?" flag'i
       items: pool.entries.map((e) => ({
         listingTitle: e.listing?.title,
         quantity:     Number(e.quantity),
-        isOwnEntry:   e.vendorId === requestingVendorId, // sadece kendi girdilerini bilir
+        isOwnEntry:   e.vendorId === requestingVendorId,
+        // NOT: vendorId bu nesnede kasıtlı olarak bulunmuyor
       })),
     };
+  }
+
+  // Master Plan v4.3 §3.1 — Aktif B2B aidat doğrulaması
+  // Havuza erişim için vendor'ın aidatının ACTIVE veya GRACE_PERIOD olması zorunludur.
+  private async assertActiveSubscription(vendorId: string): Promise<void> {
+    const b2bData = await this.prisma.vendorB2BData.findUnique({
+      where: { vendorId },
+      select: {
+        b2bTier:               true,
+        subscriptionStatus:    true,
+        subscriptionExpiresAt: true,
+      },
+    });
+
+    if (!b2bData || b2bData.b2bTier === 'NONE') {
+      throw new ForbiddenException(
+        'Bu vendor B2B üyesi değil. Havuza erişmek için TicariTakas üyeliği zorunludur.',
+      );
+    }
+
+    if (!POOL_ACCESS_STATUSES.includes(b2bData.subscriptionStatus as 'ACTIVE' | 'GRACE_PERIOD')) {
+      throw new ForbiddenException(
+        'Aidat ödemesi aktif değil. Tedarik havuzuna erişim için yıllık aidatınızı yenileyin.',
+      );
+    }
+
+    // Vade kontrolü — expires geçmişse GRACE_PERIOD olsa bile reddet
+    if (b2bData.subscriptionExpiresAt && b2bData.subscriptionExpiresAt < new Date()) {
+      // Otomatik EXPIRED'a düşür (idempotent)
+      await this.prisma.vendorB2BData.update({
+        where: { vendorId },
+        data:  { subscriptionStatus: 'EXPIRED' },
+      });
+      throw new ForbiddenException(
+        'Aidat süresi doldu. Tedarik havuzuna erişim için aidatınızı yenileyin.',
+      );
+    }
   }
 
   // Grup içi havuzları listele

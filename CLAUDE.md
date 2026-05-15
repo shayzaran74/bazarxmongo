@@ -49,6 +49,42 @@ BazarX is a commercial barter/trading platform built with a modern monorepo arch
 
 ## 📜 Architecture Stabilization History
 
+### Master Plan v4.3 — Sprint 3: Orta Öncelik + Güvenlik (Mayıs 2026)
+**Amaç:** Delta raporundaki orta öncelikli 5 backend maddesi + 2 güvenlik notu kapatıldı.
+
+- **M9 — BlindPool %6 Sabit Oran (§4):** `CommissionInput.overrideRate` alanı eklendi. `BlindPoolController` artık `overrideRate: 6` gönderiyor — tier bağımsız sabit BarterBorsa sistem yönetim bedeli. Tier'dan bağımsız, XP indirimi yok. ✅
+- **M10 — Ekosistem Yönetim Paneli (§4):** `GetEcosystemDashboardQuery/Handler` — owner/admin güvenlik kontrolü, her üye için TrustScore + son 30 gün takas sayısı + aktif ilan sayısı + son aktivite tarihi. Özet (ort. TrustScore, dondurulmuş üye sayısı, toplam işlem). `GET /ecosystem/:id/dashboard` endpoint. VendorModule'e kaydedildi. ✅
+- **M11 — %80 Ciro Eşiği Bildirimi (§2.7):** `SubscriptionRenewalService.notifyNearBreakeven()` gerçek implementasyon: MenuUsage bazlı aylık ciro kontrolü, breakeven×0.80 eşiği, 23 saat spam koruması, `AuditLogService.UPGRADE_THRESHOLD_NEAR` kaydı. AuditModule `@Global()` olduğu için import gerekmedi. ✅
+- **M12 — Çıkış Mekanizması 90 Gün XP (§3.4):** `OffboardVendorCommand/Handler` — açık dispute varken çıkış bloğu, komisyon XP'ye 90 gün TTL, diğer XP'leri hemen sıfır, BlindPool girişlerini kapat, `VendorB2BData.subscriptionStatus = EXPIRED`. `POST /trust-score/offboard` endpoint (vendor kendi + admin başkası için). ✅
+- **M13 — Gelir Raporlama Servisi (§5.1):** `RevenueReportingService` — aylık/yıllık konsolide 10 gelir kalemi. BazarX (aidat+satıcıKom+hizmet+reklam), TicariTakas (aidat+swap kom+reklam), BarterBorsa (SaaS+%6 BlindPool). `GET /admin/tax/revenue-report` + `/yearly`. TaxModule'e kaydedildi. ✅
+- **R1 — KDV Matrah Güvenlik Yorumu:** `TaxCalculatorService.calculateBazarXTax()` satır 57'ye §5.2 KDV matrah kuralını açıklayan ⚠️ yorum eklendi — bakım sırasında menü tutarına uygulanma riskini önlemek için. ✅
+- **R2 — BlindPool vendorId Maskeleme (§4):** `BlindPoolService.getPoolView()`'da `entries: { include }` → `entries: { select }` değiştirildi. `vendorId` response nesnesinden çıkarıldı, sadece `isOwnEntry` boolean'ı expose ediliyor. ✅
+
+### Master Plan v4.3 — Sprint 2: Frontend UX Katmanı (Mayıs 2026)
+**Amaç:** Delta raporundaki eksik frontend sayfalarını ve composable'ları eklemek.
+
+- **M7 — Referans Paneli (§2.6):** `useReferral` composable (`GET /api/v1/users/me/referral-stats`, `POST /me/referral-code`). `pages/membership/referrals.vue` — 3 kişi sayacı, ilerleme çubuğu, tier bazlı adım ödülleri, kopyalanabilir link. Backend `user.controller.ts`'e `GET me/referral-stats` + `POST me/referral-code` endpoint'i eklendi. ✅
+- **M8 — TrustScore Dashboard (§3.3):** `pages/ticaritakas/trust-score.vue` — mevcut `useTrustScore` composable üzerine: toplam skor (100 üzerinden), 3 bileşen bar (Ticari %40, XP %30, Uyumluluk %30), tier avantaj grid (komisyon, grup içi, havuz limiti, ihlal sayısı), dondurulmuş hesap uyarısı. ✅
+- **M14 — Simülatör Genişletme (§6):** `pages/simulator.vue` tam yeniden yazım — Tier Dağılımı grid (8 tile, %100 validasyon), BarterBorsa bölümü (5 slider), 3. platform panel (BB SaaS + %6 işlem kom.), vergi tablosu (BX KDV / TT KDV+Stopaj / KV+Damga), SVG bar grafik (gelir/gider 10 kolon), SVG kırılım noktası çizgi grafiği. ✅
+- **M15 — Komisyon Hesaplayıcı (§3.2):** `pages/ticaritakas/commission-calc.vue` — tier seçici, işlem tutarı slider, grup içi toggle (XP bloklar), XP kullanım slider (%50 cap görsel), sonuç breakdown (nakit + XP ayrımı), oranlar referans tablosu. ✅
+- **M16 — Watchtower Admin UI (§3.4):** `pages/admin/watchtower.vue` — PriceFloor/SmartCap bayrak listesi, severity badge (HIGH/MEDIUM/LOW), filtre (ALL/PRICE_FLOOR/SMART_CAP), admin middleware koruması. ✅
+- **M17 — BarterBorsa Pools UI (§4):** `pages/barterborsa/pools.vue` — Kör havuz listesi (kimlik gizli notu), stok dolu/boş bar, SmartCap %25 uyarısı, talep miktarı input + gönder butonu, `POST /barterborsa/pools/:id/request` entegrasyonu. ✅
+
+### Master Plan v4.3 — Sprint 1: B2B Backend Sertleştirme (Mayıs 2026)
+**Amaç:** Master Plan §3-§4 delta raporundan çıkan 6 kritik backend eksiğini kapatmak.
+
+- **M1 — Aidat Ödeme Doğrulama (§3.1):** `VendorB2BData`'ya `subscriptionStatus`, `subscriptionStartedAt`, `subscriptionExpiresAt`, `lastPaidAt`, `firstTransactionAt` alanları + `B2BSubscriptionStatus` enum (ACTIVE/GRACE_PERIOD/EXPIRED/SUSPENDED). `BlindPoolService.requestFromPool()` öncesi `assertActiveSubscription()` kontrolü; vade geçenleri otomatik EXPIRED'a düşürür, ForbiddenException atar. ✅
+- **M2 — 72 Saat Uyuşmazlık Otomasyonu (§3.4):** `DisputeResolutionStatus` enum (OPEN/AUTO_REVIEW/MANUAL_REVIEW/ARBITRATION/RESOLVED/CANCELLED) + `DISPUTE_TIMINGS` sabitleri. `DisputeResolutionSchedulerService` — 15 dakikada bir state geçişi: OPEN→AUTO_REVIEW (24h), AUTO_REVIEW→RESOLVED/MANUAL_REVIEW (delil dengesine göre), MANUAL_REVIEW→ARBITRATION (48h). Tüm geçişler `AuditLogService` ile şifreli loglanır. `OpenDisputeHandler` artık `resolutionDeadlineAt` set ediyor. ✅
+- **M3 — B2B 50/25/25 XP Enforcement (§3.3):** `CommissionEngineService.calculate()`'a XP allowance kontrolü eklendi — komisyonun max %50'si XP, vendor.userId üzerinden `UserLevel.currentXp` bakiye doğrulaması. Aşılırsa `BadRequestException`. ✅
+- **M4 — İlk İşlem Kuralı (§3.4):** `CommissionInput.isFirstTransaction` flag'i; explicit verilmezse `VendorB2BData.firstTransactionAt`'tan türetilir. İlk işlemde XP kullanımı kapalı. `FinalizeSwapHandler` trade tamamlandığında initiator+receiver için `firstTransactionAt`'ı işaretler. `CommissionEngineService.markFirstTransaction()` helper. ✅
+- **M5 — Tek Seviye Referans Guard (§3.4):** `ReferralService.processReferral()` karşılıklı referans (A→B varsa B→A) engelleme eklendi. ✅
+- **M6 — B2B Reklam Paketleri (§3.2):** `B2BAdPackageType` enum + `B2B_AD_PACKAGES` sabit konfig (PRIME_1: 6K/22K, PRIME_2: 8K/30K, PRIME_3: 10K/38K, PRIME_4: 12K/46K). `B2BAdPackageService.purchasePackage()` — vendor onay + B2B aidat kontrolü + `AdCampaign` oluşturma. `B2BAdPackageController` — `GET /b2b/ad-packages`, `GET /:type`, `POST /purchase`. ✅
+
+⚠️ **Migration gerekli:** `pnpm prisma:migrate dev --name sprint1_b2b_subscription_dispute_packages`
+   - `B2BSubscriptionStatus` enum eklendi
+   - `VendorB2BData`: 5 yeni alan + `(subscriptionStatus, subscriptionExpiresAt)` composite index
+   - `BarterDisputeLog.status` artık `DisputeResolutionStatus` enum değerlerini taşır (mevcut "OPEN" string'leri uyumlu)
+
 ### BazarX Go — Faz 1-4 Entegrasyonu (Mayıs 2026)
 **Amaç:** İki ayrı dünyayı (E-ticaret + Restoran) tek vendor dashboard altında birleştirme.
 

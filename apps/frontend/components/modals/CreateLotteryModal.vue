@@ -19,12 +19,9 @@
             <XMarkIcon class="h-6 w-6" />
           </button>
         </div>
-        
+
         <!-- Form -->
-        <form
-          class="space-y-6"
-          @submit.prevent="saveLottery"
-        >
+        <form class="space-y-6" @submit.prevent="saveLottery">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Çekiliş Başlığı *</label>
@@ -38,149 +35,80 @@
             </div>
 
             <div class="md:col-span-2">
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Ödül İlanı (Veritabanından Seç)</label>
-              <select
-                v-model="form.listingId"
-                class="form-input-premium"
-              >
-                <option value="">
-                  İlan Seçin (İsteğe Bağlı)
-                </option>
-                <option
-                  v-for="l in listings"
-                  :key="l.id"
-                  :value="l.id"
-                >
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Ödül İlanı (İsteğe Bağlı)</label>
+              <select v-model="form.listingId" class="form-input-premium">
+                <option value="">İlan Seçin (İsteğe Bağlı)</option>
+                <option v-for="l in listings" :key="l.id" :value="l.id">
                   {{ l.name }} - {{ formatPrice(l.price || 0) }}
                 </option>
               </select>
+              <p v-if="listingsError" class="text-xs text-red-500 mt-1 ml-1">{{ listingsError }}</p>
 
-              <!-- Listing Preview -->
-              <div
-                v-if="selectedListing"
-                class="mt-4 flex items-center p-3 bg-gray-50 rounded-[2rem] border border-gray-100"
-              >
+              <div v-if="selectedListing" class="mt-4 flex items-center p-3 bg-gray-50 rounded-[2rem] border border-gray-100">
                 <img
                   :src="resolveImageUrl(selectedListing.images?.[0] || '/placeholder.png')"
                   class="w-16 h-16 rounded-2xl object-cover shadow-sm mr-4"
                 >
                 <div>
-                  <p class="text-sm font-bold text-gray-900">
-                    {{ selectedListing.name }}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    {{ formatPrice(selectedListing.price || 0) }}
-                  </p>
+                  <p class="text-sm font-bold text-gray-900">{{ selectedListing.name }}</p>
+                  <p class="text-xs text-gray-500">{{ formatPrice(selectedListing.price || 0) }}</p>
                 </div>
               </div>
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Bilet Fiyatı (₺) *</label>
-              <input
-                v-model.number="form.ticketPrice"
-                type="number"
-                step="0.01"
-                required
-                class="form-input-premium"
-              >
+              <input v-model.number="form.ticketPrice" type="number" step="0.01" required class="form-input-premium">
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Ödül Değeri (₺)</label>
-              <input
-                v-model.number="form.prizeValue"
-                type="number"
-                step="0.01"
-                class="form-input-premium"
-              >
+              <input v-model.number="form.prizeValue" type="number" step="0.01" class="form-input-premium">
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Hane Sayısı (Digits) *</label>
-              <select
-                v-model.number="form.ticketDigits"
-                class="form-input-premium"
-              >
-                <option :value="3">
-                  3 Haneli (000-999)
-                </option>
-                <option :value="4">
-                  4 Haneli (0000-9999)
-                </option>
-                <option :value="5">
-                  5 Haneli (00000-99999)
-                </option>
+              <select v-model.number="form.ticketDigits" class="form-input-premium">
+                <option :value="3">3 Haneli (000-999)</option>
+                <option :value="4">4 Haneli (0000-9999)</option>
+                <option :value="5">5 Haneli (00000-99999)</option>
               </select>
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Bilet Başı Numara *</label>
-              <select
-                v-model.number="form.numbersPerTicket"
-                class="form-input-premium"
-              >
-                <option :value="1">
-                  1 Numara (Standart)
-                </option>
-                <option :value="3">
-                  3 Numara
-                </option>
-                <option :value="6">
-                  6 Numara
-                </option>
-                <option :value="9">
-                  9 Numara
-                </option>
+              <select v-model.number="form.numbersPerTicket" class="form-input-premium">
+                <option :value="1">1 Numara (Standart)</option>
+                <option :value="3">3 Numara</option>
+                <option :value="6">6 Numara</option>
+                <option :value="9">9 Numara</option>
               </select>
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Toplam Bilet Havuzu *</label>
-              <input
-                v-model.number="form.totalTickets"
-                type="number"
-                required
-                class="form-input-premium"
-                placeholder="Örn: 1000"
-              >
+              <input v-model.number="form.totalTickets" type="number" required class="form-input-premium" placeholder="Örn: 1000">
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Kişi Başı Maks. Bilet *</label>
-              <input
-                v-model.number="form.maxTicketsPerUser"
-                type="number"
-                required
-                class="form-input-premium"
-                placeholder="Örn: 10"
-              >
+              <input v-model.number="form.maxTicketsPerUser" type="number" required class="form-input-premium" placeholder="Örn: 10">
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Başlangıç Tarihi *</label>
-              <input
-                v-model="form.startTime"
-                type="datetime-local"
-                required
-                class="form-input-premium"
-              >
+              <input v-model="form.startTime" type="datetime-local" required class="form-input-premium">
             </div>
 
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Bitiş Tarihi *</label>
-              <input
-                v-model="form.endTime"
-                type="datetime-local"
-                required
-                class="form-input-premium"
-              >
+              <input v-model="form.endTime" type="datetime-local" required class="form-input-premium">
             </div>
           </div>
 
           <div class="pt-6">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               :disabled="saving"
               class="w-full bg-primary-600 hover:bg-primary-700 text-white py-5 rounded-3xl font-black uppercase tracking-widest transition-all shadow-xl shadow-primary-500/20 active:scale-95 disabled:opacity-50"
             >
@@ -194,29 +122,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, useAppImage, useRuntimeConfig, useAuthStore, useNuxtApp } from '#imports'
+import { computed, ref, onMounted } from '#imports'
 import XMarkIcon from '@heroicons/vue/24/outline/XMarkIcon'
+import { useAppImage } from '~/composables/useAppImage'
+
+interface ListingItem {
+  id: string
+  name: string
+  price?: number
+  images?: string[]
+}
+
+interface LotteryForm {
+  title: string
+  listingId: string
+  ticketPrice: number
+  prizeValue: number
+  totalTickets: number
+  maxTicketsPerUser: number
+  ticketDigits: number
+  numbersPerTicket: number
+  startTime: string
+  endTime: string
+}
+
+const props = defineProps<{ lottery?: Record<string, unknown> | null }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
 
 const { resolveImageUrl } = useAppImage()
-
-const props = defineProps({
-  lottery: { type: Object, default: null }
-})
-const emit = defineEmits(['close', 'saved'])
-
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
+const { $api } = useApi()
 const { $toast } = useNuxtApp()
 
 const saving = ref(false)
-const listings = ref([])
+const listings = ref<ListingItem[]>([])
+const listingsError = ref('')
 const isEdit = computed(() => !!props.lottery)
-const selectedListing = computed(() => {
-  if (!form.value.listingId) return null
+
+const selectedListing = computed<ListingItem | undefined>(() => {
+  if (!form.value.listingId) return undefined
   return listings.value.find(l => l.id === form.value.listingId)
 })
 
-const form = ref({
+const form = ref<LotteryForm>({
   title: '',
   listingId: '',
   ticketPrice: 0,
@@ -227,41 +174,39 @@ const form = ref({
   numbersPerTicket: 1,
   startTime: '',
   endTime: '',
-  status: 'ACTIVE'
 })
 
 const fetchListings = async () => {
-    try {
-        const res = await $fetch('/api/v1/listings', { 
-          baseURL: config.public.apiBase,
-          headers: { Authorization: `Bearer ${authStore.token}` }
-        }) as any
-        listings.value = res.data?.items || res.data || []
-    } catch (e) {
-      // intentionally empty
-    }
+  listingsError.value = ''
+  try {
+    const res = await $api<{ items?: ListingItem[] } | ListingItem[]>('/api/v1/listings', {
+      query: { limit: 100 },
+    })
+    listings.value = (res as any).data?.items || (res as any).data || []
+  } catch {
+    listingsError.value = 'İlanlar yüklenemedi. Kimlik doğrulama kontrol edin.'
+  }
 }
 
 const initForm = () => {
   if (props.lottery) {
+    const l = props.lottery
     form.value = {
-      title: props.lottery.title || '',
-      listingId: props.lottery.listingId || '',
-      ticketPrice: Number(props.lottery.ticketPrice) || 0,
-      prizeValue: Number(props.lottery.prizeValue) || 0,
-      totalTickets: props.lottery.totalTickets || 100,
-      maxTicketsPerUser: props.lottery.maxTicketsPerUser || 10,
-      ticketDigits: props.lottery.ticketDigits || 3,
-      numbersPerTicket: props.lottery.numbersPerTicket || 1,
-      startTime: props.lottery.startTime ? new Date(props.lottery.startTime).toISOString().slice(0, 16) : '',
-      endTime: props.lottery.endTime ? new Date(props.lottery.endTime).toISOString().slice(0, 16) : '',
-      status: props.lottery.status || 'ACTIVE'
+      title: (l.title as string) || '',
+      listingId: (l.listingId as string) || '',
+      ticketPrice: Number(l.ticketPrice) || 0,
+      prizeValue: Number(l.prizeValue) || 0,
+      totalTickets: (l.totalTickets as number) || 100,
+      maxTicketsPerUser: (l.maxTicketsPerUser as number) || 10,
+      ticketDigits: (l.ticketDigits as number) || 3,
+      numbersPerTicket: (l.numbersPerTicket as number) || 1,
+      startTime: l.startTime ? new Date(l.startTime as string).toISOString().slice(0, 16) : '',
+      endTime: l.endTime ? new Date(l.endTime as string).toISOString().slice(0, 16) : '',
     }
   } else {
     const now = new Date()
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-    
     form.value = {
       title: '',
       listingId: '',
@@ -273,7 +218,6 @@ const initForm = () => {
       numbersPerTicket: 1,
       startTime: tomorrow.toISOString().slice(0, 16),
       endTime: nextWeek.toISOString().slice(0, 16),
-      status: 'ACTIVE'
     }
   }
 }
@@ -282,32 +226,27 @@ const saveLottery = async () => {
   saving.value = true
   try {
     const method = isEdit.value ? 'PUT' : 'POST'
-    const url = isEdit.value ? `/api/v1/admin/lotteries/${props.lottery.id}` : '/api/v1/admin/lotteries'
-    
-    const res = await $fetch(url, {
+    const url = isEdit.value
+      ? `/api/v1/admin/lotteries/${props.lottery!.id}`
+      : '/api/v1/admin/lotteries'
+
+    await $api(url, {
       method,
-      baseURL: config.public.apiBase,
-      headers: { Authorization: `Bearer ${authStore.token}` },
-      body: {
-        ...form.value,
-        status: form.value.status.toUpperCase()
-      }
+      body: { ...form.value, listingId: form.value.listingId || undefined },
     })
-    
-    if (res.success) {
-      $toast.success('Başarıyla kaydedildi')
-      emit('saved')
-    }
-  } catch (e) {
-    $toast.error(e.data?.error || 'Hata oluştu')
+
+    $toast.success('Başarıyla kaydedildi')
+    emit('saved')
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string } }
+    $toast.error(err?.data?.message || 'Hata oluştu')
   } finally {
     saving.value = false
   }
 }
 
-const formatPrice = (p) => {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p)
-}
+const formatPrice = (p: number) =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p)
 
 onMounted(() => {
   initForm()
@@ -326,7 +265,6 @@ onMounted(() => {
   font-weight: 700;
   transition: all 0.2s;
 }
-
 .form-input-premium:focus {
   outline: none;
   border-color: #3b82f6;

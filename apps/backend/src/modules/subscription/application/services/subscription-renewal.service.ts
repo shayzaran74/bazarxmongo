@@ -3,6 +3,7 @@
 
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { AuditLogService } from '../../../audit/application/audit-log.service';
 
 // Her gece 01:00'de çalışır
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 saat
@@ -12,7 +13,14 @@ export class SubscriptionRenewalService implements OnModuleInit, OnModuleDestroy
   private readonly logger = new Logger(SubscriptionRenewalService.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  // Master Plan v4.3 §2.7 — %80 eşiği bildirimi için son gönderim saklama
+  // Key: userId, Value: son bildirim timestamp (fazla spam engeli)
+  private readonly notifiedAt = new Map<string, number>();
+
+  constructor(
+    private readonly prisma:    PrismaService,
+    private readonly auditLog:  AuditLogService,
+  ) {}
 
   onModuleInit(): void {
     void this.runChecks();
@@ -84,10 +92,69 @@ export class SubscriptionRenewalService implements OnModuleInit, OnModuleDestroy
     }
   }
 
-  // Ciro eşiğinin %80'ine ulaşan kullanıcılara bildirim hazırla
+  // Master Plan v4.3 §2.7 — Ciro eşiğinin %80'ine ulaşan kullanıcılara bildirim
+  // Breakeven ciro = aylık aidatın 5 katı. %80 eşiği = aidatın 4 katı.
   private async notifyNearBreakeven(): Promise<void> {
-    // Bildirim altyapısı hazır olduğunda (Faz 8) implemente edilecek
-    // Şu an sadece loglama
-    this.logger.debug('Breakeven yakınlık kontrolü çalıştı');
+    const now        = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Aktif B2C abonelikler
+    const activeSubs = await this.prisma.userSubscription.findMany({
+      where:   { status: 'ACTIVE' },
+      include: { plan: true },
+      take:    500, // Batch limit
+    });
+
+    for (const sub of activeSubs) {
+      try {
+        // Son bildirimi en az 23 saat önce gönderdik mi? (spam önlemi)
+        const lastNotified = this.notifiedAt.get(sub.userId) ?? 0;
+        if (Date.now() - lastNotified < 23 * 60 * 60 * 1000) continue;
+
+        // Bu ayki menü kullanım cirosu
+        const usage = await this.prisma.menuUsage.findFirst({
+          where: {
+            subscriptionId: sub.id,
+            month:          now.getMonth() + 1,
+            year:           now.getFullYear(),
+          },
+          select: { usedCredit: true, totalCredit: true },
+        });
+
+        const usedCredit      = Number(usage?.usedCredit ?? 0);
+        const monthlyFee      = Number(sub.plan.monthlyFee);
+        const breakevenTarget = monthlyFee * 5;     // §2.7: ciro ≥ aidat × 5
+        const threshold80     = breakevenTarget * 0.80;
+
+        // %80 eşiğine ulaştı ama henüz %100'e ulaşmadı
+        if (usedCredit >= threshold80 && usedCredit < breakevenTarget) {
+          const progressPct = Math.round((usedCredit / breakevenTarget) * 100);
+
+          await this.auditLog.log({
+            actorId:      sub.userId,
+            action:       'UPGRADE_THRESHOLD_NEAR',
+            resourceType: 'UserSubscription',
+            resourceId:   sub.id,
+            newValue: {
+              progressPct,
+              usedCredit,
+              breakevenTarget,
+              tier:    sub.plan.tier,
+              message: `Tier yükseltme eşiğinin %${progressPct}'ine ulaştınız!`,
+            },
+          });
+
+          this.notifiedAt.set(sub.userId, Date.now());
+          this.logger.log('Breakeven yakınlık bildirimi gönderildi', {
+            userId:      sub.userId,
+            progressPct,
+            tier:        sub.plan.tier,
+          });
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        this.logger.error('Breakeven bildirim hatası', { userId: sub.userId, error: msg });
+      }
+    }
   }
 }

@@ -9,6 +9,7 @@ import { GetOrderDetailsQuery } from '../application/queries/get-order-details.q
 import { OpenOrderDisputeCommand } from '../application/commands/open-order-dispute.command';
 import { MarkOrderPreparingCommand } from '../application/commands/mark-order-preparing.command';
 import { MarkOrderReadyCommand } from '../application/commands/mark-order-ready.command';
+import { ShipOrderItemCommand } from '../application/commands/ship-order-item.command';
 import { DispatchCourierCommand } from '../../delivery/application/commands/dispatch-courier.command';
 import { OpenDisputeDto } from './dto/open-dispute.dto';
 
@@ -82,6 +83,20 @@ export class OrderController {
   @UseGuards(RolesGuard)
   async dispatchCourier(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: { courierId: string }) {
     const data = await this.commandBus.execute(new DispatchCourierCommand(id, body.courierId, user.id));
+    return { success: true, data };
+  }
+  @ApiOperation({ summary: 'Siparişi kargoya ver — VENDOR' })
+  @Post(':id/ship')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  async shipOrder(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { trackingNumber: string; carrier: string },
+  ) {
+    const data = await this.commandBus.execute(
+      new ShipOrderItemCommand(id, user.id, body.trackingNumber, body.carrier),
+    );
     return { success: true, data };
   }
 }

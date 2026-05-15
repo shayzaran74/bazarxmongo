@@ -39,9 +39,9 @@
             </div>
             <span
               class="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
-              :class="user?.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+              :class="(user?.status?.toUpperCase() === 'ACTIVE') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
             >
-              {{ user?.status === 'Active' ? $t('profile.active') : $t('profile.passive') }}
+              {{ (user?.status?.toUpperCase() === 'ACTIVE') ? $t('profile.active') : $t('profile.passive') }}
             </span>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Inject, ForbiddenException, BadRequestException } from '@nestjs/common'
 import { OpenDisputeCommand } from './open-dispute.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
+import { DisputeResolutionStatus, DISPUTE_TIMINGS } from '../../domain/enums/dispute-resolution-status.enum';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DomainException } from '@barterborsa/shared-core';
@@ -48,14 +49,19 @@ export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
       const swapRaw = await tx.swapSession.findUnique({ where: { id: command.sessionId } });
       const respondentId = swapRaw?.initiatorId === command.actorUserId ? (swapRaw?.receiverId ?? command.actorUserId) : (swapRaw?.initiatorId ?? command.actorUserId);
 
+      // Master Plan v4.3 §3.4 — Delil sunma penceresi: oluşumdan itibaren 24 saat
+      const deadlineAt = new Date(Date.now() + DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
+
       await tx.barterDisputeLog.create({
         data: {
-          swapSessionId:     command.sessionId,
-          tradeOfferId:      swapRaw?.tradeOfferId ?? '',
-          openedById:        command.actorUserId,
+          swapSessionId:        command.sessionId,
+          tradeOfferId:         swapRaw?.tradeOfferId ?? '',
+          openedById:           command.actorUserId,
           respondentId,
-          tradeValueInKurus: 0,
-          reason:            command.reason,
+          tradeValueInKurus:    0,
+          reason:               command.reason,
+          status:               DisputeResolutionStatus.OPEN,
+          resolutionDeadlineAt: deadlineAt,
         },
       });
     });

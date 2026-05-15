@@ -1,7 +1,38 @@
 // apps/backend/src/modules/commerce/application/queries/get-admin-order.handler.ts
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetAdminOrderQuery } from './get-admin-order.query';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@barterborsa/shared-persistence';
+import { GetAdminOrderQuery } from './get-admin-order.query';
+
+// Prisma payload tipi — include yapısı
+type AdminOrderPayload = Prisma.OrderGetPayload<{
+  include: {
+    orderItems: {
+      include: {
+        listing: {
+          include: {
+            catalogProduct: true;
+            vendor: { include: { company: true } };
+          };
+        };
+      };
+    };
+    statusHistory: true;
+    user: {
+      select: {
+        id: true;
+        email: true;
+        profile: { select: { firstName: true; lastName: true } };
+      };
+    };
+    vendor: {
+      include: {
+        company: { select: { name: true; taxNumber: true; taxOffice: true } };
+      };
+    };
+    invoices: true;
+  };
+}>;
 
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery> {
@@ -10,7 +41,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery> {
   async execute(query: GetAdminOrderQuery) {
     const { orderId } = query;
 
-    const order = await this.prisma.order.findUnique({
+    const order = (await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
         orderItems: {
@@ -18,56 +49,45 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery> {
             listing: {
               include: {
                 catalogProduct: true,
-                vendor: {
-                  include: { company: true }
-                }
-              }
-            }
-          }
+                vendor: { include: { company: true } },
+              },
+            },
+          },
         },
         statusHistory: true,
         user: {
           select: {
             id: true,
             email: true,
-            profile: {
-              select: {
-                firstName: true,
-                lastName: true,
-              }
-            }
-          }
+            profile: { select: { firstName: true, lastName: true } },
+          },
         },
         vendor: {
           include: {
             company: {
-              select: {
-                name: true,
-                taxNumber: true,
-                taxOffice: true,
-              }
-            }
-          }
+              select: { name: true, taxNumber: true, taxOffice: true },
+            },
+          },
         },
         invoices: true,
-      }
-    });
+      },
+    })) as AdminOrderPayload | null;
 
     if (!order) return null;
 
-    // TypeScript tip kontrolünü aşmak için 'any' cast kullanıyoruz
-    const rawOrder = order as any;
-
+    // Frontend uyumlu mapping (PascalCase alias'lar)
     return {
-      ...rawOrder,
-      User: rawOrder.user,
-      OrderItem: rawOrder.orderItems?.map((item: any) => ({
+      ...order,
+      User: order.user,
+      OrderItem: order.orderItems.map((item) => ({
         ...item,
-        Product: item.listing?.catalogProduct ? {
-          ...item.listing.catalogProduct,
-          Vendor: item.listing.vendor
-        } : null
-      }))
+        Product: item.listing?.catalogProduct
+          ? {
+              ...item.listing.catalogProduct,
+              Vendor: item.listing.vendor,
+            }
+          : null,
+      })),
     };
   }
 }

@@ -84,6 +84,16 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
       },
     });
 
+    // Master Plan v4.3 §3.4 — İlk işlem işaretle (taraflarda firstTransactionAt null ise)
+    // Bir sonraki işlemde XP kazanım/kullanım açılır.
+    await this.prisma.vendorB2BData.updateMany({
+      where: {
+        vendorId:           { in: [props.initiatorId, props.receiverId] },
+        firstTransactionAt: null,
+      },
+      data: { firstTransactionAt: new Date() },
+    });
+
     await this.auditLog.log({
       actorId:      command.actorUserId,
       action:       'SWAP_FINALIZED',

@@ -16,7 +16,22 @@ export class GetOrderDetailsHandler implements IQueryHandler<GetOrderDetailsQuer
         userId: query.userId 
       },
       include: { 
-        orderItems: true,
+        orderItems: {
+          include: {
+            listing: {
+              include: {
+                catalogProduct: {
+                  include: {
+                    media: {
+                      orderBy: { sortOrder: 'asc' },
+                      take: 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         dispute: true
       },
     });

@@ -26,7 +26,7 @@
               item.Product?.Vendor?.businessName || 'Mağaza' }}
           </p>
           <div class="flex items-center gap-2 mt-2">
-            <span :class="getStatusBadgeClass(item.status || 'Pending')">{{ getStatusText(item.status || 'Pending') }}</span>
+            <span :class="getStatusBadgeClass(item.status || 'PENDING')">{{ getStatusText(item.status || 'PENDING') }}</span>
             <span
               v-if="item.trackingNumber"
               class="text-[10px] text-gray-500 font-medium"
@@ -63,45 +63,67 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useAppImage } from '#imports'
 
-defineProps({
-  items: { type: Array, required: true },
-  subTotal: { type: Number, required: true },
-  shippingCost: { type: Number, required: true },
-  totalAmount: { type: Number, required: true }
-})
+interface OrderItemRow {
+  id: string
+  status?: string
+  trackingNumber?: string
+  shippingCarrier?: string
+  price: number | string
+  quantity: number
+  Product?: {
+    name?: string
+    image?: string
+    sku?: string
+    Vendor?: { businessName?: string }
+  } | null
+}
+
+defineProps<{
+  items: OrderItemRow[]
+  subTotal: number
+  shippingCost: number
+  totalAmount: number
+}>()
 
 const { resolveImageUrl } = useAppImage()
 
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY'
-  }).format(price || 0)
+const formatPrice = (price: number | string | undefined) =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(price) || 0)
+
+const STATUS_BADGE: Record<string, string> = {
+  PENDING: 'bg-orange-100 text-orange-700',
+  PAID: 'bg-emerald-100 text-emerald-700',
+  CONFIRMED: 'bg-blue-100 text-blue-700',
+  PROCESSING: 'bg-blue-100 text-blue-700',
+  PREPARING: 'bg-amber-100 text-amber-700',
+  READY: 'bg-cyan-100 text-cyan-700',
+  SHIPPED: 'bg-purple-100 text-purple-700',
+  DELIVERED: 'bg-green-100 text-green-700',
+  COMPLETED: 'bg-green-100 text-green-700',
+  CANCELLED: 'bg-red-100 text-red-700',
+  REFUNDED: 'bg-pink-100 text-pink-700',
 }
 
-const getStatusBadgeClass = (status) => {
-  const base = 'px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider'
-  switch (status) {
-    case 'Pending': return `${base} bg-orange-100 text-orange-700`
-    case 'Processing': return `${base} bg-blue-100 text-blue-700`
-    case 'Shipped': return `${base} bg-purple-100 text-purple-700`
-    case 'Delivered': return `${base} bg-green-100 text-green-700`
-    case 'Cancelled': return `${base} bg-red-100 text-red-700`
-    default: return `${base} bg-gray-100 text-gray-700`
-  }
+const STATUS_TEXT: Record<string, string> = {
+  PENDING: 'Beklemede',
+  PAID: 'Ödendi',
+  CONFIRMED: 'Onaylandı',
+  PROCESSING: 'Hazırlanıyor',
+  PREPARING: 'Mutfakta',
+  READY: 'Hazır',
+  SHIPPED: 'Kargoda',
+  DELIVERED: 'Teslim Edildi',
+  COMPLETED: 'Tamamlandı',
+  CANCELLED: 'İptal Edildi',
+  REFUNDED: 'İade Edildi',
 }
 
-const getStatusText = (status) => {
-  const map = {
-    'Pending': 'Beklemede',
-    'Processing': 'Hazırlanıyor',
-    'Shipped': 'Kargoda',
-    'Delivered': 'Teslim Edildi',
-    'Cancelled': 'İptal Edildi'
-  }
-  return map[status] || status
-}
+const BADGE_BASE = 'px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider'
+
+const getStatusBadgeClass = (status: string) =>
+  `${BADGE_BASE} ${STATUS_BADGE[status] ?? 'bg-gray-100 text-gray-700'}`
+const getStatusText = (status: string) => STATUS_TEXT[status] ?? status
 </script>

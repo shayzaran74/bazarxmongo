@@ -87,7 +87,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
         phone: updatedUser.profile.phone,
         city: updatedUser.profile.city,
         district: updatedUser.profile.district,
-        neighborhood: updatedUser.profile.neighborhood,
+        neighborhood: (updatedUser.profile as any).neighborhood,
         gender: updatedUser.profile.gender,
         bio: updatedUser.profile.bio,
         avatar: updatedUser.profile.avatar,

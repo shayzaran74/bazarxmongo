@@ -5,6 +5,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { PrismaService } from '@barterborsa/shared-persistence';
 import { TaxCalculatorService } from '../application/services/tax-calculator.service';
+import { RevenueReportingService } from '../application/services/revenue-reporting.service';
 
 @ApiTags('Tax')
 @ApiBearerAuth()
@@ -13,8 +14,9 @@ import { TaxCalculatorService } from '../application/services/tax-calculator.ser
 @Controller('admin/tax')
 export class TaxController {
   constructor(
-    private readonly taxCalc: TaxCalculatorService,
-    private readonly prisma:  PrismaService,
+    private readonly taxCalc:  TaxCalculatorService,
+    private readonly revenue:  RevenueReportingService,
+    private readonly prisma:   PrismaService,
   ) {}
 
   @ApiOperation({ summary: 'Aylık konsolide vergi raporu (gerçek zamanlı hesaplama)' })
@@ -84,6 +86,28 @@ export class TaxController {
         note: 'Tam vergi hesabı için mali müşavir onayı gereklidir. Bu rapor yaklaşık değerler içerir.',
       },
     };
+  }
+
+  // Master Plan v4.3 §5.1 — Konsolide gelir raporu (10 gelir kalemi)
+  @ApiOperation({ summary: 'Aylık konsolide gelir raporu — BX + TT + BB (10 kalemi)' })
+  @Get('revenue-report')
+  async getRevenueReport(
+    @Query('year')  year?:  string,
+    @Query('month') month?: string,
+  ) {
+    const now = new Date();
+    const y   = Number(year)  || now.getFullYear();
+    const m   = Number(month) || now.getMonth() + 1;
+    const data = await this.revenue.getConsolidatedReport(y, m);
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Yıllık konsolide gelir raporu (12 ay)' })
+  @Get('revenue-report/yearly')
+  async getYearlyRevenue(@Query('year') year?: string) {
+    const y    = Number(year) || new Date().getFullYear();
+    const data = await this.revenue.getYearlyReport(y);
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Vergi ön hesaplama (parametrik)' })

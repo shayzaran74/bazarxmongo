@@ -1,5 +1,5 @@
+// composables/useCreateAuction.ts
 import { ref, computed, onMounted } from 'vue'
-import { useAuthStore, useRuntimeConfig, useNuxtApp } from '#imports'
 
 export interface AuctionForm {
   productId: string
@@ -13,10 +13,34 @@ export interface AuctionForm {
   status: string
 }
 
-export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emit: any) => {
-  const authStore = useAuthStore()
-  const config = useRuntimeConfig()
-  const { $toast: toast } = useNuxtApp() as any
+interface ProductOption {
+  id: string
+  name: string
+  price?: number
+  stock?: number
+  image?: string
+}
+
+interface AuctionInput {
+  id: string
+  productId?: string
+  title?: string
+  description?: string
+  startingPrice?: number | string
+  minBidIncrement?: number
+  participationDeposit?: number | string
+  startTime?: string
+  endTime?: string
+  status?: string
+}
+
+type Emit = (event: 'close' | 'created' | 'updated', payload?: unknown) => void
+
+export const useCreateAuction = (
+  props: { auction?: AuctionInput | null; isEdit?: boolean },
+  emit: Emit,
+) => {
+  const { $toast } = useNuxtApp()
   const { $api } = useApi()
 
   const form = ref<AuctionForm>({
@@ -28,18 +52,18 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
     participationDeposit: 0,
     startTime: '',
     endTime: '',
-    status: 'Active'
+    status: 'ACTIVE',
   })
 
-  const products = ref<any[]>([])
+  const products = ref<ProductOption[]>([])
   const loading = ref(false)
   const error = ref('')
 
-  const isEditing = computed(() => props.isEdit && props.auction)
-  
-  const selectedProduct = computed(() => {
+  const isEditing = computed(() => Boolean(props.isEdit && props.auction))
+
+  const selectedProduct = computed<ProductOption | null>(() => {
     if (!form.value.productId) return null
-    return products.value.find(p => p.id === form.value.productId)
+    return products.value.find(p => p.id === form.value.productId) || null
   })
 
   const minDateTime = computed(() => {
@@ -51,13 +75,13 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
 
   const fetchProducts = async () => {
     try {
-      const response = await $api<any>('/api/v1/admin/products', {
-        query: { limit: 100 }
+      const response = await $api<{ data: ProductOption[] }>('/api/v1/admin/products', {
+        query: { limit: 100 },
       })
-      products.value = response.data || []
-    } catch (err: any) {
-      console.error('Fetch products error:', err)
-      error.value = 'Ürünler yüklenirken bir hata oluştu: ' + (err.message || err)
+      products.value = (response as any).data || []
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+      error.value = `Ürünler yüklenemedi: ${msg}`
     }
   }
 
@@ -76,8 +100,9 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
       if (!form.value.startPrice || Number(form.value.startPrice) <= 0) throw new Error('Lütfen geçerli bir başlangıç fiyatı girin')
       if (!form.value.minBidIncrement || form.value.minBidIncrement <= 0) throw new Error('Lütfen geçerli bir minimum artış miktarı girin')
       if (!form.value.endTime) throw new Error('Lütfen bitiş zamanını seçin')
+      if (!isEditing.value && !form.value.productId) throw new Error('Lütfen bir ürün seçin')
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         title: form.value.title.trim(),
         description: form.value.description.trim(),
         startPrice: parseFloat(form.value.startPrice.toString()),
@@ -85,32 +110,30 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
         participationDeposit: parseFloat(form.value.participationDeposit.toString() || '0'),
         endTime: new Date(form.value.endTime).toISOString(),
         ...(form.value.startTime ? { startTime: new Date(form.value.startTime).toISOString() } : {}),
-        ...(isEditing.value ? { status: form.value.status } : { productId: form.value.productId })
-      }
-
-      if (!isEditing.value && !form.value.productId) {
-        throw new Error('Lütfen bir ürün seçin')
+        ...(isEditing.value
+          ? { status: form.value.status }
+          : { productId: form.value.productId }),
       }
 
       if (isEditing.value) {
-        const response = await $api<any>(`/api/admin/auctions/${props.auction.id}`, {
+        const response = await $api<{ data: unknown }>(`/api/v1/admin/auctions/${props.auction!.id}`, {
           method: 'PUT',
-          body: payload
+          body: payload,
         })
-        toast.success('Açık artırma güncellendi!')
-        emit('updated', response.data)
+        $toast.success('Açık artırma güncellendi!')
+        emit('updated', (response as any).data)
       } else {
-        const response = await $api<any>('/api/v1/admin/auctions', {
+        const response = await $api<{ data: unknown }>('/api/v1/admin/auctions', {
           method: 'POST',
-          body: payload
+          body: payload,
         })
-        toast.success('Açık artırma oluşturuldu!')
-        emit('created', response.data)
+        $toast.success('Açık artırma oluşturuldu!')
+        emit('created', (response as any).data)
       }
       emit('close')
-    } catch (err: any) {
-      console.error('Save auction error:', err)
-      error.value = err.data?.error || err.message || 'İşlem sırasında bir hata oluştu'
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string }; message?: string }
+      error.value = apiErr?.data?.message || apiErr?.message || 'İşlem sırasında bir hata oluştu'
     } finally {
       loading.value = false
     }
@@ -118,17 +141,18 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
 
   onMounted(async () => {
     await fetchProducts()
-    if (isEditing.value) {
+    if (isEditing.value && props.auction) {
+      const a = props.auction
       form.value = {
-        productId: props.auction.productId,
-        title: props.auction.title,
-        description: props.auction.description || '',
-        startPrice: props.auction.startingPrice,
-        minBidIncrement: props.auction.minBidIncrement || 1.0,
-        participationDeposit: props.auction.participationDeposit || 0,
-        startTime: props.auction.startTime ? new Date(props.auction.startTime).toISOString().slice(0, 16) : '',
-        endTime: props.auction.endTime ? new Date(props.auction.endTime).toISOString().slice(0, 16) : '',
-        status: props.auction.status || 'Active'
+        productId: a.productId ?? '',
+        title: a.title ?? '',
+        description: a.description ?? '',
+        startPrice: a.startingPrice ?? '',
+        minBidIncrement: a.minBidIncrement ?? 1.0,
+        participationDeposit: Number(a.participationDeposit ?? 0),
+        startTime: a.startTime ? new Date(a.startTime).toISOString().slice(0, 16) : '',
+        endTime: a.endTime ? new Date(a.endTime).toISOString().slice(0, 16) : '',
+        status: a.status ?? 'ACTIVE',
       }
     } else {
       const defaultEndTime = new Date()
@@ -139,6 +163,6 @@ export const useCreateAuction = (props: { auction?: any, isEdit?: boolean }, emi
 
   return {
     form, products, loading, error, isEditing, selectedProduct, minDateTime,
-    setDurationPreset, handleSubmit
+    setDurationPreset, handleSubmit,
   }
 }

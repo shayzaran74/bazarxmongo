@@ -32,30 +32,25 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  paymentMethod: {
-    type: String,
-    default: ''
-  },
-  paidAt: {
-    type: String,
-    default: ''
-  },
-  paymentIntentId: {
-    type: String,
-    default: ''
-  }
+<script setup lang="ts">
+withDefaults(defineProps<{
+  paymentMethod?: string
+  paidAt?: string
+  paymentIntentId?: string
+}>(), {
+  paymentMethod: '',
+  paidAt: '',
+  paymentIntentId: '',
 })
 
-const formatDate = (date) => {
+const formatDate = (date?: string) => {
   if (!date) return ''
   return new Date(date).toLocaleString('tr-TR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 </script>

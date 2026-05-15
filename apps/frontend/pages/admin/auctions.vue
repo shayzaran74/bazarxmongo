@@ -12,10 +12,11 @@ definePageMeta({
 
 useHead({ title: 'Açık Artırma Kontrol Merkezi - BazarX Admin' })
 
-const { 
+const {
   loading, participationsLoading, activeTab, categories, filters,
   filteredAuctions, participations, stats,
-  init, fetchAuctions, approveParticipation, rejectParticipation, advanceWinner, deleteAuction
+  init, fetchAuctions, approveParticipation, rejectParticipation,
+  advanceWinner, deleteAuction, resetFilters,
 } = useAdminAuctions()
 
 const showCreateModal = ref(false)
@@ -87,10 +88,11 @@ onMounted(() => init())
     <!-- Main Content Area -->
     <div class="min-h-[600px]">
       <div v-if="activeTab === 'auctions'" class="space-y-6">
-        <AuctionFilters 
-          v-model:filters="filters" 
-          :categories="categories" 
-          @reset="filters = { status: '', category: '', search: '' }" 
+        <AuctionFilters
+          v-model:filters="filters"
+          :categories="categories"
+          @update:filters="(v) => Object.assign(filters, v)"
+          @reset="resetFilters"
         />
         <AuctionTable 
           :auctions="filteredAuctions" 

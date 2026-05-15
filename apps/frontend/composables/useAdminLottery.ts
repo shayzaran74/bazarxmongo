@@ -1,9 +1,35 @@
+// composables/useAdminLottery.ts
+
+interface LotteryItem {
+  id: string
+  title: string
+  prizeDescription?: string
+  ticketPrice: number
+  prizeValue?: number
+  totalTickets: number
+  maxTicketsPerUser: number
+  ticketDigits: number
+  numbersPerTicket: number
+  status: string
+  startTime: string
+  endTime: string
+  ownerId: string
+  listingId?: string
+  _count?: { tickets: number }
+  listing?: {
+    catalogProduct?: {
+      name: string
+      media?: Array<{ url: string; type: string }>
+    }
+  }
+}
+
 export const useAdminLottery = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
-  const lotteries = ref<any[]>([])
-  const selectedLottery = ref<any>(null)
+  const lotteries = ref<LotteryItem[]>([])
+  const selectedLottery = ref<LotteryItem | null>(null)
   const loading = ref(false)
   const showCreateModal = ref(false)
 
@@ -17,6 +43,8 @@ export const useAdminLottery = () => {
     active: 0,
     ended: 0,
     drawn: 0,
+    totalPrizeValue: 0,
+    totalParticipants: 0,
   })
 
   const pagination = reactive({
@@ -28,36 +56,24 @@ export const useAdminLottery = () => {
   const fetchLotteries = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/admin/lotteries', {
+      const res = await $api<{ items: LotteryItem[]; total: number }>('/api/v1/admin/lotteries', {
         query: {
           status: filters.status || undefined,
           page: pagination.page,
           limit: pagination.limit,
-        }
+        },
       })
-      const items = res.data?.items || res.data || []
-      
-      const mapLotteryAdmin = (raw: any) => {
-        if (!raw) return {}
-        const media = raw.listing?.catalogProduct?.media || []
-        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || null
-        return {
-          ...raw,
-          Product: raw.listing?.catalogProduct ? {
-            name: raw.listing.catalogProduct.name,
-            image,
-            category: raw.listing.catalogProduct.category || null
-          } : null,
-          title: raw.title || raw.listing?.title || 'Çekiliş'
-        }
-      }
 
-      lotteries.value = items.map(mapLotteryAdmin)
-      pagination.total = res.data?.total || lotteries.value.length
-      stats.total = lotteries.value.length
-      stats.active = lotteries.value.filter((l: any) => l.status === 'ACTIVE').length
-      stats.ended = lotteries.value.filter((l: any) => l.status === 'ENDED').length
-      stats.drawn = lotteries.value.filter((l: any) => l.status === 'DRAWN').length
+      const raw = (res as any).data?.items || (res as any).data || []
+      lotteries.value = raw
+      pagination.total = (res as any).data?.total || raw.length
+
+      stats.total = raw.length
+      stats.active = raw.filter((l: LotteryItem) => l.status === 'ACTIVE').length
+      stats.ended = raw.filter((l: LotteryItem) => l.status === 'ENDED').length
+      stats.drawn = raw.filter((l: LotteryItem) => l.status === 'DRAWN').length
+      stats.totalPrizeValue = raw.reduce((sum: number, l: LotteryItem) => sum + Number(l.prizeValue || 0), 0)
+      stats.totalParticipants = raw.reduce((sum: number, l: LotteryItem) => sum + (l._count?.tickets || 0), 0)
     } catch {
       $toast.error('Çekilişler yüklenemedi')
     } finally {
@@ -65,7 +81,7 @@ export const useAdminLottery = () => {
     }
   }
 
-  const editLottery = (lottery: any) => {
+  const editLottery = (lottery: LotteryItem) => {
     selectedLottery.value = { ...lottery }
     showCreateModal.value = true
   }
@@ -73,7 +89,7 @@ export const useAdminLottery = () => {
   const deleteLottery = async (id: string) => {
     if (!confirm('Bu çekilişi silmek istediğinizden emin misiniz?')) return
     try {
-      await $api(`/api/admin/lotteries/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/lotteries/${id}`, { method: 'DELETE' })
       $toast.success('Çekiliş silindi')
       fetchLotteries()
     } catch {
@@ -83,7 +99,7 @@ export const useAdminLottery = () => {
 
   const endLottery = async (id: string) => {
     try {
-      await $api(`/api/admin/lotteries/${id}/end`, { method: 'POST' })
+      await $api(`/api/v1/admin/lotteries/${id}/end`, { method: 'POST' })
       $toast.success('Çekiliş sonlandırıldı ve kazanan belirlendi')
       fetchLotteries()
     } catch {

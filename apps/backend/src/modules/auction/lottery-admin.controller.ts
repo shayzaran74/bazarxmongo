@@ -9,16 +9,13 @@ import { CommandBus } from '@nestjs/cqrs';
 import { Prisma } from '@prisma/client';
 import { AuditLogService } from '../audit/application/audit-log.service';
 import { DrawLotteryCommand } from './application/commands/draw-lottery.command';
+import { CreateLotteryDto } from './application/dtos/create-lottery.dto';
+import { UpdateLotteryDto } from './application/dtos/update-lottery.dto';
+import { LotteryStatus } from './domain/enums/lottery-status.enum';
 
 interface AuthenticatedUser {
   id: string;
   role: string;
-}
-
-interface LotteryListQuery {
-  status?: string;
-  page?: string;
-  limit?: string;
 }
 
 @ApiTags('Admin/Lotteries')
@@ -35,25 +32,32 @@ export class LotteryAdminController {
 
   @ApiOperation({ summary: 'Tüm çekilişleri listele (Admin)' })
   @Get()
-  async getLotteries(@Query() query: LotteryListQuery) {
-    const page = parseInt(query.page ?? '1', 10) || 1;
-    const limit = parseInt(query.limit ?? '20', 10) || 20;
-    const skip = (page - 1) * limit;
+  async getLotteries(
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: Prisma.LotteryWhereInput = {};
-    if (query.status) where.status = query.status as any;
+    if (status && Object.values(LotteryStatus).includes(status as LotteryStatus)) {
+      where.status = status as LotteryStatus;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.lottery.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         include: {
           listing: {
             include: {
               catalogProduct: { include: { media: true } },
             },
           },
+          _count: { select: { tickets: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -67,22 +71,23 @@ export class LotteryAdminController {
   @Post()
   async createLottery(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: Record<string, unknown>,
+    @Body() dto: CreateLotteryDto,
   ) {
-    const ticketPrice = Number((dto.ticketPrice as string | undefined) ?? 0);
-
     const item = await this.prisma.lottery.create({
       data: {
-        title: dto.title as string,
-        prizeDescription: (dto.prizeDescription as string | undefined) ?? '',
-        ticketPrice,
-        totalTickets: Number((dto.totalTickets as string | undefined) ?? 100),
-        maxTicketsPerUser: Number((dto.maxTicketsPerUser as string | undefined) ?? 10),
-        startTime: dto.startTime ? new Date(dto.startTime as string) : new Date(),
-        endTime: new Date(dto.endTime as string),
-        status: 'ACTIVE',
+        title: dto.title,
+        prizeDescription: dto.prizeDescription ?? '',
+        ticketPrice: dto.ticketPrice,
+        totalTickets: dto.totalTickets,
+        maxTicketsPerUser: dto.maxTicketsPerUser,
+        ticketDigits: dto.ticketDigits,
+        numbersPerTicket: dto.numbersPerTicket,
+        startTime: new Date(dto.startTime),
+        endTime: new Date(dto.endTime),
+        prizeValue: dto.prizeValue,
+        status: LotteryStatus.ACTIVE,
         ownerId: user.id,
-        listing: { connect: { id: dto.listingId as string } },
+        ...(dto.listingId ? { listing: { connect: { id: dto.listingId } } } : {}),
       },
     });
 
@@ -102,17 +107,18 @@ export class LotteryAdminController {
   async updateLottery(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: Record<string, unknown>,
+    @Body() dto: UpdateLotteryDto,
   ) {
-    const data: Record<string, unknown> = {};
-    if (dto.title) data.title = dto.title as string;
-    if (dto.prizeDescription) data.prizeDescription = dto.prizeDescription as string;
-    if (dto.ticketPrice !== undefined) data.ticketPrice = Number(dto.ticketPrice as string);
-    if (dto.totalTickets !== undefined) data.totalTickets = Number(dto.totalTickets as string);
-    if (dto.maxTicketsPerUser !== undefined) data.maxTicketsPerUser = Number(dto.maxTicketsPerUser as string);
-    if (dto.startTime) data.startTime = new Date(dto.startTime as string);
-    if (dto.endTime) data.endTime = new Date(dto.endTime as string);
-    if (dto.status) data.status = dto.status as string;
+    const data: Prisma.LotteryUpdateInput = {};
+    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.prizeDescription !== undefined) data.prizeDescription = dto.prizeDescription;
+    if (dto.ticketPrice !== undefined) data.ticketPrice = dto.ticketPrice;
+    if (dto.totalTickets !== undefined) data.totalTickets = dto.totalTickets;
+    if (dto.maxTicketsPerUser !== undefined) data.maxTicketsPerUser = dto.maxTicketsPerUser;
+    if (dto.startTime !== undefined) data.startTime = new Date(dto.startTime);
+    if (dto.endTime !== undefined) data.endTime = new Date(dto.endTime);
+    if (dto.status !== undefined) data.status = dto.status;
+    if (dto.prizeValue !== undefined) data.prizeValue = dto.prizeValue;
 
     const item = await this.prisma.lottery.update({ where: { id }, data });
 
@@ -121,7 +127,7 @@ export class LotteryAdminController {
       action: 'LOTTERY_UPDATED',
       resourceType: 'Lottery',
       resourceId: id,
-      newValue: data,
+      newValue: data as Record<string, unknown>,
     });
 
     return { success: true, data: item };
@@ -130,7 +136,6 @@ export class LotteryAdminController {
   @ApiOperation({ summary: 'Çekilişi sonlandır ve kazananı belirle' })
   @Post(':id/end')
   async endLottery(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    // DrawLotteryCommand hem kura çeker hem kazananı atar hem de AuditLog yazar
     const result = await this.commandBus.execute(new DrawLotteryCommand(id, user.id));
     return { success: true, data: result };
   }

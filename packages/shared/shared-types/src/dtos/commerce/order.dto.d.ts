@@ -11,7 +11,6 @@ export interface Order {
     totalAmount?: number;
     paymentMethod?: string;
     orderItems?: OrderItem[];
-    OrderItem?: OrderItem[];
 }
 export interface OrderItem {
     id: string;
@@ -21,5 +20,5 @@ export interface OrderItem {
     price: number;
     productName: string;
     productImage?: string;
-    Listing?: any;
+    listing?: any;
 }

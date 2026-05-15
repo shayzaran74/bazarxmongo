@@ -31,6 +31,15 @@
             @update="updateProfile"
           />
 
+          <!-- Company Info Tab -->
+          <ProfileCompanyTab 
+            v-if="activeTab === 'company'"
+            v-model:form="profileForm"
+            :user="user"
+            :loading="profileLoading"
+            @update="updateProfile"
+          />
+
           <!-- Loyalty Tab -->
           <ProfileLoyaltyTab 
             v-if="activeTab === 'loyalty'"
@@ -126,6 +135,7 @@ import { useProfile } from '~/composables/useProfile'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import ProfileMenu from '~/components/profile/ProfileMenu.vue'
 import ProfileInfoTab from '~/components/profile/ProfileInfoTab.vue'
+import ProfileCompanyTab from '~/components/profile/ProfileCompanyTab.vue'
 import ProfileLoyaltyTab from '~/components/profile/ProfileLoyaltyTab.vue'
 import ProfileAddressesTab from '~/components/profile/ProfileAddressesTab.vue'
 import ProfileWalletTab from '~/components/profile/ProfileWalletTab.vue'

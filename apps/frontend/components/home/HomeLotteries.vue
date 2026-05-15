@@ -57,7 +57,7 @@
         v-else-if="lotteries.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in"
       >
-        <GlassCard
+        <SharedGlassCard
           v-for="lottery in lotteries"
           :key="lottery.id"
           variant="watchtower"
@@ -84,7 +84,7 @@
                 {{ getLotteryStatusText(lottery.status || 'Active') }}
               </SharedGhostBadge>
               <div class="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl flex flex-col items-center">
-                <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.tickets || 0) }}</span>
+                <span class="text-xs font-black text-white leading-none">{{ lottery.totalTickets - (lottery._count?.participants || 0) }}</span>
                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{{ $t('lotteriesHome.remaining') || 'KALAN' }}</span>
               </div>
             </div>
@@ -97,13 +97,13 @@
               <div class="flex items-center gap-4 py-6 border-y border-white/10 mb-6">
                 <div class="flex-grow">
                   <div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
-                    <span>{{ lottery._count?.tickets || 0 }} {{ $t('lotteriesHome.entries') || 'Katılım' }}</span>
+                    <span>{{ lottery._count?.participants || 0 }} {{ $t('lotteriesHome.entries') || 'Katılım' }}</span>
                     <span>{{ lottery.totalTickets }} {{ $t('lotteriesHome.limit') || 'Limit' }}</span>
                   </div>
                   <div class="h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       class="h-full bg-gradient-to-r from-primary-600 to-indigo-500"
-                      :style="{ width: ((lottery._count?.tickets || 0) / lottery.totalTickets * 100) + '%' }"
+                      :style="{ width: ((lottery._count?.participants || 0) / lottery.totalTickets * 100) + '%' }"
                     />
                   </div>
                 </div>
@@ -116,12 +116,12 @@
                 </div>
                 <div class="text-right">
                   <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.drawDate') || 'Çekiliş Tarihi' }}</span>
-                  <span class="text-xs font-black text-indigo-300 uppercase italic">{{ formatDate(lottery.endTime) }}</span>
+                  <span class="text-xs font-black text-indigo-300 uppercase italic">{{ formatDate(lottery.drawDate) }}</span>
                 </div>
               </div>
             </div>
           </div>
-          </GlassCard>
+          </SharedGlassCard>
       </div>
     </div>
   </div>

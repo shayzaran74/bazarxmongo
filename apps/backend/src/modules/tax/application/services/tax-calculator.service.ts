@@ -54,10 +54,13 @@ export class TaxCalculatorService {
   }): BazarXTaxBreakdown {
     const d = (n: number) => new Decimal(n);
 
-    // Hizmet bedeli üzerinden KDV (matrah: hizmet bedeli)
+    // ⚠️ R1 — Master Plan v4.3 §5.2 KDV matrah kuralı:
+    // KDV matrahı YALNIZCA %8 hizmet bedelidir; menü tutarının TAMAMI üzerinden değil.
+    // Örnek: 1.000₺ menü → %50 indirim = 500₺, hizmet = 500×%8 = 40₺, KDV = 40×%20 = 8₺
+    // Bu satırı değiştirirken dikkat: params.hizmetBedeli zaten %8 hesaplanmış tutardır.
     const hizmetKdv  = d(params.hizmetBedeli).mul(KDV_RATE).toDecimalPlaces(2);
 
-    // Diğer gelirler üzerinden KDV
+    // Diğer gelirler üzerinden KDV (aidat + satıcı kom. + reklam)
     const diger      = d(params.aidatGeliri).plus(params.saticiKomisyon).plus(params.reklamGeliri);
     const aidatKdv   = diger.mul(KDV_RATE).toDecimalPlaces(2);
     const toplamKdvT = aidatKdv.plus(hizmetKdv);

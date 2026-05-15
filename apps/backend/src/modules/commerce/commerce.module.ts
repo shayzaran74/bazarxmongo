@@ -33,6 +33,10 @@ import { OpenOrderDisputeHandler } from './application/commands/open-order-dispu
 import { ResolveOrderDisputeHandler } from './application/commands/resolve-order-dispute.handler';
 import { MarkOrderPreparingHandler } from './application/commands/mark-order-preparing.handler';
 import { MarkOrderReadyHandler } from './application/commands/mark-order-ready.handler';
+import { ShipOrderItemHandler } from './application/commands/ship-order-item.handler';
+import { UpdateOrderStatusHandler } from './application/commands/update-order-status.handler';
+import { BulkUpdateOrderStatusHandler } from './application/commands/bulk-update-order-status.handler';
+import { CancelOrderAdminHandler } from './application/commands/cancel-order-admin.handler';
 
 // Query handlers
 import { GetCartHandler } from './application/queries/get-cart.handler';
@@ -59,6 +63,10 @@ const CommandHandlers = [
   ResolveOrderDisputeHandler,
   MarkOrderPreparingHandler,
   MarkOrderReadyHandler,
+  ShipOrderItemHandler,
+  UpdateOrderStatusHandler,
+  BulkUpdateOrderStatusHandler,
+  CancelOrderAdminHandler,
 ];
 
 const QueryHandlers = [
