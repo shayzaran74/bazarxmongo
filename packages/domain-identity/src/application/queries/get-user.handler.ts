@@ -10,7 +10,7 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery, Result<any>> 
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   async execute(query: GetUserQuery): Promise<Result<any>> {
     // Prisma'dan tüm ilişkileriyle birlikte çek

@@ -12,7 +12,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
   constructor(
     @Inject('IUserProfileRepository') private readonly profileRepository: IUserProfileRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async execute(command: UpdateProfileCommand): Promise<Result<any>> {
     const { userId, dto } = command;
