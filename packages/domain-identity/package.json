@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
-  "main": "dist/domain-identity/src/index.js",
-  "types": "dist/domain-identity/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf dist && tsc",
     "test": "jest",
