@@ -69,7 +69,7 @@ services:
       sh -c "npx prisma db push --schema=apps/backend/prisma/schema.prisma --accept-data-loss && 
              node apps/backend/dist/apps/backend/src/main.js"
     volumes:
-      - bazarx_uploads:/app/public/uploads
+      - bazarx_uploads:/app/apps/backend/public/uploads
       - ./belge:/app/belge
     expose:
       - "3001"
