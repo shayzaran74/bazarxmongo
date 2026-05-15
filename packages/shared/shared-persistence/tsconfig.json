@@ -1,12 +1,12 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "src",
+    "baseUrl": "../../..",
     "outDir": "./dist",
+    "rootDir": "./src",
     "paths": {
       "@barterborsa/shared-core": [
-        "../shared-core/dist/index"
+        "../shared-core/dist/index.d.ts"
       ]
     }
   },

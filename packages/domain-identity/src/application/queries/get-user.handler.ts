@@ -3,7 +3,7 @@ import { Inject } from '@nestjs/common';
 import { GetUserQuery } from './get-user.query';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { Result, Ok, Err, NotFoundException } from '@barterborsa/shared-core';
-import { PrismaService } from '../../infrastructure/persistence/prisma.service';
+import { PrismaService } from '@barterborsa/shared-persistence';
 
 @QueryHandler(GetUserQuery)
 export class GetUserHandler implements IQueryHandler<GetUserQuery, Result<any>> {
