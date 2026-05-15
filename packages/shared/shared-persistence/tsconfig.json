@@ -6,7 +6,7 @@
     "outDir": "./dist",
     "paths": {
       "@barterborsa/shared-core": [
-        "../shared-core/src/index.ts"
+        "../shared-core/dist/index"
       ]
     }
   },
