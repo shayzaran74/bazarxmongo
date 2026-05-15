@@ -15,11 +15,13 @@ RUN pnpm config set shamefully-hoist true && \
     pnpm config set ignore-workspace-root-check true && \
     pnpm install --no-frozen-lockfile
 
-# Prisma client generate
+# Prisma client generate (Önce shared paketler için, sonra backend için)
 RUN npx prisma@5.12.0 generate --schema=apps/backend/prisma/schema.prisma
 
-# Tüm paketleri build et
-RUN pnpm --filter @bazarx/backend... build
+# Tüm bağımlılıkları sırasıyla build et
+RUN pnpm --filter "@barterborsa/shared-*" build && \
+    pnpm --filter "@barterborsa/domain-identity" build && \
+    pnpm --filter "@bazarx/backend" build
 
 # Copy gRPC proto to dist
 RUN mkdir -p apps/backend/dist/apps/backend/src/modules/financial-gateway/grpc && \
