@@ -15,6 +15,6 @@
     "@types/lodash": "^4.14.202"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "rm -rf dist && tsc"
   }
 }
