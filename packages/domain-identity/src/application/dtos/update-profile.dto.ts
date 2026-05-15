@@ -1,6 +1,9 @@
 import { IsDateString, IsOptional, IsString, IsNumber } from 'class-validator';
 
 export class UpdateProfileDto {
+  @IsDateString()
+  @IsOptional()
+  birthday?: string;
   @IsString()
   @IsOptional()
   firstName?: string;
@@ -9,9 +12,12 @@ export class UpdateProfileDto {
   @IsOptional()
   lastName?: string;
 
+  /**
+   * Frontend `phoneNumber` olarak gönderir – backend DTO'da aynı isimde tutuyoruz.
+   */
   @IsString()
   @IsOptional()
-  phone?: string;
+  phoneNumber?: string;
 
   @IsString()
   @IsOptional()
@@ -19,11 +25,11 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  bio?: string;
+  avatarUrl?: string;
 
-  @IsDateString()
+  @IsString()
   @IsOptional()
-  birthday?: Date;
+  bio?: string;
 
   @IsString()
   @IsOptional()
@@ -44,4 +50,20 @@ export class UpdateProfileDto {
   @IsNumber()
   @IsOptional()
   districtId?: number;
+
+  @IsString()
+  @IsOptional()
+  neighborhood?: string;
+
+  @IsString()
+  @IsOptional()
+  companyName?: string;
+
+  @IsString()
+  @IsOptional()
+  taxNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  taxOffice?: string;
 }

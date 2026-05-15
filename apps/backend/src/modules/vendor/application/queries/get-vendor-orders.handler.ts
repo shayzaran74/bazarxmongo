@@ -26,6 +26,13 @@ export class GetVendorOrdersHandler
       this.prisma.order.findMany({
         where,
         include: {
+          user: { 
+            select: { 
+              id: true, 
+              email: true, 
+              profile: { select: { firstName: true, lastName: true } } 
+            } 
+          },
           orderItems: {
             include: {
               listing: {

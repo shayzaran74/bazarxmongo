@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
+interface Category {
+  id: string
+  name: string
+}
+
 const props = defineProps<{
   filters: {
     status: string
     category: string
     search: string
   }
-  categories: any[]
+  categories: Category[]
 }>()
 
 const emit = defineEmits(['update:filters', 'reset'])
@@ -28,9 +33,11 @@ const updateFilters = (key: string, value: string) => {
           @change="updateFilters('status', ($event.target as HTMLSelectElement).value)"
         >
           <option value="">Tümü</option>
-          <option value="Active">Aktif</option>
-          <option value="Completed">Tamamlandı</option>
-          <option value="Cancelled">İptal Edildi</option>
+          <option value="SCHEDULED">Planlandı</option>
+          <option value="ACTIVE">Aktif</option>
+          <option value="ENDED">Bitti</option>
+          <option value="COMPLETED">Tamamlandı</option>
+          <option value="CANCELLED">İptal Edildi</option>
         </select>
       </div>
 
@@ -42,7 +49,7 @@ const updateFilters = (key: string, value: string) => {
           @change="updateFilters('category', ($event.target as HTMLSelectElement).value)"
         >
           <option value="">Tüm Kategoriler</option>
-          <option v-for="cat in categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
       </div>
 

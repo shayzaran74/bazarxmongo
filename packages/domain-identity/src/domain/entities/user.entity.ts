@@ -21,6 +21,12 @@ export interface UserProps {
   vendor?: {
     status: string;
     slug?: string;
+    company?: {
+      id: string;
+      name: string;
+      taxNumber?: string;
+      taxOffice?: string;
+    };
   };
 }
 
@@ -85,5 +91,5 @@ export class User extends AggregateRoot<UserProps> {
   get isEmailVerified(): boolean { return this.props.isEmailVerified; }
   get lastLoginAt(): Date | undefined { return this.props.lastLoginAt; }
   get googleId(): string | undefined { return this.props.googleId; }
-  get vendor(): { status: string; slug?: string } | undefined { return this.props.vendor; }
+  get vendor(): UserProps['vendor'] { return this.props.vendor; }
 }

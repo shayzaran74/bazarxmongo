@@ -39,6 +39,8 @@ import { ListAdminUsersHandler } from './application/queries/list-admin-users.ha
 import { UpdateUserStatusHandler } from './application/commands/update-user-status.handler';
 import { UpdateUserRoleHandler } from './application/commands/update-user-role.handler';
 import { DeleteAdminUserHandler } from './application/commands/delete-admin-user.handler';
+import { GrantReferralRewardHandler } from './application/commands/grant-referral-reward.handler';
+import { ReferralService } from './application/services/referral.service';
 import { CommunicationModule } from '../communication/communication.module';
 
 import { AuthController } from './auth.controller';
@@ -74,6 +76,7 @@ const Handlers = [
   UpdateUserStatusHandler,
   UpdateUserRoleHandler,
   DeleteAdminUserHandler,
+  GrantReferralRewardHandler,
 ];
 
 @Module({
@@ -99,6 +102,7 @@ const Handlers = [
     GoogleOAuthStrategy,
     SessionService,
     IdentityEventPublisher,
+    ReferralService,
     LocalStrategy,
     ...Handlers,
     {

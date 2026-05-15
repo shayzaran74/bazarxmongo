@@ -8,8 +8,10 @@ export interface UserProfileProps {
   bio?: string;
   birthday?: Date;
   gender?: string;
+  phone?: string;
   city?: string;
   district?: string;
+  neighborhood?: string;
 }
 
 export class UserProfile extends Entity<UserProfileProps> {
@@ -38,6 +40,8 @@ export class UserProfile extends Entity<UserProfileProps> {
   get bio(): string | undefined { return this.props.bio; }
   get birthday(): Date | undefined { return this.props.birthday; }
   get gender(): string | undefined { return this.props.gender; }
+  get phone(): string | undefined { return this.props.phone; }
   get city(): string | undefined { return this.props.city; }
   get district(): string | undefined { return this.props.district; }
+  get neighborhood(): string | undefined { return this.props.neighborhood; }
 }

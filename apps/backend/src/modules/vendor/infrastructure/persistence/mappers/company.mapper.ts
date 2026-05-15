@@ -2,23 +2,25 @@
 
 import { Company, CompanyProps } from '../../../domain/entities/company.entity';
 import { TaxNumber } from '../../../domain/value-objects/tax-number.vo';
-import { isErr } from '@barterborsa/shared-core';
 
 export class CompanyMapper {
   public static toDomain(record: any): Company {
     let taxNumber = undefined;
     if (record.taxNumber) {
       const taxNumberResult = TaxNumber.create(record.taxNumber);
-      if (!taxNumberResult.success) {
-        throw taxNumberResult.error;
+      if (taxNumberResult.success) {
+        taxNumber = taxNumberResult.data;
+      } else {
+        console.warn(`Invalid tax number in DB for company ${record.id}: ${record.taxNumber}`);
+        // Domain modelini bozmamak için null/undefined geçiyoruz, 
+        // ama isterseniz geçici olarak TaxNumber VO'sunu da esnetebiliriz.
       }
-      taxNumber = taxNumberResult.data;
     }
 
     const props: CompanyProps = {
       taxNumber: taxNumber,
       name: record.name,
-      address: record.address,
+      address: record.address,  
       phone: record.phone,
       email: record.email,
       website: record.website,

@@ -8,6 +8,7 @@ import { CurrentUser } from '@barterborsa/shared-nest';
 
 import { GetMyEcosystemQuery } from '../application/queries/get-my-ecosystem.query';
 import { GetEcosystemAuditLogsQuery } from '../application/queries/get-ecosystem-audit-logs.query';
+import { GetEcosystemDashboardQuery } from '../application/queries/get-ecosystem-dashboard.query';
 import { CreateEcosystemCommand } from '../application/commands/create-ecosystem.command';
 import { AddEcosystemMemberCommand } from '../application/commands/add-ecosystem-member.command';
 import { RemoveEcosystemMemberCommand } from '../application/commands/remove-ecosystem-member.command';
@@ -85,6 +86,21 @@ export class EcosystemController {
     return this.commandBus.execute(
       new AddEcosystemMemberCommand(user.id, body.memberVendorId),
     );
+  }
+
+  // Master Plan v4.3 §4 — Marka Yönetim Paneli
+  @ApiOperation({ summary: 'Ekosistem yönetim paneli — bayi TrustScore + stok hareketleri' })
+  @ApiParam({ name: 'ecosystemId', description: 'Ekosistem ID' })
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @Get(':ecosystemId/dashboard')
+  async getEcosystemDashboard(
+    @Param('ecosystemId') ecosystemId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.queryBus.execute(
+      new GetEcosystemDashboardQuery(user.id, ecosystemId),
+    );
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Ekosistemden üye çıkar' })

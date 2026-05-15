@@ -13,10 +13,10 @@ export class GetPendingCompaniesHandler
       where: { status: 'PENDING' },
       include: {
         vendor: {
-          include: { user: { select: { email: true } } }
-        }
+          include: { user: { select: { email: true, profile: true } } },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

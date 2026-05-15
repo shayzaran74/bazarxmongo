@@ -1,12 +1,17 @@
-import { Controller, Post, Body, Get,
+// apps/backend/src/modules/vendor/presentation/company.controller.ts
+import { Controller, Post, Body, Get, Patch,
          Param, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse,
          ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateCompanyCommand }
   from '../application/commands/create-company.command';
+import { UpdateCompanyStatusCommand }
+  from '../application/commands/update-company-status.command';
 import { CreateCompanyDto }
   from '../application/dtos/create-company.dto';
+import { UpdateCompanyStatusDto }
+  from '../application/dtos/update-company-status.dto';
 import { GetCompanyQuery }
   from '../application/queries/get-company.query';
 import { GetMyCompanyQuery }
@@ -15,6 +20,11 @@ import { GetPendingCompaniesQuery }
   from '../application/queries/get-pending-companies.query';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+}
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -89,14 +99,30 @@ export class CompanyController {
     const items = await this.queryBus.execute(
       new GetPendingCompaniesQuery()
     );
-    return { success: true, data: items };
+    return { success: true, companies: items, data: items };
+  }
+
+  @ApiOperation({ summary: 'Update company status (Admin)' })
+  @ApiParam({ name: 'id', description: 'Company ID' })
+  @ApiBody({ type: UpdateCompanyStatusDto })
+  @ApiBearerAuth()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyStatusDto,
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    const data = await this.commandBus.execute(
+      new UpdateCompanyStatusCommand(id, dto.status, admin.id, dto.rejectionReason),
+    );
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Get company by ID' })
   @ApiParam({ name: 'id' })
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    if (id === 'pending') return this.getPending();
     const result = await this.queryBus.execute(new GetCompanyQuery(id));
     if (!result) return { success: false, message: 'Şirket bulunamadı.' };
     return { success: true, data: result };

@@ -60,7 +60,7 @@ export class VendorController {
         limit: Number(limit) || 20,
       }),
     );
-    return { success: true, data: data.items, total: data.total };
+    return { success: true, data };
   }
 
   @ApiBearerAuth()

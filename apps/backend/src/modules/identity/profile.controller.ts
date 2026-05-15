@@ -1,3 +1,4 @@
+// apps/backend/src/modules/identity/profile.controller.ts
 import { Controller, Get, Post, Put, Patch, Body, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { 
@@ -33,7 +34,19 @@ export class ProfileController {
   @Get()
   async getProfile(@Req() req: any) {
     const userId = req.user.id;
-    return this.queryBus.execute(new GetProfileQuery(userId));
+    const result = await this.queryBus.execute(new GetProfileQuery(userId));
+    
+    if (!result.success) {
+      throw new HttpException(
+        result.error?.message || 'Profil bilgileri alınamadı', 
+        HttpStatus.NOT_FOUND
+      );
+    }
+
+    return {
+      success: true,
+      data: result.data
+    };
   }
 
   @ApiOperation({ summary: 'Get user statistics', description: 'Kullanıcının sipariş ve harcama istatistiklerini döner.' })
@@ -65,10 +78,19 @@ export class ProfileController {
   @ApiResponse({ status: 200, description: 'Profil başarıyla güncellendi.' })
   @Put()
   @Patch()
-  @Post()
-  async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+  async updateProfile(@Req() req: { user: { id: string } }, @Body() dto: UpdateProfileDto) {
     const userId = req.user.id;
-    return this.commandBus.execute(new UpdateProfileCommand(userId, dto));
+    
+    const result = await this.commandBus.execute(new UpdateProfileCommand(userId, dto));
+
+    if (!result.success) {
+      throw new HttpException(
+        result.error?.message || 'Profil güncellenirken bir hata oluştu',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return { success: true, data: result.data };
   }
 
   @ApiOperation({ summary: 'Change password', description: 'Kullanıcının mevcut şifresini yenisiyle değiştirir.' })

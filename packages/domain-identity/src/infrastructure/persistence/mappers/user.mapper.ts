@@ -26,7 +26,13 @@ export class UserMapper {
       referredById: record.referredById || undefined,
       vendor: record.vendor ? {
         status: record.vendor.status,
-        slug: record.vendor.slug
+        slug: record.vendor.slug,
+        company: record.vendor.company ? {
+          id: record.vendor.company.id,
+          name: record.vendor.company.name,
+          taxNumber: record.vendor.company.taxNumber,
+          taxOffice: record.vendor.company.taxOffice
+        } : undefined
       } : undefined,
     }, record.id);
 

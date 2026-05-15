@@ -1,18 +1,18 @@
 import { ref, watch } from 'vue'
-import { useAuthStore, useRuntimeConfig, useNuxtApp } from '#imports'
+import { useAuthStore } from '~/stores/auth'
 import { userService } from '~/services/userService'
-import type { UserProfileUpdate } from '@barterborsa/shared-types'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 export const useProfileAccount = () => {
   const authStore = useAuthStore()
-  const config = useRuntimeConfig()
   const { t } = useI18n()
-  const { $toast: toast } = useNuxtApp()
+  const toast = useToast()
 
   const profileLoading = ref(false)
   const profileForm = ref<any>({
-    firstName: '', lastName: '', phoneNumber: '', district: '', neighborhood: '', birthday: '', gender: ''
+    firstName: '', lastName: '', phoneNumber: '', city: '', district: '', gender: '',
+    companyName: '', taxNumber: '', taxOffice: ''
   })
 
   const showAvatarModal = ref(false)
@@ -22,28 +22,34 @@ export const useProfileAccount = () => {
 
   watch(() => authStore.user, (user) => {
     if (user) {
+      const p = (user as any).profile || {}
       profileForm.value = {
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phoneNumber: (user as any).phoneNumber || '',
-        district: user.district || '',
-        neighborhood: user.regionName || '',
-        birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
-        gender: user.gender || ''
+        firstName: user.firstName || p.firstName || '',
+        lastName: user.lastName || p.lastName || '',
+        phoneNumber: (user as any).phoneNumber || (user as any).phone || p.phone || '',
+        city: p.city || '',
+        district: p.district || '',
+        gender: p.gender || '',
+        companyName: (user as any).vendor?.company?.name || '',
+        taxNumber: (user as any).vendor?.company?.taxNumber || '',
+        taxOffice: (user as any).vendor?.company?.taxOffice || '',
       }
     }
-  }, { immediate: true })
+  }, { immediate: true, deep: true })
 
   const getAvatarUrl = (avatar: string | null) => {
     if (!avatar) return null
     if (avatar.startsWith('http')) return avatar
-    return `${config.public.apiBase}${avatar}`
+    return `/uploads/avatars/${avatar}`
   }
 
   const handleAvatarChange = (file: File) => {
     avatarFile.value = file
-    avatarPreview.value = URL.createObjectURL(file)
-    showAvatarModal.value = true
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      avatarPreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
   }
 
   const uploadAvatar = async () => {
@@ -51,40 +57,67 @@ export const useProfileAccount = () => {
     avatarUploading.value = true
     try {
       const formData = new FormData()
-      formData.append('file', avatarFile.value)
-      const uploadRes = await userService.uploadAvatar(formData)
-      if (uploadRes.success && uploadRes.data?.url) {
-        const profileRes = await userService.updateProfile({ avatarUrl: uploadRes.data.url } as any)
-        if (profileRes.success && authStore.user) {
-          authStore.user.avatar = uploadRes.data.url
-          toast.success(t('profile.profileUpdatedSuccess'))
-          showAvatarModal.value = false
+      formData.append('avatar', avatarFile.value)
+      const res = await userService.uploadAvatar(formData)
+      if (res.success && res.data) {
+        if (authStore.user) {
+          authStore.user.avatar = res.data.url
+          if ((authStore.user as any).profile) {
+            (authStore.user as any).profile.avatar = res.data.url
+          }
         }
+        toast.success(t('profile.avatarUpdatedSuccess'))
+        showAvatarModal.value = false
       }
     } catch (error) {
-      toast.error(t('profile.profileUpdateError'))
+      toast.error(t('profile.avatarUpdateError'))
     } finally {
       avatarUploading.value = false
     }
   }
 
   const updateProfile = async () => {
+    console.log('[useProfileAccount] updateProfile tetiklendi.')
     profileLoading.value = true
     try {
-      const res = await userService.updateProfile(profileForm.value)
+      // Boş değerleri temizle
+      const cleanData = Object.fromEntries(
+        Object.entries(profileForm.value).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+      )
+
+      console.log('[useProfileAccount] Veri gönderiliyor:', cleanData)
+      const res = await userService.updateProfile(cleanData as any)
+      console.log('[useProfileAccount] Yanıt alındı:', res)
+
       if (res.success && res.data) {
-        authStore.user = res.data.user
+        console.log('[useProfileAccount] Güncelleme başarılı, user:', res.data.user)
+        // Mevcut kullanıcı verisini ezmek yerine merge et
+        if (authStore.user && res.data.user) {
+          Object.assign(authStore.user, res.data.user)
+        } else {
+          authStore.user = res.data.user
+        }
         toast.success(t('profile.profileUpdatedSuccess'))
       }
-    } catch (error) {
-      toast.error(t('profile.profileUpdateError'))
+    } catch (error: any) {
+      console.error('[useProfileAccount] HATA:', error)
+      const message = error.response?._data?.message || t('profile.profileUpdateError')
+      toast.error(Array.isArray(message) ? message.join(', ') : message)
     } finally {
       profileLoading.value = false
     }
   }
 
   return {
-    profileLoading, profileForm, showAvatarModal, avatarUploading, avatarPreview,
-    getAvatarUrl, handleAvatarChange, uploadAvatar, updateProfile
+    profileLoading,
+    profileForm,
+    showAvatarModal,
+    avatarUploading,
+    avatarPreview,
+    avatarFile,
+    getAvatarUrl,
+    handleAvatarChange,
+    uploadAvatar,
+    updateProfile
   }
 }

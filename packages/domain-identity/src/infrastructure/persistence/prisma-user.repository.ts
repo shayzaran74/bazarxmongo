@@ -13,7 +13,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findById(id: string): Promise<User | null> {
     const record = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
-      include: { profile: true, vendor: true }
+      include: { profile: true, vendor: { include: { company: true } } }
     });
     return record ? UserMapper.toDomain(record) : null;
   }
@@ -21,7 +21,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.prisma.user.findFirst({
       where: { email, deletedAt: null },
-      include: { profile: true, vendor: true }
+      include: { profile: true, vendor: { include: { company: true } } }
     });
     return record ? UserMapper.toDomain(record) : null;
   }
@@ -29,7 +29,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByGoogleId(googleId: string): Promise<User | null> {
     const record = await this.prisma.user.findFirst({
       where: { googleId, deletedAt: null },
-      include: { profile: true, vendor: true }
+      include: { profile: true, vendor: { include: { company: true } } }
     });
     return record ? UserMapper.toDomain(record) : null;
   }
@@ -37,7 +37,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     const record = await this.prisma.user.findFirst({
       where: { phoneNumber, deletedAt: null },
-      include: { profile: true, vendor: true }
+      include: { profile: true, vendor: { include: { company: true } } }
     });
     return record ? UserMapper.toDomain(record) : null;
   }
@@ -106,7 +106,7 @@ export class PrismaUserRepository implements IUserRepository {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' },
-      include: { profile: true, vendor: true }
+      include: { profile: true, vendor: { include: { company: true } } }
     });
     
     return records.map((r: any) => UserMapper.toDomain(r));

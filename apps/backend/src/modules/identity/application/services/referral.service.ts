@@ -26,13 +26,30 @@ export class ReferralService {
   }
 
   // Yeni kullanıcı kayıt sırasında referral kodu işle
+  // Master Plan v4.3 §2.6 / §3.4 — Tek katmanlı referans:
+  //   - Bir kullanıcı yalnızca bir kez referans edilebilir (refereeId @unique)
+  //   - Karşılıklı (circular) referans yasak: A → B varsa B → A engellenir
+  //   - Ödül yalnızca DOĞRUDAN referrer'a verilir; zincirleme komisyon yoktur
   async processReferral(refereeId: string, referralCode: string): Promise<boolean> {
     const referrer = await this.prisma.user.findUnique({
-      where: { referralCode },
+      where:  { referralCode },
       select: { id: true },
     });
 
     if (!referrer || referrer.id === refereeId) return false;
+
+    // Tek seviye guard — A→B varsa B→A engellenir
+    const reverseRef = await this.prisma.referral.findFirst({
+      where: { referrerId: refereeId, refereeId: referrer.id },
+      select: { id: true },
+    });
+    if (reverseRef) {
+      this.logger.warn('Karşılıklı referans denemesi engellendi', {
+        referrerId: referrer.id,
+        refereeId,
+      });
+      return false;
+    }
 
     // Zaten referral kaydı var mı?
     const existing = await this.prisma.referral.findUnique({ where: { refereeId } });

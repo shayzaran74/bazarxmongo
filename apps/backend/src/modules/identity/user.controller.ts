@@ -1,20 +1,21 @@
 import { Controller, Get, Post, Body, UseGuards, Req, Query, Param } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiQuery, 
-  ApiParam, 
-  ApiBody 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+  ApiBody
 } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { 
-  GetUserQuery, 
-  ListUsersQuery, 
-  SetTransactionPinCommand 
+import {
+  GetUserQuery,
+  ListUsersQuery,
+  SetTransactionPinCommand
 } from '@barterborsa/domain-identity';
+import { ReferralService } from './application/services/referral.service';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -22,8 +23,9 @@ import {
 @UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly commandBus:     CommandBus,
+    private readonly queryBus:       QueryBus,
+    private readonly referralService: ReferralService,
   ) {}
 
   @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
@@ -32,6 +34,22 @@ export class UserController {
   @Get('me')
   async getMe(@Req() req: any) {
     return this.queryBus.execute(new GetUserQuery(req.user.id));
+  }
+
+  // Master Plan v4.3 §2.6 — Referans istatistikleri
+  @ApiOperation({ summary: 'Referral istatistiklerini getir', description: 'Kullanıcının referans kodu, tamamlanan referanslar ve bonus durumunu döner.' })
+  @ApiResponse({ status: 200, description: 'Referral istatistikleri.' })
+  @Get('me/referral-stats')
+  async getReferralStats(@Req() req: { user: { id: string } }) {
+    return this.referralService.getReferralStats(req.user.id);
+  }
+
+  // Master Plan v4.3 §2.6 — Referans kodu yoksa üret
+  @ApiOperation({ summary: 'Referral kodu oluştur veya getir' })
+  @ApiResponse({ status: 200, description: 'Referral kodu.' })
+  @Post('me/referral-code')
+  async generateReferralCode(@Req() req: { user: { id: string } }) {
+    return this.referralService.generateReferralCode(req.user.id);
   }
 
   @ApiOperation({ summary: 'Set transaction PIN', description: 'Finansal işlemler için ikincil güvenlik şifresi (PIN) belirler.' })

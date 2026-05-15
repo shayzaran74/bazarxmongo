@@ -38,6 +38,7 @@ import { CreateBannerHandler } from './application/commands/create-banner.handle
 import { UpdateBannerHandler } from './application/commands/update-banner.handler';
 import { DeleteBannerHandler } from './application/commands/delete-banner.handler';
 import { UpdateRestaurantSettingsHandler } from './application/commands/update-restaurant-settings.handler';
+import { UpdateCompanyStatusHandler } from './application/commands/update-company-status.handler';
 
 // Query handlers
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -49,6 +50,7 @@ import { GetVendorProfileHandler } from './application/queries/get-vendor-profil
 import { ListVendorProductsHandler } from './application/queries/list-vendor-products.handler';
 import { GetMyEcosystemHandler } from './application/queries/get-my-ecosystem.handler';
 import { GetEcosystemAuditLogsHandler } from './application/queries/get-ecosystem-audit-logs.handler';
+import { GetEcosystemDashboardHandler } from './application/queries/get-ecosystem-dashboard.handler';
 import { ListAdminVendorsHandler } from './application/queries/list-admin-vendors.handler';
 import { GetMyCompanyHandler } from './application/queries/get-my-company.handler';
 import { GetPendingCompaniesHandler } from './application/queries/get-pending-companies.handler';
@@ -98,6 +100,7 @@ const CommandHandlers = [
   UpdateBannerHandler,
   DeleteBannerHandler,
   UpdateRestaurantSettingsHandler,
+  UpdateCompanyStatusHandler,
 ];
 
 const QueryHandlers = [
@@ -110,6 +113,7 @@ const QueryHandlers = [
   ListVendorProductsHandler,
   GetMyEcosystemHandler,
   GetEcosystemAuditLogsHandler,
+  GetEcosystemDashboardHandler,
   ListAdminVendorsHandler,
   GetMyCompanyHandler,
   GetPendingCompaniesHandler,
