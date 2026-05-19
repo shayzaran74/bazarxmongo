@@ -3,71 +3,68 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection, Types } from 'mongoose';
+import { IMenuPurchase, IMenuRedemption } from '@barterborsa/shared-persistence';
 import { RedeemMenuCommand } from './redeem-menu.command';
 
 @CommandHandler(RedeemMenuCommand)
 export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
   private readonly logger = new Logger(RedeemMenuHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('MenuPurchase')   private readonly purchaseModel:   Model<IMenuPurchase>,
+    @InjectModel('MenuRedemption') private readonly redemptionModel: Model<IMenuRedemption>,
+    @InjectConnection()            private readonly connection:       Connection,
+  ) {}
 
   async execute(command: RedeemMenuCommand) {
     const { qrCode, staffUserId } = command;
 
-    // QR kod: ana menü mü, 1+1 bedava mı?
-    const purchase = await this.prisma.menuPurchase.findFirst({
-      where: {
-        OR: [
-          { qrCode,        status: { not: 'CANCELLED' } },
-          { oneFreeQrCode: qrCode, oneFreeActivatedAt: { not: null } },
+    const purchase = await this.purchaseModel
+      .findOne({
+        $or: [
+          { qrCode, status: { $ne: 'CANCELLED' } },
+          { oneFreeQrCode: qrCode, oneFreeActivatedAt: { $ne: null, $exists: true } },
         ],
-      },
-      include: {
-        // BazarXMenu DROP edildi; QR Listing üzerinden çalışır
-        listing: {
-          select: {
-            title:  true,
-            vendor: { select: { profile: { select: { storeName: true } } } },
-          },
-        },
-      },
-    });
+      })
+      .lean();
 
     if (!purchase) throw new NotFoundException('Geçersiz QR kodu');
     if (new Date() > purchase.qrExpiresAt) throw new BadRequestException('QR kodunun süresi dolmuş');
 
     const isOneFree = purchase.oneFreeQrCode === qrCode;
 
-    if (!isOneFree && purchase.status === 'REDEEMED') {
-      throw new BadRequestException('Bu QR zaten kullanılmış');
-    }
-    if (isOneFree && purchase.oneFreeUsedAt) {
-      throw new BadRequestException('Bu bedava QR zaten kullanılmış');
-    }
+    if (!isOneFree && purchase.status === 'REDEEMED') throw new BadRequestException('Bu QR zaten kullanılmış');
+    if (isOneFree && purchase.oneFreeUsedAt)           throw new BadRequestException('Bu bedava QR zaten kullanılmış');
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.menuRedemption.create({
-        data: {
-          purchaseId:    purchase.id,
-          isOneFree,
-          scannedByStaff: staffUserId,
-        },
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const redId = new Types.ObjectId().toString();
+        await this.redemptionModel.create(
+          [{ _id: redId, id: redId, purchaseId: purchase.id, isOneFree, scannedByStaff: staffUserId }],
+          { session },
+        );
+
+        if (isOneFree) {
+          await this.purchaseModel.updateOne(
+            { _id: purchase._id ?? purchase.id },
+            { $set: { oneFreeUsedAt: new Date(), status: 'REDEEMED' } },
+            { session },
+          );
+        } else {
+          const newStatus = purchase.oneFreeActivatedAt ? 'PARTIALLY_REDEEMED' : 'REDEEMED';
+          await this.purchaseModel.updateOne(
+            { _id: purchase._id ?? purchase.id },
+            { $set: { status: newStatus } },
+            { session },
+          );
+        }
       });
-
-      if (isOneFree) {
-        await tx.menuPurchase.update({
-          where: { id: purchase.id },
-          data:  { oneFreeUsedAt: new Date(), status: 'REDEEMED' },
-        });
-      } else {
-        const newStatus = purchase.oneFreeActivatedAt ? 'PARTIALLY_REDEEMED' : 'REDEEMED';
-        await tx.menuPurchase.update({
-          where: { id: purchase.id },
-          data:  { status: newStatus },
-        });
-      }
-    });
+    } finally {
+      await session.endSession();
+    }
 
     this.logger.log('Menü QR kullanıldı', { purchaseId: purchase.id, isOneFree });
 
@@ -75,8 +72,7 @@ export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
       success: true,
       message: isOneFree ? '1+1 bedava menü onaylandı' : 'Menü QR onaylandı',
       data: {
-        menuTitle:  purchase.listing.title,
-        restaurant: purchase.listing.vendor.profile?.storeName ?? '',
+        purchaseId: purchase.id,
         isOneFree,
         userId:     purchase.userId,
         redeemedAt: new Date(),

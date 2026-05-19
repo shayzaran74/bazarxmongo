@@ -38,9 +38,8 @@ const loading = ref(false)
 const fetchQuadCards = async () => {
   loading.value = true
   try {
-    const { $api } = useApi()
-    const config = useRuntimeConfig()
-    const fullUrl = `http://localhost:3002/api/v1/home-quad-cards?platform=BAZARX`
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002'
+    const fullUrl = `${baseUrl}/api/v1/home-quad-cards?platform=BAZARX`
     
     // Ham tarayıcı fetch'i kullanarak Nuxt yapılandırmasını tamamen baypas ediyoruz
     const res = await fetch(fullUrl)

@@ -3,7 +3,7 @@
 import {
   Controller, Get, Post, Put, Delete,
   Body, Param, Query, UseGuards,
-  BadRequestException, UseInterceptors, UploadedFile,
+  BadRequestException, UseInterceptors, UploadedFile, Inject, Logger,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -11,13 +11,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { CreateVendorProductCommand } from '../application/commands/create-vendor-product.command';
 import { UpdateVendorProductCommand } from '../application/commands/update-vendor-product.command';
 import { DeleteVendorProductCommand } from '../application/commands/delete-vendor-product.command';
 import { ListVendorProductsQuery } from '../application/queries/list-vendor-products.query';
 import { BulkImportVendorProductsCommand } from '../application/commands/bulk-import-vendor-products.command';
 import { FileParserService } from '../application/services/file-parser.service';
+import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
 
 interface AuthenticatedUser {
   id: string;
@@ -29,6 +29,8 @@ const ACCEPTED_MIME = [
   'application/vnd.ms-excel',
   'text/csv',
   'application/csv',
+  'application/json',
+  'text/plain',
 ];
 const MAX_ROWS = 5_000;
 
@@ -38,10 +40,12 @@ const MAX_ROWS = 5_000;
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 export class VendorProductController {
+  private readonly logger = new Logger(VendorProductController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly fileParser: FileParserService,
   ) {}
 
@@ -62,13 +66,13 @@ export class VendorProductController {
       fileFilter: (_req, file, cb) => {
         if (
           ACCEPTED_MIME.includes(file.mimetype) ||
-          /\.(xlsx|xls|csv)$/i.test(file.originalname)
+          /\.(xlsx|xls|csv|json)$/i.test(file.originalname)
         ) {
           cb(null, true);
         } else {
           cb(
             new BadRequestException(
-              'Sadece Excel (.xlsx/.xls) ve CSV dosyaları kabul edilir',
+              'Sadece Excel (.xlsx/.xls), CSV ve JSON dosyaları kabul edilir',
             ),
             false,
           );
@@ -80,20 +84,25 @@ export class VendorProductController {
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    this.logger.log(`[bulkImport] Başladı — userId: ${user.id}, dosya: ${file?.originalname}, boyut: ${file?.size}`);
+
     if (!file) throw new BadRequestException('Lütfen bir dosya yükleyin.');
 
-    // Vendor doğrulama (controller sorumluluğu: istek sahibinin kimliği)
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    if (!vendor) throw new BadRequestException('Satıcı hesabı bulunamadı');
+    const { Vendor: VendorModel } = require('@barterborsa/shared-persistence/schemas/backend/vendor.schema') as typeof import('@barterborsa/shared-persistence/schemas/backend/vendor.schema');
+    const vendorDoc = await VendorModel.findOne({ userId: user.id }).lean().exec() as Record<string, unknown> | null;
+    if (!vendorDoc) throw new BadRequestException('Satıcı hesabı bulunamadı');
 
-    // Dosya parse (controller sorumluluğu: ham dosyadan yapılandırılmış veriye)
-    const isCSV = /\.csv$/i.test(file.originalname) || file.mimetype === 'text/csv';
-    const rows = isCSV
-      ? this.fileParser.parseCSV(file.buffer.toString('utf-8'))
-      : await this.fileParser.parseExcel(file.buffer);
+    const vendorId = vendorDoc['id'] as string;
+
+    const isCSV  = /\.csv$/i.test(file.originalname)  || file.mimetype === 'text/csv';
+    const isJSON = /\.json$/i.test(file.originalname) || file.mimetype === 'application/json';
+    this.logger.log(`[bulkImport] Dosya tipi: ${isCSV ? 'CSV' : isJSON ? 'JSON' : 'Excel'}, vendorId: ${vendorId}`);
+    const rows = isJSON
+      ? this.fileParser.parseJSON(file.buffer.toString('utf-8'))
+      : isCSV
+        ? this.fileParser.parseCSV(file.buffer.toString('utf-8'))
+        : await this.fileParser.parseExcel(file.buffer);
+    this.logger.log(`[bulkImport] Parse edilen satır sayısı: ${rows.length}`);
 
     if (rows.length === 0) {
       throw new BadRequestException('Dosyada işlenebilir satır bulunamadı');
@@ -104,10 +113,12 @@ export class VendorProductController {
       );
     }
 
-    // İş mantığı tamamen handler'a delege edildi
-    return this.commandBus.execute(
-      new BulkImportVendorProductsCommand(vendor.id, rows),
+    this.logger.log(`[bulkImport] Command dispatch — vendorId: ${vendorId}, satır: ${rows.length}`);
+    const result = await this.commandBus.execute(
+      new BulkImportVendorProductsCommand(vendorId, rows),
     );
+    this.logger.log(`[bulkImport] Tamamlandı — sonuç: ${JSON.stringify(result)}`);
+    return result;
   }
 
   @ApiOperation({ summary: 'Satıcının ürünlerini listele' })

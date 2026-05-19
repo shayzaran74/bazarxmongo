@@ -1,19 +1,20 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { GetMyCompanyQuery } from './get-my-company.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 
 @QueryHandler(GetMyCompanyQuery)
 export class GetMyCompanyHandler
   implements IQueryHandler<GetMyCompanyQuery> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+  ) {}
 
   async execute(query: GetMyCompanyQuery) {
     const { userId, userRole } = query;
 
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId }
-    });
+    const vendor = await this.vendorRepository.findByUserId(userId);
 
     if (!vendor) {
       if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
@@ -22,8 +23,13 @@ export class GetMyCompanyHandler
       return null;
     }
 
-    if (!vendor.companyId) return null;
-
-    return { companyId: vendor.companyId, isSystemAdmin: false };
+    const props = vendor.getProps();
+    return {
+      isVendor: true,
+      isSystemAdmin: false,
+      companyId: props.companyId ?? null,
+      vendorId: vendor.id,
+      name: (props as unknown as Record<string, unknown>)['businessName'] as string | undefined,
+    };
   }
 }

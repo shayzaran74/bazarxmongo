@@ -31,8 +31,8 @@ export class MatchingService {
     const max = wanted.getProps().maxPrice;
 
     if (price) {
-      if (min && price.gte(min)) score += 10;
-      if (max && price.lte(max)) score += 10;
+      if (min && price >= min) score += 10;
+      if (max && price <= max) score += 10;
     }
 
     // 4. Location Match (10 points)

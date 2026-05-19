@@ -1,15 +1,20 @@
 // apps/backend/src/modules/commerce/application/commands/merge-cart.handler.ts
+// MergeCartHandler — Mongoose migration (ADR-005 Faz 2b)
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { MongoCartRepository } from '../../infrastructure/persistence/mongo-cart.repository';
+import { MongoListingRepository } from '../../../catalog/infrastructure/persistence/mongo-listing.repository';
 import { MergeCartCommand } from './merge-cart.command';
 
 @CommandHandler(MergeCartCommand)
 export class MergeCartHandler implements ICommandHandler<MergeCartCommand> {
   private readonly logger = new Logger(MergeCartHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly cartRepo:    MongoCartRepository,
+    private readonly listingRepo:  MongoListingRepository,
+  ) {}
 
   async execute(command: MergeCartCommand) {
     const { userId, guestItems } = command;
@@ -19,24 +24,22 @@ export class MergeCartHandler implements ICommandHandler<MergeCartCommand> {
     }
 
     // Kullanıcının mevcut sepetini getir veya oluştur
-    let cart = await this.prisma.cart.findUnique({ where: { userId } });
+    let cart = await this.cartRepo.findByUserId(userId);
     if (!cart) {
-      cart = await this.prisma.cart.create({ data: { userId } });
+      cart = await this.cartRepo.findOrCreate(userId);
     }
 
     // Mevcut sepet item'larını al (listingId → quantity map)
-    const existing = await this.prisma.cartItem.findMany({
-      where: { cartId: cart.id },
-      select: { id: true, listingId: true, quantity: true },
-    });
-    const existingMap = new Map<string, any>(existing.map(i => [i.listingId, i]));
+    const existingItems = cart.getProps().items;
+    const existingMap = new Map<string, { id: string; quantity: number }>();
+    for (const item of existingItems) {
+      const props = item.getProps();
+      existingMap.set(props.listingId, { id: item.id, quantity: props.quantity });
+    }
 
     // Geçerli listing ID'lerini doğrula (silinmiş veya pasif listing'leri filtrele)
     const listingIds = guestItems.map(i => i.listingId);
-    const validListings = await this.prisma.listing.findMany({
-      where: { id: { in: listingIds }, status: 'ACTIVE' },
-      select: { id: true },
-    });
+    const validListings = await this.listingRepo.findByIds(listingIds);
     const validIds = new Set(validListings.map(l => l.id));
 
     let merged = 0;
@@ -45,23 +48,16 @@ export class MergeCartHandler implements ICommandHandler<MergeCartCommand> {
     for (const item of guestItems) {
       if (!validIds.has(item.listingId)) {
         skipped++;
-        continue; // Aktif olmayan listing'i sessizce atla
+        continue;
       }
 
-      const qty = Math.max(1, Math.min(item.quantity, 99)); // 1-99 arası sınırla
-      const current = existingMap.get(item.listingId) as any;
+      const qty = Math.max(1, Math.min(item.quantity, 99));
+      const current = existingMap.get(item.listingId);
 
       if (current) {
-        // Çakışma: mevcut quantity + misafir quantity (max 99)
-        await this.prisma.cartItem.update({
-          where: { id: current.id },
-          data: { quantity: Math.min(current.quantity + qty, 99) },
-        });
+        await this.cartRepo.updateItemQuantity(current.id, Math.min(current.quantity + qty, 99));
       } else {
-        // Yeni ürün — sepete ekle
-        await this.prisma.cartItem.create({
-          data: { cartId: cart.id, listingId: item.listingId, quantity: qty },
-        });
+        await this.cartRepo.addItem(cart.id, item.listingId, qty);
       }
 
       merged++;

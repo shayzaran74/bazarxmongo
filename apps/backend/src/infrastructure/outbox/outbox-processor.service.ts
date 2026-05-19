@@ -1,7 +1,7 @@
 // apps/backend/src/infrastructure/outbox/outbox-processor.service.ts
 
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { OutboxMessage } from '@barterborsa/shared-persistence/schemas/backend/outbox-message.schema';
 import { RabbitMQService } from '@barterborsa/shared-messaging';
 
 @Injectable()
@@ -12,10 +12,7 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
   private isProcessing = false;
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly rabbitMQ: RabbitMQService,
-  ) {}
+  constructor(private readonly rabbitMQ: RabbitMQService) {}
 
   onModuleInit() {
     this.startProcessing();
@@ -48,14 +45,13 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
     this.isProcessing = true;
 
     try {
-      const pendingMessages = await this.prisma.outboxMessage.findMany({
-        where: {
-          status: 'PENDING',
-          retryCount: { lt: 3 },
-        },
-        take: this.BATCH_SIZE,
-        orderBy: { createdAt: 'asc' },
-      });
+      const pendingMessages = await OutboxMessage.find({
+        status: 'PENDING',
+        retryCount: { $lt: 3 },
+      })
+        .sort({ createdAt: 1 })
+        .limit(this.BATCH_SIZE)
+        .lean();
 
       for (const msg of pendingMessages) {
         await this.processMessage(msg);
@@ -65,35 +61,36 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async processMessage(msg: { id: string; exchange: string; routingKey: string; payload: unknown; retryCount: number }): Promise<void> {
+  private async processMessage(msg: { _id: string; exchange: string; routingKey: string; payload: unknown; retryCount: number }): Promise<void> {
     try {
-      await this.prisma.outboxMessage.update({
-        where: { id: msg.id },
-        data: { status: 'PROCESSING' },
-      });
+      await OutboxMessage.updateOne(
+        { _id: msg._id },
+        { $set: { status: 'PROCESSING' } }
+      );
 
       await this.rabbitMQ.publish(msg.exchange, msg.routingKey, msg.payload);
 
-      await this.prisma.outboxMessage.update({
-        where: { id: msg.id },
-        data: {
-          status: 'COMPLETED',
-          processedAt: new Date(),
-        },
-      });
+      await OutboxMessage.updateOne(
+        { _id: msg._id },
+        {
+          $set: {
+            status: 'COMPLETED',
+            processedAt: new Date(),
+          },
+        }
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
 
-      await this.prisma.outboxMessage.update({
-        where: { id: msg.id },
-        data: {
-          status: 'PENDING',
-          retryCount: { increment: 1 },
-          error: errorMessage,
-        },
-      });
+      await OutboxMessage.updateOne(
+        { _id: msg._id },
+        {
+          $set: { status: 'PENDING', error: errorMessage },
+          $inc: { retryCount: 1 },
+        }
+      );
 
-      this.logger.warn(`Outbox mesajı işlenemedi: ${msg.id}, tekrar deneme: ${msg.retryCount + 1}`, {
+      this.logger.warn(`Outbox mesajı işlenemedi: ${msg._id}, tekrar deneme: ${msg.retryCount + 1}`, {
         error: errorMessage,
       });
     }

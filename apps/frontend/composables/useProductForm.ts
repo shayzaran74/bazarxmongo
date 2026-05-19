@@ -180,7 +180,7 @@ export const useProductForm = (params: { productId?: string | null; initialData?
 
   const fetchCategories = async () => {
     try {
-      const res = await $api<any>('/api/listings/categories')
+      const res = await $api<any>('/api/v1/listings/categories')
       const cats = res.data || []
       allCategories.value = cats
       mainCategories.value = cats.filter((c: any) => !c.parentId)

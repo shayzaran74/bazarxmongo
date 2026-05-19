@@ -1,28 +1,28 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { GetVendorTrustScoreQuery } from './get-vendor-trust-score.query';
 import { VendorTierVO } from '../../../vendor/domain/value-objects/vendor-tier.vo';
 import { VendorTier } from '../../../vendor/domain/enums/vendor-tier.enum';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
 
 @QueryHandler(GetVendorTrustScoreQuery)
 export class GetVendorTrustScoreHandler implements IQueryHandler<GetVendorTrustScoreQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @Inject('ITrustScoreRepository') private readonly trustScoreRepository: ITrustScoreRepository,
+  ) {}
 
   async execute(query: GetVendorTrustScoreQuery) {
     const { vendorId } = query;
 
-    const [vendor, trustScore] = await Promise.all([
-      this.prisma.vendor.findUnique({
-        where: { id: vendorId },
-        select: { tier: true, status: true },
-      }),
-      this.prisma.trustScore.findUnique({ where: { vendorId } }),
-    ]);
-
+    const vendor = await this.vendorRepository.findById(vendorId);
     if (!vendor) throw new NotFoundException('Vendor bulunamadı');
 
-    const tier   = vendor.tier as VendorTier;
+    const trustScore = await this.trustScoreRepository.findByVendorId(vendorId);
+
+    const tier = vendor.getProps().tier as VendorTier;
     const tierVO = VendorTierVO.create(tier);
 
     // TrustScore yoksa varsayılan 100 göster
@@ -42,16 +42,15 @@ export class GetVendorTrustScoreHandler implements IQueryHandler<GetVendorTrustS
         poolLimit:       tierVO.getPoolLimit(),
       },
       trustScore: {
-        overall:           Number(score.score),
-        tradingPerformance: Number(score.tradingPerformance),
-        xpLoyalty:         Number(score.xpLoyalty),
-        compliance:        Number(score.compliance),
+        overall:           score.score,
+        tradingPerformance: score.tradingPerformance,
+        xpLoyalty:         score.xpLoyalty,
+        compliance:        score.compliance,
         violationCount:    score.violationCount,
         isFrozen:          score.isFrozen,
         inactiveDays:      score.inactiveDays,
         lastCalculatedAt:  score.lastCalculatedAt,
-        // Skor açıklaması
-        level: this.scoreLevel(Number(score.score)),
+        level: this.scoreLevel(score.score),
       },
     };
   }

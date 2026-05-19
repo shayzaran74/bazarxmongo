@@ -1,7 +1,6 @@
 // apps/backend/src/modules/barter/domain/entities/wanted-item.entity.ts
 
 import { AggregateRoot } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { WantedItemStatus } from '../enums/wanted-item-status.enum';
 import { WantedItemType } from '../enums/wanted-item-type.enum';
 
@@ -11,8 +10,8 @@ export interface WantedItemProps {
   keywords: string[];
   description?: string;
   categoryId: string;
-  minPrice?: Prisma.Decimal;
-  maxPrice?: Prisma.Decimal;
+  minPrice?: number;
+  maxPrice?: number;
   status: WantedItemStatus;
   type: WantedItemType;
   isActive: boolean;

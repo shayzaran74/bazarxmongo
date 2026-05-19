@@ -2,10 +2,12 @@
 
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Roles } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { IUserComplaint } from '@barterborsa/shared-persistence';
 import { CreateNotificationDto } from '../application/dtos/create-notification.dto';
 import { CreateNotificationCommand } from '../application/commands/create-notification.command';
 
@@ -17,14 +19,10 @@ import { CreateNotificationCommand } from '../application/commands/create-notifi
 export class CommunicationAdminController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly prisma: PrismaService,
+    @InjectModel('UserComplaint') private readonly complaintModel: Model<IUserComplaint>,
   ) {}
 
   @ApiOperation({ summary: 'Şikayetleri listele (Admin)' })
-  @ApiQuery({ name: 'status', required: false, type: String })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiResponse({ status: 200 })
   @Get('complaints')
   async getComplaints(
     @Query('status') status?: string,
@@ -33,31 +31,23 @@ export class CommunicationAdminController {
   ) {
     const take = parseInt(limit, 10);
     const skip = (parseInt(page, 10) - 1) * take;
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
     const [data, total] = await Promise.all([
-      this.prisma.userComplaint.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.userComplaint.count({ where }),
+      this.complaintModel.find(where).skip(skip).limit(take).sort({ createdAt: -1 }).lean(),
+      this.complaintModel.countDocuments(where),
     ]);
 
     return {
-      success: true,
-      data,
+      success: true, data,
       meta: { page: parseInt(page, 10), limit: take, total, totalPages: Math.ceil(total / take) },
     };
   }
 
   @ApiOperation({ summary: 'Send bulk notification (Admin)' })
-  @ApiBody({ type: CreateNotificationDto })
-  @ApiResponse({ status: 201 })
   @Post('notifications/bulk')
-  async sendBulkNotification(@Body() dto: CreateNotificationDto) {
+  sendBulkNotification(@Body() dto: CreateNotificationDto) {
     return this.commandBus.execute(
       new CreateNotificationCommand(dto.userId, dto.type, dto.title, dto.message, dto.link),
     );

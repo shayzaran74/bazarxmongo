@@ -1,14 +1,13 @@
 // apps/backend/src/modules/commerce/domain/entities/order-item.entity.ts
 
 import { Entity } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 
 export interface OrderItemProps {
   orderId: string;
   listingId: string;
   quantity: number;
-  price: Prisma.Decimal;
-  totalAmount: Prisma.Decimal;
+  price: number;
+  totalAmount: number;
   productName: string;
   productImages: string[];
   variantInfo?: any;
@@ -26,7 +25,7 @@ export class OrderItem extends Entity<OrderItemProps> {
   public static create(
     listingId: string,
     quantity: number,
-    price: Prisma.Decimal,
+    price: number,
     productName: string,
     productImages: string[],
     variantInfo?: any
@@ -36,7 +35,7 @@ export class OrderItem extends Entity<OrderItemProps> {
       listingId,
       quantity,
       price,
-      totalAmount: price.mul(quantity),
+      totalAmount: price * quantity,
       productName,
       productImages,
       variantInfo,

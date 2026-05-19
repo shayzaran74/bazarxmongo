@@ -4,7 +4,7 @@ import { JwtAuthGuard, RolesGuard, Public } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
 import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { AuditLog } from '@barterborsa/shared-persistence/schemas/backend/auditLog.schema';
 import * as Minio from 'minio';
 
 @ApiTags('Admin Logs')
@@ -17,7 +17,6 @@ export class LogsAdminController {
   constructor(
     @Inject(STORAGE_ADAPTER) private readonly storage: IStorageAdapter,
     private readonly config: ConfigService,
-    private readonly prisma: PrismaService,
   ) {
     const endPoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10);
@@ -91,11 +90,11 @@ export class LogsAdminController {
 
   @ApiOperation({ summary: 'Audit loglarını listele' })
   @Get('audit')
-  async getAuditLogs(@Query('limit') limit: number = 20) {
-    const data = await this.prisma.auditLog.findMany({
-      take: Number(limit),
-      orderBy: { createdAt: 'desc' }
-    });
+  async getAuditLogs(@Query('limit') limit: number = 20): Promise<{ success: boolean; data: unknown[] }> {
+    const data = await AuditLog.find()
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .lean();
     return { success: true, data };
   }
 

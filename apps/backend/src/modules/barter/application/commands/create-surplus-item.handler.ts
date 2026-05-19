@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import { CreateSurplusItemCommand } from './create-surplus-item.command';
 import { ISurplusItemRepository } from '../../domain/repositories/surplus-item.repository.interface';
 import { SurplusItem } from '../../domain/entities/surplus-item.entity';
-import { Prisma } from '@prisma/client';
+import { SurplusStatus } from '../../domain/enums/surplus-status.enum';
 
 @CommandHandler(CreateSurplusItemCommand)
 export class CreateSurplusItemHandler implements ICommandHandler<CreateSurplusItemCommand> {
@@ -14,22 +14,34 @@ export class CreateSurplusItemHandler implements ICommandHandler<CreateSurplusIt
   ) {}
 
   async execute(command: CreateSurplusItemCommand): Promise<{ success: boolean; id: string }> {
-    const surplus = SurplusItem.create(
-      command.companyId,
-      command.title,
-      command.category,
-      new Prisma.Decimal(command.quantity),
-      command.unit,
-      command.city,
-      command.description,
-      command.unitPrice ? new Prisma.Decimal(command.unitPrice) : undefined,
-      command.images,
-      command.materialType,
-      command.location,
-      command.wantedCategories,
-      command.tradeModes,
-      command.technicalSpecs,
-    );
+    const now = new Date();
+    const id = 'surplus-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const props = {
+      companyId:         command.companyId,
+      title:             command.title,
+      description:       command.description,
+      category:          command.category,
+      materialType:      command.materialType,
+      quantity:          command.quantity as any, // Decimal → number için cast
+      blockedQuantity:   0 as any,
+      unit:              command.unit,
+      minTradeQuantity:  undefined,
+      unitPrice:         command.unitPrice as any,
+      wantedCategories:  command.wantedCategories,
+      tradeModes:       command.tradeModes,
+      technicalSpecs:    command.technicalSpecs,
+      images:            command.images,
+      location:          command.location,
+      city:              command.city,
+      status: SurplusStatus.PENDING_APPROVAL,
+      rejectionReason:   undefined,
+      approvedBy:        undefined,
+      reactivationCount: 0,
+      lastReactivatedAt: undefined,
+      createdAt:         now,
+      updatedAt:         now,
+    };
+    const surplus = SurplusItem.createFrom(props, id);
 
     await this.repository.save(surplus);
 

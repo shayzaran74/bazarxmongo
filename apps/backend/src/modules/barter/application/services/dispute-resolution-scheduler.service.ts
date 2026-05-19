@@ -2,39 +2,26 @@
 // Master Plan v4.3 §3.4 — Uyuşmazlık Çözüm Otomasyonu
 // Akış: OPEN → (24h) → AUTO_REVIEW → otomatik karar | MANUAL_REVIEW → (48h) → ARBITRATION → RESOLVED
 
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DisputeResolutionStatus, DISPUTE_TIMINGS } from '../../domain/enums/dispute-resolution-status.enum';
 
-// Scheduler 15 dakikada bir state geçişlerini denetler
 const TICK_INTERVAL_MS = 15 * 60 * 1000;
-// Bir tick'te en fazla işlenecek kayıt sayısı (rate limit)
 const BATCH_SIZE = 50;
 
-interface DisputeRow {
-  id:              string;
-  status:          string;
-  openedById:      string;
-  respondentId:    string;
-  evidence:        unknown;
-  createdAt:       Date;
-  updatedAt:       Date;
-  resolutionDeadlineAt: Date | null;
-}
-
 @Injectable()
-export class DisputeResolutionSchedulerService implements OnModuleInit, OnModuleDestroy {
+export class DisputeResolutionSchedulerService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(DisputeResolutionSchedulerService.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private readonly prisma:   PrismaService,
+    @Inject('IDisputeRepository') private readonly disputeRepo: IDisputeRepository,
     private readonly auditLog: AuditLogService,
   ) {}
 
-  onModuleInit(): void {
-    // İlk tick uygulama ayağa kalkar kalkmaz 60sn sonra
+  onApplicationBootstrap(): void {
     setTimeout(() => {
       void this.tick();
       this.intervalHandle = setInterval(() => void this.tick(), TICK_INTERVAL_MS);
@@ -45,7 +32,6 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     if (this.intervalHandle) clearInterval(this.intervalHandle);
   }
 
-  // Ana tick — tüm bekleyen dispute'lara state geçişi uygula
   async tick(): Promise<void> {
     try {
       await this.transitionOpenToAutoReview();
@@ -57,27 +43,18 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     }
   }
 
-  // 1. Adım: OPEN durumundaki ve delil penceresi (24h) geçmiş kayıtları AUTO_REVIEW'a al
   private async transitionOpenToAutoReview(): Promise<void> {
     const cutoff = new Date(Date.now() - DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
 
-    const rows = await this.prisma.barterDisputeLog.findMany({
-      where: {
-        status:    DisputeResolutionStatus.OPEN,
-        createdAt: { lte: cutoff },
-      },
-      take: BATCH_SIZE,
-      select: this.disputeSelect(),
-    });
+    const rows = await this.disputeRepo.findByStatusAndCreatedBefore(
+      DisputeResolutionStatus.OPEN,
+      cutoff,
+      BATCH_SIZE,
+    );
 
     for (const row of rows) {
-      await this.prisma.barterDisputeLog.update({
-        where: { id: row.id },
-        data:  {
-          status:               DisputeResolutionStatus.AUTO_REVIEW,
-          resolutionDeadlineAt: this.deadlineFromNow(DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS),
-        },
-      });
+      const deadline = new Date(Date.now() + DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
+      await this.disputeRepo.updateStatusAndDeadline(row.id, DisputeResolutionStatus.AUTO_REVIEW, deadline);
 
       await this.auditLog.log({
         actorId:      'SYSTEM',
@@ -93,29 +70,22 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     }
   }
 
-  // 2. Adım: AUTO_REVIEW kayıtlarına basit karar mantığını uygula
-  // - Tek taraflı delil varsa: delil sahibi lehine RESOLVED
-  // - Her iki tarafta da delil varsa veya hiçbirinde yoksa: MANUAL_REVIEW
   private async transitionAutoReviewToFinal(): Promise<void> {
-    const rows = await this.prisma.barterDisputeLog.findMany({
-      where: { status: DisputeResolutionStatus.AUTO_REVIEW },
-      take:  BATCH_SIZE,
-      select: this.disputeSelect(),
-    });
+    const rows = await this.disputeRepo.findByStatus(
+      DisputeResolutionStatus.AUTO_REVIEW,
+      BATCH_SIZE,
+    );
 
     for (const row of rows) {
       const verdict = this.autoDecide(row);
 
       if (verdict.kind === 'AUTO_RESOLVED') {
-        await this.prisma.barterDisputeLog.update({
-          where: { id: row.id },
-          data:  {
-            status:         DisputeResolutionStatus.RESOLVED,
-            resolution:     verdict.resolution,
-            resolutionNote: verdict.note,
-            resolvedAt:     new Date(),
-            arbitratorType: 'INTERNAL',
-          },
+        await this.disputeRepo.updateResolutionDetails(row.id, {
+          status:         DisputeResolutionStatus.RESOLVED,
+          resolution:     verdict.resolution,
+          resolutionNote: verdict.note,
+          resolvedAt:     new Date(),
+          arbitratorType: 'INTERNAL',
         });
 
         await this.auditLog.log({
@@ -126,13 +96,12 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
           newValue:     { resolution: verdict.resolution, reason: verdict.note },
         });
       } else {
-        await this.prisma.barterDisputeLog.update({
-          where: { id: row.id },
-          data:  {
-            status:               DisputeResolutionStatus.MANUAL_REVIEW,
-            resolutionDeadlineAt: this.deadlineFromNow(DISPUTE_TIMINGS.MANUAL_REVIEW_HOURS),
-          },
-        });
+        const deadline = new Date(Date.now() + DISPUTE_TIMINGS.MANUAL_REVIEW_HOURS * 60 * 60 * 1000);
+        await this.disputeRepo.updateStatusAndDeadline(
+          row.id,
+          DisputeResolutionStatus.MANUAL_REVIEW,
+          deadline,
+        );
 
         await this.auditLog.log({
           actorId:      'SYSTEM',
@@ -149,27 +118,22 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     }
   }
 
-  // 3. Adım: MANUAL_REVIEW'da 48 saat hareketsiz kalanları ARBITRATION'a yönlendir
   private async transitionManualReviewToArbitration(): Promise<void> {
     const cutoff = new Date(Date.now() - DISPUTE_TIMINGS.MANUAL_REVIEW_HOURS * 60 * 60 * 1000);
 
-    const rows = await this.prisma.barterDisputeLog.findMany({
-      where: {
-        status:    DisputeResolutionStatus.MANUAL_REVIEW,
-        updatedAt: { lte: cutoff },
-      },
-      take: BATCH_SIZE,
-      select: this.disputeSelect(),
-    });
+    const rows = await this.disputeRepo.findByStatusAndUpdatedBefore(
+      DisputeResolutionStatus.MANUAL_REVIEW,
+      cutoff,
+      BATCH_SIZE,
+    );
 
     for (const row of rows) {
-      await this.prisma.barterDisputeLog.update({
-        where: { id: row.id },
-        data:  {
-          status:               DisputeResolutionStatus.ARBITRATION,
-          arbitratorType:       'EXTERNAL',
-          resolutionDeadlineAt: this.deadlineFromNow(DISPUTE_TIMINGS.ARBITRATION_HOURS),
-        },
+      const deadline = new Date(Date.now() + DISPUTE_TIMINGS.ARBITRATION_HOURS * 60 * 60 * 1000);
+      await this.disputeRepo.updateResolutionDetails(row.id, {
+        status:               DisputeResolutionStatus.ARBITRATION,
+        arbitratorType:       'EXTERNAL',
+        resolutionDeadlineAt: deadline,
+        resolvedAt:           new Date(),
       });
 
       await this.auditLog.log({
@@ -186,8 +150,7 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     }
   }
 
-  // Otomatik karar mantığı — delil dengesine bakar
-  private autoDecide(row: DisputeRow):
+  private autoDecide(row: any):
     | { kind: 'AUTO_RESOLVED'; resolution: string; note: string }
     | { kind: 'ESCALATE'; note: string }
   {
@@ -195,7 +158,6 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     const claimantEvidence  = this.evidenceCount(evidence['claimant']);
     const respondentEvidence = this.evidenceCount(evidence['respondent']);
 
-    // Sadece şikayetçi delil sundu → şikayetçi lehine
     if (claimantEvidence > 0 && respondentEvidence === 0) {
       return {
         kind:       'AUTO_RESOLVED',
@@ -204,7 +166,6 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
       };
     }
 
-    // Sadece karşı taraf delil sundu → şikayet düşer
     if (respondentEvidence > 0 && claimantEvidence === 0) {
       return {
         kind:       'AUTO_RESOLVED',
@@ -213,11 +174,10 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
       };
     }
 
-    // Çakışan delil veya hiç delil yok → manuel inceleme
     return {
       kind: 'ESCALATE',
       note: claimantEvidence === 0
-        ? 'Hiçbir tarafça delil sunulmadı, manuel inceleme gerekli.'
+        ? 'Hiçbir tarafta delil sunulmadı, manuel inceleme gerekli.'
         : 'Her iki tarafta da delil mevcut, manuel inceleme gerekli.',
     };
   }
@@ -226,22 +186,5 @@ export class DisputeResolutionSchedulerService implements OnModuleInit, OnModule
     if (Array.isArray(side)) return side.length;
     if (side && typeof side === 'object') return Object.keys(side).length;
     return 0;
-  }
-
-  private deadlineFromNow(hours: number): Date {
-    return new Date(Date.now() + hours * 60 * 60 * 1000);
-  }
-
-  private disputeSelect() {
-    return {
-      id:                   true,
-      status:               true,
-      openedById:           true,
-      respondentId:         true,
-      evidence:             true,
-      createdAt:            true,
-      updatedAt:            true,
-      resolutionDeadlineAt: true,
-    } as const;
   }
 }

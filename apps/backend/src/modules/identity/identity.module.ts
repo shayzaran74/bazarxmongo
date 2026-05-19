@@ -1,17 +1,19 @@
 // apps/backend/src/modules/identity/identity.module.ts
+// IdentityModule — Mongoose migration (ADR-005 Faz 2c)
 
 import { Module, Logger } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule, PrismaService } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule, RabbitMQService } from '@barterborsa/shared-messaging';
 import {
   SharedSecurityModule,
   GoogleOAuthStrategy,
 } from '@barterborsa/shared-security';
 import {
-  PrismaUserRepository,
-  PrismaUserProfileRepository,
-  PrismaUserAddressRepository,
+  MongoUserRepository,
+  MongoUserProfileRepository,
+  MongoUserAddressRepository,
+  MongoVerificationTokenRepository,
   RegisterUserHandler,
   LoginUserHandler,
   UpdateProfileHandler,
@@ -32,8 +34,21 @@ import {
   LocalStrategy,
   ForgotPasswordHandler,
   ResetPasswordHandler,
-  PrismaVerificationTokenRepository,
 } from '@barterborsa/domain-identity';
+import {
+  User, UserSchema,
+  UserProfile, UserProfileSchema,
+  UserAddress, UserAddressSchema,
+  VerificationToken, VerificationTokenSchema,
+  Session, SessionSchema,
+  UserLevel, UserLevelSchema,
+  UserSubscription, UserSubscriptionSchema,
+  ReferralSchema,
+  XpTransactionSchema,
+  OrderSchema,
+  Vendor, VendorSchema,
+  Company, CompanySchema,
+} from '@barterborsa/shared-persistence';
 
 import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
 import { UpdateUserStatusHandler } from './application/commands/update-user-status.handler';
@@ -53,6 +68,7 @@ import { AdminUserController } from './presentation/admin-user.controller';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { TokenService } from './infrastructure/auth/token.service';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
+import { MongoReferralRepository } from './infrastructure/persistence/mongo-referral.repository';
 
 const Handlers = [
   RegisterUserHandler,
@@ -83,7 +99,20 @@ const Handlers = [
   imports: [
     CqrsModule,
     SharedSecurityModule,
-    PrismaModule,
+    MongooseModule.forFeature([
+      { name: 'User',                 schema: UserSchema },
+      { name: 'UserProfile',          schema: UserProfileSchema },
+      { name: 'UserAddress',          schema: UserAddressSchema },
+      { name: 'VerificationToken',    schema: VerificationTokenSchema },
+      { name: 'Session',              schema: SessionSchema },
+      { name: 'UserLevel',            schema: UserLevelSchema },
+      { name: 'UserSubscription',     schema: UserSubscriptionSchema },
+      { name: 'Referral',             schema: ReferralSchema },
+      { name: 'XpTransaction',        schema: XpTransactionSchema },
+      { name: 'Order',                schema: OrderSchema },
+      { name: 'Vendor',               schema: VendorSchema },
+      { name: 'Company',              schema: CompanySchema },
+    ]),
     RabbitMQModule,
     CommunicationModule,
   ],
@@ -107,29 +136,25 @@ const Handlers = [
     ...Handlers,
     {
       provide: 'IUserRepository',
-      useFactory: (prisma: PrismaService) => new PrismaUserRepository(prisma),
-      inject: [PrismaService],
+      useClass: MongoUserRepository,
     },
     {
       provide: 'IUserProfileRepository',
-      useFactory: (prisma: PrismaService) => new PrismaUserProfileRepository(prisma),
-      inject: [PrismaService],
+      useClass: MongoUserProfileRepository,
     },
     {
       provide: 'IUserAddressRepository',
-      useFactory: (prisma: PrismaService) => new PrismaUserAddressRepository(prisma),
-      inject: [PrismaService],
+      useClass: MongoUserAddressRepository,
     },
     {
       provide: 'IVerificationTokenRepository',
-      useFactory: (prisma: PrismaService) => new PrismaVerificationTokenRepository(prisma),
-      inject: [PrismaService],
+      useClass: MongoVerificationTokenRepository,
     },
     {
-      // IEventBus → RabbitMQService adapter
-      // domain-identity IEventBus: publish(topic, data)
-      // RabbitMQService:           publish(exchange, routingKey, payload)
-      // Adapter: topic = routingKey, exchange = 'auth.events'
+      provide: 'IReferralRepository',
+      useClass: MongoReferralRepository,
+    },
+    {
       provide: 'IEventBus',
       useFactory: (rabbitMQ: RabbitMQService) => ({
         publish: async (topic: string, data: any) => {
@@ -137,7 +162,6 @@ const Handlers = [
           try {
             await rabbitMQ.publish('identity.events', topic, data);
           } catch (err: any) {
-            // Event bus hatası kimlik doğrulama akışını bloklamamalı
             logger.error(`Event publish failed [${topic}]: ${err.message}`);
           }
         },

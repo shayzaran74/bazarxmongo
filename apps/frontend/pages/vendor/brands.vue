@@ -95,8 +95,19 @@
 
           <!-- Step 1: Brand Name -->
           <div v-if="currentStep === 1" class="p-8 space-y-5">
-            <h4 class="text-sm font-black text-gray-400 uppercase tracking-widest">Adım 1 — Marka Adı</h4>
+            <h4 class="text-sm font-black text-gray-400 uppercase tracking-widest">Adım 1 — Marka Adı & Logo</h4>
             <input v-model="form.brandName" type="text" placeholder="Başvurmak istediğiniz marka adını yazın..." class="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl text-lg font-black focus:bg-white focus:border-indigo-500 outline-none transition-all">
+            
+            <div class="space-y-2 mt-4">
+              <label class="block text-xs font-black text-gray-400 uppercase tracking-widest">Marka Logosu (İsteğe Bağlı)</label>
+              <div class="flex gap-3">
+                <div class="flex-1 px-5 py-3 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:border-indigo-400 hover:bg-white transition-all" @click="$refs.imageInput?.click()">
+                  <CloudArrowUpIcon class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm font-bold text-gray-500">{{ form.image ? '✅ Yüklendi' : 'Logo seç...' }}</span>
+                  <input ref="imageInput" type="file" class="hidden" accept="image/*" @change="handleFileUpload($event, 'image')">
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Step 2: Application Type -->

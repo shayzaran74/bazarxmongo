@@ -1,44 +1,49 @@
 // apps/backend/src/modules/auction/infrastructure/persistence/mappers/lottery.mapper.ts
+// LotteryMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Types } from 'mongoose';
+import { ILottery } from '@barterborsa/shared-persistence/schemas/backend/lottery.schema';
 import { Lottery, LotteryProps } from '../../../domain/entities/lottery.entity';
 import { LotteryStatus } from '../../../domain/enums/lottery-status.enum';
 
-type LotteryRaw = Prisma.LotteryGetPayload<object>;
+export interface LotteryDocument extends ILottery {
+  _id?: string;
+}
 
 @Injectable()
 export class LotteryMapper {
-  toDomain(raw: LotteryRaw): Lottery {
+  toDomain(doc: LotteryDocument): Lottery {
     const props: LotteryProps = {
-      title: raw.title,
-      prizeDescription: raw.prizeDescription ?? undefined,
-      ticketPrice: raw.ticketPrice,
-      status: raw.status as LotteryStatus,
-      winnerId: raw.winnerId ?? undefined,
-      endTime: raw.endTime,
-      maxTicketsPerUser: raw.maxTicketsPerUser,
-      ownerId: raw.ownerId,
-      startTime: raw.startTime,
-      ticketDigits: raw.ticketDigits,
-      totalTickets: raw.totalTickets,
-      numbersPerTicket: raw.numbersPerTicket,
-      prizeValue: raw.prizeValue ?? undefined,
-      winningNumber: raw.winningNumber ?? undefined,
-      listingId: raw.listingId ?? undefined,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
+      title: doc.title,
+      prizeDescription: doc.prizeDescription ?? undefined,
+      ticketPrice: Number(doc.ticketPrice) || 0,
+      status: doc.status as any,
+      winnerId: doc.winnerId ?? undefined,
+      endTime: doc.endTime,
+      maxTicketsPerUser: doc.maxTicketsPerUser ?? 10,
+      ownerId: doc.ownerId,
+      startTime: doc.startTime,
+      ticketDigits: doc.ticketDigits ?? 3,
+      totalTickets: doc.totalTickets ?? 100,
+      numbersPerTicket: doc.numbersPerTicket ?? 1,
+      prizeValue: doc.prizeValue ? Number(doc.prizeValue) : undefined,
+      winningNumber: doc.winningNumber ?? undefined,
+      listingId: doc.listingId ?? undefined,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
-    return Lottery.createFrom(props, raw.id);
+    return Lottery.createFrom(props, doc.id);
   }
 
   toPersistence(domain: Lottery): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       title: props.title,
       prizeDescription: props.prizeDescription,
-      ticketPrice: props.ticketPrice,
+      ticketPrice: Types.Decimal128.fromString(String(props.ticketPrice)),
       status: props.status,
       winnerId: props.winnerId,
       endTime: props.endTime,
@@ -48,7 +53,7 @@ export class LotteryMapper {
       ticketDigits: props.ticketDigits,
       totalTickets: props.totalTickets,
       numbersPerTicket: props.numbersPerTicket,
-      prizeValue: props.prizeValue,
+      prizeValue: props.prizeValue != null ? Types.Decimal128.fromString(String(props.prizeValue)) : undefined,
       winningNumber: props.winningNumber,
       listingId: props.listingId,
       createdAt: props.createdAt,

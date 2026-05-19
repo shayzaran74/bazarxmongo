@@ -1,17 +1,14 @@
 // apps/backend/src/modules/menu/application/commands/advance-launch-partner-phase.handler.ts
 // Master Plan v4.3 §2.8 — 3 Fazlı Süreç Yönetimi
-// BazarX Go: LaunchPartner.restaurantId → vendorId
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ILaunchPartner, IVendor, IUserProfile } from '@barterborsa/shared-persistence';
 import { AdvanceLaunchPartnerPhaseCommand } from './advance-launch-partner-phase.command';
 
-const PHASE_TRANSITIONS: Record<string, string> = {
-  PHASE_1: 'PHASE_2',
-  PHASE_2: 'PHASE_3',
-};
-
+const PHASE_TRANSITIONS: Record<string, string> = { PHASE_1: 'PHASE_2', PHASE_2: 'PHASE_3' };
 const PHASE_LABELS: Record<string, string> = {
   PHASE_1: 'Ay 1 — Platform profili + 60 menü taahhüdü',
   PHASE_2: 'Ay 2-3 — Ücretsiz reklam + QR operasyon desteği',
@@ -19,57 +16,43 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 @CommandHandler(AdvanceLaunchPartnerPhaseCommand)
-export class AdvanceLaunchPartnerPhaseHandler
-  implements ICommandHandler<AdvanceLaunchPartnerPhaseCommand>
-{
+export class AdvanceLaunchPartnerPhaseHandler implements ICommandHandler<AdvanceLaunchPartnerPhaseCommand> {
   private readonly logger = new Logger(AdvanceLaunchPartnerPhaseHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('LaunchPartner') private readonly partnerModel: Model<ILaunchPartner>,
+    @InjectModel('Vendor')        private readonly vendorModel:  Model<IVendor>,
+    @InjectModel('UserProfile')   private readonly profileModel: Model<IUserProfile>,
+  ) {}
 
   async execute(command: AdvanceLaunchPartnerPhaseCommand) {
     const { vendorId, adminId, notes } = command;
 
-    const partner = await this.prisma.launchPartner.findUnique({
-      where:   { vendorId },
-      include: { vendor: { include: { profile: { select: { storeName: true } } } } },
-    });
+    const partner = await this.partnerModel.findOne({ vendorId }).lean();
     if (!partner) throw new NotFoundException('Lansman ortağı bulunamadı');
 
     const currentPhase = partner.phase;
     const nextPhase    = PHASE_TRANSITIONS[currentPhase];
+    if (!nextPhase) throw new BadRequestException('Zaten son faza ulaşıldı (PHASE_3)');
 
-    if (!nextPhase) {
-      throw new BadRequestException('Zaten son faza ulaşıldı (PHASE_3)');
-    }
-
-    // Faz 2'ye geçiş için: dağıtılan menü sayısı taahhüdü karşılamış mı?
     if (currentPhase === 'PHASE_1' && partner.distributedCount < partner.pledgedMenuCount) {
       throw new BadRequestException(
         `${partner.pledgedMenuCount} menü taahhüdünden yalnızca ${partner.distributedCount} dağıtıldı. Faz 2 için taahhüt karşılanmalı.`,
       );
     }
 
-    const updateData: Record<string, unknown> = {
-      phase: nextPhase,
-      notes: notes ?? partner.notes,
-    };
+    const updateData: Record<string, unknown> = { phase: nextPhase, notes: notes ?? partner.notes };
     if (nextPhase === 'PHASE_2') updateData.phase2StartDate = new Date();
     if (nextPhase === 'PHASE_3') updateData.phase3StartDate = new Date();
 
-    await this.prisma.launchPartner.update({
-      where: { vendorId },
-      data:  updateData,
-    });
+    await this.partnerModel.updateOne({ vendorId }, { $set: updateData });
 
-    const storeName = partner.vendor.profile?.storeName ?? 'Satıcı';
+    // Satıcı profil adını bul
+    const vendor  = await this.vendorModel.findOne({ id: vendorId }, { userId: 1 }).lean();
+    const profile = vendor ? await this.profileModel.findOne({ userId: vendor.userId }, { storeName: 1 }).lean() : null;
+    const storeName = (profile as Record<string, unknown> | null)?.storeName as string ?? 'Satıcı';
 
-    this.logger.log('Lansman ortağı fazı ilerledi', {
-      vendorId,
-      storeName,
-      adminId,
-      from: currentPhase,
-      to:   nextPhase,
-    });
+    this.logger.log('Lansman ortağı fazı ilerledi', { vendorId, storeName, adminId, from: currentPhase, to: nextPhase });
 
     return {
       success: true,

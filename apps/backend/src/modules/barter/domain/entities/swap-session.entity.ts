@@ -1,7 +1,6 @@
 // apps/backend/src/modules/barter/domain/entities/swap-session.entity.ts
 
 import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { SwapSessionStatus } from '../enums/swap-session-status.enum';
 import { BarterPart } from './barter-part.entity';
 
@@ -12,7 +11,7 @@ export interface SwapSessionProps {
   shipmentMode: string;
   shipments?: unknown;
   escrowId?: string;
-  collateralAmount: Prisma.Decimal;
+  collateralAmount: number;
   collateralCurrency: string;
   collateralStatus: string;
   collateralLockedAt?: Date;
@@ -68,7 +67,7 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
     tradeOfferId: string,
     initiatorId: string,
     receiverId: string,
-    collateralAmount: Prisma.Decimal,
+    collateralAmount: number,
     timeoutInDays: number = 30
   ): SwapSession {
     const now = new Date();
@@ -136,6 +135,13 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
   public complete(): void {
     this.transitionTo(SwapSessionStatus.COMPLETED);
     this.props.completedAt = new Date();
+  }
+
+  public releaseCollateral(): void {
+    // Teminat serbest bırakıldı — COMPLETED veya TIMEOUT durumlarında kullanılır
+    this.props.collateralStatus = 'RELEASED';
+    this.props.collateralReleasedAt = new Date();
+    this._updatedAt = new Date();
   }
 
   public cancel(): void {

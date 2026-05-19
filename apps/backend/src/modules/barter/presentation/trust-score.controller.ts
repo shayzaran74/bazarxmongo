@@ -1,17 +1,17 @@
 // apps/backend/src/modules/barter/presentation/trust-score.controller.ts
 
-import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Query, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { GetVendorTrustScoreQuery } from '../application/queries/get-vendor-trust-score.query';
 import { RecordTrustViolationCommand, ViolationType } from '../application/commands/record-trust-violation.command';
 import { TrustScoreCalculatorService } from '../application/services/trust-score-calculator.service';
 import { WatchtowerService } from '../application/services/watchtower.service';
 import { B2BXpRulesService, B2BXpUsageType } from '../application/services/b2b-xp-rules.service';
 import { OffboardVendorCommand } from '../application/commands/offboard-vendor.command';
+import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 
 interface AuthenticatedUser { id: string; role: string; }
 
@@ -23,7 +23,7 @@ export class TrustScoreController {
   constructor(
     private readonly commandBus:  CommandBus,
     private readonly queryBus:    QueryBus,
-    private readonly prisma:      PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
     private readonly calculator:  TrustScoreCalculatorService,
     private readonly watchtower:  WatchtowerService,
     private readonly b2bXp:       B2BXpRulesService,
@@ -35,10 +35,7 @@ export class TrustScoreController {
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @Get('me')
   async getMyTrustScore(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const vendor = await this.vendorRepository.findByUserId(user.id);
     if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
 
     const data = await this.queryBus.execute(new GetVendorTrustScoreQuery(vendor.id));
@@ -126,9 +123,7 @@ export class TrustScoreController {
     @Body() body: { vendorId?: string; reason?: string },
   ) {
     // Vendor kendi çıkışını yapabilir veya admin başkası için yapabilir
-    const targetVendorId = body.vendorId ?? (
-      await this.prisma.vendor.findFirst({ where: { userId: user.id }, select: { id: true } })
-    )?.id;
+    const targetVendorId = body.vendorId ?? (await this.vendorRepository.findByUserId(user.id))?.id;
 
     if (!targetVendorId) {
       return { success: false, message: 'Vendor bulunamadı' };

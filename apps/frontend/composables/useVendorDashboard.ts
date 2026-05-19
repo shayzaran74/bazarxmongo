@@ -95,7 +95,7 @@ export const useVendorDashboard = () => {
     loading.value = true
     try {
       const [productsRes, ordersRes] = await Promise.allSettled([
-        $api<any>('/api/vendors/products', { query: { limit: 100 } }),
+        $api<any>('/api/v1/vendors/products', { query: { limit: 100 } }),
         $api<any>('/api/vendors/orders'),
       ])
 
@@ -103,10 +103,11 @@ export const useVendorDashboard = () => {
       const orders = ordersRes.status === 'fulfilled' ? ordersRes.value : null
 
       stats.productCount = products?.data?.length || 0
-      rawOrders.value = orders?.data || []
+      // API response is { success: true, data: { items: [], total: 0 } }
+      rawOrders.value = orders?.data?.items || (Array.isArray(orders?.data) ? orders.data : [])
       stats.orderCount = rawOrders.value.length
       stats.pendingOrders = rawOrders.value.filter(
-        o => o.status === 'PENDING'
+        (o: any) => o.status === 'PENDING'
       ).length
 
       // Gerçek stats endpoint — Doğru yol: /api/vendors/inventory/stats

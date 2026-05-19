@@ -1,26 +1,23 @@
+// apps/backend/src/modules/catalog/application/queries/list-admin-brands/list-admin-brands.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { ListAdminBrandsQuery } from './list-admin-brands.query';
+import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
 
 @QueryHandler(ListAdminBrandsQuery)
-export class ListAdminBrandsHandler
-  implements IQueryHandler<ListAdminBrandsQuery> {
-
-  constructor(private readonly prisma: PrismaService) {}
-
+export class ListAdminBrandsHandler implements IQueryHandler<ListAdminBrandsQuery> {
   async execute(query: ListAdminBrandsQuery) {
     const { search, page = 1, limit = 50 } = query.filters;
     const skip = (page - 1) * limit;
-    const where = search
-      ? { name: { contains: search, mode: 'insensitive' as const } }
-      : {};
+    const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
 
     const [items, total] = await Promise.all([
-      this.prisma.brand.findMany({
-        where, skip, take: Number(limit),
-        orderBy: { name: 'asc' }
-      }),
-      this.prisma.brand.count({ where })
+      Brand.find(filter)
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      Brand.countDocuments(filter).exec(),
     ]);
 
     return { items, total, page, limit };

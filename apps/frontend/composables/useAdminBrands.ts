@@ -33,7 +33,12 @@ export const useAdminBrands = () => {
           limit: 100,
         }
       })
-      brands.value = res.data?.items || []
+      // Backend returns { success: true, data: result }
+      // result can be array or { items: [], total: n }
+      const data = res?.data
+      brands.value = Array.isArray(data) ? data : (data?.items || [])
+      totalItems.value = data?.total || brands.value.length
+      totalPages.value = Math.ceil(totalItems.value / 50) || 1
       // Update stats based on fetched brands
       brandStats.PENDING = brands.value.filter(b => b.status === 'PENDING').length;
       brandStats.ALL = brands.value.length;
@@ -101,12 +106,101 @@ export const useAdminBrands = () => {
 
   const resolveImageUrl = (url: string) => url || '/images/no-brand.png';
 
+  const approveBrandApplication = async (id: string) => {
+    try {
+      await $api(`/api/admin/brands/${id}/approve`, { method: 'PUT' })
+      $toast.success('Marka onaylandı')
+      fetchBrands()
+    } catch {
+      $toast.error('Onaylanamadı')
+    }
+  }
+
+  const rejectBrandApplication = async (id: string, reason?: string) => {
+    try {
+      await $api(`/api/admin/brands/${id}/reject`, {
+        method: 'PUT',
+        body: { rejectionReason: reason }
+      })
+      $toast.success('Marka reddedildi')
+      fetchBrands()
+    } catch {
+      $toast.error('Reddedilemedi')
+    }
+  }
+
+  const requestAdditionalDocs = async (id: string) => {
+    try {
+      await $api(`/api/admin/brands/${id}/request-docs`, { method: 'PUT' })
+      $toast.success('Belge talebi gönderildi')
+      fetchBrands()
+    } catch {
+      $toast.error('Belge talebi gönderilemedi')
+    }
+  }
+
+  const saveBrand = async () => {
+    saving.value = true
+    try {
+      const payload = { ...formData.value }
+      if (isEditing.value) {
+        await $api(`/api/admin/brands/${selectedBrand.value.id}`, {
+          method: 'PUT',
+          body: payload
+        })
+        $toast.success('Marka güncellendi')
+      } else {
+        await $api('/api/admin/brands', {
+          method: 'POST',
+          body: payload
+        })
+        $toast.success('Marka oluşturuldu')
+      }
+      showModal.value = false
+      fetchBrands()
+    } catch (e: any) {
+      $toast.error(e?.message || 'Kayıt hatası')
+    } finally {
+      saving.value = false
+    }
+  }
+
+  const resolveViolationQuickly = async (v: any) => {
+    try {
+      await $api(`/api/admin/brand-violations/${v.id}/resolve`, { method: 'PUT' })
+      $toast.success('İhlal çözüldü olarak işaretlendi')
+      fetchBrands()
+    } catch {
+      $toast.error('İhlal çözülemedi')
+    }
+  }
+
+  const openViolationModal = (v: any) => {
+    // brand violations tab uses same BrandReviewModal, pass the violation's brand
+    selectedBrand.value = v.brand || { id: v.id, name: v.brandName, status: v.status }
+    showReviewModal.value = true
+  }
+
   return {
     brands, loading, filters, saving, brandStats,
     currentTab, searchQuery, selectedLetter, currentPage, totalPages, totalItems,
     showModal, showReviewModal, isEditing, selectedBrand, rejectionReason, isPopularToggle,
     violations, violationsLoading, formData,
-    fetchBrands, approveBrand, rejectBrand, deleteBrand,
-    openReviewModal, openEditBrand, generateSlug, resolveImageUrl, handleSearch
+    fetchBrands,
+    handleSearch,
+    openReviewModal,
+    openEditBrand,
+    openNewBrand,
+    generateSlug,
+    resolveImageUrl,
+    approveBrand,
+    approveBrandApplication,
+    rejectBrand,
+    rejectBrandApplication,
+    requestAdditionalDocs,
+    resolveViolationQuickly,
+    openViolationModal,
+    deleteBrand,
+    saveBrand,
   }
 }

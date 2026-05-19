@@ -1,18 +1,22 @@
 // apps/backend/src/modules/commerce/application/services/order-expiry.service.ts
+// OrderExpiryService — Mongoose migration (ADR-005 Faz 2b)
 
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Injectable, Logger, OnModuleDestroy, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { ORDER_PAYMENT_EXPIRY_MS, ORDER_EXPIRY_CHECK_INTERVAL_MS } from '@barterborsa/shared-core';
+import { MongoOrderRepository } from '../../infrastructure/persistence/mongo-order.repository';
+import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 
 @Injectable()
-export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
+export class OrderExpiryService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(OrderExpiryService.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly orderRepo: MongoOrderRepository,
+    @Inject('IListingRepository') private readonly listingRepo: IListingRepository,
+  ) {}
 
-  onModuleInit(): void {
-    // Uygulama başlarken ilk kontrolü hemen yap, sonra aralıklı çalıştır
+  onApplicationBootstrap(): void {
     void this.cancelExpiredOrders();
     this.intervalHandle = setInterval(
       () => void this.cancelExpiredOrders(),
@@ -30,16 +34,7 @@ export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
   async cancelExpiredOrders(): Promise<void> {
     const now = new Date();
 
-    // expiresAt geçmiş ve hâlâ PENDING olan tüm siparişleri bul
-    const expiredOrders = await this.prisma.order.findMany({
-      where: {
-        status: 'PENDING',
-        expiresAt: { lte: now, not: null },
-      },
-      include: {
-        orderItems: { select: { listingId: true, quantity: true } },
-      },
-    });
+    const expiredOrders = await this.orderRepo.findExpiredPending(now);
 
     if (expiredOrders.length === 0) return;
 
@@ -47,36 +42,22 @@ export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
 
     for (const order of expiredOrders) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          // Siparişi iptal et
-          await tx.order.update({
-            where: { id: order.id },
-            data: {
-              status: 'CANCELLED',
-              cancelReason: 'Ödeme süresi doldu',
-              cancelledAt: now,
-            },
-          });
+        // Siparişi iptal et
+        await this.orderRepo.updateStatus(order.id, 'CANCELLED');
 
-          // Rezerve edilen stokları geri al
-          for (const item of order.orderItems) {
-            await tx.listing.updateMany({
-              where: {
-                id: item.listingId,
-                reservedQuantity: { gte: item.quantity },
-              },
-              data: {
-                stock: { increment: item.quantity },
-                reservedQuantity: { decrement: item.quantity },
-              },
-            });
-          }
-        });
+        // Rezerve edilen stokları geri al
+        const items = order.getProps().items ?? [];
+        for (const item of items) {
+          await this.listingRepo.releaseStock(
+            item.getProps().listingId,
+            item.getProps().quantity,
+          );
+        }
 
         this.logger.log(`Sipariş iptal edildi ve stok serbest bırakıldı`, {
           orderId: order.id,
-          orderNumber: order.orderNumber,
-          itemCount: order.orderItems.length,
+          orderNumber: order.getProps().orderNumber.value,
+          itemCount: items.length,
         });
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'Bilinmeyen hata';
@@ -84,7 +65,6 @@ export class OrderExpiryService implements OnModuleInit, OnModuleDestroy {
           orderId: order.id,
           error: msg,
         });
-        // Hata tek siparişi etkilememeli; döngü devam eder
       }
     }
   }

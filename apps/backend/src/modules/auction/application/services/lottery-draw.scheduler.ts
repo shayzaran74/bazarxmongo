@@ -1,24 +1,23 @@
 // apps/backend/src/modules/auction/application/services/lottery-draw.scheduler.ts
 
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { DrawLotteryCommand } from '../commands/draw-lottery.command';
+import { ILotteryRepository } from '../../domain/repositories/lottery.repository.interface';
 
-// Süresi dolmuş çekiliş kontrolü — her 60 saniyede bir
 const CHECK_INTERVAL_MS = 60_000;
 
 @Injectable()
-export class LotteryDrawScheduler implements OnModuleInit, OnModuleDestroy {
+export class LotteryDrawScheduler implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(LotteryDrawScheduler.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('ILotteryRepository') private readonly lotteryRepository: ILotteryRepository,
     private readonly commandBus: CommandBus,
   ) {}
 
-  onModuleInit(): void {
+  onApplicationBootstrap(): void {
     void this.drawExpiredLotteries();
     this.intervalHandle = setInterval(
       () => void this.drawExpiredLotteries(),
@@ -34,12 +33,7 @@ export class LotteryDrawScheduler implements OnModuleInit, OnModuleDestroy {
   }
 
   async drawExpiredLotteries(): Promise<void> {
-    const now = new Date();
-
-    const expired = await this.prisma.lottery.findMany({
-      where: { status: 'ACTIVE', endTime: { lte: now } },
-      select: { id: true, title: true },
-    });
+    const expired = await this.lotteryRepository.findExpiredActive();
 
     if (expired.length === 0) return;
 

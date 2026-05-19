@@ -1,18 +1,15 @@
 // apps/backend/src/modules/catalog/application/queries/get-import-job-status.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { GetImportJobStatusQuery } from './get-import-job-status.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
 import { NotFoundException } from '@nestjs/common';
 
 @QueryHandler(GetImportJobStatusQuery)
 export class GetImportJobStatusHandler implements IQueryHandler<GetImportJobStatusQuery> {
-  constructor(private readonly prisma: PrismaService) {}
-
   async execute(query: GetImportJobStatusQuery) {
-    const job = await this.prisma.importJob.findUnique({
-      where: { id: query.jobId },
-    });
+    const job = await ImportJob.findOne({ id: query.jobId }).exec();
 
     if (!job || job.adminId !== query.adminId) {
       throw new NotFoundException('Import job bulunamadı');
@@ -31,7 +28,7 @@ export class GetImportJobStatusHandler implements IQueryHandler<GetImportJobStat
 
     return {
       jobId: job.id,
-      status: job.status,
+      status: (job as any).status,
       progress: {
         percent: progressPercent,
         processed: job.processedRows,
@@ -39,13 +36,13 @@ export class GetImportJobStatusHandler implements IQueryHandler<GetImportJobStat
         created: job.createdRows,
         failed: job.failedRows,
       },
-      errors: job.errors ?? [],
+      errors: (job.errors as any) ?? [],
       timing: {
         startedAt: job.startedAt,
         completedAt: job.completedAt,
         elapsedSeconds,
       },
-      isDone: job.status === 'COMPLETED' || job.status === 'FAILED',
+      isDone: (job as any).status === 'COMPLETED' || (job as any).status === 'FAILED',
     };
   }
 }

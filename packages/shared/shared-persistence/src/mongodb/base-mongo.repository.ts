@@ -1,11 +1,9 @@
-import { Model, Document } from 'mongoose';
-// @ts-ignore
-import { AggregateRoot, IRepository } from '@barterborsa/shared-core';
+import { Model } from 'mongoose';
 
 export abstract class BaseMongoRepository<
-  TDomain extends AggregateRoot<any>,
+  TDomain extends { id: string },
   TPersistence
-> implements IRepository<TDomain> {
+> {
   constructor(
     protected readonly model: Model<TPersistence>,
     protected readonly mapper: {
@@ -15,7 +13,7 @@ export abstract class BaseMongoRepository<
   ) {}
 
   async findById(id: string): Promise<TDomain | null> {
-    const doc = await this.model.findById(id).exec();
+    const doc = await this.model.findOne({ id } as any).exec();
     if (!doc) return null;
     return this.mapper.toDomain(doc);
   }
@@ -27,10 +25,10 @@ export abstract class BaseMongoRepository<
 
   async save(entity: TDomain): Promise<void> {
     const persistence = this.mapper.toPersistence(entity);
-    const existing = await this.model.findById(entity.id).exec();
+    const existing = await this.model.findOne({ id: entity.id } as any).exec();
 
     if (existing) {
-      await this.model.findByIdAndUpdate(entity.id, persistence).exec();
+      await this.model.findOneAndUpdate({ id: entity.id } as any, persistence).exec();
     } else {
       const created = new this.model(persistence);
       await created.save();
@@ -38,6 +36,6 @@ export abstract class BaseMongoRepository<
   }
 
   async delete(id: string): Promise<void> {
-    await this.model.findByIdAndDelete(id).exec();
+    await this.model.findOneAndDelete({ id } as any).exec();
   }
 }

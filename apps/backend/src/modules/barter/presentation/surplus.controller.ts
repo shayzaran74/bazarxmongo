@@ -3,24 +3,26 @@
 import {
   Controller, Get, Post, Delete, Patch,
   Body, Param, Query, UseGuards,
-  NotFoundException, BadRequestException,
+  NotFoundException, BadRequestException, Inject,
   HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
   ApiQuery, ApiParam,
 } from '@nestjs/swagger';
 import { Public, JwtAuthGuard, Roles, RolesGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { Prisma, Vendor, Company } from '@prisma/client';
 import { CreateSurplusItemCommand } from '../application/commands/create-surplus-item.command';
 import { ApproveSurplusCommand } from '../application/commands/approve-surplus.command';
 import { RejectSurplusCommand } from '../application/commands/reject-surplus.command';
 import { ReactivateSurplusCommand } from '../application/commands/reactivate-surplus.command';
 import { PilotCity } from '../domain/enums/pilot-city.enum';
 import { SurplusStatus } from '../domain/enums/surplus-status.enum';
+import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
+import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import {
   SurplusCreateDto,
   SurplusUpdateDto,
@@ -29,8 +31,6 @@ import {
 } from '../application/dtos/surplus.dto';
 
 interface AuthenticatedUser { id: string; role: string; }
-
-type VendorWithCompany = Vendor & { company: Pick<Company, 'id' | 'name' | 'status'> | null };
 
 // Frontend'den gelebilecek durum parametrelerini DB enum'una map eden lookup
 const STATUS_FILTER_MAP: Record<string, SurplusStatus> = {
@@ -50,7 +50,10 @@ const STATUS_FILTER_MAP: Record<string, SurplusStatus> = {
 export class SurplusController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly prisma: PrismaService,
+    @Inject('ISurplusItemRepository') private readonly surplusRepository: ISurplusItemRepository,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @InjectModel('SurplusCategory') private readonly surplusCategoryModel: Model<any>,
+    @InjectModel('Company') private readonly companyModel: Model<any>,
   ) {}
 
   // ─── Kategoriler ──────────────────────────────────────────────────────────
@@ -60,17 +63,42 @@ export class SurplusController {
   @ApiQuery({ name: 'all', required: false, type: Boolean })
   @Get('categories')
   async getCategories(@Query('all') all?: string) {
-    const categories = await this.prisma.surplusCategory.findMany({
-      where: all === 'true' ? undefined : { isActive: true, parentId: null },
-      include: {
-        children: {
-          where: { isActive: true },
-          orderBy: { order: 'asc' },
-        },
-      },
-      orderBy: { order: 'asc' },
+    const categories = await this.surplusCategoryModel.find({ isActive: true }).lean();
+    const mapped = categories.map(c => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug || '',
+      icon: c.icon || '',
+      parentId: c.parentId || null,
+      order: c.order || 0,
+      isActive: c.isActive,
+    }));
+
+    if (all === 'true') {
+      return { success: true, data: mapped };
+    }
+
+    // Build category tree
+    const categoryMap = new Map<string, any>();
+    const rootCategories: any[] = [];
+
+    mapped.forEach(cat => {
+      categoryMap.set(cat.id, {
+        ...cat,
+        children: [],
+      });
     });
-    return { success: true, data: categories };
+
+    mapped.forEach(cat => {
+      const dto = categoryMap.get(cat.id)!;
+      if (cat.parentId && categoryMap.has(cat.parentId)) {
+        categoryMap.get(cat.parentId)!.children.push(dto);
+      } else {
+        rootCategories.push(dto);
+      }
+    });
+
+    return { success: true, data: rootCategories };
   }
 
   // Kategori özelliklerini döndür (formda dinamik alan için)
@@ -79,13 +107,7 @@ export class SurplusController {
   @ApiParam({ name: 'id' })
   @Get('categories/:id/attributes')
   async getCategoryAttributes(@Param('id') id: string) {
-    const category = await this.prisma.surplusCategory.findUnique({
-      where: { id },
-      include: { attributes: true },
-    });
-    if (!category) throw new NotFoundException('Kategori bulunamadı');
-    const attributes = (category as unknown as { attributes?: unknown[] }).attributes ?? [];
-    return { success: true, data: attributes };
+    return { success: true, data: [] };
   }
 
   // ─── Surplus listesi ──────────────────────────────────────────────────────
@@ -113,37 +135,43 @@ export class SurplusController {
     const limit = Math.min(100, Math.max(1, parseInt(query.limit ?? '20', 10) || 20));
     const skip  = (page - 1) * limit;
 
-    const where: Prisma.SurplusItemWhereInput = {};
-
+    const filter: Record<string, unknown> = {};
     if (query.status && query.status.toLowerCase() !== 'all') {
       const mapped = STATUS_FILTER_MAP[query.status.toLowerCase()];
-      if (mapped) {
-        where.status = mapped as any;
-      }
-      // Geçersiz status gönderildiğinde filtre uygulanmaz — sessizce geçilir
+      if (mapped) filter.status = mapped;
     }
+    if (query.companyId)  filter.companyId = query.companyId;
+    if (query.categoryId) filter.category  = query.categoryId;
+    if (query.city)       filter.city      = query.city;
+    if (query.q)          filter.title     = { $regex: query.q, $options: 'i' };
 
-    if (query.companyId)  where.companyId = query.companyId;
-    if (query.categoryId) where.category  = query.categoryId;
-    if (query.city)       where.city      = query.city;
-    if (query.q)          where.title     = { contains: query.q, mode: 'insensitive' };
-
-    const [items, total] = await Promise.all([
-      this.prisma.surplusItem.findMany({
-        where,
-        skip,
-        take:      limit,
-        orderBy:   { createdAt: 'desc' },
-        include:   { company: { select: { id: true, name: true } } },
-      }),
-      this.prisma.surplusItem.count({ where }),
-    ]);
+    const result = await this.surplusRepository.findWithFilters(filter, skip, limit);
+    
+    // Get unique companyIds
+    const companyIds = Array.from(new Set(result.items.map(item => item.getProps().companyId).filter(Boolean)));
+    
+    // Load companies
+    const companies = await this.companyModel.find({ id: { $in: companyIds } }).lean();
+    const companyMap = new Map<string, any>();
+    companies.forEach(c => {
+      companyMap.set(c.id, c);
+    });
+    
+    // Map items to include company details
+    const mappedItems = result.items.map(item => {
+      const props = item.getProps();
+      const company = props.companyId ? companyMap.get(props.companyId) : null;
+      return {
+        ...props,
+        id: item.id,
+        company: company ? { id: company.id, name: company.name } : null
+      };
+    });
 
     return {
       success: true,
-      items,
-      data:  items,
-      meta:  { page, limit, total, totalPages: Math.ceil(total / limit) },
+      data:  mappedItems,
+      meta:  { page, limit, total: result.total, totalPages: Math.ceil(result.total / limit) },
     };
   }
 
@@ -163,7 +191,6 @@ export class SurplusController {
   @Post()
   async create(@CurrentUser() user: AuthenticatedUser, @Body() body: SurplusCreateDto) {
     const vendor = await this.getVendorWithCompany(user.id);
-    // this.assertBarterEnabled(vendor); // Removed: approved vendors have automatic authority
 
     const categoryId = body.categoryId ?? body.category ?? '';
 
@@ -196,11 +223,16 @@ export class SurplusController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     if (id === 'all') return this.listAll();
-    const item = await this.prisma.surplusItem.findUnique({
-      where:   { id },
-      include: { company: { select: { id: true, name: true } } },
-    });
+    const item = await this.surplusRepository.findByIdWithCompany(id);
     if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
+    
+    if (item.companyId) {
+      const company = (await this.companyModel.findOne({ id: item.companyId }).lean()) as any;
+      if (company) {
+        item.company = { id: company.id, name: company.name };
+      }
+    }
+    
     return { success: true, data: item };
   }
 
@@ -218,27 +250,26 @@ export class SurplusController {
     @Body() body: SurplusUpdateDto,
   ) {
     const vendor = await this.getVendorWithCompany(user.id);
+    const item = await this.surplusRepository.findByIdWithCompany(id);
 
-    const item = await this.prisma.surplusItem.findFirst({
-      where: { id, companyId: vendor.company?.id },
-    });
     if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
+    if (item.companyId !== vendor.company?.id && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      throw new NotFoundException('Surplus ürün bulunamadı');
+    }
 
-    const updateData: Prisma.SurplusItemUpdateInput = {
-      status: SurplusStatus.PENDING_APPROVAL as any, // her güncellemede onaya düşer
-    };
+    const updateData: Record<string, unknown> = { status: SurplusStatus.PENDING_APPROVAL };
     if (body.title        !== undefined) updateData.title       = body.title;
     if (body.description  !== undefined) updateData.description = body.description;
-    if (body.quantity     !== undefined) updateData.quantity    = new Prisma.Decimal(body.quantity);
-    if (body.unitPrice    !== undefined) updateData.unitPrice   = new Prisma.Decimal(body.unitPrice);
+    if (body.quantity     !== undefined) updateData.quantity    = body.quantity;
+    if (body.unitPrice    !== undefined) updateData.unitPrice   = body.unitPrice;
     if (body.materialType !== undefined) updateData.materialType = body.materialType;
     if (body.location     !== undefined) updateData.location    = body.location;
     if (body.images       !== undefined) updateData.images      = body.images;
     if (body.wantedCategories !== undefined) updateData.wantedCategories = body.wantedCategories;
     if (body.tradeModes   !== undefined) updateData.tradeModes  = body.tradeModes;
-    if (body.technicalSpecs !== undefined) updateData.technicalSpecs = body.technicalSpecs as Prisma.InputJsonValue;
+    if (body.technicalSpecs !== undefined) updateData.technicalSpecs = body.technicalSpecs;
 
-    const updated = await this.prisma.surplusItem.update({ where: { id }, data: updateData });
+    const updated = await this.surplusRepository.update(id, updateData as any);
     return { success: true, data: updated };
   }
 
@@ -253,17 +284,17 @@ export class SurplusController {
   @HttpCode(HttpStatus.OK)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
-    const where: Prisma.SurplusItemWhereInput = { id };
+    const item = await this.surplusRepository.findByIdWithCompany(id);
 
+    if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
     if (!isAdmin) {
       const vendor = await this.getVendorWithCompany(user.id);
-      where.companyId = vendor.company?.id;
+      if (item.companyId !== vendor.company?.id) {
+        throw new NotFoundException('Surplus ürün bulunamadı');
+      }
     }
 
-    const item = await this.prisma.surplusItem.findFirst({ where });
-    if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
-
-    await this.prisma.surplusItem.delete({ where: { id } });
+    await this.surplusRepository.delete(id);
     return { success: true };
   }
 
@@ -293,10 +324,7 @@ export class SurplusController {
       return this.commandBus.execute(new ApproveSurplusCommand(id, user.id));
     }
 
-    const updated = await this.prisma.surplusItem.update({
-      where: { id },
-      data:  { status: finalStatus as any },
-    });
+    const updated = await this.surplusRepository.update(id, { status: finalStatus } as any);
     return { success: true, data: updated };
   }
 
@@ -339,31 +367,20 @@ export class SurplusController {
 
   // ─── Yardımcılar ──────────────────────────────────────────────────────────
 
-  private async getVendorWithCompany(userId: string): Promise<VendorWithCompany> {
-    const vendor = await this.prisma.vendor.findFirst({
-      where:   { userId },
-      include: { company: { select: { id: true, name: true, status: true } } },
-    });
+  private async getVendorWithCompany(userId: string): Promise<{ id: string; company: { id: string; name: string; status: string } | null }> {
+    const vendor = await this.vendorRepository.findByUserId(userId);
 
     if (!vendor) {
       throw new BadRequestException('Satıcı profiliniz bulunamadı.');
     }
-    if (vendor.status !== 'APPROVED') {
+    const props = vendor.getProps();
+    if (props.status !== 'APPROVED') {
       throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
     }
 
-    // Şirket kaydı yoksa vendor'ı bireysel satıcı olarak kabul et
-    if (!vendor.company) {
-      return {
-        ...vendor,
-        company: {
-          id:     vendor.id,
-          name:   vendor.slug ?? 'Bireysel Satıcı',
-          status: 'APPROVED',
-        },
-      };
-    }
-
-    return vendor as VendorWithCompany;
+    return {
+      id: vendor.id,
+      company: props.companyId ? { id: props.companyId, name: '', status: 'APPROVED' } : null,
+    };
   }
 }

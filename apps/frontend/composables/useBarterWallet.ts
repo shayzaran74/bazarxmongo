@@ -14,22 +14,23 @@ export const useBarterWallet = () => {
     const fetchInfo = async () => {
         loading.value = true
         try {
-            const res = await barterService.getBarterInfo() as any
-            if (res.success) {
+                        const res = await barterService.getBarterInfo() as any
+            if (res.success && res.data) {
+                const data = res.data
                 if (auth.user) {
                     if (!(auth.user as any).wallet) (auth.user as any).wallet = {}
                     Object.assign((auth.user as any).wallet, {
-                        balance: res.balance,
-                        barterBalance: res.barterBalance,
-                        barterCreditLimit: res.barterCreditLimit,
-                        commissionXP: res.commissionXP,
-                        adXP: res.adXP,
-                        serviceXP: res.serviceXP
+                        balance: data.balance,
+                        barterBalance: data.barterBalance,
+                        barterCreditLimit: data.barterCreditLimit,
+                        commissionXP: data.commissionXP,
+                        adXP: data.adXP,
+                        serviceXP: data.serviceXP
                     })
                 }
 
-                const currentBalance = Number(res.barterBalance)
-                const sortedTransactions = [...(res.transactions || [])].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                const currentBalance = Number(data.barterBalance || 0)
+                const sortedTransactions = [...(data.transactions || [])].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
                 let runningVal = currentBalance
                 transactions.value = sortedTransactions.map(tx => {
@@ -45,7 +46,7 @@ export const useBarterWallet = () => {
                     runningVal -= impact
                     return { ...tx, impact, balanceAfter: balanceSnapshot }
                 })
-                xpTransactions.value = res.xpTransactions || []
+                xpTransactions.value = data.xpTransactions || []
             }
         } catch (err) {
             console.error('Barter fetch error:', err)

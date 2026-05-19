@@ -3,7 +3,9 @@
 import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { MenuPurchase } from '@barterborsa/shared-persistence/schemas/backend/menuPurchase.schema';
+import { UserSubscription } from '@barterborsa/shared-persistence/schemas/backend/userSubscription.schema';
+import { Order } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
 import { TaxCalculatorService } from '../application/services/tax-calculator.service';
 import { RevenueReportingService } from '../application/services/revenue-reporting.service';
 
@@ -14,9 +16,8 @@ import { RevenueReportingService } from '../application/services/revenue-reporti
 @Controller('admin/tax')
 export class TaxController {
   constructor(
-    private readonly taxCalc:  TaxCalculatorService,
-    private readonly revenue:  RevenueReportingService,
-    private readonly prisma:   PrismaService,
+    private readonly taxCalc: TaxCalculatorService,
+    private readonly revenue: RevenueReportingService,
   ) {}
 
   @ApiOperation({ summary: 'Aylık konsolide vergi raporu (gerçek zamanlı hesaplama)' })
@@ -33,27 +34,24 @@ export class TaxController {
     const endDate   = new Date(y, m, 0, 23, 59, 59);
 
     // DB'den bu aya ait gelir verilerini topla
-    const [menuRevenue, subscriptionRevenue, orderCommission] = await Promise.all([
+    const [menuRevenue, subscriptionCount, orderAgg] = await Promise.all([
       // Menü hizmet bedeli geliri
-      this.prisma.menuPurchase.aggregate({
-        where: { createdAt: { gte: startDate, lte: endDate }, status: { not: 'CANCELLED' } },
-        _sum:  { serviceFee: true, vatAmount: true },
-      }),
+      MenuPurchase.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate }, status: { $ne: 'CANCELLED' } } },
+        { $group: { _id: null, serviceFee: { $sum: '$serviceFee' }, vatAmount: { $sum: '$vatAmount' } } },
+      ]),
       // Abonelik geliri
-      this.prisma.userSubscription.count({
-        where: { startDate: { gte: startDate, lte: endDate }, status: 'ACTIVE' },
-      }),
+      UserSubscription.countDocuments({ startDate: { $gte: startDate, $lte: endDate }, status: 'ACTIVE' }),
       // Sipariş komisyonu (yaklaşık — tam hesap financial-service'de)
-      this.prisma.order.aggregate({
-        where: { createdAt: { gte: startDate, lte: endDate }, status: { in: ['COMPLETED', 'DELIVERED'] } },
-        _sum:  { totalAmount: true },
-        _count: { id: true },
-      }),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate }, status: { $in: ['COMPLETED', 'DELIVERED'] } } },
+        { $group: { _id: null, totalAmount: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+      ]),
     ]);
 
-    const hizmetBedeli  = Number(menuRevenue._sum.serviceFee ?? 0);
-    const menuVat       = Number(menuRevenue._sum.vatAmount ?? 0);
-    const saticiKomisyon = Number(orderCommission._sum.totalAmount ?? 0) * 0.09; // ~%9 ortalama
+    const hizmetBedeli  = menuRevenue[0] ? Number(menuRevenue[0].serviceFee) : 0;
+    const menuVat       = menuRevenue[0] ? Number(menuRevenue[0].vatAmount) : 0;
+    const saticiKomisyon = orderAgg[0] ? Number(orderAgg[0].totalAmount) * 0.09 : 0;
 
     const taxReport = this.taxCalc.calculateConsolidated({
       bazarX: {
@@ -76,9 +74,9 @@ export class TaxController {
       data: {
         period:    `${y}-${String(m).padStart(2, '0')}`,
         metrics: {
-          menuPurchases:      await this.prisma.menuPurchase.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
-          activeSubscriptions: subscriptionRevenue,
-          completedOrders:    orderCommission._count.id,
+          menuPurchases:      await MenuPurchase.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } }),
+          activeSubscriptions: subscriptionCount,
+          completedOrders:    orderAgg[0]?.count ?? 0,
           menuServiceRevenue: hizmetBedeli,
           menuVatCollected:   menuVat,
         },

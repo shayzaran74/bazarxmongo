@@ -1,8 +1,9 @@
 // apps/backend/src/modules/advertising/advertising.module.ts
+// AdvertisingModule — Mongoose migration (ADR-005 Faz 2b)
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
 
 import { AdCampaignController } from './presentation/ad-campaign.controller';
 import { AdCampaignVendorController } from './presentation/ad-campaign-vendor.controller';
@@ -19,8 +20,12 @@ import { AdAuctionService } from './application/services/ad-auction.service';
 import { BudgetManagerService } from './application/services/budget-manager.service';
 import { B2BAdPackageService } from './application/services/b2b-ad-package.service';
 
-import { PrismaAdCampaignRepository } from './infrastructure/persistence/prisma-ad-campaign.repository';
-import { PrismaAdSlotRepository, PrismaSideAdRepository, PrismaAdCampaignMetricRepository } from './infrastructure/persistence/ad-misc.repositories';
+import { MongoAdCampaignRepository } from './infrastructure/persistence/mongo-ad-campaign.repository';
+import { MongoAdSlotRepository, MongoSideAdRepository, MongoAdCampaignMetricRepository } from './infrastructure/persistence/ad-misc.repositories';
+
+import { AdCampaign, AdCampaignSchema } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
+import { AdSlot, AdSlotSchema } from '@barterborsa/shared-persistence/schemas/backend/adSlot.schema';
+import { AdCampaignMetric, AdCampaignMetricSchema } from '@barterborsa/shared-persistence/schemas/backend/adCampaignMetric.schema';
 
 const CommandHandlers = [
   CreateAdCampaignHandler,
@@ -37,14 +42,21 @@ const QueryHandlers = [
 ];
 
 const Repositories = [
-  { provide: 'IAdCampaignRepository', useClass: PrismaAdCampaignRepository },
-  { provide: 'IAdSlotRepository', useClass: PrismaAdSlotRepository },
-  { provide: 'ISideAdRepository', useClass: PrismaSideAdRepository },
-  { provide: 'IAdCampaignMetricRepository', useClass: PrismaAdCampaignMetricRepository },
+  { provide: 'IAdCampaignRepository', useClass: MongoAdCampaignRepository },
+  { provide: 'IAdSlotRepository', useClass: MongoAdSlotRepository },
+  { provide: 'ISideAdRepository', useClass: MongoSideAdRepository },
+  { provide: 'IAdCampaignMetricRepository', useClass: MongoAdCampaignMetricRepository },
 ];
 
 @Module({
-  imports: [CqrsModule, PrismaModule],
+  imports: [
+    CqrsModule,
+    MongooseModule.forFeature([
+      { name: AdCampaign.name, schema: AdCampaignSchema },
+      { name: AdSlot.name, schema: AdSlotSchema },
+      { name: AdCampaignMetric.name, schema: AdCampaignMetricSchema },
+    ]),
+  ],
   controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController, B2BAdPackageController],
   providers: [
     ...CommandHandlers,

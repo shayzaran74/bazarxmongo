@@ -46,7 +46,7 @@ export const useAuctionOverview = () => {
     try {
       const { $api } = useApi()
       const res = await $api<any[]>(
-        '/api/listings/categories'
+        '/api/v1/listings/categories'
       )
       categories.value = res.data || []
     } catch { /* ignore */ }

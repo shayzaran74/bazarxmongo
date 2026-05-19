@@ -1,42 +1,32 @@
 // apps/backend/src/modules/barter/application/queries/get-my-barter-chains.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { GetMyBarterChainsQuery } from './get-my-barter-chains.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { BadRequestException } from '@nestjs/common';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
 
 @QueryHandler(GetMyBarterChainsQuery)
 export class GetMyBarterChainsHandler implements IQueryHandler<GetMyBarterChainsQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @Inject('ISwapSessionRepository') private readonly swapSessionRepository: ISwapSessionRepository,
+  ) {}
 
   async execute(query: GetMyBarterChainsQuery) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: query.userId },
-      include: { company: { select: { id: true } } },
-    });
+    const vendor = await this.vendorRepository.findByUserId(query.userId);
 
-    if (!vendor || !vendor.company) {
-      throw new BadRequestException('Satıcı hesabı veya şirket kaydı bulunamadı');
+    if (!vendor) {
+      throw new BadRequestException('Satıcı hesabı bulunamadı');
     }
 
-    const sessions = await this.prisma.swapSession.findMany({
-      where: {
-        OR: [
-          { initiatorId: vendor.company.id },
-          { receiverId: vendor.company.id },
-        ],
-      },
-      include: {
-        tradeOffer: {
-          include: {
-            fromCompany: { select: { id: true, name: true } },
-            toCompany:   { select: { id: true, name: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const companyId = vendor.getProps().companyId;
+    if (!companyId) {
+      throw new BadRequestException('Şirket kaydı bulunamadı');
+    }
 
-    return sessions;
+    const result = await this.swapSessionRepository.findByCompanyWithFilters(companyId, 0, 100);
+    return result.items;
   }
 }

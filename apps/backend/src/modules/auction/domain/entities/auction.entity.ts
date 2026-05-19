@@ -1,16 +1,15 @@
 // apps/backend/src/modules/auction/domain/entities/auction.entity.ts
 
 import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { AuctionStatus } from '../enums/auction-status.enum';
 
 export interface AuctionProps {
   listingId: string;
   userId: string; // Vendor who created the auction
-  startingPrice: Prisma.Decimal;
-  currentPrice: Prisma.Decimal;
-  minBidIncrement: Prisma.Decimal;
-  participationDeposit?: Prisma.Decimal;
+  startingPrice: number;
+  currentPrice: number;
+  minBidIncrement: number;
+  participationDeposit?: number;
   startTime: Date;
   endTime: Date;
   status: AuctionStatus;
@@ -40,11 +39,11 @@ export class Auction extends AggregateRoot<AuctionProps> {
   public static create(
     listingId: string,
     userId: string,
-    startingPrice: Prisma.Decimal,
+    startingPrice: number,
     startTime: Date,
     endTime: Date,
-    minBidIncrement: Prisma.Decimal = new Prisma.Decimal(1),
-    participationDeposit?: Prisma.Decimal
+    minBidIncrement: number = 1,
+    participationDeposit?: number
   ): Auction {
     const now = new Date();
     if (startTime >= endTime) {
@@ -94,7 +93,7 @@ export class Auction extends AggregateRoot<AuctionProps> {
     this.transitionTo(AuctionStatus.ACTIVE);
   }
 
-  public placeBid(userId: string, amount: Prisma.Decimal): void {
+  public placeBid(userId: string, amount: number): void {
     if (this.props.status !== AuctionStatus.ACTIVE) {
       throw new DomainException('Auction is not active');
     }
@@ -104,9 +103,9 @@ export class Auction extends AggregateRoot<AuctionProps> {
       throw new DomainException('Auction has ended');
     }
 
-    const minRequired = this.props.currentPrice.plus(this.props.minBidIncrement);
-    if (amount.lt(minRequired)) {
-      throw new DomainException(`Bid must be at least ${minRequired.toString()}`);
+    const minRequired = this.props.currentPrice + this.props.minBidIncrement;
+    if (amount < minRequired) {
+      throw new DomainException(`Bid must be at least ${minRequired}`);
     }
 
     this.props.currentPrice = amount;
@@ -114,7 +113,6 @@ export class Auction extends AggregateRoot<AuctionProps> {
   }
 
   public end(): void {
-    // Sadece ACTIVE durumundan ENDED'e geçilebilir
     if (this.props.status !== AuctionStatus.ACTIVE) {
       throw new DomainException('Only active auctions can be ended');
     }
@@ -126,7 +124,6 @@ export class Auction extends AggregateRoot<AuctionProps> {
   }
 
   public cancel(): void {
-    // SCHEDULED veya ACTIVE durumlarından iptal edilebilir
     if (this.props.status === AuctionStatus.COMPLETED || this.props.status === AuctionStatus.ENDED) {
       throw new DomainException('Ended or completed auctions cannot be cancelled');
     }

@@ -6,11 +6,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     // Sadece server-side (backend URL — SSR: false olduğu için kullanılmıyor ama kalabilir)
-    backendUrl: process.env.NUXT_BACKEND_URL || 'http://localhost:3001',
+    backendUrl: process.env.NUXT_BACKEND_URL || 'http://127.0.0.1:3001',
 
     public: {
       // Prod'da nginx üzerinden /api/ prefix ile gidiyor
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:3001',
       minioBase: process.env.NUXT_PUBLIC_MINIO_BASE || 'http://localhost:9000/bazarx-public',
 
       // Socket.io — prod'da aynı origin, path /socket.io/
@@ -41,8 +41,8 @@ export default defineNuxtConfig({
     '/reset-password': { redirect: '/auth/reset-password' },
     // DEV ONLY — prod'da nginx hallediyor
     ...(process.env.NODE_ENV !== 'production' && {
-      '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/api/**` },
-      '/uploads/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://localhost:3001'}/uploads/**` },
+      '/api/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://127.0.0.1:3001'}/api/**` },
+      '/uploads/**': { proxy: `${process.env.NUXT_BACKEND_URL || 'http://127.0.0.1:3001'}/uploads/**` },
     }),
   },
 

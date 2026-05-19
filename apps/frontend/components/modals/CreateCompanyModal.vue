@@ -138,7 +138,8 @@ const submitCompany = async () => {
       emit('success')
       emit('close')
     }
-  } catch {
+  } catch (error) {
+    console.error('CreateCompany error:', error);
     useNuxtApp().$toast.error('Firma oluşturulurken bir hata oluştu. Lütfen bilgileri kontrol edin.')
   } finally {
     loading.value = false

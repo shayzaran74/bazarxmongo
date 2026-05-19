@@ -1,102 +1,124 @@
 // apps/financial-service/src/modules/wallet/application/queries/get-transactions.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { GetTransactionsQuery } from './get-transactions.query';
-import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import {
+  IFinancialAccount,
+  IFinancialAccountTransaction,
+  IFinancialGeneralLedger,
+} from '@barterborsa/shared-persistence';
 
 interface TransactionItem {
-  id: string;
-  type: string;
-  amount: string;
-  direction: string;
-  description: string;
-  referenceId: string;
+  id:            string;
+  type:          string;
+  amount:        string;
+  direction:     string;
+  description:   string;
+  referenceId:   string;
   referenceType: string;
-  accountType: string;
-  createdAt: string;
-  source: string;
-  status: string;
+  accountType:   string;
+  createdAt:     string;
+  source:        string;
+  status:        string;
 }
 
 interface TransactionResult {
   items: TransactionItem[];
   total: number;
-  page: number;
+  page:  number;
   limit: number;
 }
 
 @QueryHandler(GetTransactionsQuery)
 export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('Account') private readonly accountModel: Model<IFinancialAccount>,
+    @InjectModel('AccountTransaction') private readonly txModel: Model<IFinancialAccountTransaction>,
+    @InjectModel('GeneralLedger') private readonly ledgerModel: Model<IFinancialGeneralLedger>,
+  ) {}
+
+  private parseDate(dateVal: any, idVal?: string): Date {
+    if (dateVal instanceof Date) return dateVal;
+    if (dateVal) {
+      const d = new Date(dateVal);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (idVal && idVal.length === 24) {
+      try {
+        const timestamp = parseInt(idVal.substring(0, 8), 16) * 1000;
+        if (!isNaN(timestamp)) return new Date(timestamp);
+      } catch (_) {}
+    }
+    return new Date(0);
+  }
 
   async execute(query: GetTransactionsQuery): Promise<TransactionResult> {
     const { userId, page, limit, accountId } = query;
-    const skip = (page - 1) * limit;
+    const skip    = (page - 1) * limit;
     const isGlobal = !userId;
 
-    // 1. Kullanıcı hesaplarını getir (Eğer userId varsa)
     let accountIds: string[] = [];
     if (!isGlobal) {
-      const userAccounts = await this.prisma.account.findMany({
-        where: { userId },
-        select: { id: true, type: true },
-      });
-      accountIds = userAccounts.map(a => a.id);
+      const userAccounts = await this.accountModel.find({ userId }, { _id: 1, type: 1 }).lean();
+      accountIds = userAccounts.map(a => (a._id ?? a.id) as string);
     }
 
-    // 2. İki tablodan paralel sorgulama
+    const txFilter = isGlobal
+      ? (accountId ? { accountId } : {})
+      : (accountId ? { accountId } : { accountId: { $in: accountIds } });
+
+    const ledgerFilter = isGlobal
+      ? {}
+      : { $or: [{ debitAccountId: userId }, { creditAccountId: userId }, { debitAccountId: { $in: accountIds } }, { creditAccountId: { $in: accountIds } }] };
+
     const [accTx, genLedger] = await Promise.all([
-      this.prisma.accountTransaction.findMany({
-        where: isGlobal 
-          ? (accountId ? { accountId } : {}) 
-          : (accountId ? { accountId } : { accountId: { in: accountIds } }),
-        include: { account: true },
-        orderBy: { createdAt: 'desc' },
-        take: limit * 2,
-      }),
-      this.prisma.generalLedger.findMany({
-        where: isGlobal 
-          ? {} 
-          : {
-              OR: [
-                { debitAccountId: userId },
-                { creditAccountId: userId },
-                { debitAccountId: { in: accountIds } },
-                { creditAccountId: { in: accountIds } },
-              ],
-            },
-        orderBy: { createdAt: 'desc' },
-        take: limit * 2,
-      }),
+      this.txModel.find(txFilter).sort({ createdAt: -1 }).limit(limit * 2).lean(),
+      this.ledgerModel.find(ledgerFilter).sort({ createdAt: -1 }).limit(limit * 2).lean(),
     ]);
 
-    // 3. Haritalama ve birleştirme
-    const mappedAccTx = accTx.map(tx => ({
-      id: tx.id,
-      type: tx.type,
-      amount: tx.amount.toString(),
-      direction: tx.direction,
-      description: tx.description || '',
-      referenceId: tx.referenceId || '',
-      referenceType: tx.referenceType || '',
-      accountType: tx.account?.type || 'MAIN',
-      createdAt: tx.createdAt,
-      source: 'account_tx' as const,
-    }));
+    const accountTypeMap = new Map<string, string>();
+    if (!isGlobal) {
+      const accounts = await this.accountModel.find({ userId }, { _id: 1, type: 1 }).lean();
+      accounts.forEach(a => accountTypeMap.set((a._id ?? a.id) as string, a.type));
+    }
+
+    const mappedAccTx = accTx.map(tx => {
+      const txId = (tx._id ?? tx.id) as string;
+      const type = accountTypeMap.get(tx.accountId) ?? 'MAIN';
+      return {
+        id:            txId,
+        type:          tx.type,
+        amount:        tx.amount.toString(),
+        direction:     tx.direction ?? '',
+        description:   tx.description || '',
+        referenceId:   tx.referenceId || '',
+        referenceType: tx.referenceType || '',
+        accountType:   type,
+        account:       { type },
+        createdAt:     this.parseDate(tx.createdAt, txId),
+        source:        'account_tx' as const,
+        status:        tx.status ?? 'COMPLETED',
+      };
+    });
 
     const mappedGenLedger = genLedger.map(gl => {
-      const isDebit =
-        gl.debitAccountId === userId || accountIds.includes(gl.debitAccountId || '');
+      const glId = (gl._id ?? gl.id) as string;
+      const isDebit = gl.debitAccountId === userId || accountIds.includes(gl.debitAccountId ?? '');
       return {
-        id: gl.id,
-        type: gl.type,
-        amount: gl.amount?.toString() || '0',
-        direction: isDebit ? 'DEBIT' : 'CREDIT',
-        description: gl.note || '',
-        referenceId: gl.referenceId || '',
+        id:            glId,
+        type:          gl.type,
+        amount:        gl.amount?.toString() || '0',
+        direction:     isDebit ? 'DEBIT' : 'CREDIT',
+        description:   gl.note || '',
+        referenceId:   gl.referenceId || '',
         referenceType: gl.refType || '',
-        accountType: 'SYSTEM',
-        createdAt: gl.createdAt,
-        source: 'general_ledger' as const,
+        accountType:   'SYSTEM',
+        account:       { type: 'SYSTEM' },
+        createdAt:     this.parseDate(gl.createdAt, glId),
+        source:        'general_ledger' as const,
+        status:        'COMPLETED',
       };
     });
 
@@ -104,16 +126,9 @@ export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuer
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(skip, skip + limit);
 
-    // Yaklaşık toplam (sayfalama için)
-    const total = accTx.length + genLedger.length;
-
     return {
-      items: combined.map(item => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-        status: 'COMPLETED',
-      })),
-      total,
+      items: combined.map(item => ({ ...item, createdAt: item.createdAt.toISOString() })),
+      total: accTx.length + genLedger.length,
       page,
       limit,
     };

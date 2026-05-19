@@ -47,10 +47,14 @@ export const useLayoutLogic = () => {
   const fetchSideAds = async (city = '') => {
     try {
       const ecoMap: Record<string, string> = { ticaritakas: 'TICARITAKAS', barterborsa: 'BARTER_BORSA', bazarx: 'BAZARX' }
-      const res: any = await $api('/api/settings/side-ads', {
+      const res: any = await $api('/api/v1/side-ads', {
         query: { city: city && city !== 'Tüm Türkiye' ? city : undefined, ecosystem: ecoMap[currentEcosystem.value] }
       })
-      if (res.success) sideAds.value = res.data
+      console.log('useLayoutLogic - fetchSideAds result:', res)
+      if (res.success) {
+        sideAds.value = res.data
+        console.log('useLayoutLogic - sideAds.value set to:', sideAds.value.length, 'items')
+      }
     } catch (e) { console.error('Ads error:', e) }
   }
 

@@ -2,7 +2,13 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  UserLevelSchema, XpTransactionSchema, XpBatchSchema, MissionSchema,
+  UserMissionSchema, MilestoneTrackerSchema, XpDistributionRuleSchema,
+  XpSpendingLimitRuleSchema, UserSubscriptionSchema, MembershipPlanSchema,
+  MembershipTierSchema, VendorSchema,
+} from '@barterborsa/shared-persistence';
 
 import { XpController } from './presentation/xp.controller';
 import { MissionController, LoyaltyAdminController } from './presentation/mission-admin.controllers';
@@ -10,12 +16,12 @@ import { MissionController, LoyaltyAdminController } from './presentation/missio
 import { EarnXpHandler, SpendXpHandler } from './application/commands/xp-management.handlers';
 import { LoyaltyIntegrationEventHandler } from './application/event-handlers/loyalty-event.handlers';
 
-import { 
-  GetUserLevelHandler, 
-  GetXpBalanceHandler, 
-  GetXpHistoryHandler, 
-  GetMissionsHandler, 
-  GetUserMissionsHandler 
+import {
+  GetUserLevelHandler,
+  GetXpBalanceHandler,
+  GetXpHistoryHandler,
+  GetMissionsHandler,
+  GetUserMissionsHandler
 } from './application/queries/loyalty-query.handlers';
 
 import { XpCalculatorService } from './application/services/xp-calculator.service';
@@ -23,7 +29,7 @@ import { LevelCalculatorService } from './application/services/level-calculator.
 import { SpendingLimitService } from './application/services/spending-limit.service';
 import { MilestoneCheckerService } from './application/services/milestone-checker.service';
 
-import * as repos from './infrastructure/persistence/prisma-loyalty.repositories';
+import * as repos from './infrastructure/persistence/mongo-loyalty.repositories';
 import * as ruleRepos from './infrastructure/persistence/loyalty-rules.repositories';
 
 const Handlers = [
@@ -33,14 +39,14 @@ const Handlers = [
 ];
 
 const Repositories = [
-  { provide: 'IUserLevelRepository', useClass: repos.PrismaUserLevelRepository },
-  { provide: 'IXpTransactionRepository', useClass: repos.PrismaXpTransactionRepository },
-  { provide: 'IXpBatchRepository', useClass: repos.PrismaXpBatchRepository },
-  { provide: 'IMissionRepository', useClass: repos.PrismaMissionRepository },
-  { provide: 'IUserMissionRepository', useClass: repos.PrismaUserMissionRepository },
-  { provide: 'IMilestoneTrackerRepository', useClass: repos.PrismaMilestoneTrackerRepository },
-  { provide: 'IXpDistributionRuleRepository', useClass: ruleRepos.PrismaXpDistributionRuleRepository },
-  { provide: 'IXpSpendingLimitRuleRepository', useClass: ruleRepos.PrismaXpSpendingLimitRuleRepository },
+  { provide: 'IUserLevelRepository', useClass: repos.MongoUserLevelRepository },
+  { provide: 'IXpTransactionRepository', useClass: repos.MongoXpTransactionRepository },
+  { provide: 'IXpBatchRepository', useClass: repos.MongoXpBatchRepository },
+  { provide: 'IMissionRepository', useClass: repos.MongoMissionRepository },
+  { provide: 'IUserMissionRepository', useClass: repos.MongoUserMissionRepository },
+  { provide: 'IMilestoneTrackerRepository', useClass: repos.MongoMilestoneTrackerRepository },
+  { provide: 'IXpDistributionRuleRepository', useClass: ruleRepos.MongoXpDistributionRuleRepository },
+  { provide: 'IXpSpendingLimitRuleRepository', useClass: ruleRepos.MongoXpSpendingLimitRuleRepository },
 ];
 
 import { BadgeAdminController } from './presentation/badge-admin.controller';
@@ -48,12 +54,28 @@ import { TierController } from './presentation/tier.controller';
 import { AdminTierController } from './presentation/admin-tier.controller';
 
 @Module({
-  imports: [CqrsModule, PrismaModule],
+  imports: [
+    CqrsModule,
+    MongooseModule.forFeature([
+      { name: 'UserLevel',           schema: UserLevelSchema },
+      { name: 'XpTransaction',       schema: XpTransactionSchema },
+      { name: 'XpBatch',             schema: XpBatchSchema },
+      { name: 'Mission',             schema: MissionSchema },
+      { name: 'UserMission',         schema: UserMissionSchema },
+      { name: 'MilestoneTracker',    schema: MilestoneTrackerSchema },
+      { name: 'XpDistributionRule',  schema: XpDistributionRuleSchema },
+      { name: 'XpSpendingLimitRule', schema: XpSpendingLimitRuleSchema },
+      { name: 'UserSubscription',    schema: UserSubscriptionSchema },
+      { name: 'MembershipPlan',      schema: MembershipPlanSchema },
+      { name: 'MembershipTier',      schema: MembershipTierSchema },
+      { name: 'Vendor',              schema: VendorSchema },
+    ]),
+  ],
   controllers: [
-    XpController, 
-    MissionController, 
-    LoyaltyAdminController, 
-    BadgeAdminController, 
+    XpController,
+    MissionController,
+    LoyaltyAdminController,
+    BadgeAdminController,
     TierController,
     AdminTierController
   ],

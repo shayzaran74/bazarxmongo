@@ -1,10 +1,10 @@
 // apps/backend/src/modules/commerce/application/services/order-escrow-worker.service.ts
+// OrderEscrowWorker — Mongoose migration (ADR-005 Faz 2b)
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { MongoOrderRepository } from '../../infrastructure/persistence/mongo-order.repository';
 
 @Injectable()
 export class OrderEscrowWorker {
@@ -12,33 +12,24 @@ export class OrderEscrowWorker {
   private readonly logger = new Logger(OrderEscrowWorker.serviceName);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly orderRepo: MongoOrderRepository,
     private readonly financialGateway: FinancialGatewayService,
   ) {}
 
-  /**
-   * Her saat başı çalışır. 
-   * Teslim edilmiş ve itiraz süresi dolmuş siparişlerin ödemelerini satıcıya aktarır.
-   */
   @Cron(CronExpression.EVERY_HOUR)
   async handleEscrowReleases() {
     this.logger.log('Escrow release taraması başlatıldı...');
 
     const now = new Date();
 
-    // 1. Kriterleri sağlayan siparişleri bul
-    // - Status: DELIVERED
-    // - escrowStatus: HELD
-    // - escrowReleaseAt <= now
-    const pendingReleases = await this.prisma.order.findMany({
-      where: {
-        status: OrderStatus.DELIVERED,
-        escrowStatus: 'HELD',
-        escrowReleaseAt: { lte: now },
-        escrowHoldId: { not: null },
-      } as any,
-      take: 50, // Her seferinde 50 kayıt işle (safety first)
-    });
+    const allOrders = await this.orderRepo.findAll();
+    const pendingReleases = allOrders.filter(o =>
+      o.getProps().status === 'DELIVERED' &&
+      o.getProps().escrowStatus === 'HELD' &&
+      o.getProps().escrowReleaseAt &&
+      o.getProps().escrowReleaseAt! <= now &&
+      o.getProps().escrowHoldId
+    ).slice(0, 50);
 
     if (pendingReleases.length === 0) {
       this.logger.log('Serbest bırakılacak bekleyen ödeme bulunamadı.');
@@ -49,54 +40,46 @@ export class OrderEscrowWorker {
 
     for (const order of pendingReleases) {
       try {
-        const idempotencyKey = `release-order-${order.id}-${(order as any).orderNumber}`;
-        
-        this.logger.debug(`Sipariş ${(order as any).orderNumber} için fonlar serbest bırakılıyor (HoldId: ${(order as any).escrowHoldId})`);
+        const escrowHoldId = order.getProps().escrowHoldId!;
+        const idempotencyKey = `release-order-${order.id}-${order.getProps().orderNumber.value}`;
 
-        // Financial Service üzerinden release işlemini tetikle
-        const result: any = await this.financialGateway.releaseFunds(
-          (order as any).escrowHoldId!,
-          idempotencyKey
-        );
+        this.logger.debug(`Sipariş ${order.getProps().orderNumber.value} için fonlar serbest bırakılıyor (HoldId: ${escrowHoldId})`);
+
+        const result: any = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
 
         if (result.success) {
-          // Sipariş kaydını güncelle
-          await this.prisma.order.update({
-            where: { id: order.id },
-            data: {
+          await this.orderRepo.updateOne(
+            order.id,
+            {
               escrowStatus: 'RELEASED',
               payoutStatus: 'PAID_TO_VENDOR',
               completedAt: new Date(),
-            },
-          });
-          this.logger.log(`Sipariş ${(order as any).orderNumber} ödemesi satıcıya aktarıldı.`);
+            }
+          );
+          this.logger.log(`Sipariş ${order.getProps().orderNumber.value} ödemesi satıcıya aktarıldı.`);
         } else {
-          this.logger.error(`Sipariş ${(order as any).orderNumber} release başarısız: ${result.error || 'Bilinmeyen hata'}`);
+          this.logger.error(`Sipariş ${order.getProps().orderNumber.value} release başarısız: ${result.error || 'Bilinmeyen hata'}`);
         }
       } catch (error: any) {
-        this.logger.error(`Sipariş ${(order as any).orderNumber} işlenirken hata oluştu: ${error.message}`);
+        this.logger.error(`Sipariş ${order.getProps().orderNumber.value} işlenirken hata oluştu: ${error.message}`);
       }
     }
 
     this.logger.log('Escrow release taraması tamamlandı.');
   }
 
-  /**
-   * Bonus: Her 12 saatte bir, teslimatı uzun süre önce yapılmış ama release edilmemiş 
-   * (belki manuel müdahale bekleyen) kayıtları raporla/logla.
-   */
   @Cron(CronExpression.EVERY_12_HOURS)
   async auditStaleEscrows() {
     const staleDate = new Date();
-    staleDate.setDate(staleDate.getDate() - 7); // 7 günden eski olanlar
+    staleDate.setDate(staleDate.getDate() - 7);
 
-    const staleCount = await this.prisma.order.count({
-      where: {
-        escrowStatus: 'HELD',
-        status: OrderStatus.DELIVERED,
-        escrowReleaseAt: { lte: staleDate },
-      }
-    });
+    const allOrders = await this.orderRepo.findAll();
+    const staleCount = allOrders.filter(o =>
+      o.getProps().escrowStatus === 'HELD' &&
+      o.getProps().status === 'DELIVERED' &&
+      o.getProps().escrowReleaseAt &&
+      o.getProps().escrowReleaseAt! <= staleDate
+    ).length;
 
     if (staleCount > 0) {
       this.logger.warn(`${staleCount} adet sipariş 7 günden fazladır HELD durumunda bekliyor!`);

@@ -1,48 +1,53 @@
 // apps/backend/src/modules/barter/infrastructure/persistence/mappers/swap-session.mapper.ts
+// SwapSessionMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Types } from 'mongoose';
+import { ISwapSession, CollateralStatus } from '@barterborsa/shared-persistence/schemas/backend/swapSession.schema';
 import { SwapSession, SwapSessionProps } from '../../../domain/entities/swap-session.entity';
 import { SwapSessionStatus } from '../../../domain/enums/swap-session-status.enum';
 
-type SwapSessionRaw = Prisma.SwapSessionGetPayload<object>;
+export interface SwapSessionDocument extends ISwapSession {
+  _id?: string;
+}
 
 @Injectable()
 export class SwapSessionMapper {
-  toDomain(raw: SwapSessionRaw): SwapSession {
+  toDomain(doc: SwapSessionDocument): SwapSession {
     const props: SwapSessionProps = {
-      tradeOfferId: raw.tradeOfferId,
-      initiatorId: raw.initiatorId,
-      receiverId: raw.receiverId,
-      shipmentMode: raw.shipmentMode,
-      collateralAmount: raw.collateralAmount,
-      collateralCurrency: raw.collateralCurrency,
-      collateralStatus: raw.collateralStatus,
-      collateralLockedAt: raw.collateralLockedAt ?? undefined,
-      collateralReleasedAt: raw.collateralReleasedAt ?? undefined,
-      fromCollateralHoldId: raw.fromCollateralHoldId ?? undefined,
-      toCollateralHoldId: raw.toCollateralHoldId ?? undefined,
-      status: raw.status as SwapSessionStatus,
-      timeoutAt: raw.timeoutAt,
-      completedAt: raw.completedAt ?? undefined,
-      cancelledAt: raw.cancelledAt ?? undefined,
-      disputedAt: raw.disputedAt ?? undefined,
+      tradeOfferId: doc.tradeOfferId,
+      initiatorId: doc.initiatorId,
+      receiverId: doc.receiverId,
+      shipmentMode: doc.shipmentMode ?? 'STANDARD',
+      collateralAmount: Number(doc.collateralAmount) || 0,
+      collateralCurrency: doc.collateralCurrency ?? 'TRY',
+      collateralStatus: (doc.collateralStatus as (typeof CollateralStatus)[number]) ?? 'NONE',
+      collateralLockedAt: doc.collateralLockedAt ?? undefined,
+      collateralReleasedAt: doc.collateralReleasedAt ?? undefined,
+      fromCollateralHoldId: doc.fromCollateralHoldId ?? undefined,
+      toCollateralHoldId: doc.toCollateralHoldId ?? undefined,
+      status: doc.status as SwapSessionStatus,
+      timeoutAt: doc.timeoutAt,
+      completedAt: doc.completedAt ?? undefined,
+      cancelledAt: doc.cancelledAt ?? undefined,
+      disputedAt: doc.disputedAt ?? undefined,
       parts: [],
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
-    return SwapSession.createFrom(props, raw.id);
+    return SwapSession.createFrom(props, doc.id);
   }
 
   toPersistence(domain: SwapSession): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       tradeOfferId: props.tradeOfferId,
       initiatorId: props.initiatorId,
       receiverId: props.receiverId,
       status: props.status,
-      collateralAmount: props.collateralAmount,
+      collateralAmount: Types.Decimal128.fromString(String(props.collateralAmount)),
       collateralCurrency: props.collateralCurrency,
       collateralStatus: props.collateralStatus,
       collateralLockedAt: props.collateralLockedAt,

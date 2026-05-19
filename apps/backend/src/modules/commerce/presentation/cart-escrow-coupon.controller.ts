@@ -9,7 +9,9 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiParam, ApiProperty } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
+import { ICartRepository } from '../domain/repositories/cart.repository.interface';
+import { ICouponRepository, IEscrowCouponRepository } from '../domain/repositories/coupon.repository.interface';
 
 class ApplyEscrowCouponDto {
   @ApiProperty({ example: 'YENI10', description: 'Kupon kodu' })
@@ -21,20 +23,20 @@ class ApplyEscrowCouponDto {
 @UseGuards(JwtAuthGuard)
 @Controller('cart/escrow-coupons')
 export class CartEscrowCouponController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('ICartRepository') private readonly cartRepo: ICartRepository,
+    @Inject('ICouponRepository') private readonly couponRepo: ICouponRepository,
+    @Inject('IEscrowCouponRepository') private readonly escrowCouponRepo: IEscrowCouponRepository,
+  ) {}
 
   @ApiOperation({ summary: 'Sepetteki escrow kuponları listele' })
   @Get()
   async getEscrowCoupons(@CurrentUser() user: any) {
-    const cart = await this.prisma.cart.findUnique({
-      where: { userId: user.id },
-    });
+    const cart = await this.cartRepo.findByUserId(user.id);
     if (!cart) return { success: true, data: [] };
 
-    const coupons = await this.prisma.escrowCoupon.findMany({
-      where: { cartId: cart.id, isActive: true },
-      orderBy: { appliedAt: 'desc' },
-    });
+    const props = cart.getProps();
+    const coupons = await this.escrowCouponRepo.findByCartId(cart.id);
     return { success: true, data: coupons };
   }
 
@@ -45,46 +47,31 @@ export class CartEscrowCouponController {
     @CurrentUser() user: any,
     @Body() dto: ApplyEscrowCouponDto,
   ) {
-    // Sepeti bul veya oluştur
-    let cart = await this.prisma.cart.findUnique({ where: { userId: user.id } });
+    let cart = await this.cartRepo.findByUserId(user.id);
     if (!cart) {
-      cart = await this.prisma.cart.create({ data: { userId: user.id } });
+      cart = await this.cartRepo.findOrCreate(user.id);
     }
 
-    // Kupon kodunu doğrula (Coupon modeli mevcut ise)
-    const coupon = await this.prisma.coupon.findFirst({
-      where: {
-        code: dto.code,
-        isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
-        ],
-      },
-    }).catch(() => null); // Coupon modeli yoksa null dön
-
+    const coupon = await this.couponRepo.findByCode(dto.code);
     if (!coupon) {
       throw new BadRequestException('Geçersiz veya süresi dolmuş kupon kodu');
     }
 
-    // Aynı kupon zaten eklenmiş mi?
-    const existing = await this.prisma.escrowCoupon.findFirst({
-      where: { cartId: cart.id, code: dto.code, isActive: true },
-    });
+    const cartProps = cart.getProps();
+
+    const existing = await this.escrowCouponRepo.findByCartIdAndCode(cart.id, dto.code);
     if (existing) {
       throw new BadRequestException('Bu kupon zaten sepete eklenmiş');
     }
 
-    const escrowCoupon = await this.prisma.escrowCoupon.create({
-      data: {
-        cartId: cart.id,
-        userId: user.id,
-        code: dto.code,
-        discount: coupon.discountAmount || 0,
-        percentage: coupon.discountPercentage,
-        minAmount: coupon.minOrderAmount,
-        expiresAt: coupon.expiresAt,
-      },
+    const escrowCoupon = await this.escrowCouponRepo.create({
+      cartId: cart.id,
+      userId: user.id,
+      code: dto.code,
+      discount: (coupon as any).discountAmount || 0,
+      percentage: (coupon as any).discountPercentage,
+      minAmount: (coupon as any).minOrderAmount,
+      expiresAt: (coupon as any).expiresAt,
     });
 
     return {
@@ -101,15 +88,13 @@ export class CartEscrowCouponController {
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
-    const coupon = await this.prisma.escrowCoupon.findFirst({
-      where: { id, userId: user.id },
-    });
+    const coupon = await this.escrowCouponRepo.findById(id);
 
-    if (!coupon) {
+    if (!coupon || (coupon as any).userId !== user.id) {
       throw new BadRequestException('Kupon bulunamadı');
     }
 
-    await this.prisma.escrowCoupon.delete({ where: { id } });
+    await this.escrowCouponRepo.delete(id);
 
     return { success: true, message: 'Kupon sepetten kaldırıldı' };
   }

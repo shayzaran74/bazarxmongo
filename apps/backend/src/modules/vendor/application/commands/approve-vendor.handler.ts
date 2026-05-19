@@ -1,69 +1,60 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { BadRequestException, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { ApproveVendorCommand } from './approve-vendor.command';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
+import { MongoCompanyRepository } from '../../infrastructure/persistence/mongo-company.repository';
+import { MongoUserRepository } from '../../infrastructure/persistence/mongo-user.repository';
 
 @CommandHandler(ApproveVendorCommand)
 export class ApproveVendorHandler implements ICommandHandler<ApproveVendorCommand> {
   private readonly logger = new Logger(ApproveVendorHandler.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly companyRepo: MongoCompanyRepository,
+    private readonly userRepo: MongoUserRepository,
     private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(command: ApproveVendorCommand) {
     const { vendorId, adminId } = command;
 
-    const existing = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
-      select: { id: true, status: true, userId: true, companyId: true },
-    });
-    if (!existing) throw new NotFoundException('Satıcı bulunamadı');
+    const vendor = await this.vendorRepo.findById(vendorId);
+    if (!vendor) throw new NotFoundException('Satıcı bulunamadı');
 
-    // State machine: yalnızca PENDING vendor onaylanabilir
-    if (existing.status !== 'PENDING') {
+    if (vendor.status !== 'PENDING') {
       throw new BadRequestException(
-        `Bu satıcı zaten "${existing.status}" durumunda, onaylanamaz`,
+        `Bu satıcı zaten "${vendor.status}" durumunda, onaylanamaz`,
       );
     }
 
-    const vendor = await this.prisma.vendor.update({
-      where: { id: vendorId },
-      data: { status: 'APPROVED', verifiedAt: new Date(), isVerified: true, barterEnabled: true },
-      include: { profile: true },
-    }) as { id: string; slug: string; barterEnabled: boolean; profile?: { storeName?: string } | null; [key: string]: unknown };
+    await this.vendorRepo.update(vendorId, {
+      status: 'APPROVED',
+      verifiedAt: new Date(),
+      isVerified: true,
+      barterEnabled: true,
+    });
 
-    if (existing.companyId) {
-      await this.prisma.company.update({
-        where: { id: existing.companyId },
-        data: { status: 'APPROVED', verifiedAt: new Date() },
+    if (vendor.companyId) {
+      await this.companyRepo.update(vendor.companyId, {
+        status: 'APPROVED',
+        verifiedAt: new Date(),
       });
     } else {
-      // Eğer şirket kaydı yoksa otomatik oluştur
-      const newCompany = await this.prisma.company.create({
-        data: {
-          name: vendor.profile?.storeName ?? vendor.slug ?? 'Satıcı Şirketi',
-          taxNumber: 'AUTO-' + vendor.id.substring(0, 8),
-          status: 'APPROVED',
-          verifiedAt: new Date(),
-        }
+      const newCompany = await this.companyRepo.create({
+        name: vendor.slug?.value ?? 'Satıcı Şirketi',
+        taxNumber: 'AUTO-' + vendorId.substring(0, 8),
+        status: 'APPROVED',
+        verifiedAt: new Date(),
       });
-      // Satıcıyı bu yeni şirkete bağla
-      await this.prisma.vendor.update({
-        where: { id: vendorId },
-        data: { companyId: newCompany.id }
-      });
+      await this.vendorRepo.update(vendorId, { companyId: newCompany.id });
     }
 
-    // Kullanıcı rolünü VENDOR yap
-    if (existing.userId) {
-      await this.prisma.user.update({
-        where: { id: existing.userId },
-        data: { role: 'VENDOR' },
-      });
-      this.logger.log(`Kullanıcı rolü VENDOR yapıldı`, { userId: existing.userId });
+    if (vendor.userId) {
+      await this.userRepo.update(vendor.userId, { role: 'VENDOR' });
+      this.logger.log(`Kullanıcı rolü VENDOR yapıldı`, { userId: vendor.userId });
     }
 
     await this.auditLog.log({
@@ -75,6 +66,6 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
       newValue:     { status: 'APPROVED' },
     });
 
-    return vendor;
+    return { id: vendorId, status: 'APPROVED' };
   }
 }

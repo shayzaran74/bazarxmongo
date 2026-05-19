@@ -4,8 +4,10 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@prisma/client": ["./src/generated/client"],
-      ".prisma/client": ["./src/generated/client"]
+      "@barterborsa/shared-core": ["../../packages/shared/shared-core/src/index.ts"],
+      "@barterborsa/shared-persistence": ["../../packages/shared/shared-persistence/src/index.ts"],
+      "@barterborsa/shared-security": ["../../packages/shared/shared-security/src/index.ts"],
+      "@barterborsa/shared-types": ["../../packages/shared/shared-types/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

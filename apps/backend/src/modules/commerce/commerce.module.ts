@@ -1,10 +1,27 @@
 // apps/backend/src/modules/commerce/commerce.module.ts
+// CommerceModule — Mongoose migration (ADR-005 Faz 2a)
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
+import { HttpModule } from '@nestjs/axios';
 import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
 import { CatalogModule } from '../catalog/catalog.module';
+import { VendorModule } from '../vendor/vendor.module';
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
+// Schemas
+import { Cart, CartSchema } from '@barterborsa/shared-persistence/schemas/backend/cart.schema';
+import { CartItem, CartItemSchema } from '@barterborsa/shared-persistence/schemas/backend/cartItem.schema';
+import { Order, OrderSchema } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
+import { Invoice, InvoiceSchema } from '@barterborsa/shared-persistence/schemas/backend/invoice.schema';
+import { InvoiceItem, InvoiceItemSchema } from '@barterborsa/shared-persistence/schemas/backend/invoiceItem.schema';
+import { Dispute, DisputeSchema } from '@barterborsa/shared-persistence/schemas/backend/dispute.schema';
+import { EscrowCoupon, EscrowCouponSchema } from '@barterborsa/shared-persistence/schemas/backend/escrowCoupon.schema';
+import { Coupon, CouponSchema } from '@barterborsa/shared-persistence/schemas/backend/coupon.schema';
+import { ReturnRequest, ReturnRequestSchema } from '@barterborsa/shared-persistence';
+import { MongoVendorRepository } from '../vendor/infrastructure/persistence/mongo-vendor.repository';
+import { MongoListingRepository } from '../catalog/infrastructure/persistence/mongo-listing.repository';
 
 // Controllers
 import { CartController } from './presentation/cart.controller';
@@ -12,6 +29,8 @@ import { CheckoutController } from './presentation/checkout.controller';
 import { PaymentController } from './presentation/payment.controller';
 import { OrderAdminController } from './presentation/order-admin.controller';
 import { OrderController } from './presentation/order.controller';
+import { ReturnController } from './presentation/return.controller';
+import { EInvoiceController, OrderEInvoiceController, AdminEInvoiceController } from './presentation/einvoice.controller';
 
 // Services
 import { PricingService } from './application/services/pricing.service';
@@ -20,6 +39,11 @@ import { StorageService } from './application/services/storage.service';
 import { InvoicePdfService } from './application/services/invoice-pdf.service';
 import { OrderExpiryService } from './application/services/order-expiry.service';
 import { OrderEscrowWorker } from './application/services/order-escrow-worker.service';
+import { ReturnService } from './application/services/return.service';
+import { ReturnSchedulerService } from './application/services/return-scheduler.service';
+import { EInvoiceGeneratorService } from './application/services/einvoice-generator.service';
+import { OrderDeliveredConsumer } from './application/consumers/order-delivered.consumer';
+import { EfaturaComAdapter } from './infrastructure/adapters/efatura-com.adapter';
 
 // Command handlers
 import { CheckoutHandler } from './application/commands/checkout.handler';
@@ -45,11 +69,14 @@ import { GetAdminOrderHandler } from './application/queries/get-admin-order.hand
 import { GetMyOrdersHandler } from './application/queries/get-my-orders.handler';
 import { GetOrderDetailsHandler } from './application/queries/get-order-details.handler';
 
-// Repositories — sadece token olarak kayıtlı, sınıf tekrarı yok
-import { PrismaCartRepository } from './infrastructure/persistence/prisma-cart.repository';
-import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order.repository';
-import { PrismaInvoiceRepository } from './infrastructure/persistence/prisma-invoice.repository';
-import { PrismaDisputeRepository } from './infrastructure/persistence/prisma-dispute.repository';
+// Infrastructure
+import { MongoCartRepository } from './infrastructure/persistence/mongo-cart.repository';
+import { MongoOrderRepository } from './infrastructure/persistence/mongo-order.repository';
+import { MongoInvoiceRepository } from './infrastructure/persistence/mongo-invoice.repository';
+import { MongoDisputeRepository } from './infrastructure/persistence/mongo-dispute.repository';
+import { MongoUserAddressRepository } from './infrastructure/persistence/mongo-user-address.repository';
+import { MongoCouponRepository, MongoEscrowCouponRepository } from './infrastructure/persistence/mongo-coupon.repository';
+import { MongoReturnRequestRepository } from './infrastructure/persistence/mongo-return-request.repository';
 
 const CommandHandlers = [
   CheckoutHandler,
@@ -78,18 +105,33 @@ const QueryHandlers = [
 ];
 
 const Repositories = [
-  { provide: 'ICartRepository', useClass: PrismaCartRepository },
-  { provide: 'IOrderRepository', useClass: PrismaOrderRepository },
-  { provide: 'IInvoiceRepository', useClass: PrismaInvoiceRepository },
-  { provide: 'IDisputeRepository', useClass: PrismaDisputeRepository },
+  { provide: 'ICartRepository', useClass: MongoCartRepository },
+  { provide: 'IOrderRepository', useClass: MongoOrderRepository },
+  { provide: 'IInvoiceRepository', useClass: MongoInvoiceRepository },
+  { provide: 'IDisputeRepository', useClass: MongoDisputeRepository },
+  { provide: 'IUserAddressRepository', useClass: MongoUserAddressRepository },
+  { provide: 'ICouponRepository', useClass: MongoCouponRepository },
+  { provide: 'IEscrowCouponRepository', useClass: MongoEscrowCouponRepository },
 ];
 
 @Module({
   imports: [
     CqrsModule,
-    PrismaModule,
+    HttpModule,
+    MongooseModule.forFeature([
+      { name: Cart.name, schema: CartSchema },
+      { name: CartItem.name, schema: CartItemSchema },
+      { name: Order.name, schema: OrderSchema },
+      { name: Invoice.name, schema: InvoiceSchema },
+      { name: InvoiceItem.name, schema: InvoiceItemSchema },
+      { name: Dispute.name, schema: DisputeSchema },
+      { name: EscrowCoupon.name, schema: EscrowCouponSchema },
+      { name: Coupon.name, schema: CouponSchema },
+      { name: ReturnRequest.name, schema: ReturnRequestSchema },
+    ]),
     FinancialGatewayModule,
     CatalogModule,
+    AuditMongooseModule,
   ],
   controllers: [
     CartController,
@@ -97,6 +139,10 @@ const Repositories = [
     PaymentController,
     OrderAdminController,
     OrderController,
+    ReturnController,
+    EInvoiceController,
+    OrderEInvoiceController,
+    AdminEInvoiceController,
   ],
   providers: [
     PricingService,
@@ -105,13 +151,25 @@ const Repositories = [
     InvoicePdfService,
     OrderExpiryService,
     OrderEscrowWorker,
+    ReturnService,
+    ReturnSchedulerService,
+    EInvoiceGeneratorService,
+    OrderDeliveredConsumer,
+    EfaturaComAdapter,
     ...CommandHandlers,
     ...QueryHandlers,
     ...Repositories,
+    { provide: 'IReturnRequestRepository', useClass: MongoReturnRequestRepository },
+    { provide: 'IEInvoiceProvider', useClass: EfaturaComAdapter },
+    MongoOrderRepository,
+    MongoVendorRepository,
+    MongoCartRepository,
+    MongoListingRepository,
   ],
   exports: [
     ...Repositories,
     StorageService,
+    ReturnService,
   ],
 })
 export class CommerceModule {}

@@ -29,12 +29,14 @@ export class GetCategoryTreeHandler implements IQueryHandler<GetCategoryTreeQuer
     const cacheKey = 'category-tree';
     const cachedTree = await this.cacheManager.get<CategoryTreeDto[]>(cacheKey);
     
-    if (cachedTree) {
+
+    if (cachedTree && cachedTree.length > 0) {
       return cachedTree;
     }
 
     const allCategories = await this.categoryRepository.findAll();
     
+
     // Build tree
     const categoryMap = new Map<string, CategoryTreeDto>();
     const rootCategories: CategoryTreeDto[] = [];

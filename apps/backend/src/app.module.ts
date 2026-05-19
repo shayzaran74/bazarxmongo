@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -24,7 +25,7 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { AuditModule } from './modules/audit/audit.module';
+import { AuditMongooseModule } from './modules/audit/audit-mongoose.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { BarterBorsaModule } from './modules/barterborsa/barterborsa.module';
@@ -37,6 +38,19 @@ import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],
+    }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const uri = config.getOrThrow<string>('MONGODB_URI');
+        // @nestjs/mongoose createConnection() kullandığından shared-persistence
+        // modelleri için global bağlantıyı da açmak gerekiyor (ADR-005).
+        const mongoose = require('mongoose') as typeof import('mongoose');
+        if (mongoose.connection.readyState === 0) {
+          mongoose.connect(uri).catch(() => {/* bağlantı hatası MongooseModule tarafından yönetilir */});
+        }
+        return { uri, family: 4 };
+      },
     }),
     ScheduleModule.forRoot(),
 
@@ -92,7 +106,7 @@ import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor
     SharedSecurityModule,
 
     // ─── Audit (Global) ────────────────────────────────────────────
-    AuditModule,
+    AuditMongooseModule,
 
     // ─── Feature Modules ───────────────────────────────────────────
     SubscriptionModule,

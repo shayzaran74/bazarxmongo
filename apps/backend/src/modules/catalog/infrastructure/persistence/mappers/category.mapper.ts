@@ -1,37 +1,42 @@
 // apps/backend/src/modules/catalog/infrastructure/persistence/mappers/category.mapper.ts
+// CategoryMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
+import { ICategory } from '@barterborsa/shared-persistence/schemas/backend/category.schema';
 import { Category, CategoryProps } from '../../../domain/entities/category.entity';
 import { Slug } from '../../../domain/value-objects/slug.vo';
 import { CategoryType } from '../../../domain/enums/category-type.enum';
-import { Category as PrismaCategory } from '@prisma/client';
+
+export interface CategoryDocument extends ICategory {
+  _id?: string;
+}
 
 export class CategoryMapper {
-  public static toDomain(record: PrismaCategory): Category {
-    const slugResult = Slug.create(record.slug);
-    
+  public static toDomain(doc: CategoryDocument): Category {
+    const slugResult = Slug.create(doc.slug);
+
     const props: CategoryProps = {
-      name: record.name,
-      slug: slugResult.success ? slugResult.data : Slug.fromText(record.slug),
-      parentId: record.parentId || undefined,
-      description: record.description || undefined,
-      icon: record.icon || undefined,
-      image: record.image || undefined,
-      order: record.order,
-      isActive: record.isActive,
-      type: record.type as CategoryType,
-      badgeText: record.badgeText || undefined,
-      badgeColor: record.badgeColor || undefined,
-      attributeTemplate: record.attributeTemplate,
-      isFeatured: record.isFeatured,
+      name: doc.name,
+      slug: slugResult.success ? slugResult.data : Slug.fromText(doc.slug),
+      parentId: doc.parentId ?? undefined,
+      description: doc.description ?? undefined,
+      icon: doc.icon ?? undefined,
+      image: doc.image ?? undefined,
+      order: doc.order,
+      isActive: doc.isActive,
+      type: doc.type as CategoryType,
+      badgeText: doc.badgeText ?? undefined,
+      badgeColor: doc.badgeColor ?? undefined,
+      attributeTemplate: doc.attributeTemplate as Record<string, unknown> | undefined,
+      isFeatured: doc.isFeatured,
     };
 
-    return Category.fromPersistence(props, record.id);
+    return Category.fromPersistence(props, doc.id);
   }
 
-  public static toPersistence(domain: Category): any {
+  public static toPersistence(domain: Category): Record<string, unknown> {
     const props = domain.getProps();
-    
     return {
+      _id: domain.id,
       id: domain.id,
       name: props.name,
       slug: props.slug.value,
@@ -46,7 +51,6 @@ export class CategoryMapper {
       badgeColor: props.badgeColor,
       attributeTemplate: props.attributeTemplate,
       isFeatured: props.isFeatured,
-      updatedAt: new Date(),
     };
   }
 }

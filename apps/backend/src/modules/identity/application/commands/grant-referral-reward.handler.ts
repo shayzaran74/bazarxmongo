@@ -3,29 +3,35 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { GrantReferralRewardCommand } from './grant-referral-reward.command';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection, Types, ClientSession } from 'mongoose';
 import { CommandBus } from '@nestjs/cqrs';
+import { IReferral, IUserLevel, IXpTransaction, IUserSubscription } from '@barterborsa/shared-persistence';
+import { GrantReferralRewardCommand } from './grant-referral-reward.command';
 import { IssueGiftVoucherCommand } from '../../../marketing/application/commands/issue-gift-voucher.command';
 
-const XP_REFERRAL_GIVEN    = 20;  // Referans verene (max 3 kişi)
-const XP_REFERRAL_RECEIVED = 10;  // Yeni üyeye karşılama bonusu
+const XP_REFERRAL_GIVEN    = 20;
+const XP_REFERRAL_RECEIVED = 10;
 
 @CommandHandler(GrantReferralRewardCommand)
 export class GrantReferralRewardHandler implements ICommandHandler<GrantReferralRewardCommand> {
   private readonly logger = new Logger(GrantReferralRewardHandler.name);
 
   constructor(
-    private readonly prisma:      PrismaService,
-    private readonly commandBus:  CommandBus,
+    @InjectModel('Referral')         private readonly referralModel:     Model<IReferral>,
+    @InjectModel('UserLevel')        private readonly userLevelModel:    Model<IUserLevel>,
+    @InjectModel('XpTransaction')    private readonly xpTxModel:         Model<IXpTransaction>,
+    @InjectModel('UserSubscription') private readonly subscriptionModel: Model<IUserSubscription>,
+    @InjectConnection()              private readonly connection:         Connection,
+    private readonly commandBus: CommandBus,
   ) {}
 
   async execute(command: GrantReferralRewardCommand) {
     const { referrerId, refereeId } = command;
 
-    // Kaç referans verilmiş?
-    const referralCount = await this.prisma.referral.count({
-      where: { referrerId, rewardGrantedAt: { not: null } },
+    const referralCount = await this.referralModel.countDocuments({
+      referrerId,
+      rewardGrantedAt: { $ne: null, $exists: true },
     });
 
     if (referralCount >= 3) {
@@ -33,60 +39,41 @@ export class GrantReferralRewardHandler implements ICommandHandler<GrantReferral
       return { success: false, message: 'Maksimum 3 referans hakkı kullanılabilir' };
     }
 
-    const isThirdReferral = referralCount === 2; // Bu işlem sonrası 3. olacak
+    const isThirdReferral = referralCount === 2;
 
-    await this.prisma.$transaction(async (tx) => {
-      // Referans kaydını güncelle
-      await tx.referral.update({
-        where:  { refereeId },
-        data: {
-          xpGranted:       XP_REFERRAL_GIVEN,
-          rewardGrantedAt: new Date(),
-          bonusGranted:    isThirdReferral,
-        },
-      });
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await this.referralModel.updateOne(
+          { refereeId },
+          { $set: { xpGranted: XP_REFERRAL_GIVEN, rewardGrantedAt: new Date(), bonusGranted: isThirdReferral } },
+          { session },
+        );
 
-      // Referans verene +20 XP
-      await tx.userLevel.upsert({
-        where:  { userId: referrerId },
-        update: { currentXp: { increment: XP_REFERRAL_GIVEN }, lifetimeXp: { increment: XP_REFERRAL_GIVEN } },
-        create: { userId: referrerId, currentXp: XP_REFERRAL_GIVEN, lifetimeXp: XP_REFERRAL_GIVEN, level: 1, isFirstOrder: true },
-      });
-      await tx.xpTransaction.create({
-        data: { userId: referrerId, amount: XP_REFERRAL_GIVEN, type: 'REFERRAL_GIVEN',
-          description: `Referans ödülü (${referralCount + 1}. kişi)`, referenceId: refereeId, referenceType: 'USER' },
-      });
+        await this.upsertUserLevel(referrerId, XP_REFERRAL_GIVEN, session);
+        await this.createXpTx(referrerId, XP_REFERRAL_GIVEN, 'REFERRAL_GIVEN',
+          `Referans ödülü (${referralCount + 1}. kişi)`, refereeId, session);
 
-      // Yeni üyeye +10 XP karşılama bonusu
-      await tx.userLevel.upsert({
-        where:  { userId: refereeId },
-        update: { currentXp: { increment: XP_REFERRAL_RECEIVED }, lifetimeXp: { increment: XP_REFERRAL_RECEIVED } },
-        create: { userId: refereeId, currentXp: XP_REFERRAL_RECEIVED, lifetimeXp: XP_REFERRAL_RECEIVED, level: 1, isFirstOrder: true },
+        await this.upsertUserLevel(refereeId, XP_REFERRAL_RECEIVED, session);
+        await this.createXpTx(refereeId, XP_REFERRAL_RECEIVED, 'REFERRAL_RECEIVED',
+          'Referans karşılama bonusu', referrerId, session);
       });
-      await tx.xpTransaction.create({
-        data: { userId: refereeId, amount: XP_REFERRAL_RECEIVED, type: 'REFERRAL_RECEIVED',
-          description: 'Referans karşılama bonusu', referenceId: referrerId, referenceType: 'USER' },
-      });
-    });
+    } finally {
+      await session.endSession();
+    }
 
-    // 3. referans özel bonusu: 1+1 menü hakkı + tier geçişinde %20 indirim işareti
     if (isThirdReferral) {
-      // Referans indirimini aboneliğe kaydet
-      await this.prisma.userSubscription.updateMany({
-        where: { userId: referrerId, status: 'ACTIVE' },
-        data:  { referralDiscountPct: 20 },
-      });
-
-      // 1+1 menü hakkı olarak hediye çeki ver (100₺ — bir alt tier menü değeri)
+      await this.subscriptionModel.updateMany(
+        { userId: referrerId, status: 'ACTIVE' },
+        { $set: { referralDiscountPct: Types.Decimal128.fromString('20') } },
+      );
       await this.commandBus.execute(
         new IssueGiftVoucherCommand(referrerId, 100, 'REFERRAL_BONUS', 'SYSTEM', 60),
       );
-
       this.logger.log('3. referans bonusu verildi', { referrerId });
     }
 
     this.logger.log('Referans ödülleri verildi', { referrerId, refereeId, isThirdReferral });
-
     return {
       success: true,
       data: {
@@ -96,5 +83,33 @@ export class GrantReferralRewardHandler implements ICommandHandler<GrantReferral
         totalReferrals: referralCount + 1,
       },
     };
+  }
+
+  private async upsertUserLevel(userId: string, xp: number, session: ClientSession): Promise<void> {
+    const existing = await this.userLevelModel.findOne({ userId }).session(session).lean();
+    if (existing) {
+      await this.userLevelModel.updateOne(
+        { userId },
+        { $inc: { currentXp: xp, lifetimeXp: xp } },
+        { session },
+      );
+    } else {
+      const newId = new Types.ObjectId().toString();
+      await this.userLevelModel.create(
+        [{ _id: newId, id: newId, userId, currentXp: xp, lifetimeXp: xp, level: 1, isFirstOrder: true }],
+        { session },
+      );
+    }
+  }
+
+  private async createXpTx(
+    userId: string, amount: number, type: string,
+    description: string, referenceId: string, session: ClientSession,
+  ): Promise<void> {
+    const newId = new Types.ObjectId().toString();
+    await this.xpTxModel.create(
+      [{ _id: newId, id: newId, userId, amount, type, description, referenceId, referenceType: 'USER' }],
+      { session },
+    );
   }
 }

@@ -1,12 +1,18 @@
+// apps/backend/src/modules/content/presentation/side-ads.controller.ts
+
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Public } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ISideAd } from '@barterborsa/shared-persistence';
 
 @ApiTags('Side Ads')
 @Controller('side-ads')
 export class SideAdsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('SideAd') private readonly sideAdModel: Model<ISideAd>,
+  ) {}
 
   @Public()
   @ApiOperation({ summary: 'Get active side ads' })
@@ -14,20 +20,11 @@ export class SideAdsController {
   async getSideAds(
     @Query('side') side?: string,
     @Query('ecosystem') ecosystem?: string,
-    @Query('city') city?: string,
   ) {
-    const where: any = { isActive: true };
+    const where: Record<string, unknown> = { isActive: true };
     if (side) where.side = side;
-    if (ecosystem && ecosystem !== 'GLOBAL') {
-      where.ecosystems = { hasSome: [ecosystem, 'GLOBAL'] };
-    }
 
-    const items = await this.prisma.sideAd.findMany({
-      where,
-      include: { locations: true },
-      orderBy: { order: 'asc' },
-    });
-
+    const items = await this.sideAdModel.find(where).sort({ order: 1 }).lean();
     return { success: true, data: items };
   }
 }

@@ -19,16 +19,16 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@barterborsa/shared-core": [
-        "../../packages/shared/shared-core/dist/index.d.ts"
+        "../../packages/shared/shared-core/src/index"
       ],
       "@barterborsa/shared-messaging": [
-        "../../packages/shared/shared-messaging/dist/index.d.ts"
+        "../../packages/shared/shared-messaging/src/index"
       ],
       "@barterborsa/shared-observability": [
-        "../../packages/shared/shared-observability/dist/index.d.ts"
+        "../../packages/shared/shared-observability/src/index"
       ],
       "@barterborsa/shared-persistence": [
-        "../../packages/shared/shared-persistence/dist/index.d.ts"
+        "../../packages/shared/shared-persistence/src/index"
       ]
     }
   },

@@ -1,0 +1,33 @@
+{
+  "name": "@barterborsa/domain-identity",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "@barterborsa/shared-core": "workspace:*",
+    "@barterborsa/shared-types": "workspace:*",
+    "@barterborsa/shared-security": "workspace:*",
+    "@barterborsa/shared-persistence": "workspace:*",
+    "@prisma/client": "5.12.0",
+    "class-validator": "^0.14.1",
+    "bcrypt": "^5.1.1",
+    "passport-local": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/cqrs": "^10.0.0",
+    "@nestjs/passport": "^10.0.3"
+  },
+  "devDependencies": {
+    "prisma": "5.12.0",
+    "@types/passport-local": "^1.0.38"
+  }
+}

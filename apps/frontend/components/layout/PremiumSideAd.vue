@@ -2,7 +2,7 @@
   <div
     v-if="displayedAds && displayedAds.length > 0"
     :class="[
-      'hidden xl:flex flex-col gap-4 w-56 shrink-0 py-6 transition-all duration-700',
+      'hidden lg:flex flex-col gap-4 w-56 shrink-0 py-6 transition-all duration-700',
       side === 'left' ? 'pl-4 pr-2' : 'pr-4 pl-2'
     ]"
   >

@@ -2,9 +2,11 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { BulkImportVendorProductsCommand } from './bulk-import-vendor-products.command';
 import { FileParserService, ParsedRow } from '../services/file-parser.service';
+import { MongoListingRepository } from '../../../catalog/infrastructure/persistence/mongo-listing.repository';
+import { MongoCatalogProductRepository } from '../../../catalog/infrastructure/persistence/mongo-catalog-product.repository';
+import { Slug } from '../../../catalog/domain/value-objects/slug.vo';
 
 interface ImportResults {
   created: number;
@@ -19,9 +21,14 @@ export class BulkImportVendorProductsHandler
 {
   private readonly logger = new Logger(BulkImportVendorProductsHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly listingRepo: MongoListingRepository,
+    private readonly catalogProductRepo: MongoCatalogProductRepository,
+  ) {}
 
   async execute(command: BulkImportVendorProductsCommand) {
+    this.logger.log(`[BulkImportVendorProductsHandler] Başladı — vendorId: ${command.vendorId}, satır: ${command.rows.length}`);
+
     const { vendorId, rows } = command;
     const results: ImportResults = { created: 0, updated: 0, failed: 0, errors: [] };
 
@@ -35,12 +42,7 @@ export class BulkImportVendorProductsHandler
       }
     }
 
-    this.logger.log('Vendor bulk import tamamlandı', {
-      vendorId,
-      created: results.created,
-      updated: results.updated,
-      failed: results.failed,
-    });
+    this.logger.log(`[BulkImportVendorProductsHandler] Tamamlandı — created: ${results.created}, updated: ${results.updated}, failed: ${results.failed}`);
 
     return {
       success: true,
@@ -62,16 +64,17 @@ export class BulkImportVendorProductsHandler
       return;
     }
 
+    this.logger.debug(`[processRow] Satır ${rowNum} — ürün: ${name}`);
+
     const price = this.parsePrice(row['price'] || row['fiyat']);
     const stock = this.parseStock(row['stock'] || row['stok']);
     const barcode = row['barcode'] || row['barkod'] || undefined;
     const sku = row['sku'] || undefined;
-    const categoryId = row['categoryid'] || row['category_id'] || null;
+    const categoryId = row['categoryid'] || row['category_id'] || undefined;
     const brand = row['brand'] || row['marka'] || 'Genel';
     const description = row['description'] || row['açıklama'] || '';
     const rowType = row['type'] || row['vendortype'] || row['vendor_type'] || null;
 
-    // Geçerli vendorType değeri kontrolü
     const validVendorTypes = ['COMMERCE', 'RESTAURANT', 'MARKET', 'SERVICE'];
     if (rowType && !validVendorTypes.includes(rowType)) {
       results.failed++;
@@ -79,65 +82,49 @@ export class BulkImportVendorProductsHandler
       return;
     }
 
-    // Barkod veya SKU ile mevcut listing'i bul → güncelle
     const lookupKey = barcode || sku;
     if (lookupKey) {
-      const existing = await this.prisma.listing.findFirst({
-        where: {
-          vendorId,
-          OR: [
-            ...(barcode ? [{ barcode }] : []),
-            ...(sku ? [{ sku }] : []),
-          ],
-        },
-      });
-
+      const existing = await this.listingRepo.findByBarcodeOrSku(vendorId, barcode, sku);
       if (existing) {
-        await this.prisma.listing.update({
-          where: { id: existing.id },
-          data: {
-            title: name,
-            ...(description && { description }),
-            ...(price >= 0 && { price }),
-            ...(stock >= 0 && { stock }),
-          },
+        await this.listingRepo.update(existing.id, {
+          ...(description && { description }),
+          ...(price >= 0 && { price }),
+          ...(stock >= 0 && { stock }),
         });
         results.updated++;
         return;
       }
     }
 
-    // Yeni ürün — CatalogProduct bul veya oluştur
-    let catalogProduct = await this.prisma.catalogProduct.findFirst({
-      where: { name },
-    });
+    const slug = FileParserService.toSlug(name);
 
+    // Slug oluşturuldu, catalogProduct ara
+    this.logger.debug(`[processRow] Slug oluşturuldu: ${slug}`);
+
+    let catalogProduct = await this.catalogProductRepo.findBySlug(Slug.fromRaw(slug));
     if (!catalogProduct) {
-      catalogProduct = await this.prisma.catalogProduct.create({
-        data: {
-          name,
-          slug: FileParserService.toSlug(name),
-          brand,
-          description: description || name,
-          categoryId: categoryId || null,
-        },
+      this.logger.debug(`[processRow] CatalogProduct yok, oluşturuluyor: ${slug}`);
+      catalogProduct = await this.catalogProductRepo.create({
+        name,
+        slug,
+        description: description || name,
+        brand,
+        status: 'PENDING',
       });
     }
 
-    await this.prisma.listing.create({
-      data: {
-        vendorId,
-        catalogProductId: catalogProduct.id,
-        categoryId: categoryId || null,
-        title: name,
-        description: description || '',
-        price,
-        stock,
-        barcode: barcode || null,
-        sku: sku || null,
-        status: 'ACTIVE',
-        slug: FileParserService.toSlug(name),
-      },
+    await this.listingRepo.create({
+      vendorId,
+      catalogProductId: catalogProduct.id,
+      title: name,
+      description: description || '',
+      price,
+      stock,
+      status: 'ACTIVE',
+      barcode,
+      sku,
+      slug,
+      categoryId,
     });
     results.created++;
   }

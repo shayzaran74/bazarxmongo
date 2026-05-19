@@ -1,10 +1,9 @@
 // apps/backend/src/modules/barter/domain/value-objects/trade-value.vo.ts
 
 import { ValueObject, Result, Ok, Err } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 
 interface TradeValueProps {
-  amount: Prisma.Decimal;
+  amount: number;
   currency: string;
 }
 
@@ -13,7 +12,7 @@ export class TradeValue extends ValueObject<TradeValueProps> {
     super(props);
   }
 
-  get amount(): Prisma.Decimal {
+  get amount(): number {
     return this.props.amount;
   }
 
@@ -21,13 +20,14 @@ export class TradeValue extends ValueObject<TradeValueProps> {
     return this.props.currency;
   }
 
-  public static create(amount: number | string | Prisma.Decimal, currency: string = 'TRY'): Result<TradeValue> {
+  public static create(amount: number | string, currency: string = 'TRY'): Result<TradeValue> {
     try {
-      const decimalAmount = new Prisma.Decimal(amount);
-      if (decimalAmount.lt(0)) {
+      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+      if (isNaN(numAmount) || numAmount < 0) {
         return Err(new Error('Trade value cannot be negative'));
       }
-      return Ok(new TradeValue({ amount: decimalAmount, currency }));
+      return Ok(new TradeValue({ amount: numAmount, currency }));
     } catch (error) {
       return Err(new Error('Invalid trade value format'));
     }

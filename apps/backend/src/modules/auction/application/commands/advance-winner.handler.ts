@@ -1,17 +1,20 @@
 // apps/backend/src/modules/auction/application/commands/advance-winner.handler.ts
+
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { BadRequestException, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AdvanceWinnerCommand } from './advance-winner.command';
+import { IAuctionRepository } from '../../domain/repositories/auction.repository.interface';
+import { IAuctionBidRepository } from '../../domain/repositories/auction-bid.repository.interface';
 
 @CommandHandler(AdvanceWinnerCommand)
 export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerCommand> {
   private readonly logger = new Logger(AdvanceWinnerHandler.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IAuctionRepository') private readonly auctionRepository: IAuctionRepository,
+    @Inject('IAuctionBidRepository') private readonly bidRepository: IAuctionBidRepository,
     private readonly auditLog: AuditLogService,
     private readonly financialGateway: FinancialGatewayService,
   ) {}
@@ -19,12 +22,7 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
   async execute(command: AdvanceWinnerCommand) {
     const { auctionId, adminId } = command;
 
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-      include: {
-        winners: { orderBy: { position: 'desc' } },
-      },
-    });
+    const auction = await this.auctionRepository.findByIdWithRelations(auctionId);
     if (!auction) throw new NotFoundException('Açık artırma bulunamadı');
 
     if (!['ENDED', 'COMPLETED'].includes(auction.status)) {
@@ -33,22 +31,17 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
       );
     }
 
-    const previousWinner = auction.winners[0] ?? null;
+    const previousWinner = auction.winners?.[0] ?? null;
     if (!previousWinner) {
       throw new BadRequestException('Mevcut bir kazanan yok');
     }
 
     // Önceki kazananları (tüm pozisyonlardaki) hariç tut
-    const excludedUserIds = auction.winners.map((w) => w.userId);
+    const excludedUserIds = auction.winners?.map((w: any) => w.userId) ?? [];
 
     // Sıradaki en yüksek teklif sahibini bul
-    const nextBid = await this.prisma.auctionBid.findFirst({
-      where: {
-        auctionId,
-        userId: { notIn: excludedUserIds },
-      },
-      orderBy: { amount: 'desc' },
-    });
+    const bids = await this.bidRepository.findByAuctionId(auctionId, 100);
+    const nextBid = bids.find(b => !excludedUserIds.includes(b.userId));
 
     if (!nextBid) {
       throw new BadRequestException('Devredilebilecek başka teklif sahibi bulunamadı');
@@ -56,37 +49,24 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
 
     const nextPosition = previousWinner.position + 1;
 
-    // Atomik: yeni kazanan kaydı + auction.winnerId güncelle + katılım statüleri
-    await this.prisma.$transaction(async (tx) => {
-      await tx.auctionWinner.create({
-        data: {
-          auctionId,
-          userId: nextBid.userId,
-          position: nextPosition,
-          amount: nextBid.amount,
-        },
-      });
-
-      await tx.auction.update({
-        where: { id: auctionId },
-        data: { winnerId: nextBid.userId, currentWinnerStep: nextPosition },
-      });
-
-      // Önceki kazananın katılımı LOST, yenisinin WON
-      await tx.auctionParticipation.updateMany({
-        where: { auctionId, userId: previousWinner.userId },
-        data: { status: 'LOST' },
-      });
-      await tx.auctionParticipation.updateMany({
-        where: { auctionId, userId: nextBid.userId },
-        data: { status: 'WON' },
-      });
+    // Atomik: yeni kazanan kaydı + auction durumu güncelle + katılım statüleri
+    await this.auctionRepository.createWinner({
+      auctionId,
+      userId: nextBid.userId,
+      position: nextPosition,
+      amount: nextBid.amount,
     });
 
-    // Önceki kazananın teminatını iade et (transaction dışında — external I/O)
-    const previousParticipation = await this.prisma.auctionParticipation.findUnique({
-      where: { auctionId_userId: { auctionId, userId: previousWinner.userId } },
-    });
+    await this.auctionRepository.updateStatus(auctionId, 'ENDED');
+
+    // Önceki kazananın katılımı LOST, yenisinin WON
+    await this.auctionRepository.updateManyParticipations(auctionId, previousWinner.userId, 'LOST');
+    await this.auctionRepository.updateManyParticipations(auctionId, nextBid.userId, 'WON');
+
+    // Önceki kazananın teminatını iade et
+    const previousParticipation = await this.auctionRepository.refundParticipation(
+      previousWinner.auctionId,
+    );
 
     if (previousParticipation?.holdId) {
       try {
@@ -94,10 +74,7 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
           previousParticipation.holdId,
           `auction-advance-refund-${previousParticipation.id}-${Date.now()}`,
         );
-        await this.prisma.auctionParticipation.update({
-          where: { id: previousParticipation.id },
-          data: { status: 'REFUNDED' },
-        });
+        await this.auctionRepository.updateParticipationStatus(previousParticipation.id, 'REFUNDED');
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'Bilinmeyen hata';
         this.logger.error('Önceki kazananın teminat iadesi başarısız', {
@@ -113,13 +90,13 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
       resourceType: 'Auction',
       resourceId: auctionId,
       oldValue: { winnerId: previousWinner.userId, position: previousWinner.position },
-      newValue: { winnerId: nextBid.userId, position: nextPosition, amount: nextBid.amount.toString() },
+      newValue: { winnerId: nextBid.userId, position: nextPosition, amount: String(nextBid.amount) },
     });
 
     return {
       newWinnerId: nextBid.userId,
       position: nextPosition,
-      amount: nextBid.amount.toString(),
+      amount: String(nextBid.amount),
     };
   }
 }

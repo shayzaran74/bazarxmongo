@@ -5,7 +5,12 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  MenuPurchaseSchema, MenuRedemptionSchema, LaunchPartnerSchema, ListingSchema,
+  UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema,
+  UserLevelSchema, XpTransactionSchema, VendorSchema, UserProfileSchema,
+} from '@barterborsa/shared-persistence';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
 // Controllers
@@ -28,7 +33,23 @@ import { QrGeneratorService } from './application/services/qr-generator.service'
 import { MenuUsageTrackerService } from './application/services/menu-usage-tracker.service';
 
 @Module({
-  imports: [CqrsModule, PrismaModule, SubscriptionModule],
+  imports: [
+    CqrsModule,
+    SubscriptionModule,
+    MongooseModule.forFeature([
+      { name: 'MenuPurchase',    schema: MenuPurchaseSchema },
+      { name: 'MenuRedemption',  schema: MenuRedemptionSchema },
+      { name: 'LaunchPartner',   schema: LaunchPartnerSchema },
+      { name: 'Listing',         schema: ListingSchema },
+      { name: 'UserSubscription',schema: UserSubscriptionSchema },
+      { name: 'MembershipPlan',  schema: MembershipPlanSchema },
+      { name: 'MenuUsage',       schema: MenuUsageSchema },
+      { name: 'UserLevel',       schema: UserLevelSchema },
+      { name: 'XpTransaction',   schema: XpTransactionSchema },
+      { name: 'Vendor',          schema: VendorSchema },
+      { name: 'UserProfile',     schema: UserProfileSchema },
+    ]),
+  ],
   controllers: [MenuController, MenuRedeemController],
   providers: [
     QrGeneratorService,

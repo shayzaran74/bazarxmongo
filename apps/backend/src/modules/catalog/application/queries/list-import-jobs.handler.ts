@@ -2,22 +2,19 @@
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { ListImportJobsQuery } from './list-import-jobs.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
 
 @QueryHandler(ListImportJobsQuery)
 export class ListImportJobsHandler implements IQueryHandler<ListImportJobsQuery> {
-  constructor(private readonly prisma: PrismaService) {}
-
   async execute(query: ListImportJobsQuery) {
     const skip = (query.page - 1) * query.limit;
 
     const [jobs, total] = await Promise.all([
-      this.prisma.importJob.findMany({
-        where: { adminId: query.adminId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: query.limit,
-        select: {
+      ImportJob.find({ adminId: query.adminId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(query.limit)
+        .select({
           id: true,
           status: true,
           totalRows: true,
@@ -26,13 +23,22 @@ export class ListImportJobsHandler implements IQueryHandler<ListImportJobsQuery>
           failedRows: true,
           createdAt: true,
           completedAt: true,
-        },
-      }),
-      this.prisma.importJob.count({ where: { adminId: query.adminId } }),
+        })
+        .exec(),
+      ImportJob.countDocuments({ adminId: query.adminId }).exec(),
     ]);
 
     return {
-      items: jobs,
+      items: jobs.map((j: any) => ({
+        id: j.id,
+        status: j.status,
+        totalRows: j.totalRows,
+        processedRows: j.processedRows,
+        createdRows: j.createdRows,
+        failedRows: j.failedRows,
+        createdAt: j.createdAt,
+        completedAt: j.completedAt,
+      })),
       total,
       page: query.page,
       limit: query.limit,

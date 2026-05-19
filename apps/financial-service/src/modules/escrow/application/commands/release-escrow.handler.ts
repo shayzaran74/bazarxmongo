@@ -1,169 +1,159 @@
+// apps/financial-service/src/modules/escrow/application/commands/release-escrow.handler.ts
+
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection, Types } from 'mongoose';
 import { ReleaseEscrowCommand } from './release-escrow.command';
-import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { Escrow } from '../../domain/entities/escrow.entity';
 import { CommissionCalculatorService } from '../../../commission/domain/services/commission-calculator.service';
 import { Decimal } from 'decimal.js';
+import {
+  IWallet,
+  IFinancialEscrow,
+  IFinancialAccount,
+  IFinancialAccountTransaction,
+  IFinancialGeneralLedger,
+} from '@barterborsa/shared-persistence';
+
+const d128 = (v: number | string): Types.Decimal128 =>
+  Types.Decimal128.fromString(Number(v).toFixed(2));
 
 @CommandHandler(ReleaseEscrowCommand)
 export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowCommand> {
   constructor(
-    private readonly prisma: PrismaService,
+    @InjectModel('Escrow') private readonly escrowModel: Model<IFinancialEscrow>,
+    @InjectModel('Wallet') private readonly walletModel: Model<IWallet>,
+    @InjectModel('Account') private readonly accountModel: Model<IFinancialAccount>,
+    @InjectModel('AccountTransaction') private readonly txModel: Model<IFinancialAccountTransaction>,
+    @InjectModel('GeneralLedger') private readonly ledgerModel: Model<IFinancialGeneralLedger>,
+    @InjectConnection() private readonly connection: Connection,
     private readonly commissionCalculator: CommissionCalculatorService,
   ) {}
 
   async execute(command: ReleaseEscrowCommand): Promise<void> {
     const { orderId } = command;
 
-    await this.prisma.$transaction(async (tx) => {
-      // 1. Atomik okuma ve idempotency kontrolü
-      const escrow = await tx.escrow.findUnique({ where: { orderId } });
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const escrow = await this.escrowModel.findOne({ orderId }).session(session).lean();
+        if (!escrow) throw new Error(`Escrow kaydı bulunamadı: ${orderId}`);
+        if (escrow.status === 'RELEASED') return;
+        if (escrow.status !== 'HELD') throw new Error(`Escrow serbest bırakılamaz: ${escrow.status}`);
 
-      if (!escrow) throw new Error(`Escrow kaydı bulunamadı: ${orderId}`);
+        const escrowEntity = Escrow.fromPersistence({
+          id: escrow.id, orderId: escrow.orderId, buyerId: escrow.buyerId,
+          sellerId: escrow.sellerId,
+          amount: new Decimal(escrow.amount.toString()),
+          releasedAmount: new Decimal(escrow.releasedAmount.toString()),
+          status: escrow.status, createdAt: escrow.createdAt,
+          updatedAt: escrow.updatedAt, releasedAt: escrow.releasedAt ?? null,
+          payoutLog: escrow.payoutLog,
+        });
+        escrowEntity.release();
 
-      // Ağ retry'ları için: zaten çözülmüşse hata verme
-      if (escrow.status === 'RELEASED') return;
+        // Satıcı hesabı — yoksa oluştur
+        let sellerAccount = await this.accountModel
+          .findOne({ userId: escrow.sellerId, type: 'MAIN' })
+          .session(session)
+          .lean();
 
-      // Sadece FUNDED durumdaki escrow çözülebilir
-      if (escrow.status !== 'FUNDED') {
-        throw new Error(`Escrow bu durumdan serbest bırakılamaz: ${escrow.status}`);
-      }
+        if (!sellerAccount) {
+          const ids = [new Types.ObjectId().toString(), new Types.ObjectId().toString(), new Types.ObjectId().toString(), new Types.ObjectId().toString()];
+          await this.accountModel.insertMany(
+            [
+              { _id: ids[0], id: ids[0], userId: escrow.sellerId, type: 'MAIN',    currency: 'TRY',    vendorTier: 'CORE', status: 'ACTIVE', ownerType: 'VENDOR', balance: d128(0), availableBalance: d128(0), blockedBalance: d128(0), creditLimit: d128(0), isDirty: true },
+              { _id: ids[1], id: ids[1], userId: escrow.sellerId, type: 'BARTER',  currency: 'BARTER', status: 'ACTIVE', ownerType: 'VENDOR', balance: d128(0), availableBalance: d128(0), blockedBalance: d128(0), creditLimit: d128(0), isDirty: true },
+              { _id: ids[2], id: ids[2], userId: escrow.sellerId, type: 'XP_COMMISSION', currency: 'TRY', status: 'ACTIVE', ownerType: 'VENDOR', balance: d128(0), availableBalance: d128(0), blockedBalance: d128(0), creditLimit: d128(0), isDirty: true },
+              { _id: ids[3], id: ids[3], userId: escrow.sellerId, type: 'XP_ADS', currency: 'TRY', status: 'ACTIVE', ownerType: 'VENDOR', balance: d128(0), availableBalance: d128(0), blockedBalance: d128(0), creditLimit: d128(0), isDirty: true },
+            ],
+            { session },
+          );
+          sellerAccount = await this.accountModel
+            .findOne({ userId: escrow.sellerId, type: 'MAIN' })
+            .session(session)
+            .lean();
+        }
 
-      const escrowEntity = Escrow.fromPersistence(escrow);
-      escrowEntity.release();
+        const vendorTier = sellerAccount?.vendorTier || 'CORE';
+        const grossAmount = new Decimal(escrow.amount.toString());
+        const { commission: commissionAmount, rate } = this.commissionCalculator.calculateSimple(grossAmount, vendorTier);
+        const netAmount = grossAmount.sub(commissionAmount);
 
-      // 2. Satıcının hesabını ve tier bilgisini al
-      let sellerMainAccount = await tx.account.findFirst({
-        where: { userId: escrow.sellerId, type: 'MAIN' },
-      });
+        // Satıcı cüzdan kredisi
+        await this.walletModel.findOneAndUpdate(
+          { userId: escrow.sellerId },
+          {
+            $inc: { balanceTL: d128(netAmount.toNumber()) },
+            $setOnInsert: {
+              _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), userId: escrow.sellerId,
+              barterBalance: d128(0), xpPoints: 0,
+              xpAdsBalance: d128(0), xpTradeBalance: d128(0), xpCommissionBalance: d128(0),
+            },
+          },
+          { upsert: true, session },
+        );
 
-      if (!sellerMainAccount) {
-        // Hesap yoksa oluştur (varsayılan CORE tier)
-        await tx.account.createMany({
-          data: [
-            { userId: escrow.sellerId, type: 'MAIN', currency: 'TRY', vendorTier: 'CORE' },
-            { userId: escrow.sellerId, type: 'BARTER', currency: 'BARTER' },
-            { userId: escrow.sellerId, type: 'XP_COMMISSION', currency: 'TRY' },
-            { userId: escrow.sellerId, type: 'XP_ADS', currency: 'TRY' },
+        // Platform komisyon cüzdanı
+        await this.walletModel.findOneAndUpdate(
+          { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
+          {
+            $inc: { balanceTL: d128(commissionAmount.toNumber()) },
+            $setOnInsert: {
+              _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), userId: 'SYSTEM_PLATFORM_ACCOUNT',
+              barterBalance: d128(0), xpPoints: 0,
+              xpAdsBalance: d128(0), xpTradeBalance: d128(0), xpCommissionBalance: d128(0),
+            },
+          },
+          { upsert: true, session },
+        );
+
+        // Escrow durumu güncelle
+        await this.escrowModel.updateOne(
+          { orderId },
+          {
+            $set: {
+              status: 'RELEASED',
+              releasedAt: escrowEntity.releasedAt,
+              releasedAmount: d128(netAmount.toNumber()),
+              updatedAt: escrowEntity.updatedAt,
+              payoutLog: { grossAmount: grossAmount.toFixed(2), commissionAmount: commissionAmount.toFixed(2), netAmount: netAmount.toFixed(2), vendorTier, commissionRate: rate },
+            },
+          },
+          { session },
+        );
+
+        // Muhasebe kayıtları
+        await this.ledgerModel.create(
+          [
+            { _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: 'SYSTEM_ESCROW_ACCOUNT', creditAccountId: escrow.sellerId, amount: d128(grossAmount.toNumber()), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} emanet çözüldü (Brüt: ${grossAmount.toFixed(2)})` },
+            ...(commissionAmount.gt(0) ? [{ _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: escrow.sellerId, creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT', amount: d128(commissionAmount.toNumber()), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} komisyon kesintisi (%${rate})` }] : []),
           ],
-          skipDuplicates: true,
-        });
-        sellerMainAccount = await tx.account.findFirst({
-          where: { userId: escrow.sellerId, type: 'MAIN' },
-        });
-      }
+          { session },
+        );
 
-      // 3. Komisyon Hesapla (Master Plan v4.3)
-      const vendorTier = sellerMainAccount?.vendorTier || 'CORE';
-      const commissionResult = this.commissionCalculator.calculateSimple(
-        new Decimal(escrow.amount.toString()),
-        vendorTier
-      );
-      
-      const commissionAmount = commissionResult.commission;
-      const netAmount = new Decimal(escrow.amount.toString()).sub(commissionAmount);
-
-      // 4. Cüzdanları Güncelle
-      // a. Satıcıya NET tutarı aktar
-      await tx.wallet.upsert({
-        where: { userId: escrow.sellerId },
-        update: { balanceTL: { increment: netAmount } },
-        create: {
-          userId: escrow.sellerId,
-          balanceTL: netAmount,
-          barterBalance: 0,
-          xpPoints: 0,
-          xpAdsBalance: 0,
-          xpTradeBalance: 0,
-          xpCommissionBalance: 0,
-        },
+        if (sellerAccount) {
+          await Promise.all([
+            this.txModel.create(
+              [{
+                _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(),
+                accountId: sellerAccount._id ?? sellerAccount.id,
+                type: 'RELEASE', direction: 'CREDIT', amount: d128(netAmount.toNumber()),
+                description: `Sipariş #${orderId} ödemesi (Komisyon: ${commissionAmount.toFixed(2)})`,
+                referenceId: orderId, referenceType: 'ORDER', status: 'COMPLETED',
+              }],
+              { session },
+            ),
+            this.accountModel.updateOne(
+              { _id: sellerAccount._id ?? sellerAccount.id },
+              { $inc: { balance: d128(netAmount.toNumber()), availableBalance: d128(netAmount.toNumber()) } },
+              { session },
+            ),
+          ]);
+        }
       });
-
-      // b. Platform cüzdanına KOMİSYON aktar
-      await tx.wallet.upsert({
-        where: { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
-        update: { balanceTL: { increment: commissionAmount } },
-        create: {
-          userId: 'SYSTEM_PLATFORM_ACCOUNT',
-          balanceTL: commissionAmount,
-          barterBalance: 0,
-          xpPoints: 0,
-          xpAdsBalance: 0,
-          xpTradeBalance: 0,
-          xpCommissionBalance: 0,
-        },
-      });
-
-      // 5. Durumları Güncelle
-      await tx.escrow.update({
-        where: { orderId },
-        data: {
-          status: 'RELEASED',
-          releasedAt: escrowEntity.releasedAt,
-          releasedAmount: netAmount, // Satıcıya giden net
-          updatedAt: escrowEntity.updatedAt,
-          payoutLog: {
-            grossAmount: escrow.amount,
-            commissionAmount: commissionAmount,
-            netAmount: netAmount,
-            vendorTier: vendorTier,
-            commissionRate: commissionResult.rate
-          }
-        },
-      });
-
-      // 6. Muhasebe Kayıtları (General Ledger)
-      // a. Escrow Release (Brüt)
-      await tx.generalLedger.create({
-        data: {
-          type: 'ESCROW_RELEASE',
-          debitAccountId: 'SYSTEM_ESCROW_ACCOUNT',
-          creditAccountId: escrow.sellerId,
-          amount: escrow.amount,
-          referenceId: orderId,
-          refType: 'ORDER',
-          note: `Order ${orderId} emanet çözüldü (Brüt: ${escrow.amount})`,
-        },
-      });
-
-      // b. Commission (Gelir)
-      if (commissionAmount.gt(0)) {
-        await tx.generalLedger.create({
-          data: {
-            type: 'COMMISSION',
-            debitAccountId: escrow.sellerId,
-            creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT',
-            amount: commissionAmount,
-            referenceId: orderId,
-            refType: 'ORDER',
-            note: `Order ${orderId} komisyon kesintisi (%${commissionResult.rate})`,
-          },
-        });
-      }
-
-      // 7. Satıcı Ekstresi (Account Transaction)
-      if (sellerMainAccount) {
-        await tx.accountTransaction.create({
-          data: {
-            accountId: sellerMainAccount.id,
-            type: 'RELEASE',
-            direction: 'CREDIT',
-            amount: netAmount,
-            description: `Sipariş #${orderId} ödemesi (Komisyon kesildi: ${commissionAmount})`,
-            referenceId: orderId,
-            referenceType: 'ORDER',
-            status: 'COMPLETED',
-          },
-        });
-
-        await tx.account.update({
-          where: { id: sellerMainAccount.id },
-          data: {
-            balance: { increment: netAmount },
-            availableBalance: { increment: netAmount },
-          },
-        });
-      }
-    });
+    } finally {
+      await session.endSession();
+    }
   }
 }

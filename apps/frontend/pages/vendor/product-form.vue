@@ -80,7 +80,7 @@ const { $api } = useApi()
 const { data: initialProductData } = await useAsyncData(`product-${productId.value}`, async () => {
   if (!productId.value) return {}
   try {
-    const res = await $api(`/api/listings/${productId.value}`)
+    const res = await $api(`/api/v1/listings/${productId.value}`)
     return res.data || {}
   } catch (err) {
     console.error('Error fetching product:', err)
@@ -110,8 +110,8 @@ const handleSave = async () => {
     }
 
     const url = isEditing.value 
-      ? `/api/listings/${route.query.id}`
-      : '/api/listings'
+      ? `/api/v1/listings/${route.query.id}`
+      : '/api/v1/listings'
     
     const method = isEditing.value ? 'PUT' : 'POST'
     

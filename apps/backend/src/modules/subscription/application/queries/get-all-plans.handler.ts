@@ -1,25 +1,41 @@
+// apps/backend/src/modules/subscription/application/queries/get-all-plans.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { IMembershipPlan } from '@barterborsa/shared-persistence';
 import { GetAllPlansQuery } from './get-all-plans.query';
+
+interface PlanDto {
+  id: string;
+  tier: string;
+  monthlyFee: number;
+  annualFee: number | null;
+  menuCredit: number;
+  breakeven: number;
+  benefits: string[];
+}
 
 @QueryHandler(GetAllPlansQuery)
 export class GetAllPlansHandler implements IQueryHandler<GetAllPlansQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('MembershipPlan') private readonly planModel: Model<IMembershipPlan>,
+  ) {}
 
-  async execute() {
-    const plans = await this.prisma.membershipPlan.findMany({
-      where:   { isActive: true },
-      orderBy: { monthlyFee: 'asc' },
-    });
+  async execute(): Promise<PlanDto[]> {
+    const plans = await this.planModel
+      .find({ isActive: true })
+      .sort({ monthlyFee: 1 })
+      .lean();
 
-    return plans.map((p) => ({
+    return plans.map(p => ({
       id:         p.id,
       tier:       p.tier,
-      monthlyFee: Number(p.monthlyFee),
-      annualFee:  p.annualFee ? Number(p.annualFee) : null,
-      menuCredit: Number(p.menuCredit),
-      breakeven:  Number(p.breakeven),
-      benefits:   p.benefits,
+      monthlyFee: parseFloat(p.monthlyFee.toString()),
+      annualFee:  p.annualFee ? parseFloat(p.annualFee.toString()) : null,
+      menuCredit: parseFloat(p.menuCredit.toString()),
+      breakeven:  parseFloat(p.breakeven.toString()),
+      benefits:   (p.benefits ?? []) as string[],
     }));
   }
 }

@@ -1,18 +1,16 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { RemoveVendorCategoryCommand } from './remove-vendor-category.command';
+import { MongoVendorCategoryRepository } from '../../infrastructure/persistence/mongo-vendor-category.repository';
 
 @CommandHandler(RemoveVendorCategoryCommand)
 export class RemoveVendorCategoryHandler
   implements ICommandHandler<RemoveVendorCategoryCommand> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly vendorCategoryRepo: MongoVendorCategoryRepository) {}
 
   async execute(command: RemoveVendorCategoryCommand) {
     const { vendorId, categoryId } = command;
-    await this.prisma.vendorCategory.delete({
-      where: { vendorId_categoryId: { vendorId, categoryId } }
-    });
+    await this.vendorCategoryRepo.delete(vendorId, categoryId);
     return { success: true };
   }
 }

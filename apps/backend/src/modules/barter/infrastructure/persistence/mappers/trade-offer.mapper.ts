@@ -1,69 +1,67 @@
 // apps/backend/src/modules/barter/infrastructure/persistence/mappers/trade-offer.mapper.ts
+// TradeOfferMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Types } from 'mongoose';
+import { ITradeOffer } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
 import { TradeOffer, TradeOfferProps } from '../../../domain/entities/trade-offer.entity';
 import { TradeOfferItem } from '../../../domain/entities/trade-offer-item.entity';
 import { TradeOfferStatus } from '../../../domain/enums/trade-offer-status.enum';
 
-type TradeOfferRaw = Prisma.TradeOfferGetPayload<{
-  include: { offeredItems: true; requestedItems: true };
-}>;
-
-type TradeOfferItemRaw = {
-  quantity: Prisma.Decimal;
-  estimatedValue: Prisma.Decimal;
-  listingId?: string | null;
-  surplusItemId?: string | null;
-};
+export interface TradeOfferDocument extends ITradeOffer {
+  _id?: string;
+  offeredItems?: any[];
+  requestedItems?: any[];
+}
 
 @Injectable()
 export class TradeOfferMapper {
-  toDomain(raw: TradeOfferRaw): TradeOffer {
-    const mapItem = (item: TradeOfferItemRaw): TradeOfferItem =>
+  toDomain(doc: TradeOfferDocument): TradeOffer {
+    const mapItem = (item: any): TradeOfferItem =>
       TradeOfferItem.create(
-        item.quantity,
-        item.estimatedValue,
+        Number(item.quantity) || 0,
+        Number(item.estimatedValue) || 0,
         item.listingId ?? undefined,
         item.surplusItemId ?? undefined,
       );
 
     const props: TradeOfferProps = {
-      fromCompanyId: raw.fromCompanyId ?? '',
-      toCompanyId: raw.toCompanyId ?? '',
-      message: raw.message ?? undefined,
-      status: raw.status as TradeOfferStatus,
-      parentOfferId: raw.parentOfferId ?? undefined,
-      cashAmount: raw.cashAmount,
-      cashDirection: (raw.cashDirection ?? 'TO_RECEIVER') as 'TO_INITIATOR' | 'TO_RECEIVER',
-      cashCurrency: raw.cashCurrency ?? 'TRY',
-      expiresAt: raw.expiresAt,
-      initiatorId: raw.initiatorId ?? '',
-      initiatorType: raw.initiatorType ?? 'COMPANY',
-      receiverId: raw.receiverId ?? '',
-      receiverType: raw.receiverType ?? 'COMPANY',
-      acceptedAt: raw.acceptedAt ?? undefined,
-      rejectedAt: raw.rejectedAt ?? undefined,
-      cancelledAt: raw.cancelledAt ?? undefined,
-      completedAt: raw.completedAt ?? undefined,
-      offeredItems: (raw.offeredItems ?? []).map(mapItem),
-      requestedItems: (raw.requestedItems ?? []).map(mapItem),
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
+      fromCompanyId: doc.fromCompanyId ?? '',
+      toCompanyId: doc.toCompanyId ?? '',
+      message: doc.message ?? undefined,
+      status: doc.status as TradeOfferStatus,
+      parentOfferId: doc.parentOfferId ?? undefined,
+      cashAmount: Number(doc.cashAmount) || 0,
+      cashDirection: (doc.cashDirection === 'BOTH' ? 'BOTH' : doc.cashDirection === ' initiator_to_receiver' ? 'TO_INITIATOR' : 'TO_RECEIVER') as 'TO_INITIATOR' | 'TO_RECEIVER',
+      cashCurrency: doc.cashCurrency ?? 'TRY',
+      expiresAt: doc.expiresAt,
+      initiatorId: doc.initiatorId ?? '',
+      initiatorType: 'COMPANY',
+      receiverId: doc.receiverId ?? '',
+      receiverType: 'COMPANY',
+      acceptedAt: doc.acceptedAt ?? undefined,
+      rejectedAt: doc.rejectedAt ?? undefined,
+      cancelledAt: doc.cancelledAt ?? undefined,
+      completedAt: doc.completedAt ?? undefined,
+      offeredItems: (doc.offeredItems ?? []).map(mapItem),
+      requestedItems: (doc.requestedItems ?? []).map(mapItem),
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
 
-    return TradeOffer.createFrom(props, raw.id);
+    return TradeOffer.createFrom(props, doc.id);
   }
 
   toPersistence(domain: TradeOffer): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       fromCompanyId: props.fromCompanyId,
       toCompanyId: props.toCompanyId,
       message: props.message,
       status: props.status,
-      cashAmount: props.cashAmount,
+      cashAmount: Types.Decimal128.fromString(String(props.cashAmount)),
       cashDirection: props.cashDirection,
       cashCurrency: props.cashCurrency,
       expiresAt: props.expiresAt,

@@ -4,9 +4,9 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ResolveDisputeCommand } from './resolve-dispute.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
+import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { DisputeResolutionResult } from '../../domain/enums/dispute-resolution-result.enum';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 
@@ -16,7 +16,7 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
 
   constructor(
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
-    private readonly prisma: PrismaService,
+    @Inject('IDisputeRepository') private readonly disputeRepository: IDisputeRepository,
     private readonly auditLog: AuditLogService,
     private readonly financialGateway: FinancialGatewayService,
   ) {}
@@ -33,55 +33,56 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
 
     const idempotencyBase = `resolve-${command.sessionId}-${Date.now()}`;
 
-    await this.prisma.$transaction(async (tx) => {
-      // 1. İhtilaf durumunu güncelle
-      await tx.barterDisputeLog.updateMany({
-        where: { swapSessionId: command.sessionId },
-        data: {
-          resolvedAt: new Date(),
-          resolvedById: command.adminId,
-          resolutionNote: command.adminNote,
-          status: 'RESOLVED',
-        } as any,
-      });
-
-      // 2. Karara göre finansal aksiyon al
-      if (command.result === DisputeResolutionResult.SELLER_WINS || command.result === DisputeResolutionResult.RELEASE_ALL) {
-        // Her iki tarafın teminatını serbest bırak (Release)
-        if (props.fromCollateralHoldId) {
-          await this.financialGateway.releaseFunds(props.fromCollateralHoldId, `${idempotencyBase}-from`);
-        }
-        if (props.toCollateralHoldId) {
-          await this.financialGateway.releaseFunds(props.toCollateralHoldId, `${idempotencyBase}-to`);
-        }
-        
-        await tx.swapSession.update({
-          where: { id: command.sessionId },
-          data: {
-            status: SwapSessionStatus.COMPLETED,
-            collateralStatus: 'RELEASED',
-            collateralReleasedAt: new Date(),
-          },
-        });
-      } else if (command.result === DisputeResolutionResult.BUYER_WINS || command.result === DisputeResolutionResult.REFUND_ALL) {
-        // Her iki tarafın teminatını iade et (Refund)
-        if (props.fromCollateralHoldId) {
-          await this.financialGateway.refundFunds(props.fromCollateralHoldId, `${idempotencyBase}-from-ref`);
-        }
-        if (props.toCollateralHoldId) {
-          await this.financialGateway.refundFunds(props.toCollateralHoldId, `${idempotencyBase}-to-ref`);
-        }
-
-        await tx.swapSession.update({
-          where: { id: command.sessionId },
-          data: {
-            status: SwapSessionStatus.CANCELLED,
-            collateralStatus: 'REFUNDED',
-            collateralForfeitedAt: new Date(),
-          },
-        });
-      }
+    // İhtilaf durumunu güncelle
+    // Not: MongoDB'de updateMany ile tek seferde tüm alanlar güncellenir
+    // resolveDispute'ta swapSessionId ile sınırlı olduğumuz için ilk document'i bulup güncelleriz
+    await this.disputeRepository.updateResolved(command.sessionId, {
+      resolvedAt: new Date(),
+      resolvedById: command.adminId,
+      resolutionNote: command.adminNote,
     });
+
+    if (command.result === 'SELLER_WINS' || command.result === 'RELEASE_ALL') {
+      if (props.fromCollateralHoldId) {
+        try {
+          await this.financialGateway.releaseFunds(props.fromCollateralHoldId, `${idempotencyBase}-from`);
+        } catch (err) {
+          this.logger.error('From collateral release failed', err);
+        }
+      }
+      if (props.toCollateralHoldId) {
+        try {
+          await this.financialGateway.releaseFunds(props.toCollateralHoldId, `${idempotencyBase}-to`);
+        } catch (err) {
+          this.logger.error('To collateral release failed', err);
+        }
+      }
+
+      session['props'].status = SwapSessionStatus.COMPLETED;
+      session['props'].collateralStatus = 'RELEASED';
+      session['props'].collateralReleasedAt = new Date();
+      await this.sessionRepository.save(session);
+    } else if (command.result === 'BUYER_WINS' || command.result === 'REFUND_ALL') {
+      if (props.fromCollateralHoldId) {
+        try {
+          await this.financialGateway.refundFunds(props.fromCollateralHoldId, `${idempotencyBase}-from-ref`);
+        } catch (err) {
+          this.logger.error('From collateral refund failed', err);
+        }
+      }
+      if (props.toCollateralHoldId) {
+        try {
+          await this.financialGateway.refundFunds(props.toCollateralHoldId, `${idempotencyBase}-to-ref`);
+        } catch (err) {
+          this.logger.error('To collateral refund failed', err);
+        }
+      }
+
+      session['props'].status = SwapSessionStatus.CANCELLED;
+      session['props'].collateralStatus = 'REFUNDED';
+      (session['props'] as any).collateralForfeitedAt = new Date();
+      await this.sessionRepository.save(session);
+    }
 
     await this.auditLog.log({
       actorId: command.adminId,

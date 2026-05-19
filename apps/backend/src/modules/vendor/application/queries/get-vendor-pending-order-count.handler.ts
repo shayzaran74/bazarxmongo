@@ -1,23 +1,27 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { NotFoundException, Inject } from '@nestjs/common';
 import { GetVendorPendingOrderCountQuery }
   from './get-vendor-pending-order-count.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { IOrderRepository } from '../../../commerce/domain/repositories/order.repository.interface';
 
 @QueryHandler(GetVendorPendingOrderCountQuery)
 export class GetVendorPendingOrderCountHandler
   implements IQueryHandler<GetVendorPendingOrderCountQuery> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('IOrderRepository') private readonly orderRepo: IOrderRepository,
+  ) {}
 
   async execute(query: GetVendorPendingOrderCountQuery) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: query.userId }
-    });
+    const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    return this.prisma.order.count({
-      where: { vendorId: vendor.id, status: 'PENDING' }
-    });
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
+
+    const result = await this.orderRepo.findAllFiltered({ vendorId, status: 'PENDING', limit: 0 });
+    return result.total;
   }
 }

@@ -8,4 +8,5 @@ export interface IBrandRepository extends IRepository<Brand> {
   findBySlug(slug: Slug): Promise<Brand | null>;
   findByName(name: string): Promise<Brand | null>;
   search(params: { searchTerm?: string; skip?: number; take?: number }): Promise<{ items: Brand[]; total: number }>;
+  findApproved(take: number): Promise<Brand[]>;
 }

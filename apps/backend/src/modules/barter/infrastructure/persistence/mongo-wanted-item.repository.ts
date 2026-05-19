@@ -1,0 +1,70 @@
+// apps/backend/src/modules/barter/infrastructure/persistence/mongo-wanted-item.repository.ts
+// WantedItem repository — Mongoose implementation (ADR-005 Faz 2a)
+
+import { Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { WantedItem as WantedItemModel } from '@barterborsa/shared-persistence/schemas/backend/wantedItem.schema';
+import { IWantedItemRepository, WantedItemDocument } from '../../domain/repositories/wanted-item.repository.interface';
+
+@Injectable()
+export class MongoWantedItemRepository implements IWantedItemRepository {
+  private readonly model: Model<any>;
+
+  constructor() {
+    this.model = WantedItemModel;
+  }
+
+  async findById(id: string): Promise<any | null> {
+    const doc = await this.model.findOne({ id }).exec();
+    return doc ? doc.toObject() : null;
+  }
+
+  async findAll(): Promise<any[]> {
+    const docs = await this.model.find({ isActive: true }).exec();
+    return docs.map(doc => doc.toObject());
+  }
+
+  async save(item: any): Promise<void> {
+    await this.model.create(item);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.model.deleteOne({ id }).exec();
+  }
+
+  async findByUserId(userId: string): Promise<WantedItemDocument[]> {
+    const docs = await this.model.find({ userId, isActive: true })
+      .sort({ createdAt: -1 })
+      .exec();
+    return docs.map(doc => doc.toObject() as WantedItemDocument);
+  }
+
+  async create(data: {
+    id: string;
+    categoryId: string;
+    keywords: string[];
+    description?: string;
+    companyId?: string;
+    userId: string;
+    type: string;
+    minPrice?: number;
+    maxPrice?: number;
+    latitude?: number;
+    longitude?: number;
+    status: string;
+    isActive: boolean;
+  }): Promise<void> {
+    await this.model.create({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.model.updateOne(
+      { id },
+      { $set: { isActive: false, status: 'EXPIRED', updatedAt: new Date() } },
+    ).exec();
+  }
+}

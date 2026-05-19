@@ -2,7 +2,9 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { IUserSubscription, IMembershipPlan } from '@barterborsa/shared-persistence';
 import { SubscribeUserCommand } from './subscribe-user.command';
 import { SubscriptionPricingService } from '../services/subscription-pricing.service';
 import { SUBSCRIPTION_FEES } from '../../../loyalty/domain/enums/loyalty.enums';
@@ -13,72 +15,54 @@ export class SubscribeUserHandler implements ICommandHandler<SubscribeUserComman
   private readonly logger = new Logger(SubscribeUserHandler.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly pricing: SubscriptionPricingService,
-    private readonly auditLog: AuditLogService,
+    @InjectModel('UserSubscription') private readonly subModel:  Model<IUserSubscription>,
+    @InjectModel('MembershipPlan')   private readonly planModel: Model<IMembershipPlan>,
+    private readonly pricing:   SubscriptionPricingService,
+    private readonly auditLog:  AuditLogService,
   ) {}
 
   async execute(command: SubscribeUserCommand) {
     const { userId, tier, annual } = command;
 
-    // Mevcut abonelik kontrolü
-    const existing = await this.prisma.userSubscription.findUnique({
-      where: { userId },
-    });
+    const existing = await this.subModel.findOne({ userId }).lean();
     if (existing?.status === 'ACTIVE') {
-      throw new BadRequestException('Aktif aboneliğiniz var. Yükseltmek için upgrade endpoint\'ini kullanın.');
+      throw new BadRequestException("Aktif aboneliğiniz var. Yükseltmek için upgrade endpoint'ini kullanın.");
     }
 
-    const plan = await this.prisma.membershipPlan.findUnique({
-      where: { tier },
-    });
-    if (!plan || !plan.isActive) {
-      throw new BadRequestException('Geçersiz abonelik planı');
-    }
+    const plan = await this.planModel.findOne({ tier }).lean();
+    if (!plan || !plan.isActive) throw new BadRequestException('Geçersiz abonelik planı');
 
-    const monthlyFee = Number(plan.monthlyFee);
-    const fee        = annual && plan.annualFee ? Number(plan.annualFee) : monthlyFee;
+    const monthlyFee = parseFloat(plan.monthlyFee.toString());
+    const fee        = annual && plan.annualFee ? parseFloat(plan.annualFee.toString()) : monthlyFee;
     const months     = annual ? 12 : 1;
 
     const startDate = new Date();
     const endDate   = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + months);
 
-    const nextBillingDate = annual ? endDate : new Date(startDate);
+    const nextBillingDate = annual ? new Date(endDate) : new Date(startDate);
     if (!annual) nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
 
-    const subscription = await this.prisma.userSubscription.create({
-      data: {
-        userId,
-        planId:          plan.id,
-        status:          'ACTIVE',
-        startDate,
-        endDate,
-        autoRenew:       true,
-        nextBillingDate,
-      },
-    });
+    const newId = new Types.ObjectId().toString();
+    await this.subModel.create([{
+      _id: newId, id: newId, userId, planId: plan.id,
+      status: 'ACTIVE', startDate, endDate, autoRenew: true, nextBillingDate,
+    }]);
 
     this.logger.log('Yeni abonelik oluşturuldu', { userId, tier, fee });
 
     await this.auditLog.log({
-      actorId:      userId,
-      action:       'SUBSCRIPTION_CREATED',
-      resourceType: 'UserSubscription',
-      resourceId:   subscription.id,
-      newValue:     { tier, fee, annual, startDate, endDate },
+      actorId: userId, action: 'SUBSCRIPTION_CREATED',
+      resourceType: 'UserSubscription', resourceId: newId,
+      newValue: { tier, fee, annual, startDate, endDate },
     });
 
     return {
       success: true,
       message: `${tier} aboneliği başlatıldı`,
       data: {
-        subscriptionId:  subscription.id,
-        tier,
-        fee,
-        startDate,
-        endDate,
-        menuCredit:      Number(plan.menuCredit),
+        subscriptionId: newId, tier, fee, startDate, endDate,
+        menuCredit: parseFloat(plan.menuCredit.toString()),
       },
     };
   }

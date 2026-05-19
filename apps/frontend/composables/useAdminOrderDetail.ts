@@ -9,8 +9,9 @@ interface OrderItem {
     id?: string
     name?: string
     image?: string
+    sku?: string
     media?: Array<{ url: string; type: string }>
-    Vendor?: { id?: string; profile?: { storeName?: string } | null }
+    Vendor?: { id?: string; businessName?: string; profile?: { storeName?: string } | null }
   } | null
 }
 

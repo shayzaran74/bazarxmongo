@@ -1,13 +1,12 @@
 // apps/backend/src/modules/barter/domain/entities/trade-offer-item.entity.ts
 
 import { Entity } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 
 export interface TradeOfferItemProps {
   listingId?: string;
   surplusItemId?: string;
-  quantity: Prisma.Decimal;
-  estimatedValue: Prisma.Decimal;
+  quantity: number;
+  estimatedValue: number;
 }
 
 export class TradeOfferItem extends Entity<TradeOfferItemProps> {
@@ -16,8 +15,8 @@ export class TradeOfferItem extends Entity<TradeOfferItemProps> {
   }
 
   public static create(
-    quantity: Prisma.Decimal,
-    estimatedValue: Prisma.Decimal,
+    quantity: number,
+    estimatedValue: number,
     listingId?: string,
     surplusItemId?: string
   ): TradeOfferItem {

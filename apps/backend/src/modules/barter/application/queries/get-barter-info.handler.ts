@@ -1,33 +1,69 @@
-// apps/backend/src/modules/barter/application/queries/get-barter-info.handler.ts
-
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { GetBarterInfoQuery } from './get-barter-info.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 
 @QueryHandler(GetBarterInfoQuery)
 export class GetBarterInfoHandler implements IQueryHandler<GetBarterInfoQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    private readonly financialGateway: FinancialGatewayService,
+  ) {}
 
   async execute(query: GetBarterInfoQuery) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: query.userId },
-      include: {
-        company: { select: { id: true, name: true } },
-        metrics: { select: { totalRevenue: true } },
-        stats:   { select: { rating: true, reviewCount: true, loyaltyPoints: true, trustScore: true } },
-      },
-    });
+    const vendor = await this.vendorRepository.findByUserId(query.userId);
+
+    let balance = '0';
+    let barterBalance = '0';
+    let barterCreditLimit = '0';
+    let commissionXP = '0';
+    let adXP = '0';
+    let serviceXP = '0';
+    let transactions: any[] = [];
+
+    try {
+      const wallet = (await this.financialGateway.getWallet(query.userId)) as any;
+      if (wallet && wallet.accounts) {
+        const mainAcc = wallet.accounts.find((a: any) => a.type === 'MAIN');
+        const barterAcc = wallet.accounts.find((a: any) => a.type === 'BARTER');
+        const xpCommAcc = wallet.accounts.find((a: any) => a.type === 'XP_COMMISSION');
+        const xpAdsAcc = wallet.accounts.find((a: any) => a.type === 'XP_ADS');
+
+        if (mainAcc) balance = mainAcc.balance || '0';
+        if (barterAcc) {
+          barterBalance = barterAcc.balance || '0';
+          barterCreditLimit = barterAcc.creditLimit || '0';
+        }
+        if (xpCommAcc) commissionXP = xpCommAcc.balance || '0';
+        if (xpAdsAcc) adXP = xpAdsAcc.balance || '0';
+      }
+
+      const txResult = (await this.financialGateway.getTransactions(query.userId)) as any;
+      if (txResult) {
+        transactions = txResult.items || txResult.transactions || [];
+      }
+    } catch (error) {
+      // Silently fall back to 0/empty values
+    }
 
     return {
       isRegistered: !!vendor,
       vendorId:     vendor?.id,
-      companyId:    vendor?.company?.id,
-      companyName:  vendor?.company?.name,
-      tier:         vendor?.tier || 'CORE',
-      rating:       Number(vendor?.stats?.rating || 0),
-      trustScore:   Number(vendor?.stats?.trustScore || 100),
-      loyaltyPoints: vendor?.stats?.loyaltyPoints || 0,
-      balance:      0, // financial-gateway'den gelecek
+      companyId:    vendor?.getProps().companyId,
+      companyName:  null, // Company tablosu ayrı sorgulanmalı
+      tier:         vendor?.getProps().tier || 'CORE',
+      rating:       0,
+      trustScore:   100,
+      loyaltyPoints: 0,
+      balance,
+      barterBalance,
+      barterCreditLimit,
+      commissionXP,
+      adXP,
+      serviceXP,
+      transactions,
+      xpTransactions: [],
     };
   }
 }

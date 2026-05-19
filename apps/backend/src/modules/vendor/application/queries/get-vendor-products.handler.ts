@@ -1,65 +1,63 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { GetVendorProductsQuery } from './get-vendor-products.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 
 @QueryHandler(GetVendorProductsQuery)
 export class GetVendorProductsHandler implements IQueryHandler<GetVendorProductsQuery> {
   private readonly logger = new Logger(GetVendorProductsHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('IListingRepository') private readonly listingRepo: IListingRepository,
+  ) {}
 
   async execute(query: GetVendorProductsQuery) {
     const { userId, filters } = query;
     const { search, categoryId, limit = 100 } = filters;
 
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId }
-    });
-
+    const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundException('Vendor not found');
     }
 
-    const listings = await this.prisma.listing.findMany({
-      where: {
-        vendorId: vendor.id,
-        AND: [
-          search ? {
-            OR: [
-              { title: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } }
-            ]
-          } : {},
-          categoryId ? { catalogProduct: { categoryId } } : {}
-        ]
-      },
-      include: {
-        catalogProduct: {
-          include: {
-            category: true,
-            media: {
-              where: { type: 'IMAGE' },
-              orderBy: { sortOrder: 'asc' }, // Bonus: Media sıralaması eklendi
-              take: 1
-            }
-          }
-        }
-      },
-      take: Number(limit),
-      orderBy: { updatedAt: 'desc' }
-    });
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
 
-    // Frontend uyumu için 'Category' büyük harfle bırakıldı
-    return listings.map(l => ({
-      id: l.id,
-      name: l.title,
-      sku: l.sku,
-      price: l.price,
-      stock: l.stock,
-      status: l.status,
-      image: l.catalogProduct?.media?.[0]?.url,
-      Category: l.catalogProduct?.category 
-    }));
+    const listings = await this.listingRepo.findByVendorId(vendorId);
+
+    let filtered = listings;
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter((l: any) => {
+        const p = l.getProps ? l.getProps() : l;
+        return ((p as any).title || '').toLowerCase().includes(s) ||
+               ((p as any).sku || '').toLowerCase().includes(s);
+      });
+    }
+    if (categoryId) {
+      filtered = filtered.filter((l: any) => {
+        const p = l.getProps ? l.getProps() : l;
+        return (p as any).categoryId === categoryId;
+      });
+    }
+
+    const result = filtered.slice(0, Number(limit));
+
+    return result.map((l: any) => {
+      const p = l.getProps ? l.getProps() : l;
+      return {
+        id:         (p as any).id || l.id,
+        name:       (p as any).title,
+        sku:        (p as any).sku,
+        price:      Number((p as any).price ?? 0),
+        stock:      (p as any).stock,
+        status:     (p as any).status,
+        image:      null,
+        Category:   null,
+      };
+    });
   }
 }

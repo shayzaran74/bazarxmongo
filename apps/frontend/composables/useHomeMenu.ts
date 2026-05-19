@@ -20,7 +20,7 @@ export const useHomeMenu = () => {
   const fetchCategories = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/listings/categories')
+      const res = await $api<any>('/api/v1/listings/categories')
       const resAny = res as any
       if (resAny.success) {
         categories.value = resAny.data || []

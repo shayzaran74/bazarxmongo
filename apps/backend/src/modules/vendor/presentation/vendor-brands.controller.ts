@@ -10,17 +10,18 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import {
-  ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
+  ApiTags, ApiBearerAuth, ApiOperation,
   ApiParam, ApiConsumes, ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { IMediaService, MEDIA_SERVICE } from '../../media/domain/media.service.interface';
 import { ListVendorBrandsQuery } from '../application/queries/list-vendor-brands.query';
 import { ApplyBrandCommand } from '../application/commands/apply-brand.command';
 import { UpdateBrandCommand } from '../application/commands/update-brand.command';
 import { DeleteBrandCommand } from '../application/commands/delete-brand.command';
+import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
+import { MongoBrandRepository } from '../infrastructure/persistence/mongo-brand.repository';
 
 interface AuthenticatedUser {
   id: string;
@@ -49,7 +50,8 @@ export class VendorBrandsController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly brandRepo: MongoBrandRepository,
     @Inject(MEDIA_SERVICE) private readonly mediaService: IMediaService,
   ) {}
 
@@ -65,9 +67,13 @@ export class VendorBrandsController {
     schema: {
       type: 'object',
       properties: {
-        name:        { type: 'string', example: 'Marka Adı' },
-        description: { type: 'string' },
-        aliases:     { type: 'array', items: { type: 'string' } },
+        name:             { type: 'string', example: 'Marka Adı' },
+        description:      { type: 'string' },
+        aliases:          { type: 'array', items: { type: 'string' } },
+        documentUrl:      { type: 'string' },
+        invoiceChainUrl:  { type: 'string' },
+        authorizationUrl: { type: 'string' },
+        image:            { type: 'string' },
       },
       required: ['name'],
     },
@@ -75,7 +81,15 @@ export class VendorBrandsController {
   @Post('apply')
   async apply(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { name: string; description?: string; aliases?: string[] },
+    @Body() body: { 
+      name: string; 
+      description?: string; 
+      aliases?: string[]; 
+      documentUrl?: string; 
+      invoiceChainUrl?: string; 
+      authorizationUrl?: string; 
+      image?: string; 
+    },
   ) {
     if (!body.name?.trim()) {
       throw new BadRequestException('Marka adı zorunludur');
@@ -85,7 +99,11 @@ export class VendorBrandsController {
         name: body.name.trim(),
         description: body.description,
         aliases: body.aliases,
-      }),
+        documentUrl: body.documentUrl,
+        invoiceChainUrl: body.invoiceChainUrl,
+        authorizationUrl: body.authorizationUrl,
+        image: body.image,
+      } as any),
     );
   }
 
@@ -113,16 +131,11 @@ export class VendorBrandsController {
     if (!result.success) throw new BadRequestException(result.error.message);
 
     if (brandId) {
-      // Sahiplik kontrolü: yalnızca kendi markasının logosunu değiştirebilir
-      const vendor = await this.prisma.vendor.findFirst({
-        where: { userId: user.id },
-        select: { id: true },
-      });
+      const vendor = await this.vendorRepo.findByUserId(user.id);
       if (vendor) {
-        await this.prisma.brand.updateMany({
-          where: { id: brandId, vendorId: vendor.id },
-          data: { image: result.data.url },
-        });
+        const vendorProps = vendor.getProps();
+        const vendorId = (vendorProps as any).id || vendor.id;
+        await this.brandRepo.update(brandId, { image: result.data.url });
       }
     }
 
@@ -151,26 +164,19 @@ export class VendorBrandsController {
     if (!file) throw new BadRequestException('Dosya yüklenmedi');
     if (!brandId) throw new BadRequestException('brandId zorunludur');
 
-    // Sahiplik kontrolü — vendor doğrulama olmadan belge yüklenemez
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
 
-    const brand = await this.prisma.brand.findFirst({
-      where: { id: brandId, vendorId: vendor.id },
-    });
-    if (!brand) throw new NotFoundException('Marka bulunamadı');
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
+
+    const brand = await this.brandRepo.findById(brandId);
+    if (!brand || (brand as any).vendorId !== vendorId) throw new NotFoundException('Marka bulunamadı');
 
     const result = await this.mediaService.processAndUpload(file, { subPath: 'brand-documents' });
     if (!result.success) throw new BadRequestException(result.error.message);
 
-    // Doküman URL'sini marka kaydına kaydet
-    await this.prisma.brand.update({
-      where: { id: brandId },
-      data: { documentUrl: result.data.url },
-    });
+    await this.brandRepo.update(brandId, { documentUrl: result.data.url });
 
     return { success: true, url: result.data.url, data: result.data };
   }

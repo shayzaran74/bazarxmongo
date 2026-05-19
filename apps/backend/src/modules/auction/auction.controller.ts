@@ -1,17 +1,18 @@
 // apps/backend/src/modules/auction/auction.controller.ts
 
-import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { Prisma } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { PlaceBidCommand } from './application/commands/place-bid.command';
 import { PlaceBidDto } from './place-bid.dto';
 import { AuctionStatus } from './domain/enums/auction-status.enum';
 import { FinancialGatewayService } from '../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../audit/application/audit-log.service';
+import { IAuctionRepository } from './domain/repositories/auction.repository.interface';
+import { IAuctionBidRepository } from './domain/repositories/auction-bid.repository.interface';
+import { IAuctionParticipationRepository } from './domain/repositories/auction-participation.repository.interface';
 
 interface AuctionListQuery {
   page?: string;
@@ -30,7 +31,9 @@ export class AuctionController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
+    @Inject('IAuctionRepository') private readonly auctionRepository: IAuctionRepository,
+    @Inject('IAuctionBidRepository') private readonly bidRepository: IAuctionBidRepository,
+    @Inject('IAuctionParticipationRepository') private readonly participationRepository: IAuctionParticipationRepository,
     private readonly financialGateway: FinancialGatewayService,
     private readonly auditLog: AuditLogService,
   ) {}
@@ -50,44 +53,22 @@ export class AuctionController {
     const validStatus = Object.values(AuctionStatus).includes(requestedStatus as AuctionStatus)
       ? (requestedStatus as AuctionStatus)
       : AuctionStatus.ACTIVE;
-    const now = new Date();
 
-    const where: Prisma.AuctionWhereInput =
-      validStatus === AuctionStatus.ACTIVE
-        ? { status: AuctionStatus.ACTIVE, startTime: { lte: now }, endTime: { gte: now } }
-        : { status: validStatus };
+    const filter: Record<string, unknown> = { status: validStatus };
+    if (validStatus === AuctionStatus.ACTIVE) {
+      const now = new Date();
+      filter.startTime = { $lte: now };
+      filter.endTime = { $gte: now };
+    }
 
-    const [items, total] = await Promise.all([
-      this.prisma.auction.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { endTime: 'asc' }, // en yakın biten önce
-        include: {
-          listing: {
-            include: {
-              catalogProduct: {
-                include: { media: true }
-              },
-              vendor: {
-                include: { profile: true }
-              }
-            }
-          },
-          bids: {
-            orderBy: { createdAt: 'desc' },
-            take: 1, // son teklif
-            select: { amount: true, userId: true, createdAt: true },
-          },
-        },
-      }),
-      this.prisma.auction.count({ where }),
-    ]);
-
+    const result = await this.auctionRepository.findWithFilters(filter, skip, limit);
+    const { populateAuctions } = await import('./application/helpers/auction-population.helper');
+    const populated = await populateAuctions(result.items);
+    
     return {
       success: true,
-      data: items,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      data: populated,
+      meta: { page, limit, total: result.total, totalPages: Math.ceil(result.total / limit) },
     };
   }
 
@@ -96,34 +77,13 @@ export class AuctionController {
   @ApiParam({ name: 'id' })
   @Get(':id')
   async getAuction(@Param('id') id: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id },
-      include: {
-        listing: {
-          include: {
-            catalogProduct: {
-              include: { media: true }
-            },
-            vendor: {
-              include: { profile: true }
-            }
-          }
-        },
-        bids: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: { 
-            user: { 
-              select: { 
-                profile: { select: { firstName: true, lastName: true } } 
-              } 
-            } 
-          }
-        },
-      },
-    });
+    const auction = await this.auctionRepository.findById(id);
     if (!auction) return { success: false, error: 'Bulunamadı' };
-    return { success: true, data: auction };
+
+    const { populateAuctions } = await import('./application/helpers/auction-population.helper');
+    const populated = await populateAuctions([auction]);
+    const bids = await this.bidRepository.findByAuctionId(id, 20);
+    return { success: true, data: { ...populated[0], bids } };
   }
 
   @ApiBearerAuth()
@@ -137,18 +97,7 @@ export class AuctionController {
   @Public()
   @Get(':id/bids')
   async getAuctionBids(@Param('id') id: string) {
-    const bids = await this.prisma.auctionBid.findMany({
-      where: { auctionId: id },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        user: {
-          select: {
-            profile: { select: { firstName: true, lastName: true } }
-          }
-        }
-      }
-    });
+    const bids = await this.bidRepository.findByAuctionId(id, 50);
     return { success: true, data: bids };
   }
 
@@ -156,9 +105,7 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard)
   @Get(':id/participation')
   async getParticipation(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    const p = await this.prisma.auctionParticipation.findUnique({
-      where: { auctionId_userId: { auctionId: id, userId: user.id } }
-    });
+    const p = await this.participationRepository.findByAuctionAndUser(id, user.id);
     return { success: true, data: p };
   }
 
@@ -166,23 +113,20 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/participate')
   async participate(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    const auction = await this.prisma.auction.findUnique({ where: { id } });
+    const auction = await this.auctionRepository.findById(id);
     if (!auction) return { success: false, message: 'Açık artırma bulunamadı' };
-    if (auction.status !== 'ACTIVE') {
+    if (auction.getProps().status !== 'ACTIVE') {
       return { success: false, message: 'Bu açık artırma şu an katılıma açık değil' };
     }
 
     // Mevcut katılım varsa ve teminat alınmışsa idempotent dön
-    const existing = await this.prisma.auctionParticipation.findUnique({
-      where: { auctionId_userId: { auctionId: id, userId: user.id } },
-    });
+    const existing = await this.participationRepository.findByAuctionAndUser(id, user.id);
     if (existing && existing.status !== 'PENDING') {
       return { success: true, data: existing };
     }
 
-    const hasDeposit =
-      auction.participationDeposit !== null &&
-      Number(auction.participationDeposit) > 0;
+    const props = auction.getProps();
+    const hasDeposit = props.participationDeposit !== null && Number(props.participationDeposit) > 0;
 
     let holdId: string | null = null;
 
@@ -192,7 +136,7 @@ export class AuctionController {
       const referenceId = `auction-participate-${id}-${user.id}`;
       const holdResult = await this.financialGateway.holdFunds(
         user.id,
-        auction.participationDeposit!.toString(),
+        props.participationDeposit!.toString(),
         'AUCTION_BID',
         referenceId,
         'AUCTION_PARTICIPATION',
@@ -204,44 +148,39 @@ export class AuctionController {
     // Teminat alındıysa DEPOSIT_HELD, yoksa doğrudan ACTIVE
     const status = hasDeposit ? 'DEPOSIT_HELD' : 'ACTIVE';
 
-    const p = await this.prisma.auctionParticipation.upsert({
-      where: { auctionId_userId: { auctionId: id, userId: user.id } },
-      update: { status, holdId, blockedAmount: auction.participationDeposit ?? 0 },
-      create: {
-        auctionId: id,
-        userId: user.id,
-        status,
-        holdId,
-        blockedAmount: auction.participationDeposit ?? 0,
-      },
+    const participation = await this.participationRepository.create({
+      auctionId: id,
+      userId: user.id,
+      status,
+      holdId: holdId ?? undefined,
+      blockedAmount: Number(props.participationDeposit ?? 0),
     });
 
     await this.auditLog.log({
       actorId: user.id,
       action: 'AUCTION_PARTICIPATE',
       resourceType: 'AuctionParticipation',
-      resourceId: p.id,
+      resourceId: participation.id,
       newValue: {
         auctionId: id,
         holdId,
-        blockedAmount: auction.participationDeposit?.toString() ?? '0',
+        blockedAmount: String(props.participationDeposit ?? 0),
         status,
       },
     });
 
-    return { success: true, data: p };
+    return { success: true, data: participation };
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post(':id/claim')
   async claim(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    const auction = await this.prisma.auction.findUnique({ where: { id } });
-    if (!auction || auction.winnerId !== user.id) {
+    const auction = await this.auctionRepository.findById(id);
+    if (!auction || auction.getProps().winnerId !== user.id) {
       return { success: false, message: 'Bu açık artırmayı kazanan siz değilsiniz.' };
     }
     // İleride burada ödeme/teslimat mantığı eklenebilir
     return { success: true, message: 'Kazanım onaylandı' };
   }
-
 }

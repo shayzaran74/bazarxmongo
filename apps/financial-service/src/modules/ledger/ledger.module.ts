@@ -2,22 +2,23 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaGeneralLedgerRepository } from './infrastructure/persistence/prisma-general-ledger.repository';
-import { LedgerMapper } from './infrastructure/persistence/mappers/ledger.mapper';
+import { MongooseModule } from '@nestjs/mongoose';
+import { FinancialGeneralLedgerSchema } from '@barterborsa/shared-persistence';
 
-const Repositories = [
-  {
-    provide: 'IGeneralLedgerRepository',
-    useClass: PrismaGeneralLedgerRepository,
-  },
-];
+import { MongoGeneralLedgerRepository } from './infrastructure/persistence/mongo-general-ledger.repository';
+import { LedgerMapper }                 from './infrastructure/persistence/mappers/ledger.mapper';
 
 @Module({
-  imports: [CqrsModule],
+  imports: [
+    CqrsModule,
+    MongooseModule.forFeature([
+      { name: 'GeneralLedger', schema: FinancialGeneralLedgerSchema },
+    ]),
+  ],
   providers: [
-    ...Repositories,
-    PrismaGeneralLedgerRepository,
     LedgerMapper,
+    MongoGeneralLedgerRepository,
+    { provide: 'IGeneralLedgerRepository', useClass: MongoGeneralLedgerRepository },
   ],
   exports: ['IGeneralLedgerRepository'],
 })

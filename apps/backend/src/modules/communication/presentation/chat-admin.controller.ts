@@ -2,9 +2,11 @@
 
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Roles } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { IChatRoom, ITradeOffer } from '@barterborsa/shared-persistence';
 
 @ApiTags('Chat Admin')
 @ApiBearerAuth()
@@ -12,73 +14,42 @@ import { PrismaService } from '@barterborsa/shared-persistence';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/chat')
 export class ChatAdminController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('ChatRoom')   private readonly chatRoomModel: Model<IChatRoom>,
+    @InjectModel('TradeOffer') private readonly tradeModel:    Model<ITradeOffer>,
+  ) {}
 
   @ApiOperation({ summary: 'Tüm chat odaları (Admin)' })
-  @ApiQuery({ name: 'status', required: false })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiResponse({ status: 200 })
   @Get('rooms')
   async getChats(
     @Query('status') status?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
-  ) {
+  ): Promise<{ success: boolean; data: unknown[]; pagination: { total: number; page: number; limit: number } }> {
     const take = parseInt(limit, 10);
     const skip = (parseInt(page, 10) - 1) * take;
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
     const [chats, total] = await Promise.all([
-      this.prisma.chatRoom.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
-          _count: { select: { messages: true } },
-        },
-      }),
-      this.prisma.chatRoom.count({ where }),
+      this.chatRoomModel.find(where).skip(skip).limit(take).sort({ createdAt: -1 }).lean(),
+      this.chatRoomModel.countDocuments(where),
     ]);
 
-    const data = await Promise.all(
-      chats.map(async (room) => {
-        let tradeOffer: any = null;
-        if (room.tradeOfferId) {
-          tradeOffer = await this.prisma.tradeOffer.findUnique({
-            where: { id: room.tradeOfferId },
-            include: { fromCompany: true, toCompany: true },
-          });
-        }
+    const tradeOfferIds = chats.map(r => (r as Record<string, unknown>).tradeOfferId).filter(Boolean);
+    const tradeOffers   = await this.tradeModel.find({ id: { $in: tradeOfferIds } }).lean();
+    const tradeMap      = new Map(tradeOffers.map(t => [t.id, t]));
 
-        // Fallback for UI stability if no trade offer is linked
-        if (!tradeOffer) {
-          tradeOffer = {
-            fromCompany: { name: 'Bilinmeyen Gönderici' },
-            toCompany: { name: 'Bilinmeyen Alıcı' },
-            status: 'unknown',
-          };
-        }
-
-        return {
-          ...room,
-          tradeOffer,
-          lastMessage: room.messages[0] || null,
-          riskScore: (room as any).riskScore || 0, // Fallback if risk engine not yet integrated
-        };
-      }),
-    );
+    const data = chats.map(room => {
+      const tradeOfferId = (room as Record<string, unknown>).tradeOfferId as string | undefined;
+      const tradeOffer   = tradeOfferId ? tradeMap.get(tradeOfferId) ?? { fromCompany: { name: 'Bilinmeyen' }, toCompany: { name: 'Bilinmeyen' }, status: 'unknown' } : null;
+      return { ...room, tradeOffer, riskScore: 0 };
+    });
 
     return {
       success: true,
       data,
-      meta: { page: parseInt(page, 10), limit: take, total, totalPages: Math.ceil(total / take) },
+      pagination: { page: parseInt(page, 10), limit: take, total },
     };
   }
 }

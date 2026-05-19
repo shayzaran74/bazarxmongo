@@ -1,25 +1,26 @@
 // apps/backend/src/modules/barter/application/services/trust-score-recalculation.service.ts
 // Aylık TrustScore yeniden hesaplama cron servisi
 
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
 import { TrustScoreCalculatorService } from './trust-score-calculator.service';
 
-// Her gün 02:00'de kontrol (UTC)
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
-export class TrustScoreRecalculationService implements OnModuleInit, OnModuleDestroy {
+export class TrustScoreRecalculationService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(TrustScoreRecalculationService.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private readonly prisma:      PrismaService,
-    private readonly calculator:  TrustScoreCalculatorService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
+    private readonly calculator: TrustScoreCalculatorService,
   ) {}
 
-  onModuleInit(): void {
-    // İlk çalışma biraz geciksin (uygulama ayağa kalkarken)
+  onApplicationBootstrap(): void {
     setTimeout(() => {
       void this.runMonthlyRecalculation();
       this.intervalHandle = setInterval(() => void this.runMonthlyRecalculation(), DAILY_INTERVAL_MS);
@@ -32,9 +33,6 @@ export class TrustScoreRecalculationService implements OnModuleInit, OnModuleDes
 
   async runMonthlyRecalculation(): Promise<void> {
     const now = new Date();
-
-    // Sadece ayın 1'inde tam hesaplama yap
-    // Diğer günler sadece inactiveDays'i güncelle
     const isFirstOfMonth = now.getDate() === 1;
 
     if (isFirstOfMonth) {
@@ -45,13 +43,8 @@ export class TrustScoreRecalculationService implements OnModuleInit, OnModuleDes
     }
   }
 
-  // Tüm B2B vendor'ların TrustScore'unu yeniden hesapla
   private async recalculateAll(): Promise<void> {
-    // Vendor tier'ı CORE/PRIME/ELITE/APEX olanları al
-    const vendors = await this.prisma.vendor.findMany({
-      where: { tier: { in: ['CORE', 'PRIME', 'ELITE', 'APEX'] }, status: 'APPROVED' },
-      select: { id: true },
-    });
+    const vendors = await this.vendorRepo.findByTier(['CORE', 'PRIME', 'ELITE', 'APEX']);
 
     let success = 0;
     let failed  = 0;
@@ -70,30 +63,21 @@ export class TrustScoreRecalculationService implements OnModuleInit, OnModuleDes
     this.logger.log(`TrustScore yeniden hesaplama tamamlandı: ${success} başarılı, ${failed} hatalı`);
   }
 
-  // Her gün hareketsizlik sayacını güncelle
   private async updateInactiveDays(): Promise<void> {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Son 7 günde işlem yapmayan vendorları bul
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 7);
 
-    // Son 7 günde takas işlemi olmayan vendor'ların inactiveDays değerini artır
-    const inactiveVendors = await this.prisma.vendor.findMany({
-      where: {
-        tier:   { in: ['CORE', 'PRIME', 'ELITE', 'APEX'] },
-        status: 'APPROVED',
-        company: {
-          givenOffers:    { none: { createdAt: { gte: sevenDaysAgo } } },
-          receivedOffers: { none: { createdAt: { gte: sevenDaysAgo } } },
-        },
-      },
-      select: { id: true },
-    });
+    // Tüm APPROVED vendorları al
+    const vendors = await this.vendorRepo.findByTier(['CORE', 'PRIME', 'ELITE', 'APEX']);
 
-    for (const v of inactiveVendors) {
-      await this.prisma.trustScore.upsert({
-        where:  { vendorId: v.id },
-        create: { vendorId: v.id, inactiveDays: 1 },
-        update: { inactiveDays: { increment: 1 } },
-      }).catch(() => undefined);
+    for (const v of vendors) {
+      const existing = await this.trustScoreRepo.findByVendorId(v.id);
+      if (!existing) continue;
+
+      // inactiveDays'i 1 artır
+      const currentInactiveDays = ((existing as any)?.inactiveDays ?? 0) + 1;
+      await this.trustScoreRepo.updateScore(v.id, { inactiveDays: currentInactiveDays });
     }
   }
 }

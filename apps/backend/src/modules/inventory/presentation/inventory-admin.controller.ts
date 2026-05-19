@@ -1,9 +1,16 @@
 import { Controller, Get, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import * as XLSX from 'xlsx';
+import { Transfer } from '@barterborsa/shared-persistence/schemas/backend/transfer.schema';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
+import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
+import { Category } from '@barterborsa/shared-persistence/schemas/backend/category.schema';
+import { randomBytes } from 'crypto';
 
 @ApiTags('Inventory Admin')
 @ApiBearerAuth()
@@ -11,8 +18,6 @@ import * as XLSX from 'xlsx';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/inventory')
 export class InventoryAdminController {
-  constructor(private readonly prisma: PrismaService) {}
-
   @ApiOperation({ summary: 'List all inventory transfers for admin' })
   @Get('transfers')
   async getTransfers(
@@ -24,16 +29,14 @@ export class InventoryAdminController {
     const skip     = (pageNum - 1) * limitNum;
 
     const [items, total] = await Promise.all([
-      this.prisma.transfer.findMany({
-        include: {
-          vendor: { include: { company: true } },
-          items:  { include: { listing: true } }
-        },
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.transfer.count()
+      Transfer.find()
+        .populate('vendor')
+        .populate('items')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Transfer.countDocuments(),
     ]);
 
     return { success: true, data: { items, total, page: pageNum, limit: limitNum } };
@@ -62,35 +65,16 @@ export class InventoryAdminController {
       let failedCount  = 0;
       const errors: string[] = [];
 
-      // Varsayılan vendor: önce BazarX Sistem satıcısını bul, yoksa ilk CORE, yoksa herhangi biri
-      let defaultVendor = await this.prisma.vendor.findFirst({
-        where: { profile: { storeName: 'BazarX Sistem' } }
-      });
-
+      let defaultVendor = await Vendor.findOne({ userId: { $exists: true } }).select('id').lean();
       if (!defaultVendor) {
-        defaultVendor = await this.prisma.vendor.findFirst({ where: { tier: 'CORE' } });
-      }
-      if (!defaultVendor) {
-        defaultVendor = await this.prisma.vendor.findFirst();
+        return { success: false, error: 'Sistemde ürünleri sahiplenecek hiçbir satıcı (Vendor) bulunamadı.' };
       }
 
-      if (!defaultVendor) {
-        return {
-          success: false,
-          error: 'Sistemde ürünleri sahiplenecek hiçbir satıcı (Vendor) bulunamadı. Lütfen önce bir satıcı oluşturun.'
-        };
-      }
-
-      // ─── Kategori önbelleği: her satır için ayrı DB sorgusu atmamak için ──────
-      // DÜZELTİLDİ: Kategori eşleştirmesi artık hem slug hem de name ile yapılıyor.
-      // İlk geçişte tüm kategorileri çekip hafızada tutuyoruz.
-      const allCategories = await this.prisma.category.findMany({
-        select: { id: true, name: true, slug: true }
-      });
-      const categoryCache = new Map<string, string>(); // slug → id
+      const allCategories = await Category.find().select('id name slug').lean();
+      const categoryCache = new Map<string, string>();
       for (const cat of allCategories) {
         if (cat.slug) categoryCache.set(cat.slug, cat.id);
-        categoryCache.set(this.slugify(cat.name), cat.id);
+        categoryCache.set(this.slugify(cat.name ?? ''), cat.id);
       }
 
       for (const row of rows) {
@@ -98,75 +82,67 @@ export class InventoryAdminController {
           const rawName = row['Başlık'] || row['Ürün Adı'];
           if (!rawName) continue;
 
-          const barcode      = String(row['Barkod'] || '').trim();
-          const sku          = String(row['SKU'] || '').trim();
-          const brandName    = (row['Marka'] || 'Genel').trim();
-          const categoryName = (row['Kategori'] || 'Genel').trim();
-          const description  = row['Açıklama'] || '';
+          const barcode       = String(row['Barkod'] || '').trim();
+          const sku           = String(row['SKU'] || '').trim();
+          const brandName     = (row['Marka'] || 'Genel').trim();
+          const categoryName  = (row['Kategori'] || 'Genel').trim();
+          const description   = row['Açıklama'] || '';
           const mediaUrls    = row['Medya (3-5 Görsel, virgüle ayırın)'] || '';
           const priceStr     = row['Fiyat'];
           const stockStr     = row['Envanter Miktar'];
 
           const safeSlug = this.slugify(
-            `${rawName}-${barcode || require('crypto').randomBytes(4).toString('hex')}`
+            `${rawName}-${barcode || randomBytes(4).toString('hex')}`
           );
 
           // 1. Marka
-          const brand = await this.prisma.brand.upsert({
-            where:  { name: brandName },
-            update: { updatedAt: new Date() },
-            create: { name: brandName, slug: this.slugify(brandName), status: 'APPROVED' }
-          });
+          let brand = await Brand.findOne({ name: brandName }).lean();
+          if (!brand) {
+            const brandId = 'brand-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            brand = await Brand.create({ id: brandId, name: brandName, slug: this.slugify(brandName), status: 'APPROVED' });
+          }
 
-          // 2. Kategori — DÜZELTİLDİ: Önce önbellekten bak, sonra DB'ye git
+          // 2. Kategori
           const categorySlug = this.slugify(categoryName);
           let categoryId = categoryCache.get(categorySlug);
 
           if (!categoryId) {
-            // Önbellekte yoksa DB'de oluştur ve önbelleğe ekle
-            const newCategory = await this.prisma.category.create({
-              data: { name: categoryName, slug: categorySlug, isActive: true }
-            });
-            categoryId = newCategory.id;
+            const catId = 'cat-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            await Category.create({ id: catId, name: categoryName, slug: categorySlug, isActive: true });
+            categoryId = catId;
             categoryCache.set(categorySlug, categoryId);
             categoryCache.set(this.slugify(categoryName), categoryId);
           }
 
           // 3. Catalog Product
-          const product = await this.prisma.catalogProduct.upsert({
-            where:  { slug: safeSlug },
-            update: {
-              name:       rawName,
+          let product = await CatalogProduct.findOne({ slug: safeSlug }).lean();
+          if (!product) {
+            const pid = 'cp-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            product = (await CatalogProduct.create({
+              id: pid,
+              name: rawName,
+              slug: safeSlug,
               description,
-              brand:      brandName,
-              gtin:       barcode || undefined,
-              categoryId, // DÜZELTİLDİ: her zaman set ediliyor
-              status:     'ACTIVE',
-              updatedAt:  new Date(),
-              brands:     { connect: [{ id: brand.id }] }
-            },
-            create: {
-              name:       rawName,
-              slug:       safeSlug,
-              description,
-              brand:      brandName,
-              gtin:       barcode || undefined,
+              brand: brandName,
+              gtin: barcode || undefined,
               categoryId,
-              status:     'ACTIVE',
-              brands:     { connect: [{ id: brand.id }] }
-            }
-          });
+              status: 'ACTIVE',
+            })) as any;
+          }
 
           // 4. Medya
           if (mediaUrls) {
             const urls = String(mediaUrls).split(',').map((u: string) => u.trim()).filter(Boolean);
-            for (const [index, url] of urls.entries()) {
-              const mediaExists = await this.prisma.productMedia.findFirst({
-                where: { productId: product.id, url }
-              });
+            for (let idx = 0; idx < urls.length; idx++) {
+              const url = urls[idx];
+              const mediaExists = await ProductMedia.findOne({ productId: product!.id, url }).lean();
               if (!mediaExists) {
-                await this.prisma.productMedia.create({
-                  data: { productId: product.id, url, type: 'IMAGE', sortOrder: index }
+                await ProductMedia.create({
+                  id: 'pm-' + Date.now() + '-' + idx,
+                  productId: product!.id,
+                  url,
+                  type: 'IMAGE',
+                  sortOrder: idx,
                 });
               }
             }
@@ -178,21 +154,23 @@ export class InventoryAdminController {
             const stock = parseInt(String(stockStr ?? 10), 10) || 10;
 
             if (!isNaN(price)) {
-              await this.prisma.listing.upsert({
-                where:  { slug: safeSlug },
-                update: { price, stock, title: rawName, description, sku: sku || undefined },
-                create: {
-                  vendorId:        defaultVendor.id,
-                  catalogProductId: product.id,
-                  title:           rawName,
-                  slug:            safeSlug,
+              let listing = await Listing.findOne({ slug: safeSlug }).lean();
+              if (listing) {
+                await Listing.updateOne({ id: listing.id }, { $set: { price, stock, title: rawName, description, sku: sku || undefined } }).exec();
+              } else {
+                await Listing.create({
+                  id: 'lst-' + Date.now() + '-' + randomBytes(4).toString('hex'),
+                  vendorId: defaultVendor.id,
+                  catalogProductId: product!.id,
+                  title: rawName,
+                  slug: safeSlug,
                   description,
                   price,
                   stock,
-                  sku:             sku || undefined,
-                  status:          'ACTIVE'
-                }
-              });
+                  sku: sku || undefined,
+                  status: 'ACTIVE',
+                });
+              }
             }
           }
 
@@ -204,10 +182,7 @@ export class InventoryAdminController {
         }
       }
 
-      return {
-        success: true,
-        results: { success: successCount, failed: failedCount, errors }
-      };
+      return { success: true, results: { success: successCount, failed: failedCount, errors } };
     } catch (error: any) {
       console.error('[ExcelImport] Genel Hata:', error);
       return { success: false, error: 'Excel verisi işlenirken bir hata oluştu: ' + error.message };

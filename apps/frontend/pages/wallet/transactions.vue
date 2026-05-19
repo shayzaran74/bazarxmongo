@@ -105,12 +105,13 @@
                     <span
                       class="px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest"
                       :class="{
-                        'bg-blue-100 text-blue-700': tx.account?.type === 'MAIN',
-                        'bg-orange-100 text-orange-700': tx.account?.type === 'BARTER',
-                        'bg-purple-100 text-purple-700': tx.account?.type?.includes('XP')
+                        'bg-blue-100 text-blue-700': (tx.account?.type || tx.accountType) === 'MAIN',
+                        'bg-orange-100 text-orange-700': (tx.account?.type || tx.accountType) === 'BARTER',
+                        'bg-purple-100 text-purple-700': (tx.account?.type || tx.accountType)?.includes('XP'),
+                        'bg-gray-100 text-gray-700': (tx.account?.type || tx.accountType) === 'SYSTEM'
                       }"
                     >
-                      {{ tx.account?.type || 'Bilinmiyor' }}
+                      {{ (tx.account?.type || tx.accountType) === 'MAIN' ? 'Nakit' : (tx.account?.type || tx.accountType) === 'BARTER' ? 'Barter' : (tx.account?.type || tx.accountType) === 'SYSTEM' ? 'Sistem' : (tx.account?.type || tx.accountType) || 'Bilinmiyor' }}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-right whitespace-nowrap">
@@ -263,11 +264,11 @@ const loadData = async () => {
             if (transactions.value.length === 0) {
                 const res = await fetchTransactions({ limit: 100 })
                 if (res.success) {
-                    // Backend { success, data: { items, total } } veya { success, data: [] } dönebilir
                     const rawData = (res).data
-                    transactions.value = Array.isArray(rawData) 
+                    const items = Array.isArray(rawData) 
                         ? rawData 
                         : (rawData?.items || [])
+                    transactions.value = items.filter(tx => (tx.account?.type || tx.accountType) !== 'SYSTEM')
                 }
             }
         } else {
@@ -275,9 +276,10 @@ const loadData = async () => {
                 const res = await fetchLedger({ limit: 100 })
                 if (res.success) {
                     const rawData = (res).data
-                    ledgerEntries.value = Array.isArray(rawData) 
+                    const items = Array.isArray(rawData) 
                         ? rawData 
                         : (rawData?.items || [])
+                    ledgerEntries.value = items.filter(tx => (tx.account?.type || tx.accountType) === 'SYSTEM')
                 }
             }
         }

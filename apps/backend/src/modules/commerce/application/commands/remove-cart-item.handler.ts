@@ -1,20 +1,20 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { RemoveCartItemCommand } from './remove-cart-item.command';
+import { MongoCartRepository } from '../../infrastructure/persistence/mongo-cart.repository';
 
 @CommandHandler(RemoveCartItemCommand)
 export class RemoveCartItemHandler
   implements ICommandHandler<RemoveCartItemCommand> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly cartRepo: MongoCartRepository) {}
 
   async execute(command: RemoveCartItemCommand) {
     const { userId, itemId } = command;
-    
-    await this.prisma.cartItem.delete({ 
-      where: { id: itemId, cart: { userId } } 
-    });
 
+    const cart = await this.cartRepo.findByUserId(userId);
+    if (!cart) return { success: true, message: 'Ürün sepetten silindi' };
+
+    await this.cartRepo.removeItem(itemId);
     return { success: true, message: 'Ürün sepetten silindi' };
   }
 }

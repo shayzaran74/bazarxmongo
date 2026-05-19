@@ -1,73 +1,85 @@
+// apps/backend/src/modules/identity/application/queries/list-admin-users.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { IUser, IUserProfile, IVendor, UserStatusType, UserRoleType } from '@barterborsa/shared-persistence';
 import { ListAdminUsersQuery } from './list-admin-users.query';
 
-@QueryHandler(ListAdminUsersQuery)
-export class ListAdminUsersHandler
-  implements IQueryHandler<ListAdminUsersQuery> {
+interface UserFilter {
+  status?: UserStatusType;
+  role?: UserRoleType;
+  $or?: Array<Record<string, unknown>>;
+  deletedAt?: { $exists: boolean };
+}
 
-  constructor(private readonly prisma: PrismaService) {}
+@QueryHandler(ListAdminUsersQuery)
+export class ListAdminUsersHandler implements IQueryHandler<ListAdminUsersQuery> {
+  constructor(
+    @InjectModel('User') private readonly userModel: Model<IUser>,
+    @InjectModel('UserProfile') private readonly profileModel: Model<IUserProfile>,
+    @InjectModel('Vendor') private readonly vendorModel: Model<IVendor>,
+    @InjectModel('Company') private readonly companyModel: Model<any>,
+  ) {}
 
   async execute(query: ListAdminUsersQuery) {
     const { search, status, role, page = 1, limit = 10 } = query.filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: UserFilter = { deletedAt: { $exists: false } };
 
     if (search) {
-      where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { profile: { firstName: { contains: search, mode: 'insensitive' } } },
-        { profile: { lastName: { contains: search, mode: 'insensitive' } } }
+      where.$or = [
+        { email: { $regex: search, $options: 'i' } },
       ];
     }
-    if (status) where.status = status.toUpperCase();
-    if (role) where.role = role.toUpperCase();
+    if (status) where.status = status.toUpperCase() as UserStatusType;
+    if (role)   where.role   = role.toUpperCase() as UserRoleType;
 
-    const [items, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where,
-        include: {
-          profile: true,
-          vendor: {
-            include: {
-              company: { select: { id: true, name: true } },
-              profile: { select: { id: true, storeName: true } }
-            }
-          }
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.user.count({ where })
+    const [users, total] = await Promise.all([
+      this.userModel.find(where).skip(skip).limit(limit).sort({ createdAt: -1 }).lean(),
+      this.userModel.countDocuments(where),
     ]);
 
-    const mappedItems = items.map(u => {
-      const vendor: any = u.vendor ? {
-        ...u.vendor,
-        businessName: u.vendor.profile?.storeName
-          || u.vendor.company?.name
-          || 'İsimsiz İşletme'
-      } : null;
+    // Profil ve vendor bilgisi toplu sorgu — profiller userId=email ile saklanıyor
+    const userEmails = users.map(u => u.email).filter(Boolean);
+
+    const [profiles, vendors] = await Promise.all([
+      this.profileModel.find({ userId: { $in: userEmails } }).lean(),
+      this.vendorModel.find({ userId: { $in: userEmails } }).lean(),
+    ]);
+
+    const companyIds = vendors.map(v => (v as Record<string, unknown>).companyId).filter(Boolean) as string[];
+    const companies = await this.companyModel.find({ id: { $in: companyIds } }).lean();
+
+    const profileMap = new Map(profiles.map(p => [(p as Record<string, unknown>).userId as string, p]));
+    const vendorMap  = new Map(vendors.map(v => [(v as Record<string, unknown>).userId as string, v]));
+    const companyMap = new Map(companies.map(c => [(c as Record<string, unknown>).id as string, c]));
+
+    const items = users.map(u => {
+      const profile = profileMap.get(u.email);
+      const vendor  = vendorMap.get(u.email);
+      const company = vendor ? companyMap.get(vendor.companyId) : null;
 
       return {
         ...u,
-        vendor,
-        userName: u.profile
-          ? `${u.profile.firstName || ''} ${u.profile.lastName || ''}`.trim()
-          : u.email
+        profile,
+        vendor: vendor ? {
+          ...vendor,
+          businessName: company?.name 
+            || (vendor as Record<string, unknown>).storeName as string
+            || (vendor as Record<string, unknown>).companyName as string
+            || 'İsimsiz İşletme',
+        } : null,
+        userName: profile
+          ? `${(profile as Record<string, unknown>).firstName ?? ''} ${(profile as Record<string, unknown>).lastName ?? ''}`.trim()
+          : u.email,
       };
     });
 
     return {
-      items: mappedItems,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
+      items,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 }

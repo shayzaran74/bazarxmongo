@@ -1,8 +1,12 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Query, Patch } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { PurchaseOrder } from '@barterborsa/shared-persistence/schemas/backend/purchaseOrder.schema';
+import { PurchaseOrderItem } from '@barterborsa/shared-persistence/schemas/backend/purchaseOrderItem.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { InventoryLog } from '@barterborsa/shared-persistence/schemas/backend/inventoryLog.schema';
 
 @ApiTags('Vendor Purchase Orders')
 @ApiBearerAuth()
@@ -10,26 +14,15 @@ import { CurrentUser } from '@barterborsa/shared-nest';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 export class PurchaseOrderController {
-  constructor(private readonly prisma: PrismaService) {}
-
   @ApiOperation({ summary: 'Get vendor purchase orders' })
   @Get()
   async getPurchaseOrders(@CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
-
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
-    const orders = await this.prisma.purchaseOrder.findMany({
-      where: { vendorId: vendor.id },
-      include: {
-        _count: {
-          select: { items: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const orders = await PurchaseOrder.find({ vendorId: vendor.id })
+      .sort({ createdAt: -1 })
+      .lean();
 
     return { success: true, data: orders };
   }
@@ -37,28 +30,11 @@ export class PurchaseOrderController {
   @ApiOperation({ summary: 'Get purchase order details' })
   @Get(':id')
   async getPurchaseOrderDetails(@Param('id') id: string, @CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
 
-    const order = await this.prisma.purchaseOrder.findUnique({
-      where: { id, vendorId: vendor?.id },
-      include: {
-        items: {
-          include: {
-            listing: {
-              include: {
-                catalogProduct: {
-                  include: {
-                    media: { take: 1 }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
+    const order = await PurchaseOrder.findOne({ id, vendorId: vendor?.id })
+      .populate('items')
+      .lean();
 
     if (!order) return { success: false, message: 'Order not found' };
 
@@ -68,30 +44,32 @@ export class PurchaseOrderController {
   @ApiOperation({ summary: 'Create purchase order' })
   @Post()
   async createPurchaseOrder(@Body() body: any, @CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
-
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
     const { supplierName, items } = body;
 
-    const order = await this.prisma.purchaseOrder.create({
-      data: {
-        vendorId: vendor.id,
-        supplierName,
-        status: 'Draft',
-        totalAmount: items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0),
-        items: {
-          create: items.map((item: any) => ({
-            listingId: item.listingId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice
-          }))
-        }
-      },
-      include: { items: true }
+    const orderId = 'po-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const totalAmount = items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+
+    const order = await PurchaseOrder.create({
+      id: orderId,
+      vendorId: vendor.id,
+      supplierName,
+      status: 'Draft',
+      totalAmount,
     });
+
+    for (const item of items) {
+      const itemId = 'poi-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+      await PurchaseOrderItem.create({
+        id: itemId,
+        purchaseOrderId: orderId,
+        listingId: item.listingId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      });
+    }
 
     return { success: true, data: order };
   }
@@ -99,52 +77,39 @@ export class PurchaseOrderController {
   @ApiOperation({ summary: 'Receive purchase order (Update Stock)' })
   @Patch(':id/receive')
   async receiveOrder(@Param('id') id: string, @CurrentUser() user: any) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
 
-    const order = await this.prisma.purchaseOrder.findUnique({
-      where: { id, vendorId: vendor?.id },
-      include: { items: true }
-    });
+    const order = await PurchaseOrder.findOne({ id, vendorId: vendor?.id })
+      .populate('items')
+      .lean();
 
     if (!order) return { success: false, message: 'Order not found' };
     if (order.status === 'Received') return { success: false, message: 'Order already received' };
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Update each item's stock
-      for (const item of order.items) {
-        await tx.listing.update({
-          where: { id: item.listingId },
-          data: {
-            stock: { increment: item.quantity }
-          }
+    for (const item of (order as any).items || []) {
+      await Listing.updateOne(
+        { id: item.listingId },
+        { $inc: { stock: item.quantity } }
+      ).exec();
+
+      try {
+        await InventoryLog.create({
+          id: 'ilog-' + Date.now() + '-' + Math.random().toString(36).substring(7),
+          productId: item.listingId,
+          vendorId: vendor?.id,
+          change: item.quantity,
+          reason: 'PURCHASE_ORDER',
+          referenceId: order.id,
         });
+      } catch { /* log error */ }
+    }
 
-        // Log stock movement
-        try {
-          await (tx as any).inventoryLog.create({
-            data: {
-              productId: item.listingId,
-              vendorId: vendor?.id,
-              change: item.quantity,
-              reason: 'PURCHASE_ORDER',
-              referenceId: order.id,
-              createdAt: new Date()
-            }
-          });
-        } catch (e) {}
-      }
+    const updatedOrder = await PurchaseOrder.findOneAndUpdate(
+      { id },
+      { $set: { status: 'Received', receivedAt: new Date() } },
+      { new: true }
+    ).exec();
 
-      const updatedOrder = await tx.purchaseOrder.update({
-        where: { id },
-        data: {
-          status: 'Received',
-          receivedAt: new Date()
-        }
-      });
-
-      return { success: true, data: updatedOrder };
-    });
+    return { success: true, data: updatedOrder };
   }
 }

@@ -2,19 +2,20 @@
 
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth,
-  ApiQuery, ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { CreateChatRoomDto } from '../application/dtos/create-chat-room.dto';
-import { SendMessageDto } from '../application/dtos/send-message.dto';
+import { IChatMessage } from '@barterborsa/shared-persistence';
+import { CreateChatRoomDto }   from '../application/dtos/create-chat-room.dto';
+import { SendMessageDto }      from '../application/dtos/send-message.dto';
 import { CreateChatRoomCommand } from '../application/commands/create-chat-room.command';
-import { SendMessageCommand } from '../application/commands/send-message.command';
-import { GetChatRoomsQuery } from '../application/queries/get-chat-rooms.query';
-import { GetMessagesQuery } from '../application/queries/get-messages.query';
+import { SendMessageCommand }  from '../application/commands/send-message.command';
+import { GetChatRoomsQuery }   from '../application/queries/get-chat-rooms.query';
+import { GetMessagesQuery }    from '../application/queries/get-messages.query';
+
+interface AuthenticatedUser { id: string; role: string }
 
 @ApiTags('Chat')
 @ApiBearerAuth()
@@ -23,53 +24,32 @@ import { GetMessagesQuery } from '../application/queries/get-messages.query';
 export class ChatController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
-    private readonly prisma: PrismaService,
+    private readonly queryBus:   QueryBus,
+    @InjectModel('ChatMessage') private readonly msgModel: Model<IChatMessage>,
   ) {}
 
-  @ApiOperation({ summary: 'Chat odalarını listele' })
-  @ApiResponse({ status: 200 })
   @Get('rooms')
-  async getRooms(@CurrentUser() user: any) {
+  getRooms(@CurrentUser() user: AuthenticatedUser) {
     return this.queryBus.execute(new GetChatRoomsQuery(user.id));
   }
 
-  @ApiOperation({ summary: 'Odadaki mesajları getir' })
-  @ApiParam({ name: 'id' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'before', required: false, type: String })
-  @ApiResponse({ status: 200 })
   @Get('rooms/:id/messages')
-  async getMessages(
-    @CurrentUser() user: any,
+  getMessages(
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') roomId: string,
     @Query('limit') limit?: number,
     @Query('before') before?: string,
   ) {
     return this.queryBus.execute(
-      new GetMessagesQuery(
-        roomId,
-        user.id,
-        limit ? Number(limit) : 50,
-        before ? new Date(before) : undefined,
-      ),
+      new GetMessagesQuery(roomId, user.id, limit ? Number(limit) : 50, before ? new Date(before) : undefined),
     );
   }
 
-  @ApiOperation({ summary: 'Okunmamış mesaj sayısı' })
-  @ApiResponse({ status: 200 })
   @Get('unread-count')
-  async getUnreadCount(@CurrentUser() user: any) {
-    // Kullanıcının dahil olduğu odalardaki okunmamış mesajları say
-    const count = await this.prisma.chatMessage.count({
-      where: {
-        isRead:   false,
-        senderId: { not: user.id }, // kendi gönderdiği hariç
-        room: {
-          participantIds: { has: user.id },
-          isArchived: false,
-        },
-      },
+  async getUnreadCount(@CurrentUser() user: AuthenticatedUser) {
+    const count = await this.msgModel.countDocuments({
+      isRead: false,
+      senderId: { $ne: user.id },
     });
     return { success: true, count };
   }

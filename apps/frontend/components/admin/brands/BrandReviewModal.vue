@@ -12,6 +12,13 @@
       </div>
 
       <div class="p-8 space-y-6 max-h-[60vh] overflow-y-auto">
+        <!-- Brand Logo -->
+        <div v-if="brand?.image" class="flex justify-center mb-6">
+          <div class="w-32 h-32 rounded-2xl bg-gray-50 border border-gray-100 p-2 flex items-center justify-center">
+            <img :src="resolveImageUrl(brand.image)" class="max-w-full max-h-full object-contain rounded-xl" @error="$event.target.src='/images/no-brand.png'">
+          </div>
+        </div>
+
         <!-- Documents -->
         <div class="space-y-3" v-if="Object.keys(documents).length">
           <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest">Yüklenen Belgeler</h4>
@@ -57,6 +64,7 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import { XMarkIcon, DocumentIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({ show: Boolean, brand: Object, isPopular: Boolean, resolveImageUrl: Function })

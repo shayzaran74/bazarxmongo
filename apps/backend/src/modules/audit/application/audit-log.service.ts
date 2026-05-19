@@ -1,7 +1,9 @@
 // apps/backend/src/modules/audit/application/audit-log.service.ts
+// AuditLogService — Mongoose repository ile (Prisma → Mongoose migration)
+// ADR-005 Faz 2a — Pilot modül
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audit/audit-log.repository';
 
 export interface AuditLogEntry {
   actorId: string;
@@ -17,25 +19,37 @@ export interface AuditLogEntry {
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly auditLogRepo: AuditLogRepository) {}
 
   async log(entry: AuditLogEntry): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
-        data: {
-          actorId:      entry.actorId,
-          action:       entry.action,
-          resourceType: entry.resourceType,
-          resourceId:   entry.resourceId,
-          oldValue:     entry.oldValue as object | undefined,
-          newValue:     entry.newValue as object | undefined,
-          ipAddress:    entry.ipAddress,
-        },
+      await this.auditLogRepo.create({
+        id: '', // cuid repository'de üretilir
+        actorId: entry.actorId,
+        action: entry.action,
+        resourceType: entry.resourceType,
+        resourceId: entry.resourceId,
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        ipAddress: entry.ipAddress,
+        createdAt: new Date(),
       });
     } catch (err: unknown) {
       // Audit log hatası ana işlemi durdurmamalı — sadece loglanır
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
       this.logger.error('AuditLog kaydedilemedi', { entry, error: msg });
     }
+  }
+
+  async findByActor(actorId: string, limit = 100) {
+    return this.auditLogRepo.findByActor(actorId, limit);
+  }
+
+  async findByResource(resourceType: string, resourceId: string, limit = 50) {
+    return this.auditLogRepo.findByResource(resourceType, resourceId, limit);
+  }
+
+  async findByAction(action: string, limit = 100) {
+    return this.auditLogRepo.findByAction(action, limit);
   }
 }

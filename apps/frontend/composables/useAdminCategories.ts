@@ -24,7 +24,7 @@ export const useAdminCategories = () => {
   const fetchCategories = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/listings/categories')
+      const res = await $api<any>('/api/v1/listings/categories')
       categories.value = res.data || []
     } catch {
       $toast.error('Kategoriler yüklenemedi')

@@ -1,21 +1,36 @@
 // apps/backend/src/modules/communication/infrastructure/persistence/mappers/user-complaint.mapper.ts
+// UserComplaintMapper — Prisma → Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { IUserComplaint } from '@barterborsa/shared-persistence/schemas/backend/userComplaint.schema';
 import { UserComplaint } from '../../../domain/entities/user-complaint.entity';
-import { ComplaintStatus } from '../../../domain/enums/complaint-status.enum';
+
+export interface UserComplaintDocument extends IUserComplaint {
+  _id?: string;
+  status?: string;
+}
 
 @Injectable()
 export class UserComplaintMapper {
-  toDomain(raw: any): UserComplaint {
+  static toDomain(doc: UserComplaintDocument): UserComplaint {
     return (UserComplaint as any).createFrom({
-      ...raw,
-      status: raw.status as ComplaintStatus,
-    }, raw.id);
+      reporterId: doc.reporterId,
+      subjectId: doc.subjectId,
+      reason: doc.reason,
+      description: doc.description ?? undefined,
+      status: (doc.status as any) ?? 'PENDING',
+      adminNote: doc.adminNote ?? undefined,
+      resolvedAt: doc.resolvedAt ?? undefined,
+      resolvedBy: doc.resolvedBy ?? undefined,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }, doc.id);
   }
 
-  toPersistence(domain: UserComplaint): any {
+  static toPersistence(domain: UserComplaint): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       reporterId: props.reporterId,
       subjectId: props.subjectId,

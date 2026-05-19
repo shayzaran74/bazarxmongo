@@ -2,13 +2,12 @@
 
 import {
   Controller, Get, Post, Body, Param,
-  UseGuards, NotFoundException, ForbiddenException,
+  UseGuards, NotFoundException, ForbiddenException, Inject,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { SubmitShippingCommand } from '../application/commands/submit-shipping.command';
 import { ConfirmReceiptCommand } from '../application/commands/confirm-receipt.command';
 import { FinalizeSwapCommand } from '../application/commands/finalize-swap.command';
@@ -18,6 +17,8 @@ import { SwapShippingDto } from './dto/swap-shipping.dto';
 import { SwapDisputeDto } from './dto/swap-dispute.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { Patch } from '@nestjs/common';
+import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
+import { ISwapSessionRepository } from '../domain/repositories/swap-session.repository.interface';
 
 interface AuthenticatedUser {
   id: string;
@@ -32,7 +33,8 @@ interface AuthenticatedUser {
 export class SwapSessionController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @Inject('ISwapSessionRepository') private readonly swapSessionRepository: ISwapSessionRepository,
   ) {}
 
   @ApiOperation({ summary: 'Swap session detayını getir' })
@@ -41,20 +43,7 @@ export class SwapSessionController {
   async getSession(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const vendorId = await this.resolveVendorId(user);
 
-    const session = await this.prisma.swapSession.findUnique({
-      where: { id },
-      include: {
-        parts: true,
-        tradeOffer: {
-          include: {
-            fromCompany: { select: { id: true, name: true, logo: true } },
-            toCompany:   { select: { id: true, name: true, logo: true } },
-            offeredItems:   true,
-            requestedItems: true,
-          },
-        },
-      },
-    });
+    const session = await this.swapSessionRepository.findByIdWithRelations(id);
 
     if (!session) throw new NotFoundException('Swap session bulunamadı.');
 
@@ -128,7 +117,7 @@ export class SwapSessionController {
   private async resolveVendorId(user: AuthenticatedUser): Promise<string> {
     if (user.vendorId) return user.vendorId;
 
-    const vendor = await this.prisma.vendor.findFirst({ where: { userId: user.id } });
+    const vendor = await this.vendorRepository.findByUserId(user.id);
     if (!vendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
     return vendor.id;
   }

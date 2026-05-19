@@ -1,7 +1,6 @@
 // apps/backend/src/modules/barter/domain/entities/trade-offer.entity.ts
 
 import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { TradeOfferStatus } from '../enums/trade-offer-status.enum';
 import { TradeOfferItem } from './trade-offer-item.entity';
 
@@ -14,7 +13,7 @@ export interface TradeOfferProps {
   status: TradeOfferStatus;
   chainId?: string;
   parentOfferId?: string;
-  cashAmount: Prisma.Decimal;
+  cashAmount: number;
   cashDirection: 'TO_INITIATOR' | 'TO_RECEIVER';
   cashCurrency: string;
   expiresAt: Date;
@@ -43,7 +42,7 @@ export class TradeOffer extends AggregateRoot<TradeOfferProps> {
     toCompanyId: string,
     offeredItems: TradeOfferItem[],
     requestedItems: TradeOfferItem[],
-    cashAmount: Prisma.Decimal = new Prisma.Decimal(0),
+    cashAmount: number = 0,
     cashDirection: 'TO_INITIATOR' | 'TO_RECEIVER' = 'TO_RECEIVER',
     expiresInDays: number = 7,
     message?: string,

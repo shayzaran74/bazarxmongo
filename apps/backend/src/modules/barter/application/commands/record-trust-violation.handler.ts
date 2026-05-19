@@ -2,32 +2,45 @@
 // Master Plan v4.3 §3.3 — 1. ihlal uyarı, 2. −15 puan, 3. dondurma
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject, Logger } from '@nestjs/common';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { RecordTrustViolationCommand } from './record-trust-violation.command';
-import { TrustScoreCalculatorService } from '../services/trust-score-calculator.service';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
 
 @CommandHandler(RecordTrustViolationCommand)
 export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustViolationCommand> {
   private readonly logger = new Logger(RecordTrustViolationHandler.name);
 
   constructor(
-    private readonly prisma:      PrismaService,
-    private readonly calculator:  TrustScoreCalculatorService,
-    private readonly auditLog:    AuditLogService,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @Inject('ITrustScoreRepository') private readonly trustScoreRepository: ITrustScoreRepository,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(command: RecordTrustViolationCommand) {
     const { vendorId, violationType, description, adminId } = command;
 
-    const existing = await this.prisma.trustScore.findUnique({ where: { vendorId } });
+    let trustScore = await this.trustScoreRepository.findByVendorId(vendorId);
 
-    let trustScore = existing ?? await this.prisma.trustScore.create({
-      data: { vendorId, score: 100, tradingPerformance: 100, xpLoyalty: 100, compliance: 100 },
-    });
+    if (!trustScore) {
+      // TrustScore yoksa oluştur
+      trustScore = {
+        id: 'trust-' + Date.now(),
+        vendorId,
+        score: 100,
+        tradingPerformance: 100,
+        xpLoyalty: 100,
+        compliance: 100,
+        level: 'GOOD',
+        lastCalculatedAt: new Date(),
+        isFrozen: false,
+        violationCount: 0,
+        inactiveDays: 0,
+      };
+    }
 
-    const newViolationCount = trustScore.violationCount + 1;
+    const newViolationCount = (trustScore.violationCount || 0) + 1;
     let action = 'WARNING';
     let compliancePenalty = 0;
     let freeze = false;
@@ -47,26 +60,25 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
       this.logger.warn('3. İhlal — Hesap donduruldu', { vendorId, violationType });
     }
 
-    const newScore      = Math.max(0, Number(trustScore.score) - compliancePenalty);
-    const newCompliance = Math.max(0, Number(trustScore.compliance) - compliancePenalty);
+    const newScore      = Math.max(0, (trustScore.score || 100) - compliancePenalty);
+    const newCompliance = Math.max(0, (trustScore.compliance || 100) - compliancePenalty);
 
-    await this.prisma.trustScore.update({
-      where: { vendorId },
-      data: {
-        violationCount:  newViolationCount,
-        score:           newScore,
-        compliance:      newCompliance,
-        isFrozen:        freeze,
-        lastCalculatedAt: new Date(),
-      },
+    await this.trustScoreRepository.updateScore(vendorId, {
+      score: newScore,
+      compliance: newCompliance,
+      violationCount: newViolationCount,
+      isFrozen: freeze,
     });
 
     // Hesap dondurulursa vendor'ı askıya al
     if (freeze) {
-      await this.prisma.vendor.update({
-        where: { id: vendorId },
-        data:  { status: 'SUSPENDED', suspensionReason: `3. TrustScore ihlali: ${violationType}` },
-      });
+      const vendor = await this.vendorRepository.findById(vendorId);
+      if (vendor) {
+        // Vendor'ı askıya al
+        await this.vendorRepository.update(vendorId, {
+          status: 'SUSPENDED',
+        } as any);
+      }
     }
 
     await this.auditLog.log({
@@ -74,7 +86,7 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
       action:       `TRUST_VIOLATION_${action}`,
       resourceType: 'TrustScore',
       resourceId:   vendorId,
-      oldValue:     { score: Number(trustScore.score), violations: trustScore.violationCount },
+      oldValue:     { score: trustScore.score, violations: trustScore.violationCount },
       newValue:     { score: newScore, violations: newViolationCount, action, freeze },
     });
 

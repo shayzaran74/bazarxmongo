@@ -1,9 +1,26 @@
 // apps/backend/src/modules/barter/barter.module.ts
+// BarterModule — Mongoose migration (ADR-005 Faz 2a)
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
+import { CatalogModule } from '../catalog/catalog.module';
+import { VendorModule } from '../vendor/vendor.module';
+import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
+
+// Schemas
+import { SurplusItem, SurplusItemSchema } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
+import { TradeOffer, TradeOfferSchema } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
+import { TradeOfferItem, TradeOfferItemSchema } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
+import { SwapSession, SwapSessionSchema } from '@barterborsa/shared-persistence/schemas/backend/swapSession.schema';
+import { BarterPart, BarterPartSchema } from '@barterborsa/shared-persistence/schemas/backend/barterPart.schema';
+import { WantedItem, WantedItemSchema } from '@barterborsa/shared-persistence/schemas/backend/wantedItem.schema';
+import { SurplusCategory, SurplusCategorySchema } from '@barterborsa/shared-persistence/schemas/backend/surplusCategory.schema';
+import { Company, CompanySchema } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { MongoBlindPoolRepository } from '../barterborsa/infrastructure/persistence/mongo-blind-pool.repository';
+import { MongoVendorB2BDataRepository as BarterBorsaVendorB2BDataRepository } from '../barterborsa/infrastructure/persistence/mongo-vendor-b2b-data.repository';
+import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audit/audit-log.repository';
 
 // Controllers
 import { BarterAdminController } from './presentation/barter-admin.controller';
@@ -44,17 +61,66 @@ import { TrustScoreRecalculationService } from './application/services/trust-sco
 import { WatchtowerService } from './application/services/watchtower.service';
 import { B2BXpRulesService } from './application/services/b2b-xp-rules.service';
 import { DisputeResolutionSchedulerService } from './application/services/dispute-resolution-scheduler.service';
+import { BarterMatchScheduler } from './application/services/barter-match.scheduler';
+import { SwapSchedulerService } from './application/services/swap-session.scheduler';
 
-// Repositories & Mappers
-import { PrismaTradeOfferRepository } from './infrastructure/persistence/prisma-trade-offer.repository';
-import { TradeOfferMapper } from './infrastructure/persistence/mappers/trade-offer.mapper';
-import { PrismaSurplusItemRepository } from './infrastructure/persistence/prisma-surplus-item.repository';
+// Infrastructure
+import { MongoSurplusItemRepository } from './infrastructure/persistence/mongo-surplus-item.repository';
+import { MongoTradeOfferRepository } from './infrastructure/persistence/mongo-trade-offer.repository';
+import { MongoSwapSessionRepository } from './infrastructure/persistence/mongo-swap-session.repository';
+import { MongoBarterPartRepository } from './infrastructure/persistence/mongo-barter-part.repository';
+import { MongoDisputeRepository } from './infrastructure/persistence/mongo-dispute.repository';
+import { MongoVendorB2BDataRepository } from './infrastructure/persistence/mongo-vendor-b2b-data.repository';
+import { MongoXpTransactionRepository } from './infrastructure/persistence/mongo-xp-transaction.repository';
+import { MongoUserLevelRepository } from './infrastructure/persistence/mongo-user-level.repository';
+import { MongoBlindPoolEntryRepository } from './infrastructure/persistence/mongo-blind-pool-entry.repository';
+import { MongoWantedItemRepository } from './infrastructure/persistence/mongo-wanted-item.repository';
+import { MongoCategoryRepository } from './infrastructure/persistence/mongo-category.repository';
 import { SurplusItemMapper } from './infrastructure/persistence/mappers/surplus-item.mapper';
-import { PrismaSwapSessionRepository } from './infrastructure/persistence/prisma-swap-session.repository';
+import { TradeOfferMapper } from './infrastructure/persistence/mappers/trade-offer.mapper';
 import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-session.mapper';
 
+const CommandHandlers = [
+  AcceptTradeOfferHandler,
+  CreateSurplusItemHandler,
+  ApproveSurplusHandler,
+  RejectSurplusHandler,
+  ReactivateSurplusHandler,
+  RecordTrustViolationHandler,
+  SubmitShippingHandler,
+  ConfirmReceiptHandler,
+  FinalizeSwapHandler,
+  OpenDisputeHandler,
+  ResolveDisputeHandler,
+  RegisterBarterHandler,
+  OffboardVendorHandler,
+];
+
+const QueryHandlers = [
+  GetVendorTrustScoreHandler,
+  GetBarterInfoHandler,
+  GetMyBarterChainsHandler,
+  GetMyBarterOffersHandler,
+];
+
 @Module({
-  imports: [CqrsModule, PrismaModule, RabbitMQModule],
+  imports: [
+    CqrsModule,
+    RabbitMQModule,
+    FinancialGatewayModule,
+    MongooseModule.forFeature([
+      { name: 'SurplusItem', schema: SurplusItemSchema },
+      { name: 'TradeOffer', schema: TradeOfferSchema },
+      { name: 'TradeOfferItem', schema: TradeOfferItemSchema },
+      { name: 'SwapSession', schema: SwapSessionSchema },
+      { name: 'BarterPart', schema: BarterPartSchema },
+      { name: 'WantedItem', schema: WantedItemSchema },
+      { name: 'SurplusCategory', schema: SurplusCategorySchema },
+      { name: 'Company', schema: CompanySchema },
+    ]),
+    CatalogModule,
+    VendorModule,
+  ],
   controllers: [
     BarterAdminController,
     SurplusController,
@@ -75,32 +141,30 @@ import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-ses
     WatchtowerService,
     B2BXpRulesService,
     DisputeResolutionSchedulerService,
+    BarterMatchScheduler,
+    SwapSchedulerService,
     // Handlers
-    AcceptTradeOfferHandler,
-    CreateSurplusItemHandler,
-    ApproveSurplusHandler,
-    RejectSurplusHandler,
-    ReactivateSurplusHandler,
-    RecordTrustViolationHandler,
-    GetVendorTrustScoreHandler,
-    SubmitShippingHandler,
-    ConfirmReceiptHandler,
-    FinalizeSwapHandler,
-    OpenDisputeHandler,
-    ResolveDisputeHandler,
-    RegisterBarterHandler,
-    OffboardVendorHandler,
-    GetBarterInfoHandler,
-    GetMyBarterChainsHandler,
-    GetMyBarterOffersHandler,
+    ...CommandHandlers,
+    ...QueryHandlers,
     // Mappers
-    TradeOfferMapper,
     SurplusItemMapper,
+    TradeOfferMapper,
     SwapSessionMapper,
     // Repositories
-    { provide: 'ITradeOfferRepository', useClass: PrismaTradeOfferRepository },
-    { provide: 'ISurplusItemRepository', useClass: PrismaSurplusItemRepository },
-    { provide: 'ISwapSessionRepository', useClass: PrismaSwapSessionRepository },
+    { provide: 'ISurplusItemRepository', useClass: MongoSurplusItemRepository },
+    { provide: 'ITradeOfferRepository', useClass: MongoTradeOfferRepository },
+    { provide: 'ISwapSessionRepository', useClass: MongoSwapSessionRepository },
+    { provide: 'IBarterPartRepository', useClass: MongoBarterPartRepository },
+    { provide: 'IDisputeRepository', useClass: MongoDisputeRepository },
+    { provide: 'IVendorB2BDataRepository', useClass: MongoVendorB2BDataRepository },
+    { provide: 'IXpTransactionRepository', useClass: MongoXpTransactionRepository },
+    { provide: 'IUserLevelRepository', useClass: MongoUserLevelRepository },
+    { provide: 'IBlindPoolEntryRepository', useClass: MongoBlindPoolEntryRepository },
+    { provide: 'IWantedItemRepository', useClass: MongoWantedItemRepository },
+    { provide: 'ICategoryRepository', useClass: MongoCategoryRepository },
+    MongoBlindPoolRepository,
+    BarterBorsaVendorB2BDataRepository,
+    AuditLogRepository,
   ],
   exports: [MatchingService, TrustScoreCalculatorService, WatchtowerService],
 })

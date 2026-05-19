@@ -1,17 +1,16 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AddVendorCategoryCommand } from './add-vendor-category.command';
+import { MongoVendorCategoryRepository } from '../../infrastructure/persistence/mongo-vendor-category.repository';
 
 @CommandHandler(AddVendorCategoryCommand)
 export class AddVendorCategoryHandler
   implements ICommandHandler<AddVendorCategoryCommand> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly vendorCategoryRepo: MongoVendorCategoryRepository) {}
 
   async execute(command: AddVendorCategoryCommand) {
     const { vendorId, categoryId } = command;
-    return this.prisma.vendorCategory.create({
-      data: { vendorId, categoryId }
-    });
+    await this.vendorCategoryRepo.create({ vendorId, categoryId });
+    return { success: true };
   }
 }

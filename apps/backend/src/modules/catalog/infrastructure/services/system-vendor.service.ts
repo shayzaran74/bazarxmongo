@@ -1,81 +1,62 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+// apps/backend/src/modules/catalog/infrastructure/services/system-vendor.service.ts
+
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { IVendor, ICompany, IUser } from '@barterborsa/shared-persistence';
 
 @Injectable()
 export class SystemVendorService implements OnModuleInit {
+  private readonly logger = new Logger(SystemVendorService.name);
   private systemVendorId: string | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectModel('Vendor')  private readonly vendorModel:  Model<IVendor>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('User')    private readonly userModel:    Model<IUser>,
+  ) {}
 
   async onModuleInit() {
     try {
       await this.refreshSystemVendorId();
-    } catch (error: any) {
-      console.warn('SystemVendorService: Initial setup failed, will retry later:', error.message);
+    } catch (error: unknown) {
+      this.logger.warn(`SystemVendorService: Initial setup failed: ${error instanceof Error ? error.message : 'unknown'}`);
     }
   }
 
   async refreshSystemVendorId() {
-    const v = await this.prisma.vendor.findFirst({
-      where: { profile: { storeName: 'BazarX Sistem' } },
-      select: { id: true }
-    });
-    
-    if (v) {
-      this.systemVendorId = v.id;
-    } else {
-      this.systemVendorId = await this.createSystemVendor();
-    }
+    const v = await this.vendorModel.findOne({ companyId: 'bazarx-system-company' }, { id: 1 }).lean();
+    this.systemVendorId = v ? v.id : await this.createSystemVendor();
   }
 
   getSystemVendorId(): string {
     if (!this.systemVendorId) {
-      console.warn('SystemVendorService: systemVendorId requested but not yet initialized');
+      this.logger.warn('SystemVendorService: systemVendorId requested but not yet initialized');
       return '';
     }
     return this.systemVendorId;
   }
 
   private async createSystemVendor(): Promise<string> {
-    // Önce şirketi bul veya oluştur
-    const company = await this.prisma.company.upsert({
-      where: { id: 'bazarx-system-company' },
-      update: {},
-      create: {
-        id: 'bazarx-system-company',
-        name: 'BazarX Sistem',
-        status: 'APPROVED',
-        vatRate: 20
-      }
-    });
+    const companyId = 'bazarx-system-company';
+    await this.companyModel.findOneAndUpdate(
+      { id: companyId },
+      { $setOnInsert: { _id: companyId, id: companyId, name: 'BazarX Sistem', status: 'APPROVED', vatRate: 20 } },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
 
-    // Sistem Admin kullanıcısını bul (ilk ADMIN olanı veya özel bir ID)
-    const admin = await this.prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-      select: { id: true }
-    });
-
+    const admin = await this.userModel.findOne({ role: 'ADMIN' }, { id: 1 }).lean();
     if (!admin) {
-      console.error('CRITICAL: No admin user found to associate with system vendor. Seed the database!');
-      return null as any;
+      this.logger.error('CRITICAL: No admin user found for system vendor. Seed the database!');
+      return '';
     }
 
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        userId: admin.id,
-        companyId: company.id,
-        status: 'APPROVED',
-        slug: 'bazarx-sistem-core',
-        profile: {
-          create: {
-            storeName: 'BazarX Sistem',
-            description: 'Sistem satıcısı'
-          }
-        }
-      },
-      select: { id: true }
-    });
+    const newId = new Types.ObjectId().toString();
+    await this.vendorModel.create([{
+      _id: newId, id: newId, userId: admin.id, companyId,
+      status: 'APPROVED', slug: 'bazarx-sistem-core',
+    }]);
 
-    return vendor.id;
+    return newId;
   }
 }

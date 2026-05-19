@@ -34,7 +34,12 @@ export class Slug extends ValueObject<SlugProps> {
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    
+
+    return new Slug({ value: slug });
+  }
+
+  // Harici oluşturulmuş (random suffix ile) slug'lar için validasyonsuz factory
+  public static fromRaw(slug: string): Slug {
     return new Slug({ value: slug });
   }
 }

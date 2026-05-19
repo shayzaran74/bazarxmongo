@@ -38,11 +38,38 @@ export const useVendorBrands = () => {
     currentStep.value = 1
   }
 
-  const handleFileUpload = (event: any, field: string) => {
-    // Basic mock for UI:
+  const handleFileUpload = async (event: any, field: string) => {
     if (event.target.files && event.target.files.length > 0) {
-      form.value[field] = URL.createObjectURL(event.target.files[0])
-      $toast.success('Dosya seçildi.')
+      const file = event.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const uploadUrl = '/api/v1/upload?subPath=brands';
+        const token = useCookie('auth_token').value || useCookie('auth.token').value;
+        
+        const res = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        
+        if (!res.ok) throw new Error('Upload failed');
+        
+        const data = await res.json();
+        if (data.success && data.url) {
+          form.value[field] = data.url;
+          $toast.success('Dosya başarıyla yüklendi.');
+        } else if (data.data?.url) {
+          form.value[field] = data.data.url;
+          $toast.success('Dosya başarıyla yüklendi.');
+        } else {
+          throw new Error('Geçersiz yanıt formatı');
+        }
+      } catch (error) {
+        console.error('File upload error:', error);
+        $toast.error('Dosya yüklenirken bir hata oluştu.');
+      }
     }
   }
 

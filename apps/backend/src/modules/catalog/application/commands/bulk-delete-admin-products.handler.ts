@@ -1,15 +1,14 @@
+// apps/backend/src/modules/catalog/application/commands/bulk-delete-admin-products.handler.ts
+
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { BulkDeleteAdminProductsCommand }
-  from './bulk-delete-admin-products.command';
+import { BulkDeleteAdminProductsCommand } from './bulk-delete-admin-products.command';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 
 @CommandHandler(BulkDeleteAdminProductsCommand)
-export class BulkDeleteAdminProductsHandler
-  implements ICommandHandler<BulkDeleteAdminProductsCommand> {
+export class BulkDeleteAdminProductsHandler implements ICommandHandler<BulkDeleteAdminProductsCommand> {
   private readonly logger = new Logger(BulkDeleteAdminProductsHandler.name);
-
-  constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: BulkDeleteAdminProductsCommand) {
     const { ids } = command;
@@ -23,10 +22,8 @@ export class BulkDeleteAdminProductsHandler
 
     for (const id of ids) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.listing.deleteMany({ where: { catalogProductId: id } });
-          await tx.catalogProduct.delete({ where: { id } });
-        });
+        await Listing.deleteMany({ catalogProductId: id }).exec();
+        await CatalogProduct.deleteOne({ id }).exec();
         successCount++;
       } catch (e: any) {
         this.logger.warn(`Ürün silinemedi: ${id} — ${e.message}`);

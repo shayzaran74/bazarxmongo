@@ -92,26 +92,29 @@ const props = defineProps({
 })
 
 const getStatusLabel = (status) => {
-  switch (status) {
-    case 'approved':
+  const s = (status || '').toUpperCase()
+  switch (s) {
+    case 'APPROVED':
     case 'COMPLETED': return 'Tamamlandı'
-    case 'pending':
-    case 'PENDING': return 'Bekliyor'
-    case 'rejected':
-    case 'FAILED': return 'Reddedildi'
+    case 'PENDING':
+    case 'PENDING_VERIFICATION': return 'Bekliyor'
+    case 'REJECTED':
+    case 'FAILED':
+    case 'CANCELLED': return 'Reddedildi'
     default: return status
   }
 }
 
 const getStatusClass = (status) => {
-  switch (status) {
-    case 'approved':
+  const s = (status || '').toUpperCase()
+  switch (s) {
+    case 'APPROVED':
     case 'COMPLETED': return 'bg-green-100 text-green-700 border-green-200'
-    case 'pending':
     case 'PENDING':
-    case 'pending_verification': return 'bg-amber-100 text-amber-700 border-amber-200'
-    case 'rejected':
-    case 'FAILED': return 'bg-red-100 text-red-700 border-red-200'
+    case 'PENDING_VERIFICATION': return 'bg-amber-100 text-amber-700 border-amber-200'
+    case 'REJECTED':
+    case 'FAILED':
+    case 'CANCELLED': return 'bg-red-100 text-red-700 border-red-200'
     default: return 'bg-gray-100 text-gray-700 border-gray-200'
   }
 }

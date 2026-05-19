@@ -241,7 +241,10 @@
 </template>
 
 <script setup>
-definePageMeta({ middleware: ['auth', 'admin'] })
+definePageMeta({
+  layout:     'admin',
+  middleware: ['auth', 'admin'],
+})
 
 import { ref, computed, onMounted } from 'vue'
 import {

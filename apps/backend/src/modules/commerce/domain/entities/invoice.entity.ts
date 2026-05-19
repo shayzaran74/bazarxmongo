@@ -1,5 +1,4 @@
 import { AggregateRoot } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { InvoiceNumber } from '../value-objects/invoice-number.vo';
 
 export type InvoiceType = 'BUYER_INVOICE' | 'VENDOR_INVOICE';
@@ -9,9 +8,9 @@ export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'SENT' | 'PAID' | 'CANCELLED';
 export interface InvoiceItemProps {
   description: string;
   quantity: number;
-  unitPrice: Prisma.Decimal;
-  totalPrice: Prisma.Decimal;
-  taxRate: Prisma.Decimal;
+  unitPrice: number;
+  totalPrice: number;
+  taxRate: number;
 }
 
 export interface InvoiceProps {
@@ -21,9 +20,9 @@ export interface InvoiceProps {
   recipientId: string;
   recipientType: RecipientType;
   status: InvoiceStatus;
-  subtotal: Prisma.Decimal;
-  taxAmount: Prisma.Decimal;
-  totalAmount: Prisma.Decimal;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
   currency: string;
   pdfUrl?: string;
   pdfGeneratedAt?: Date;

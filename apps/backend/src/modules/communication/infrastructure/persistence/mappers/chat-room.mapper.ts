@@ -1,26 +1,38 @@
 // apps/backend/src/modules/communication/infrastructure/persistence/mappers/chat-room.mapper.ts
+// ChatRoomMapper — Prisma → Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { IChatRoom, StorageTierType } from '@barterborsa/shared-persistence/schemas/backend/chatRoom.schema';
 import { ChatRoom } from '../../../domain/entities/chat-room.entity';
-import { ChatRoomStatus } from '../../../domain/enums/chat-room-status.enum';
+
+export interface ChatRoomDocument extends IChatRoom {
+  _id?: string;
+  status?: string;
+}
 
 @Injectable()
 export class ChatRoomMapper {
-  toDomain(raw: any): ChatRoom {
-    return (ChatRoom as any).createFrom({
-      ...raw,
-      status: raw.status as ChatRoomStatus,
-      archivePreview: raw.archivePreview || undefined,
-    }, raw.id);
+  static toDomain(doc: ChatRoomDocument): ChatRoom {
+    return ChatRoom.createFrom({
+      orderId: doc.orderId ?? undefined,
+      tradeOfferId: doc.tradeOfferId ?? undefined,
+      status: (doc as any).status ?? 'ACTIVE',
+      participantIds: doc.participantIds ?? [],
+      isArchived: doc.isArchived ?? false,
+      archivedAt: doc.archivedAt ?? undefined,
+      storageTier: (doc.storageTier as StorageTierType) ?? 'STANDARD',
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }, doc.id);
   }
 
-  toPersistence(domain: ChatRoom): any {
+  static toPersistence(domain: ChatRoom): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       orderId: props.orderId,
       tradeOfferId: props.tradeOfferId,
-      status: props.status,
       participantIds: props.participantIds,
       isArchived: props.isArchived,
       archivedAt: props.archivedAt,

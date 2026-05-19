@@ -1,5 +1,4 @@
 import { Controller, Get, Post, Body, UploadedFile, UseGuards, UseInterceptors, Res, Param, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Public, JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
@@ -8,6 +7,14 @@ import * as XLSX from 'xlsx';
 import { Response } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
+import { Category } from '@barterborsa/shared-persistence/schemas/backend/category.schema';
+import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
+import { InventoryLog } from '@barterborsa/shared-persistence/schemas/backend/inventoryLog.schema';
+import { randomBytes } from 'crypto';
 
 interface AuthenticatedUser {
   id: string;
@@ -19,36 +26,25 @@ interface AuthenticatedUser {
 @Controller('vendors/inventory')
 export class VendorInventoryController {
   private readonly logger = new Logger(VendorInventoryController.name);
-  constructor(private readonly prisma: PrismaService) {}
 
   @ApiOperation({ summary: 'Get inventory stats' })
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('stats')
   async getStats(@CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
-
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
-    const listings = await this.prisma.listing.findMany({
-      where: { vendorId: vendor.id }
-    });
+    const listings = await Listing.find({ vendorId: vendor.id }).select('stock').lean();
 
     const totalProducts = listings.length;
-    const outOfStock = listings.filter(l => l.stock === 0).length;
-    const lowStock = listings.filter(l => l.stock > 0 && l.stock <= 5).length;
-    const healthyStock = listings.filter(l => l.stock > 5).length;
+    const outOfStock = listings.filter(l => Number(l.stock) === 0).length;
+    const lowStock = listings.filter(l => Number(l.stock) > 0 && Number(l.stock) <= 5).length;
+    const healthyStock = listings.filter(l => Number(l.stock) > 5).length;
 
     return {
       success: true,
-      data: {
-        totalProducts,
-        outOfStock,
-        lowStock,
-        healthyStock
-      }
+      data: { totalProducts, outOfStock, lowStock, healthyStock }
     };
   }
 
@@ -57,35 +53,27 @@ export class VendorInventoryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('export')
   async exportExcel(@CurrentUser() user: AuthenticatedUser, @Res() res: Response) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id }
-    });
-
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
 
-    const listings = await this.prisma.listing.findMany({
-      where: { vendorId: vendor.id },
-      include: {
-        catalogProduct: {
-          include: { category: true }
-        }
-      }
-    });
+    const listings = await Listing.find({ vendorId: vendor.id })
+      .populate('catalogProductId')
+      .lean();
 
-    const exportData = listings.map(l => ({
+    const exportData = listings.map((l: any) => ({
       'ID': l.id,
       'Ürün Adı': l.title,
       'SKU': l.sku || '-',
-      'Stok': l.stock,
-      'Fiyat': l.price,
-      'Kategori': l.catalogProduct?.category?.name || '-',
-      'Durum': l.status
+      'Stok': Number(l.stock),
+      'Fiyat': Number(l.price),
+      'Kategori': (l as any).catalogProductId?.categoryId || '-',
+      'Durum': l.status,
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
     XLSX.utils.book_append_sheet(wb, ws, 'Envanter');
-    
+
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -98,19 +86,14 @@ export class VendorInventoryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('logs/:productId')
   async getLogs(@Param('productId') productId: string, @CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: true, data: [] };
 
-    // Stok geçmişini vendorId + listingId ile güvenli çek
     try {
-      const logs = await this.prisma.inventoryLog.findMany({
-        where: { listingId: productId, vendorId: vendor.id },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-      });
+      const logs = await InventoryLog.find({ listingId: productId, vendorId: vendor.id })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
       return { success: true, data: logs };
     } catch {
       return { success: true, data: [] };
@@ -121,10 +104,9 @@ export class VendorInventoryController {
   @Public()
   @Get('template/download')
   async downloadTemplate(@Res() res: Response) {
-    // ... existing template logic ...
     let filePath = path.join(process.cwd(), '..', '..', 'belge', 'exel', 'bazarx_trendyol_sablonu01.xlsx');
     if (!fs.existsSync(filePath)) filePath = path.join(process.cwd(), 'belge', 'exel', 'bazarx_trendyol_sablonu01.xlsx');
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, error: 'Şablon dosyası bulunamadı.' });
     }
@@ -141,15 +123,14 @@ export class VendorInventoryController {
   @UseInterceptors(FileInterceptor('file'))
   @Post('import-excel')
   async importExcel(@UploadedFile() file: any, @CurrentUser() user: AuthenticatedUser) {
-    // ... existing import logic remains same ...
     if (!file) return { success: false, error: 'Dosya yüklenmedi' };
-    
+
     try {
-      const vendor = await this.prisma.vendor.findUnique({ where: { userId: user.id } });
+      const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
       if (!vendor) return { success: false, error: 'Vendor not found' };
 
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Simplify to first sheet
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows: any[] = XLSX.utils.sheet_to_json(sheet);
 
       let successCount = 0;
@@ -160,88 +141,73 @@ export class VendorInventoryController {
         try {
           const rawName = row['Başlık'] || row['Ürün Adı'] || row['Stok Kartı Adı'];
           if (!rawName) continue;
-          
+
           const barcode = String(row['Barkod'] || row['Stok Kodu'] || '');
-          // Esnek fiyat ve stok eşleşmesi
           const price = parseFloat(String(row['Satış Fiyatı'] || row['Fiyat'] || '0').replace(',', '.'));
           const stock = parseInt(String(row['Stok Adedi'] || row['Envanter Miktar'] || '0'), 10);
           const categoryName = row['Kategori'] || 'Genel';
-          
-          // Resimleri çek (Akıllı Tespit: URL içeren herhangi bir kolonu kontrol et)
+
           let images: string[] = [];
           Object.values(row).forEach(val => {
-            if (typeof val === 'string' && (val.startsWith('http') || val.startsWith('//')) && 
+            if (typeof val === 'string' && (val.startsWith('http') || val.startsWith('//')) &&
                 (val.match(/\.(jpg|jpeg|png|webp|gif|svg)/i) || val.includes('dsmcdn.com'))) {
               images.push(val.trim());
             }
           });
-          
 
-          const slug = this.slugify(`${rawName}-${barcode || require('crypto').randomBytes(4).toString('hex')}`);
+          const slug = this.slugify(`${rawName}-${barcode || randomBytes(4).toString('hex')}`);
 
-          const category = await this.prisma.category.upsert({
-            where: { slug: this.slugify(categoryName) },
-            update: {},
-            create: { name: categoryName, slug: this.slugify(categoryName), isActive: true }
-          });
-
-          const catalogProduct = await this.prisma.catalogProduct.upsert({
-            where: { slug },
-            update: { name: rawName },
-            create: { 
-              name: rawName, 
-              slug, 
-              categoryId: category.id, 
-              status: 'ACTIVE', 
-              brand: row['Marka'] || 'Genel', 
-              description: rawName
-            }
-          });
-
-          // Resimleri ayrıca işle (Hem yeni hem eski ürünler için)
-          if (images.length > 0) {
-            // Mevcut resimleri temizle ve yenilerini ekle (veya sadece eksikleri ekle)
-            // Basitlik için mevcutları silip yenileri ekliyoruz
-            await this.prisma.productMedia.deleteMany({
-              where: { productId: catalogProduct.id }
-            });
-
-            await this.prisma.productMedia.createMany({
-              data: images.map((url, idx) => ({
-                productId: catalogProduct.id,
-                url: url.trim(),
-                type: 'IMAGE',
-                sortOrder: idx
-              }))
-            });
+          const categorySlug = this.slugify(categoryName);
+          let category = await Category.findOne({ slug: categorySlug }).exec();
+          if (!category) {
+            const catId = 'cat-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            category = await Category.create({ id: catId, name: categoryName, slug: categorySlug, isActive: true });
           }
 
-          // Güvenli güncelleme: slug ile upsert yerine vendorId'ye göre eşleştir.
-          // Slug tabanlı upsert başka vendor'ın listing'ini ezebilir.
-          const existingListing = await this.prisma.listing.findFirst({
-            where: { vendorId: vendor.id, sku: barcode || undefined },
-          });
+          let catalogProduct = await CatalogProduct.findOne({ slug }).lean();
+          if (!catalogProduct) {
+            const pid = 'cp-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            catalogProduct = (await CatalogProduct.create({
+              id: pid,
+              name: rawName,
+              slug,
+              categoryId: category.id,
+              status: 'ACTIVE',
+              brand: row['Marka'] || 'Genel',
+              description: rawName,
+            })) as any;
+          }
+
+          if (images.length > 0) {
+            await ProductMedia.deleteMany({ productId: catalogProduct!.id }).exec();
+            for (let idx = 0; idx < images.length; idx++) {
+              await ProductMedia.create({
+                id: 'pm-' + Date.now() + '-' + idx,
+                productId: catalogProduct!.id,
+                url: images[idx].trim(),
+                type: 'IMAGE',
+                sortOrder: idx,
+              });
+            }
+          }
+
+          const existingListing = await Listing.findOne({ vendorId: vendor.id, sku: barcode || undefined }).lean();
 
           if (existingListing) {
-            await this.prisma.listing.update({
-              where: { id: existingListing.id },
-              data: { price, stock },
-            });
+            await Listing.updateOne({ id: existingListing.id }, { $set: { price, stock } }).exec();
           } else {
-            // Çakışmayı önlemek için slug'a vendor prefix ekle
             const safeSlug = `v${vendor.id.slice(0, 8)}-${slug}`;
-            await this.prisma.listing.create({
-              data: {
-                vendorId: vendor.id,
-                catalogProductId: catalogProduct.id,
-                title: rawName,
-                slug: safeSlug,
-                price,
-                stock,
-                sku: barcode,
-                status: 'PENDING',
-                listingType: 'SELL',
-              },
+            await Listing.create({
+              id: 'lst-' + Date.now() + '-' + randomBytes(4).toString('hex'),
+              vendorId: vendor.id,
+              catalogProductId: catalogProduct!.id,
+              title: rawName,
+              slug: safeSlug,
+              price,
+              stock,
+              sku: barcode,
+              status: 'PENDING',
+              listingType: 'SELL',
             });
           }
 
@@ -271,7 +237,7 @@ export class VendorInventoryController {
       throw new BadRequestException('products dizisi boş olamaz');
     }
 
-    const vendor = await this.prisma.vendor.findUnique({ where: { userId: user.id } });
+    const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, error: 'Vendor bulunamadı' };
 
     let successCount = 0;
@@ -290,107 +256,109 @@ export class VendorInventoryController {
         const rawSubcategory = typeof raw['subcategory'] === 'string' ? raw['subcategory'] : '';
         const explicitBrand = typeof raw['brand'] === 'string' ? raw['brand'] : null;
         const brandRaw = explicitBrand || (rawSubcategory ? rawSubcategory.split('>')[0].trim() : 'Genel');
-        
-        // Marka ismini temizle: Eğer çok uzunsa veya içinde boşluk varsa ilk kelimeyi al (Ör: Samsung Galaxy -> Samsung)
+
         let brand = brandRaw.trim();
         if (brand.length > 20 || brand.includes(' ')) {
           brand = brand.split(' ')[0].trim();
         }
-        // Güvenlik: 50 karakterden uzun markaları kes
         brand = brand.length > 50 ? brand.slice(0, 50) : brand;
         const rawDesc = typeof raw['description'] === 'string' ? raw['description'] : '';
         const { cleanDescription, platformInfo, stock: parsedStock } = this.parseTrendyolDesc(rawDesc);
         const description = cleanDescription || title;
-        // Stok: description'dan parse et; yoksa defaultStock ya da 1 kullan
         const stockToUse = parsedStock > 1 ? parsedStock : (Number(defaultStock) > 0 ? Number(defaultStock) : 1);
         const sku = `TY-${externalId}`;
 
         const slug = this.slugify(`${title}-${externalId}`);
-        // --- Hierarchical Category Setup ---
-        const categoryParts = rawSubcategory 
-          ? rawSubcategory.split('>').map(p => p.trim()).filter(p => p && p.length > 2 && !p.includes(title.slice(0, 10))) 
+        const categoryParts = rawSubcategory
+          ? rawSubcategory.split('>').map(p => p.trim()).filter(p => p && p.length > 2 && !p.includes(title.slice(0, 10)))
           : ['Genel'];
 
-        // Limit depth to 4 levels for sanity
         const activeParts = categoryParts.slice(0, 4);
-        
+
         let lastCategoryId: string | null = null;
         let lastCategory: any = null;
 
         for (const partName of activeParts) {
           const partSlug = this.slugify(partName);
-          lastCategory = await this.prisma.category.upsert({
-            where: { slug: partSlug },
-            update: { isActive: true },
-            create: {
-              name: partName,
+          const existingCat = await Category.findOne({ slug: partSlug }).lean();
+          if (!existingCat) {
+            const catId = 'cat-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            lastCategory = await Category.create({
+              _id: catId,
+              id: catId,
               slug: partSlug,
-              parentId: lastCategoryId,
-              isActive: true
-            },
-          });
+              isActive: true,
+              name: partName,
+              parentId: lastCategoryId
+            });
+          } else {
+            lastCategory = existingCat;
+          }
           lastCategoryId = lastCategory.id;
         }
 
         const category = lastCategory;
 
-        // Specs: attributes + platform bilgisi
         const attrs = raw['attributes'] as Record<string, unknown> | null | undefined;
         const specs: any = { ...(attrs ?? {}) };
         if (platformInfo) specs['_platformInfo'] = platformInfo;
 
-        const catalogProduct = await this.prisma.catalogProduct.upsert({
-          where: { slug },
-          update: { name: title, description, specs },
-          create: {
+        let catalogProduct = await CatalogProduct.findOne({ slug }).lean();
+        if (!catalogProduct) {
+          const pid = 'cp-' + Date.now() + '-' + randomBytes(4).toString('hex');
+          catalogProduct = (await CatalogProduct.create({
+            _id: pid,
+            id: pid,
             name: title,
             slug,
             categoryId: category.id,
             status: 'ACTIVE',
+            isFeatured: true,
             brand,
             description,
             specs,
-          },
-        });
+          })) as any;
+        } else {
+          await CatalogProduct.updateOne({ id: catalogProduct.id }, { $set: { name: title, description, specs } }).exec();
+        }
 
         if (imageUrls.length > 0) {
           this.logger.log(`[TrendyolImport] ${imageUrls.length} görsel bulundu: ${imageUrls.join(', ')}`);
-          await this.prisma.productMedia.deleteMany({ where: { productId: catalogProduct.id } });
-          await this.prisma.productMedia.createMany({
-            data: imageUrls.map((url, idx) => ({
-              productId: catalogProduct.id,
-              url,
+          await ProductMedia.deleteMany({ productId: catalogProduct!.id }).exec();
+          for (let idx = 0; idx < imageUrls.length; idx++) {
+            const pmid = 'pm-' + Date.now() + '-' + idx;
+            await ProductMedia.create({
+              _id: pmid,
+              id: pmid,
+              productId: catalogProduct!.id,
+              url: imageUrls[idx],
               type: 'IMAGE',
               sortOrder: idx,
-            })),
-          });
+            });
+          }
         } else {
           this.logger.warn(`[TrendyolImport] Hiç görsel bulunamadı for product: ${title}`);
         }
 
-        const existingListing = await this.prisma.listing.findFirst({
-          where: { vendorId: vendor.id, sku },
-        });
+        const existingListing = await Listing.findOne({ vendorId: vendor.id, sku }).lean();
 
         if (existingListing) {
-          await this.prisma.listing.update({
-            where: { id: existingListing.id },
-            data: { price, stock: stockToUse },
-          });
+          await Listing.updateOne({ id: existingListing.id }, { $set: { price, stock: stockToUse } }).exec();
         } else {
           const safeSlug = `v${vendor.id.slice(0, 8)}-${slug}`;
-          await this.prisma.listing.create({
-            data: {
-              vendorId: vendor.id,
-              catalogProductId: catalogProduct.id,
-              title,
-              slug: safeSlug,
-              price,
-              stock: stockToUse,
-              sku,
-              status: 'PENDING',
-              listingType: 'SELL',
-            },
+          const lid = 'lst-' + Date.now() + '-' + randomBytes(4).toString('hex');
+          await Listing.create({
+            _id: lid,
+            id: lid,
+            vendorId: vendor.id,
+            catalogProductId: catalogProduct!.id,
+            title,
+            slug: safeSlug,
+            price,
+            stock: stockToUse,
+            sku,
+            status: 'PENDING',
+            listingType: 'SELL',
           });
         }
 
@@ -398,6 +366,7 @@ export class VendorInventoryController {
       } catch (err: unknown) {
         failedCount++;
         const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        this.logger.error(`Import failed for ${String(raw['title'] ?? 'Bilinmeyen')}: ${msg}`);
         errors.push(`${String(raw['title'] ?? 'Bilinmeyen')}: ${msg}`);
       }
     }
@@ -406,27 +375,26 @@ export class VendorInventoryController {
   }
 
   private cleanTrendyolTitle(raw: string): string {
-    const s = (raw ?? '').trim()
-    if (s.length <= 100) return s
-    const mid = Math.floor(s.length / 2)
+    const s = (raw ?? '').trim();
+    if (s.length <= 100) return s;
+    const mid = Math.floor(s.length / 2);
     for (let offset = 0; offset <= 30; offset++) {
       for (const pos of [mid + offset, mid - offset]) {
-        if (pos <= 0 || pos >= s.length || s[pos] !== ' ') continue
-        const first = s.slice(0, pos).trim()
-        const second = s.slice(pos).trim()
-        const probe = second.slice(0, Math.min(20, second.length)).toLowerCase()
-        if (probe.length > 5 && first.toLowerCase().includes(probe)) return first
-        const probe2 = first.slice(0, Math.min(20, first.length)).toLowerCase()
-        if (probe2.length > 5 && second.toLowerCase().includes(probe2)) return first
+        if (pos <= 0 || pos >= s.length || s[pos] !== ' ') continue;
+        const first = s.slice(0, pos).trim();
+        const second = s.slice(pos).trim();
+        const probe = second.slice(0, Math.min(20, second.length)).toLowerCase();
+        if (probe.length > 5 && first.toLowerCase().includes(probe)) return first;
+        const probe2 = first.slice(0, Math.min(20, first.length)).toLowerCase();
+        if (probe2.length > 5 && second.toLowerCase().includes(probe2)) return first;
       }
-      if (offset === 0) continue
+      if (offset === 0) continue;
     }
-    const cut = s.slice(0, 100)
-    const lastSpace = cut.lastIndexOf(' ')
-    const finalTitle = lastSpace > 50 ? cut.slice(0, lastSpace) : cut
-    
-    // Title Case Dönüşümü (Baş harf büyük, gerisi küçük)
-    return finalTitle.toLowerCase().split(' ').map(word => 
+    const cut = s.slice(0, 100);
+    const lastSpace = cut.lastIndexOf(' ');
+    const finalTitle = lastSpace > 50 ? cut.slice(0, lastSpace) : cut;
+
+    return finalTitle.toLowerCase().split(' ').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
   }
@@ -451,7 +419,7 @@ export class VendorInventoryController {
       /^Ürün teslimi sonrası/i,
       /^Bir ürün, birden fazla satıcı/i,
       /^Bu üründen en fazla/i,
-      /^Belirlenen bu limit/i,
+      /^Belirlenen bu limiti/i,
       /adetten fazla stok/i,
       /adetten az stok/i,
       /link ve karekod/i,
@@ -485,27 +453,26 @@ export class VendorInventoryController {
 
   private extractImageUrls(raw: Record<string, unknown>): string[] {
     const urls: string[] = [];
+    const seen = new Set<string>();
 
-    // 1. `image_urls` dizisi (Trendyo format)
     if (Array.isArray(raw['image_urls'])) {
       for (const url of raw['image_urls']) {
-        if (typeof url === 'string' && this.isValidImageUrl(url)) {
+        if (typeof url === 'string' && this.isValidImageUrl(url) && !seen.has(url)) {
+          seen.add(url);
           urls.push(url);
         }
       }
     }
 
-    // 2. `image_url` tek string
-    if (!urls.length && typeof raw['image_url'] === 'string' && this.isValidImageUrl(raw['image_url'])) {
+    if (!urls.length && typeof raw['image_url'] === 'string' && this.isValidImageUrl(raw['image_url']) && !seen.has(raw['image_url'])) {
       urls.push(raw['image_url']);
     }
 
-    // 3. Smart Detection: tüm alanlarda URL ara
     if (!urls.length) {
       for (const val of Object.values(raw)) {
-        if (typeof val === 'string' && this.isValidImageUrl(val)) {
+        if (typeof val === 'string' && this.isValidImageUrl(val) && !seen.has(val)) {
           urls.push(val);
-          break; // İlk geçerli URL yeterli, yoksa tümünü al
+          break;
         }
       }
     }

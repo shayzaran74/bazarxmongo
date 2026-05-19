@@ -5,12 +5,16 @@ import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/co
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { Prisma } from '@prisma/client';
+import { Inject } from '@nestjs/common';
 import { DomainException } from '@barterborsa/shared-core';
 import { FinancialGatewayService } from '../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../audit/application/audit-log.service';
 import { LotteryParticipateDto } from './lottery-participate.dto';
+import { ILotteryRepository } from './domain/repositories/lottery.repository.interface';
+import { ILotteryTicket } from './domain/repositories/lottery.repository.interface';
+import { IListingRepository } from '../catalog/domain/repositories/listing.repository.interface';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 
 interface AuthenticatedUser {
   id: string;
@@ -27,7 +31,8 @@ interface LotteryListQuery {
 @Controller('lotteries')
 export class LotteryController {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('ILotteryRepository') private readonly lotteryRepository: ILotteryRepository,
+    @Inject('IListingRepository') private readonly listingRepository: IListingRepository,
     private readonly financialGateway: FinancialGatewayService,
     private readonly auditLog: AuditLogService,
   ) {}
@@ -43,49 +48,49 @@ export class LotteryController {
     const limit = parseInt(query.limit ?? '20', 10) || 20;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.LotteryWhereInput = { status: 'ACTIVE' };
-    if (query.categoryId) where.listing = { categoryId: query.categoryId };
+    const filter: Record<string, unknown> = { status: 'ACTIVE' };
+    if (query.categoryId) filter['listing.categoryId'] = query.categoryId;
 
-    const [items, total] = await Promise.all([
-      this.prisma.lottery.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          listing: {
-            include: {
-              catalogProduct: { include: { media: true } },
-              vendor: { include: { profile: true } },
-            },
-          },
-          _count: { select: { tickets: true } },
-        },
-        orderBy: { endTime: 'asc' },
-      }),
-      this.prisma.lottery.count({ where }),
-    ]);
+    const result = await this.lotteryRepository.findWithFilters(filter, skip, limit);
+    const populatedItems = await this.populateProducts(result.items);
+    return { success: true, data: populatedItems, meta: { page, limit, total: result.total } };
+  }
 
-    return { success: true, data: items, meta: { page, limit, total } };
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('my/tickets')
+  @ApiOperation({ summary: 'Kullanıcının biletlerini listele' })
+  async getMyTickets(@CurrentUser() user: AuthenticatedUser) {
+    const tickets = await this.lotteryRepository.findTicketsByUserId(user.id);
+    return { success: true, data: tickets };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('my')
+  @ApiOperation({ summary: 'Kullanıcının katıldığı çekilişleri listele' })
+  async getMyLotteries(@CurrentUser() user: AuthenticatedUser) {
+    const tickets = await this.lotteryRepository.findTicketsByUserId(user.id);
+    const lotteryIds = Array.from(new Set(tickets.map(t => t.lotteryId)));
+    if (lotteryIds.length === 0) {
+      return { success: true, data: [] };
+    }
+    const lotteries = await Promise.all(
+      lotteryIds.map(id => this.lotteryRepository.findById(id))
+    );
+    const activeLotteries = lotteries.filter(Boolean);
+    const populated = await this.populateProducts(activeLotteries);
+    return { success: true, data: populated };
   }
 
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Çekiliş detayını getir' })
   async getLottery(@Param('id') id: string) {
-    const item = await this.prisma.lottery.findUnique({
-      where: { id },
-      include: {
-        listing: {
-          include: {
-            catalogProduct: { include: { media: true } },
-            vendor: { include: { profile: true } },
-          },
-        },
-        _count: { select: { tickets: true } },
-      },
-    });
-
-    return { success: true, data: item };
+    const item = await this.lotteryRepository.findById(id);
+    if (!item) return { success: false, message: 'Çekiliş bulunamadı' };
+    const populated = await this.populateProducts([item]);
+    return { success: true, data: populated[0] };
   }
 
   @ApiBearerAuth()
@@ -97,27 +102,26 @@ export class LotteryController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: LotteryParticipateDto,
   ) {
-    const lottery = await this.prisma.lottery.findUnique({ where: { id } });
+    const lottery = await this.lotteryRepository.findById(id);
     if (!lottery) return { success: false, message: 'Çekiliş bulunamadı' };
-    if (lottery.status !== 'ACTIVE') return { success: false, message: 'Çekiliş aktif değil' };
-    if (new Date() > lottery.endTime) return { success: false, message: 'Çekiliş süresi dolmuş' };
+    if (lottery.getProps().status !== 'ACTIVE') return { success: false, message: 'Çekiliş aktif değil' };
+    if (new Date() > lottery.getProps().endTime) return { success: false, message: 'Çekiliş süresi dolmuş' };
 
     const quantity = dto.quantity;
+    const props = lottery.getProps();
 
     // Kullanıcının mevcut bilet sayısı kontrolü
-    const userTicketCount = await this.prisma.lotteryTicket.count({
-      where: { lotteryId: id, userId: user.id },
-    });
-    if (userTicketCount + quantity > lottery.maxTicketsPerUser) {
+    const userTicketCount = await this.lotteryRepository.countTickets(id, user.id);
+    if (userTicketCount + quantity > props.maxTicketsPerUser) {
       return {
         success: false,
-        message: `Kişi başı maksimum ${lottery.maxTicketsPerUser} bilet alınabilir`,
+        message: `Kişi başı maksimum ${props.maxTicketsPerUser} bilet alınabilir`,
       };
     }
 
     // Toplam bilet kotası kontrolü
-    const totalSold = await this.prisma.lotteryTicket.count({ where: { lotteryId: id } });
-    if (totalSold + quantity > lottery.totalTickets) {
+    const totalSold = await this.lotteryRepository.countTickets(id);
+    if (totalSold + quantity > props.totalTickets) {
       return { success: false, message: 'Yeterli bilet kalmadı' };
     }
 
@@ -126,15 +130,15 @@ export class LotteryController {
     for (let i = 0; i < quantity; i++) {
       const numbers = await this.generateUniqueNumbers(
         id,
-        lottery.ticketDigits,
-        lottery.numbersPerTicket,
-        lottery.totalTickets,
+        props.ticketDigits,
+        props.numbersPerTicket,
+        props.totalTickets,
       );
       ticketNumbers.push(numbers);
     }
 
     // Bilet ücreti kadar cüzdandan teminat al (ownerId = satıcı/çekiliş sahibi)
-    const totalAmount = Number(lottery.ticketPrice) * quantity;
+    const totalAmount = Number(props.ticketPrice) * quantity;
     const idempotencyKey = `lottery-ticket-${id}-${user.id}-${Date.now()}`;
     const holdResult = await this.financialGateway.holdFunds(
       user.id,
@@ -143,18 +147,16 @@ export class LotteryController {
       id,
       'LOTTERY',
       idempotencyKey,
-      lottery.ownerId,
+      props.ownerId,
     );
     const holdId = holdResult.holdId as string;
 
     // Biletleri atomik işlem içinde kaydet
-    const createdTickets = await this.prisma.$transaction(
-      ticketNumbers.map((numbers) =>
-        this.prisma.lotteryTicket.create({
-          data: { lotteryId: id, userId: user.id, numbers },
-        }),
-      ),
-    );
+    const createdTickets: ILotteryTicket[] = [];
+    for (const numbers of ticketNumbers) {
+      const ticket = await this.lotteryRepository.createTicket({ lotteryId: id, userId: user.id, numbers });
+      createdTickets.push(ticket);
+    }
 
     await this.auditLog.log({
       actorId: user.id,
@@ -188,9 +190,7 @@ export class LotteryController {
       }
 
       // Aynı çekilişte bu numaralardan herhangi biri başka bilette var mı?
-      const collision = await this.prisma.lotteryTicket.findFirst({
-        where: { lotteryId, numbers: { hasSome: candidates } },
-      });
+      const collision = await this.lotteryRepository.findTicketWithNumbers(lotteryId, candidates);
 
       if (!collision) return candidates;
     }
@@ -198,5 +198,67 @@ export class LotteryController {
     throw new DomainException(
       'Benzersiz bilet numarası üretilemedi; çekiliş biletleri dolmuş olabilir',
     );
+  }
+
+  private async populateProducts(lotteries: any[]): Promise<any[]> {
+    if (!lotteries || lotteries.length === 0) return [];
+
+    const listingIds = lotteries.map(l => {
+      if (l.getProps) {
+        return l.getProps().listingId;
+      }
+      return l.listingId;
+    }).filter(Boolean);
+
+    if (listingIds.length === 0) {
+      return lotteries.map(l => {
+        const raw = l.toJSON ? l.toJSON() : (l.getProps ? { id: l.id, ...l.getProps() } : l);
+        return { ...raw, Product: null };
+      });
+    }
+
+    const listings = await this.listingRepository.findByIds(listingIds);
+    const catalogProductIds = listings.map(lst => {
+      if (lst.getProps) {
+        return lst.getProps().catalogProductId;
+      }
+      return (lst as any).catalogProductId;
+    }).filter(Boolean);
+
+    const products = catalogProductIds.length > 0
+      ? await CatalogProduct.find({ id: { $in: catalogProductIds } }).lean()
+      : [];
+
+    const media = catalogProductIds.length > 0
+      ? await ProductMedia.find({ productId: { $in: catalogProductIds } }).sort({ sortOrder: 1 }).lean()
+      : [];
+
+    return lotteries.map(l => {
+      const raw = l.toJSON ? l.toJSON() : (l.getProps ? { id: l.id, ...l.getProps() } : l);
+      const listingId = l.getProps ? l.getProps().listingId : l.listingId;
+
+      const listing = listings.find(lst => lst.id === listingId);
+      if (!listing) {
+        return { ...raw, Product: null };
+      }
+
+      const catalogProductId = listing.getProps ? listing.getProps().catalogProductId : (listing as any).catalogProductId;
+      const product = products.find(p => p.id === catalogProductId);
+      if (!product) {
+        return { ...raw, Product: null };
+      }
+
+      const prodMedia = media.filter(m => m.productId === product.id);
+
+      return {
+        ...raw,
+        Product: {
+          id: product.id,
+          name: product.name,
+          image: prodMedia[0]?.url || 'https://placehold.co/600x600?text=PRODUCT',
+          description: product.description,
+        }
+      };
+    });
   }
 }

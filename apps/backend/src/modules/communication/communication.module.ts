@@ -1,10 +1,11 @@
 // apps/backend/src/modules/communication/communication.module.ts
+// CommunicationModule — Mongoose migration (ADR-005 Faz 2c)
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { JwtModule } from '@nestjs/jwt';
+import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
-import { PrismaService, PrismaModule } from '@barterborsa/shared-persistence';
 
 import { ChatController } from './presentation/chat.controller';
 import { NotificationController } from './presentation/notification.controller';
@@ -24,13 +25,13 @@ import { GetMessagesHandler } from './application/queries/get-messages.handler';
 import { GetNotificationsHandler } from './application/queries/get-notifications.handler';
 import { GetNotificationUnreadCountHandler } from './application/queries/get-notification-unread-count.handler';
 
-import { PrismaChatRoomRepository } from './infrastructure/persistence/prisma-chat-room.repository';
+import { MongoChatRoomRepository } from './infrastructure/persistence/mongo-chat-room.repository';
 import { ChatRoomMapper } from './infrastructure/persistence/mappers/chat-room.mapper';
-import { PrismaChatMessageRepository } from './infrastructure/persistence/prisma-chat-message.repository';
+import { MongoChatMessageRepository } from './infrastructure/persistence/mongo-chat-message.repository';
 import { ChatMessageMapper } from './infrastructure/persistence/mappers/chat-message.mapper';
-import { PrismaNotificationRepository } from './infrastructure/persistence/prisma-notification.repository';
+import { MongoNotificationRepository } from './infrastructure/persistence/mongo-notification.repository';
 import { NotificationMapper } from './infrastructure/persistence/mappers/notification.mapper';
-import { PrismaUserComplaintRepository } from './infrastructure/persistence/prisma-user-complaint.repository';
+import { MongoUserComplaintRepository } from './infrastructure/persistence/mongo-user-complaint.repository';
 import { UserComplaintMapper } from './infrastructure/persistence/mappers/user-complaint.mapper';
 
 import { ChatGateway } from './infrastructure/websocket/chat.gateway';
@@ -40,22 +41,34 @@ import { TradeOfferAcceptedNotificationHandler } from './application/event-handl
 import { UserRegisteredNotificationHandler } from './application/event-handlers/user-registered-notification.handler';
 import { MailService } from './infrastructure/mail/mail.service';
 
+import { ChatRoom, ChatRoomSchema } from '@barterborsa/shared-persistence/schemas/backend/chatRoom.schema';
+import { ChatMessage, ChatMessageSchema } from '@barterborsa/shared-persistence/schemas/backend/chatMessage.schema';
+import { Notification, NotificationSchema } from '@barterborsa/shared-persistence/schemas/backend/notification.schema';
+import { UserComplaint, UserComplaintSchema } from '@barterborsa/shared-persistence/schemas/backend/userComplaint.schema';
+import { OrderSchema, TradeOfferSchema } from '@barterborsa/shared-persistence';
+
 @Module({
   imports: [
     CqrsModule,
     RabbitMQModule,
-    PrismaModule,
     JwtModule.register({}),
+    MongooseModule.forFeature([
+      { name: 'ChatRoom', schema: ChatRoomSchema },
+      { name: 'ChatMessage', schema: ChatMessageSchema },
+      { name: 'Notification', schema: NotificationSchema },
+      { name: 'UserComplaint', schema: UserComplaintSchema },
+      { name: 'Order',      schema: OrderSchema },
+      { name: 'TradeOffer', schema: TradeOfferSchema },
+    ]),
   ],
   controllers: [
-    ChatController, 
-    NotificationController, 
-    ComplaintController, 
+    ChatController,
+    NotificationController,
+    ComplaintController,
     CommunicationAdminController,
     ChatAdminController
   ],
   providers: [
-    PrismaService,
     ChatGateway,
     NotificationTemplateService,
     // Handlers (Commands)
@@ -80,10 +93,10 @@ import { MailService } from './infrastructure/mail/mail.service';
     NotificationMapper,
     UserComplaintMapper,
     // Repositories
-    { provide: 'IChatRoomRepository', useClass: PrismaChatRoomRepository },
-    { provide: 'IChatMessageRepository', useClass: PrismaChatMessageRepository },
-    { provide: 'INotificationRepository', useClass: PrismaNotificationRepository },
-    { provide: 'IUserComplaintRepository', useClass: PrismaUserComplaintRepository },
+    { provide: 'IChatRoomRepository', useClass: MongoChatRoomRepository },
+    { provide: 'IChatMessageRepository', useClass: MongoChatMessageRepository },
+    { provide: 'INotificationRepository', useClass: MongoNotificationRepository },
+    { provide: 'IUserComplaintRepository', useClass: MongoUserComplaintRepository },
     MailService,
   ],
   exports: [NotificationTemplateService, MailService],

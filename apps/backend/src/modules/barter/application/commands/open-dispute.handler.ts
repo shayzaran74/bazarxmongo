@@ -1,12 +1,13 @@
 // apps/backend/src/modules/barter/application/commands/open-dispute.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Inject, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { OpenDisputeCommand } from './open-dispute.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
+import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { DisputeResolutionStatus, DISPUTE_TIMINGS } from '../../domain/enums/dispute-resolution-status.enum';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DomainException } from '@barterborsa/shared-core';
 
@@ -14,7 +15,7 @@ import { DomainException } from '@barterborsa/shared-core';
 export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
   constructor(
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
-    private readonly prisma: PrismaService,
+    @Inject('IDisputeRepository') private readonly disputeRepository: IDisputeRepository,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -35,35 +36,23 @@ export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
       throw new ForbiddenException('Bu swap session\'a erişim yetkiniz yok.');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.swapSession.update({
-        where: { id: command.sessionId },
-        data: {
-          status:     SwapSessionStatus.DISPUTED,
-          disputedAt: new Date(),
-          updatedAt:  new Date(),
-        },
-      });
+    // Session'ı DISPUTED olarak güncelle
+    await this.sessionRepository.save(session);
 
-      // Karşı tarafı belirle (reporter initiator ise respondent receiver)
-      const swapRaw = await tx.swapSession.findUnique({ where: { id: command.sessionId } });
-      const respondentId = swapRaw?.initiatorId === command.actorUserId ? (swapRaw?.receiverId ?? command.actorUserId) : (swapRaw?.initiatorId ?? command.actorUserId);
+    // Karşı tarafı belirle
+    const respondentId = props.initiatorId === command.vendorId ? props.receiverId : props.initiatorId;
 
-      // Master Plan v4.3 §3.4 — Delil sunma penceresi: oluşumdan itibaren 24 saat
-      const deadlineAt = new Date(Date.now() + DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
+    // Master Plan v4.3 §3.4 — Delil sunma penceresi: oluşumdan itibaren 24 saat
+    const deadlineAt = new Date(Date.now() + DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
 
-      await tx.barterDisputeLog.create({
-        data: {
-          swapSessionId:        command.sessionId,
-          tradeOfferId:         swapRaw?.tradeOfferId ?? '',
-          openedById:           command.actorUserId,
-          respondentId,
-          tradeValueInKurus:    0,
-          reason:               command.reason,
-          status:               DisputeResolutionStatus.OPEN,
-          resolutionDeadlineAt: deadlineAt,
-        },
-      });
+    await this.disputeRepository.create({
+      swapSessionId:        command.sessionId,
+      tradeOfferId:         props.tradeOfferId ?? '',
+      openedById:           command.actorUserId,
+      respondentId,
+      reason:               command.reason,
+      status:               DisputeResolutionStatus.OPEN,
+      resolutionDeadlineAt: deadlineAt,
     });
 
     await this.auditLog.log({

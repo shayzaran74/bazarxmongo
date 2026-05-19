@@ -1,8 +1,10 @@
 // apps/backend/src/modules/identity/application/services/referral.service.ts
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { IUserRepository } from '../../domain/repositories/user.repository.interface';
+import { IReferralRepository } from '../../domain/repositories/referral.repository.interface';
 import { GrantReferralRewardCommand } from '../commands/grant-referral-reward.command';
 import { randomBytes } from 'crypto';
 
@@ -11,104 +13,68 @@ export class ReferralService {
   private readonly logger = new Logger(ReferralService.name);
 
   constructor(
-    private readonly prisma:     PrismaService,
+    @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+    @Inject('IReferralRepository') private readonly referralRepo: IReferralRepository,
     private readonly commandBus: CommandBus,
   ) {}
 
-  // Yeni kullanıcı için benzersiz referral kodu üret
   async generateReferralCode(userId: string): Promise<string> {
     const code = 'BZX' + randomBytes(3).toString('hex').toUpperCase();
-    await this.prisma.user.update({
-      where: { id: userId },
-      data:  { referralCode: code },
-    });
+    await this.userRepo.updateReferralCode(userId, code);
     return code;
   }
 
-  // Yeni kullanıcı kayıt sırasında referral kodu işle
-  // Master Plan v4.3 §2.6 / §3.4 — Tek katmanlı referans:
-  //   - Bir kullanıcı yalnızca bir kez referans edilebilir (refereeId @unique)
-  //   - Karşılıklı (circular) referans yasak: A → B varsa B → A engellenir
-  //   - Ödül yalnızca DOĞRUDAN referrer'a verilir; zincirleme komisyon yoktur
   async processReferral(refereeId: string, referralCode: string): Promise<boolean> {
-    const referrer = await this.prisma.user.findUnique({
-      where:  { referralCode },
-      select: { id: true },
-    });
+    const referrer = await this.userRepo.findByReferralCode(referralCode);
 
-    if (!referrer || referrer.id === refereeId) return false;
+    if (!referrer || (referrer as any).id === refereeId) return false;
 
-    // Tek seviye guard — A→B varsa B→A engellenir
-    const reverseRef = await this.prisma.referral.findFirst({
-      where: { referrerId: refereeId, refereeId: referrer.id },
-      select: { id: true },
-    });
+    const reverseRef = await this.referralRepo.findReverseReferral(referrer.id, refereeId);
     if (reverseRef) {
       this.logger.warn('Karşılıklı referans denemesi engellendi', {
-        referrerId: referrer.id,
+        referrerId: (referrer as any).id,
         refereeId,
       });
       return false;
     }
 
-    // Zaten referral kaydı var mı?
-    const existing = await this.prisma.referral.findUnique({ where: { refereeId } });
+    const existing = await this.referralRepo.findByReferee(refereeId);
     if (existing) return false;
 
-    // Referral kaydını oluştur (henüz ödül verilmedi)
-    await this.prisma.referral.create({
-      data: {
-        referrerId:  referrer.id,
-        refereeId,
-        referralCode,
-      },
+    await this.referralRepo.create({
+      referrerId:  (referrer as any).id,
+      refereeId,
+      referralCode,
     });
 
-    // Ödül verme — ilk sipariş sonrası tetiklenir (isFirstOrder=false olunca)
-    // Bunu isFirstOrder=false olduğunda event ile tetikleyeceğiz (Faz 2)
-    // Şimdilik anında ver (30 gün ücretsiz deneme sonrası)
     await this.commandBus.execute(
-      new GrantReferralRewardCommand(referrer.id, refereeId),
+      new GrantReferralRewardCommand((referrer as any).id, refereeId),
     );
 
-    this.logger.log('Referral işlendi', { referrerId: referrer.id, refereeId });
+    this.logger.log('Referral işlendi', { referrerId: (referrer as any).id, refereeId });
     return true;
   }
 
-  // Kullanıcının referral istatistikleri
   async getReferralStats(userId: string) {
-    const [referrals, code] = await Promise.all([
-      this.prisma.referral.findMany({
-        where: { referrerId: userId },
-        select: {
-          refereeId:       true,
-          xpGranted:       true,
-          bonusGranted:    true,
-          rewardGrantedAt: true,
-          createdAt:       true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.user.findUnique({
-        where:  { id: userId },
-        select: { referralCode: true },
-      }),
+    const [referrals, user] = await Promise.all([
+      this.referralRepo.findByReferrer(userId),
+      this.userRepo.findById(userId),
     ]);
 
-    const completedCount = referrals.filter((r) => r.rewardGrantedAt !== null).length;
+    const completedCount = referrals.filter((r) => (r as any).rewardGrantedAt !== null).length;
 
     return {
-      referralCode:   code?.referralCode,
+      referralCode:   (user as any)?.referralCode,
       totalReferrals: referrals.length,
       completed:      completedCount,
       remaining:      Math.max(0, 3 - completedCount),
       hasThirdBonus:  completedCount >= 3,
       referrals:      referrals.map((r) => ({
-        refereeId:    r.refereeId,
-        xpEarned:     r.xpGranted,
-        bonusGranted: r.bonusGranted,
-        completedAt:  r.rewardGrantedAt,
-        joinedAt:     r.createdAt,
+        refereeId:    (r as any).refereeId,
+        xpEarned:     (r as any).xpGranted,
+        bonusGranted: (r as any).bonusGranted,
+        completedAt:  (r as any).rewardGrantedAt,
+        joinedAt:     (r as any).createdAt,
       })),
     };
   }

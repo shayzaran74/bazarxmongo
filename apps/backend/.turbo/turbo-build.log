@@ -1,6 +1,6 @@
 
 > @bazarx/backend@1.0.0 prebuild /Users/macbook/Desktop/bazarx/apps/backend
-> rimraf dist
+> rm -rf dist || true
 
 
 > @bazarx/backend@1.0.0 build /Users/macbook/Desktop/bazarx/apps/backend

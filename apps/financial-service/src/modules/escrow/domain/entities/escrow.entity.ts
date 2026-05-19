@@ -5,7 +5,7 @@ import { Decimal } from 'decimal.js';
 
 export type EscrowStatus =
   | 'PENDING'
-  | 'FUNDED'
+  | 'HELD'
   | 'RELEASED'
   | 'REFUNDED'
   | 'DISPUTED'
@@ -57,13 +57,13 @@ export class Escrow extends AggregateRoot<EscrowProps> {
 
   fund(): void {
     if (this.props.status !== 'PENDING') throw new Error('Yalnızca PENDING durumdaki kayıtlar fonlanabilir.');
-    this.props.status = 'FUNDED';
+    this.props.status = 'HELD';
     this.props.updatedAt = new Date();
   }
 
   release(): void {
-    if (this.props.status !== 'FUNDED') {
-      throw new Error('Yalnızca FUNDED durumdaki fonlar çözülebilir.');
+    if (this.props.status !== 'HELD') {
+      throw new Error('Yalnızca HELD durumdaki fonlar çözülebilir.');
     }
     this.props.status = 'RELEASED';
     this.props.releasedAmount = this.props.amount;
@@ -72,7 +72,7 @@ export class Escrow extends AggregateRoot<EscrowProps> {
   }
 
   refund(): void {
-    if (this.props.status !== 'FUNDED' && this.props.status !== 'DISPUTED') {
+    if (this.props.status !== 'HELD' && this.props.status !== 'DISPUTED') {
       throw new Error('Bu durumda iade yapılamaz.');
     }
     this.props.status = 'REFUNDED';

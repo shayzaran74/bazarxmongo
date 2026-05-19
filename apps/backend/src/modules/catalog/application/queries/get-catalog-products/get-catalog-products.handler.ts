@@ -1,13 +1,15 @@
+// apps/backend/src/modules/catalog/application/queries/get-catalog-products/get-catalog-products.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { GetCatalogProductsQuery } from './get-catalog-products.query';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { Category } from '@barterborsa/shared-persistence/schemas/backend/category.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 
 @QueryHandler(GetCatalogProductsQuery)
-export class GetCatalogProductsHandler
-  implements IQueryHandler<GetCatalogProductsQuery> {
-
-  constructor(private readonly prisma: PrismaService) {}
-
+export class GetCatalogProductsHandler implements IQueryHandler<GetCatalogProductsQuery> {
   async execute(query: GetCatalogProductsQuery) {
     const {
       search, categoryId,
@@ -17,116 +19,94 @@ export class GetCatalogProductsHandler
     } = query.filters;
 
     const skip = (page - 1) * limit;
-    const where: any = { status: 'ACTIVE' };
+    const filter: Record<string, unknown> = { status: 'ACTIVE' };
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
       ];
     }
     if (categoryId) {
-      // Find the target category first
-      // Find the target category by ID or Slug
-      const targetCategory = await this.prisma.category.findFirst({
-        where: {
-          OR: [
-            { id: categoryId },
-            { slug: categoryId }
-          ]
-        },
-        select: { id: true }
-      });
+      const targetCategory = await Category.findOne({
+        $or: [{ id: categoryId }, { slug: categoryId }]
+      }).select('id').exec();
 
       if (targetCategory) {
-        // Get all children IDs recursively
         const allCategoryIds = [targetCategory.id];
         let currentLevelIds = [targetCategory.id];
 
         while (currentLevelIds.length > 0) {
-          const children = await this.prisma.category.findMany({
-            where: { parentId: { in: currentLevelIds } },
-            select: { id: true }
-          });
-          currentLevelIds = children.map(c => c.id);
+          const children = await Category.find({ parentId: { $in: currentLevelIds } }).select('id').exec();
+          currentLevelIds = children.map((c: any) => c.id);
           allCategoryIds.push(...currentLevelIds);
         }
 
-        where.categoryId = { in: allCategoryIds };
+        filter.categoryId = { $in: allCategoryIds };
       } else {
-        // Fallback for non-existent category
-        where.categoryId = categoryId; 
+        filter.categoryId = categoryId;
       }
     }
     if (query.filters.brandId) {
-      where.brands = { some: { id: query.filters.brandId } };
+      filter.brandId = query.filters.brandId;
     }
     if (query.filters.minPrice !== undefined || query.filters.maxPrice !== undefined) {
-      const { minPrice, maxPrice } = query.filters;
-      where.listings = {
-        some: {
-          status: 'ACTIVE',
-          price: {
-            ...(minPrice !== undefined && { gte: Number(minPrice) }),
-            ...(maxPrice !== undefined && { lte: Number(maxPrice) })
-          }
-        }
-      };
+      const priceFilter: Record<string, unknown> = { status: 'ACTIVE' };
+      if (query.filters.minPrice !== undefined) priceFilter.$gte = Number(query.filters.minPrice);
+      if (query.filters.maxPrice !== undefined) priceFilter.$lte = Number(query.filters.maxPrice);
+      filter.price = priceFilter;
     }
-    
-    if (isFeatured === true) where.isFeatured = true;
-    if (isSpecialOffer === true) where.isSpecialOffer = true;
-    if (isFlashSale === true) where.isFlashSale = true;
+
+    if (isFeatured === true) filter.isFeatured = true;
+    if (isSpecialOffer === true) filter.isSpecialOffer = true;
+    if (isFlashSale === true) filter.isFlashSale = true;
     if (query.filters.vendorId) {
-      where.listings = {
-        some: {
-          vendorId: query.filters.vendorId,
-          status: 'ACTIVE'
-        }
-      };
-    } else if (vendorType || (excludeVendorTypes && excludeVendorTypes.length > 0)) {
-      where.listings = {
-        some: {
-          status: 'ACTIVE',
-          vendor: {
-            ...(vendorType && { vendorType: vendorType as any }),
-            ...(excludeVendorTypes && { vendorType: { notIn: excludeVendorTypes as any } })
-          }
-        }
-      };
+      filter.vendorId = query.filters.vendorId;
     }
 
     const [rawItems, total] = await Promise.all([
-      this.prisma.catalogProduct.findMany({
-        where,
-        include: {
-          category: true,
-          media: { orderBy: { sortOrder: 'asc' } },
-          listings: {
-            where: { 
-              status: 'ACTIVE',
-              ...(query.filters.vendorId && { vendorId: query.filters.vendorId })
-            },
-            take: 1,
-            orderBy: { price: 'asc' }
-          },
-          brands: true
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' }
-      }),
-      this.prisma.catalogProduct.count({ where })
+      CatalogProduct.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean()
+        .exec(),
+      CatalogProduct.countDocuments(filter).exec(),
     ]);
 
-    const items = rawItems.map(item => {
-      const listing = item.listings?.[0] ?? null;
+    const productIds = rawItems.map((cp: any) => cp.id).filter(Boolean);
+    const categoryIds = [...new Set(rawItems.map((cp: any) => cp.categoryId).filter(Boolean))];
+    
+    const [categories, mediaDocs, listings] = await Promise.all([
+      Category.find({ id: { $in: categoryIds } }).lean().exec(),
+      ProductMedia.find({ productId: { $in: productIds } }).lean().exec(),
+      Listing.find({ catalogProductId: { $in: productIds } }).lean().exec()
+    ]);
+    
+    const categoryMap: Record<string, any> = {};
+    for (const cat of categories) categoryMap[cat.id] = cat;
+    
+    const mediaUrlsMap: Record<string, string[]> = {};
+    for (const m of mediaDocs) {
+      if (!mediaUrlsMap[m.productId]) mediaUrlsMap[m.productId] = [];
+      mediaUrlsMap[m.productId].push(m.url);
+    }
+    
+    const listingMap: Record<string, any[]> = {};
+    for (const l of listings) {
+      if (!listingMap[l.catalogProductId]) listingMap[l.catalogProductId] = [];
+      listingMap[l.catalogProductId].push(l);
+    }
+
+    const items = rawItems.map((item: any) => {
+      const listing = listingMap[item.id]?.[0] ?? null;
       return {
         ...item,
-        rating: Number(item.rating), // Convert Decimal to number
-        Brand: item.brands?.[0] ?? null,
-        image: item.media?.[0]?.url ?? null,
-        images: item.media?.map(m => m.url) ?? [],
+        rating: Number(item.rating) || 0,
+        Brand: item.brands?.[0] || (item.brand ? { name: item.brand } : null),
+        Category: categoryMap[item.categoryId] ?? null,
+        image: mediaUrlsMap[item.id]?.[0] ?? null,
+        images: mediaUrlsMap[item.id] ?? [],
         price: listing ? Number(listing.price) : 0,
         listingId: listing?.id ?? null,
         stock: listing?.stock ?? 0,
@@ -137,9 +117,6 @@ export class GetCatalogProductsHandler
       };
     });
 
-    return {
-      items,
-      meta: { total, page, limit }
-    };
+    return { items, meta: { total, page, limit } };
   }
 }

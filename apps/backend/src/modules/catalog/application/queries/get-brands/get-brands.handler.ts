@@ -1,17 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { GetBrandsQuery } from './get-brands.query';
+import { IBrandRepository } from '../../../domain/repositories/brand.repository.interface';
 
 @QueryHandler(GetBrandsQuery)
 export class GetBrandsHandler implements IQueryHandler<GetBrandsQuery> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IBrandRepository') private readonly brandRepository: IBrandRepository,
+  ) {}
 
   async execute(query: GetBrandsQuery) {
-    return this.prisma.brand.findMany({
-      take: query.limit,
-      where: { status: 'APPROVED' },
-      orderBy: { name: 'asc' }
-    });
+    return this.brandRepository.findApproved(query.limit);
   }
 }

@@ -4,6 +4,7 @@ import { AggregateRoot } from '@barterborsa/shared-core';
 import { TaxNumber } from '../value-objects/tax-number.vo';
 
 export interface CompanyProps {
+  vendorId?: string;
   taxNumber?: TaxNumber;
   name: string;
   address?: string;
@@ -54,6 +55,7 @@ export class Company extends AggregateRoot<CompanyProps> {
   }
 
   // Getter methods
+  get vendorId(): string | undefined { return this.props.vendorId; }
   get taxNumber(): TaxNumber | undefined { return this.props.taxNumber; }
   get name(): string { return this.props.name; }
   get status(): string { return this.props.status; }

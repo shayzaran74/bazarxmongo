@@ -1,87 +1,95 @@
 // apps/financial-service/src/modules/commission/application/commands/calculate-commission.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection, Types } from 'mongoose';
 import { CalculateCommissionCommand } from './calculate-commission.command';
 import { CommissionCalculatorService } from '../../domain/services/commission-calculator.service';
-import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import {
+  IWallet,
+  IFinancialCommissionRecord,
+  IFinancialGeneralLedger,
+} from '@barterborsa/shared-persistence';
+
+const d128 = (v: number | string): Types.Decimal128 =>
+  Types.Decimal128.fromString(Number(v).toFixed(4));
 
 @CommandHandler(CalculateCommissionCommand)
 export class CalculateCommissionHandler implements ICommandHandler<CalculateCommissionCommand> {
   constructor(
+    @InjectModel('CommissionRecord') private readonly commissionModel: Model<IFinancialCommissionRecord>,
+    @InjectModel('Wallet') private readonly walletModel: Model<IWallet>,
+    @InjectModel('GeneralLedger') private readonly ledgerModel: Model<IFinancialGeneralLedger>,
+    @InjectConnection() private readonly connection: Connection,
     private readonly calculator: CommissionCalculatorService,
-    private readonly prisma: PrismaService,
   ) {}
 
   async execute(command: CalculateCommissionCommand): Promise<void> {
     const { vendorId, vendorTier, amount, type, referenceId, referenceType } = command;
 
-    // 1. Komisyon hesapla (saf domain mantığı — yan etkisiz)
     const { rate, commission } = this.calculator.calculateSimple(amount, vendorTier);
-
     const currency = type === 'CASH' ? 'TRY' : 'BARTER';
 
-    // Komisyon kaydı + platform cüzdan kredisi + muhasebe kaydı tek transaction içinde.
-    // Herhangi bir adım başarısız olursa komisyon kaydı da geri alınır.
-    await this.prisma.$transaction(async (tx) => {
-      // Mükerrer işlem kontrolü
-      const existing = await tx.commissionRecord.findFirst({
-        where: {
-          ...(referenceType === 'ORDER'
-            ? { orderId: referenceId }
-            : { tradeOfferId: referenceId }),
-          status: 'COLLECTED',
-        },
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Mükerrer kontrol
+        const existing = await this.commissionModel
+          .findOne({
+            ...(referenceType === 'ORDER' ? { orderId: referenceId } : { tradeOfferId: referenceId }),
+            status: 'COLLECTED',
+          })
+          .session(session)
+          .lean();
+        if (existing) return;
+
+        const now = new Date();
+        const newId = new Types.ObjectId().toString();
+
+        await this.commissionModel.create(
+          [{
+            _id: newId, id: newId, vendorId, vendorTier,
+            baseAmount:       d128(amount.toFixed(4)),
+            commissionRate:   d128(String(rate)),
+            commissionAmount: d128(commission.toFixed(4)),
+            commissionType:   type as IFinancialCommissionRecord['commissionType'],
+            orderId:    referenceType === 'ORDER' ? referenceId : undefined,
+            tradeOfferId: referenceType === 'TRADE' ? referenceId : undefined,
+            status: 'COLLECTED', createdAt: now, collectedAt: now,
+          }],
+          { session },
+        );
+
+        if (currency === 'TRY') {
+          await this.walletModel.findOneAndUpdate(
+            { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
+            {
+              $inc: { balanceTL: d128(commission.toFixed(2)) },
+              $setOnInsert: {
+                _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), userId: 'SYSTEM_PLATFORM_ACCOUNT',
+                barterBalance: d128(0), xpPoints: 0,
+                xpAdsBalance: d128(0), xpTradeBalance: d128(0), xpCommissionBalance: d128(0),
+              },
+            },
+            { upsert: true, session },
+          );
+        }
+
+        await this.ledgerModel.create(
+          [{
+            _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT',
+            debitAccountId:  vendorId,
+            creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT',
+            amount:          d128(commission.toFixed(2)),
+            referenceId:     `commission_${referenceType}_${referenceId}`,
+            refType:         referenceType,
+            note:            `Komisyon tahsilatı — Tier: ${vendorTier}, Oran: %${rate}`,
+          }],
+          { session },
+        );
       });
-      if (existing) return;
-
-      const now = new Date();
-
-      // 2. Komisyon kaydını oluştur ve direkt topla (CALCULATED→COLLECTED tek seferde)
-      await tx.commissionRecord.create({
-        data: {
-          vendorId,
-          vendorTier,
-          baseAmount: amount,
-          commissionRate: rate,
-          commissionAmount: commission,
-          commissionType: type,
-          orderId: referenceType === 'ORDER' ? referenceId : null,
-          tradeOfferId: referenceType === 'TRADE' ? referenceId : null,
-          status: 'COLLECTED',
-          createdAt: now,
-          collectedAt: now,
-        },
-      });
-
-      // 3. Platform komisyon cüzdanına yansıt (sadece TRY destekleniyor)
-      if (currency === 'TRY') {
-        await tx.wallet.upsert({
-          where: { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
-          update: { balanceTL: { increment: commission } },
-          create: {
-            userId: 'SYSTEM_PLATFORM_ACCOUNT',
-            balanceTL: commission,
-            barterBalance: 0,
-            xpPoints: 0,
-            xpAdsBalance: 0,
-            xpTradeBalance: 0,
-            xpCommissionBalance: 0,
-          },
-        });
-      }
-
-      // 4. Muhasebe kaydı (General Ledger)
-      await tx.generalLedger.create({
-        data: {
-          type: 'COMMISSION',
-          debitAccountId: vendorId,
-          creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT',
-          amount: commission,
-          referenceId: `commission_${referenceType}_${referenceId}`,
-          refType: referenceType,
-          note: `Komisyon tahsilatı — Tier: ${vendorTier}, Oran: %${rate}`,
-        },
-      });
-    });
+    } finally {
+      await session.endSession();
+    }
   }
 }

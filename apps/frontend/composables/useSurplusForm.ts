@@ -39,23 +39,16 @@ interface PriceAdvisorResponse {
   max?:        number
 }
 
-const PILOT_CITY_MAP: Record<string, string> = {
-  İSTANBUL: 'ISTANBUL',
-  ANKARA:   'ANKARA',
-  İZMİR:   'IZMIR',
-  HATAY:    'HATAY',
-}
-
 function mapToPilotCity(location: string | null | undefined): string {
   if (!location) return 'ISTANBUL'
-  const raw = location.split('/')[0].trim().toUpperCase()
-    .replace(/İ/g, 'I')
-    .replace(/Ğ/g, 'G')
-    .replace(/Ü/g, 'U')
-    .replace(/Ş/g, 'S')
-    .replace(/Ö/g, 'O')
-    .replace(/Ç/g, 'C')
-  return PILOT_CITY_MAP[raw] ?? raw in Object.values(PILOT_CITY_MAP) ? raw : 'ISTANBUL'
+  const cityPart = location.split('/')[0].trim().toUpperCase()
+  
+  if (cityPart.includes('İSTANBUL') || cityPart.includes('ISTANBUL')) return 'ISTANBUL'
+  if (cityPart.includes('ANKARA')) return 'ANKARA'
+  if (cityPart.includes('İZMİR') || cityPart.includes('IZMIR')) return 'IZMIR'
+  if (cityPart.includes('HATAY')) return 'HATAY'
+  
+  return 'ISTANBUL'
 }
 
 export const useSurplusForm = (item: SurplusItem | null = null) => {
@@ -112,6 +105,8 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
         formData.value = {
           ...formData.value,
           ...item,
+          quantity:         Number(item.quantity || 0),
+          unitPrice:        Number(item.unitPrice || 0),
           images:           [...(item.images ?? [])],
           wantedCategories: [...(item.wantedCategories ?? [])],
           tradeModes:       [...(item.tradeModes ?? ['barter'])],
@@ -132,15 +127,15 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
   }
 
   const fetchCategoriesData = async (): Promise<void> => {
-    const res = await $api<{ success: boolean; data: SurplusCategory[] }>('/api/v1/surplus/categories', { query: { all: true } })
-    if (res.success) {
+    const res = await $api<SurplusCategory[]>('/api/v1/surplus/categories', { query: { all: true } })
+    if (res.success && res.data) {
       surplusCategories.value = res.data
       mainCategories.value    = res.data.filter(c => !c.parentId)
     }
   }
 
   const fetchMyCompany = async (): Promise<void> => {
-    const res = await $api<{ success: boolean; company?: { id?: string; city?: string; district?: string } }>('/api/v1/companies/me')
+    const res = (await $api<any>('/api/v1/companies/me')) as any
     if (res.success && res.company) {
       formData.value.companyId = res.company.id ?? ''
       formData.value.location  = `${res.company.city ?? ''} / ${res.company.district ?? ''}`.trim()
@@ -190,8 +185,8 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
   const fetchSurplusAttributes = async (categoryId: string): Promise<void> => {
     if (!categoryId) return
     try {
-      const res = await $api<{ success: boolean; data: SurplusAttribute[] }>(`/api/v1/surplus/categories/${categoryId}/attributes`)
-      if (res.success) {
+      const res = await $api<SurplusAttribute[]>(`/api/v1/surplus/categories/${categoryId}/attributes`)
+      if (res.success && res.data) {
         surplusAttributes.value = res.data
         res.data.forEach(attr => {
           if (formData.value.technicalSpecs[attr.name] === undefined) {
@@ -235,11 +230,11 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
       if (file.size > 5 * 1024 * 1024) continue
       const data = new FormData()
       data.append('file', file)
-      const res = await $api<{ success: boolean; url: string }>('/api/v1/upload?type=product', {
+      const res = (await $api<any>('/api/v1/upload?type=product', {
         method: 'POST',
         body:   data,
-      })
-      if (res.success) formData.value.images.push(res.url)
+      })) as any
+      if (res.success && res.url) formData.value.images.push(res.url)
     }
   }
 

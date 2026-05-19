@@ -4,8 +4,8 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ConfirmReceiptCommand } from './confirm-receipt.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
+import { IBarterPartRepository } from '../../domain/repositories/barter-part.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DomainException } from '@barterborsa/shared-core';
 
@@ -13,7 +13,7 @@ import { DomainException } from '@barterborsa/shared-core';
 export class ConfirmReceiptHandler implements ICommandHandler<ConfirmReceiptCommand> {
   constructor(
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
-    private readonly prisma: PrismaService,
+    @Inject('IBarterPartRepository') private readonly partRepository: IBarterPartRepository,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -33,10 +33,7 @@ export class ConfirmReceiptHandler implements ICommandHandler<ConfirmReceiptComm
       throw new ForbiddenException('Bu swap session\'a erişim yetkiniz yok.');
     }
 
-    // Alıcı olarak kendi BarterPart'ımı bul (recipientId === vendorId)
-    const myReceivedPart = await this.prisma.barterPart.findFirst({
-      where: { swapSessionId: command.sessionId, recipientId: command.vendorId },
-    });
+    const myReceivedPart = await this.partRepository.findBySwapSessionAndRecipient(command.sessionId, command.vendorId);
     if (!myReceivedPart) throw new DomainException('Teslimat onayı yetkisi bulunamadı (BarterPart yok).');
     if (!['SHIPPED', 'DELIVERED'].includes(myReceivedPart.status)) {
       throw new BadRequestException('Onaylanacak kargolama henüz yapılmamış.');
@@ -45,35 +42,26 @@ export class ConfirmReceiptHandler implements ICommandHandler<ConfirmReceiptComm
       throw new BadRequestException('Teslimat zaten onaylandı.');
     }
 
-    // 3 günlük inceleme penceresi başlat
     const disputeWindowEndsAt = new Date();
     disputeWindowEndsAt.setDate(disputeWindowEndsAt.getDate() + 3);
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.barterPart.update({
-        where: { id: myReceivedPart.id },
-        data: {
-          status:             'CONFIRMED',
-          deliveredAt:        new Date(),
-          confirmedAt:        new Date(),
-          disputeWindowEndsAt,
-        },
-      });
-
-      // Tüm partlar CONFIRMED ise session → COMPLETED, değilse → PARTIALLY_COMPLETED
-      const allParts = await tx.barterPart.findMany({ where: { swapSessionId: command.sessionId } });
-      const updatedStatuses = allParts.map(p => p.id === myReceivedPart.id ? 'CONFIRMED' : p.status);
-      const allConfirmed = updatedStatuses.every(s => s === 'CONFIRMED');
-
-      await tx.swapSession.update({
-        where: { id: command.sessionId },
-        data: {
-          status:    allConfirmed ? SwapSessionStatus.COMPLETED : SwapSessionStatus.PARTIALLY_COMPLETED,
-          completedAt: allConfirmed ? new Date() : undefined,
-          updatedAt: new Date(),
-        },
-      });
+    const now = new Date();
+    await this.partRepository.updateConfirmation(myReceivedPart.id, {
+      status:             'CONFIRMED',
+      deliveredAt:        now,
+      confirmedAt:         now,
+      disputeWindowEndsAt,
     });
+
+    const allParts = await this.partRepository.findAllBySwapSession(command.sessionId);
+    const allConfirmed = allParts.every(p => p.status === 'CONFIRMED');
+
+    const newStatus = allConfirmed ? SwapSessionStatus.COMPLETED : SwapSessionStatus.PARTIALLY_COMPLETED;
+    await this.sessionRepository.updateStatus(command.sessionId, newStatus);
+    if (allConfirmed) {
+      // completedAt güncellemesi için entity kullanılmalı — şimdilik sadece status
+      await this.sessionRepository.save(session);
+    }
 
     await this.auditLog.log({
       actorId:      command.actorUserId,

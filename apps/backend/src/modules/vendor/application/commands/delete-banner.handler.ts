@@ -1,27 +1,27 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { NotFoundException, Inject } from '@nestjs/common';
 import { DeleteBannerCommand } from './delete-banner.command';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoVendorBannerRepository } from '../../infrastructure/persistence/mongo-vendor-banner.repository';
+import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 
 @CommandHandler(DeleteBannerCommand)
 export class DeleteBannerHandler implements ICommandHandler<DeleteBannerCommand> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly bannerRepo: MongoVendorBannerRepository,
+  ) {}
 
   async execute(command: DeleteBannerCommand) {
     const { userId, bannerId } = command;
 
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId },
-      select: { id: true },
-    });
+    const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
 
-    const existing = await this.prisma.vendorBanner.findFirst({
-      where: { id: bannerId, vendorId: vendor.id },
-    });
-    if (!existing) throw new NotFoundException('Banner bulunamadı');
+    const existing = await this.bannerRepo.findById(bannerId);
+    if (!existing || existing.vendorId !== vendor.id) throw new NotFoundException('Banner bulunamadı');
 
-    await this.prisma.vendorBanner.delete({ where: { id: bannerId } });
+    await this.bannerRepo.delete(bannerId);
     return { success: true };
   }
 }

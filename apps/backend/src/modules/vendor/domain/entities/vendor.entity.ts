@@ -115,6 +115,7 @@ export class Vendor extends AggregateRoot<VendorProps> {
   // Getters
   get userId(): string { return this.props.userId; }
   get companyId(): string { return this.props.companyId; }
+  get ecosystemId(): string | undefined { return this.props.ecosystemId; }
   get status(): VendorStatus { return this.props.status; }
   get tier(): VendorTier { return this.props.tier; }
   get vendorType(): VendorType { return this.props.vendorType; }

@@ -4,21 +4,19 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { PRODUCT_IMPORT_QUEUE } from '@barterborsa/shared-queue';
 import { ProductImportJobData } from '../workers/product-import.worker';
 import { QueueImportProductsCommand } from './queue-import-products.command';
+import { ImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
 
 const MAX_ROWS = 50_000;
 
 @CommandHandler(QueueImportProductsCommand)
-export class QueueImportProductsHandler
-  implements ICommandHandler<QueueImportProductsCommand>
-{
+export class QueueImportProductsHandler implements ICommandHandler<QueueImportProductsCommand> {
   private readonly logger = new Logger(QueueImportProductsHandler.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     @InjectQueue('product-import') private readonly importQueue: Queue,
   ) {}
 
@@ -39,13 +37,17 @@ export class QueueImportProductsHandler
       throw new BadRequestException('Hiçbir satırda ürün adı bulunamadı');
     }
 
-    const importJob = await this.prisma.importJob.create({
-      data: {
-        adminId,
-        status: 'PENDING',
-        totalRows: rows.length,
-      },
+    const id = 'import-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const importJob = new ImportJob({
+      id,
+      adminId,
+      status: 'PENDING',
+      totalRows: rows.length,
+      processedRows: 0,
+      createdRows: 0,
+      failedRows: 0,
     });
+    await importJob.save();
 
     const jobData: ProductImportJobData = {
       jobId: importJob.id,
@@ -57,15 +59,10 @@ export class QueueImportProductsHandler
     await this.importQueue.add(
       'import-products',
       jobData,
-      {
-        jobId: importJob.id,
-        priority: 10,
-      },
+      { jobId: importJob.id, priority: 10 },
     );
 
-    this.logger.log(
-      `Import job kuyruğa eklendi: ${importJob.id} — ${rows.length} satır, admin: ${adminId}`,
-    );
+    this.logger.log(`Import job kuyruğa eklendi: ${importJob.id} — ${rows.length} satır, admin: ${adminId}`);
 
     return {
       success: true,

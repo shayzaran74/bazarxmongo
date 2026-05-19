@@ -1,28 +1,28 @@
 // apps/backend/src/modules/content/presentation/content-admin.controller.ts
-// POST /admin/content/banners kaldırıldı — frontend /admin/banners kullanıyor (BannersAdminController)
-// GET/PUT/DELETE endpoint'leri eklendi
 
 import {
   Controller, Post, Get, Put, Delete,
   Body, Param, UseGuards, NotFoundException,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import {
-  ApiTags, ApiOperation, ApiResponse,
-  ApiBearerAuth, ApiBody, ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection, Types } from 'mongoose';
 import { Roles } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { CreateQuadCardCommand } from '../application/commands/create-quad-card.command';
-import { CreateHelpCategoryCommand } from '../application/commands/create-help-category.command';
-import { CreateHelpArticleCommand } from '../application/commands/create-help-article.command';
-import { CreateAnnouncementCommand } from '../application/commands/create-announcement.command';
-import { CreatePolicyCommand } from '../application/commands/create-policy.command';
+import {
+  IAnnouncement, IPolicy, IDynamicContent, ISeoMetadata,
+  IHelpCategory, IHelpArticle, IHomeQuadCard, IHomeQuadCardItem,
+} from '@barterborsa/shared-persistence';
+import { CreateQuadCardCommand }       from '../application/commands/create-quad-card.command';
+import { CreateHelpCategoryCommand }   from '../application/commands/create-help-category.command';
+import { CreateHelpArticleCommand }    from '../application/commands/create-help-article.command';
+import { CreateAnnouncementCommand }   from '../application/commands/create-announcement.command';
+import { CreatePolicyCommand }         from '../application/commands/create-policy.command';
 import { CreateDynamicContentCommand } from '../application/commands/create-dynamic-content.command';
-import { UpsertSeoMetadataCommand } from '../application/commands/upsert-seo-metadata.command';
-import { CreateQuadCardDto } from '../application/dtos/create-quad-card.dto';
-import { UpdateQuadCardsDto } from '../application/dtos/update-quad-cards.dto';
+import { UpsertSeoMetadataCommand }    from '../application/commands/upsert-seo-metadata.command';
+import { CreateQuadCardDto }           from '../application/dtos/create-quad-card.dto';
+import { UpdateQuadCardsDto }          from '../application/dtos/update-quad-cards.dto';
 import { CreateHelpCategoryDto, CreateHelpArticleDto } from '../application/dtos/create-help.dtos';
 import {
   CreateAnnouncementDto, CreatePolicyDto,
@@ -37,270 +37,198 @@ import {
 export class ContentAdminController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly prisma: PrismaService,
+    @InjectModel('HomeQuadCard')     private readonly quadCardModel:    Model<IHomeQuadCard>,
+    @InjectModel('HomeQuadCardItem') private readonly quadCardItemModel:Model<IHomeQuadCardItem>,
+    @InjectModel('HelpCategory')     private readonly helpCategoryModel:Model<IHelpCategory>,
+    @InjectModel('HelpArticle')      private readonly helpArticleModel: Model<IHelpArticle>,
+    @InjectModel('Announcement')     private readonly announcementModel:Model<IAnnouncement>,
+    @InjectModel('Policy')           private readonly policyModel:      Model<IPolicy>,
+    @InjectModel('DynamicContent')   private readonly dynamicModel:     Model<IDynamicContent>,
+    @InjectModel('SeoMetadata')      private readonly seoModel:         Model<ISeoMetadata>,
+    @InjectConnection()              private readonly connection:        Connection,
   ) {}
-
-  // ─── Quad Cards ────────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Quad card listesi' })
   @Get('quad-cards')
   async getQuadCards() {
-    const data = await this.prisma.homeQuadCard.findMany({
-      include: { items: true },
-      orderBy: { order: 'asc' },
-    });
+    const cards = await this.quadCardModel.find().sort({ order: 1 }).lean();
+    const cardIds = cards.map(c => c.id);
+    const items = await this.quadCardItemModel.find({ quadCardId: { $in: cardIds } }).lean();
+    const itemsByCard = new Map<string, typeof items>(cardIds.map(id => [id, []]));
+    items.forEach(i => itemsByCard.get(i.quadCardId)?.push(i));
+    const data = cards.map(c => ({ ...c, items: itemsByCard.get(c.id) ?? [] }));
     return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Quad cardları toplu güncelle/oluştur' })
-  @ApiBody({ type: UpdateQuadCardsDto })
-  @ApiResponse({ status: 201 })
   @Post('quad-cards')
   async updateQuadCards(@Body() dto: UpdateQuadCardsDto) {
-    // Önce eskileri temizle (basit batch mantığı)
-    await this.prisma.homeQuadCardItem.deleteMany({});
-    await this.prisma.homeQuadCard.deleteMany({});
-
-    // Yenileri tek tek oluştur (Transaction içinde)
-    return this.prisma.$transaction(async (tx) => {
-      for (const card of dto.cards) {
-        await tx.homeQuadCard.create({
-          data: {
-            title: card.title,
-            link: card.link as any,
-            order: card.order,
-            isActive: card.isActive,
-            platform: card.platform as any,
-            items: {
-              create: card.items.map(item => ({
-                title: item.title,
-                image: item.image,
-                link: item.link,
-                productId: item.productId,
-                order: item.order
-              }))
-            }
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await this.quadCardItemModel.deleteMany({}, { session });
+        await this.quadCardModel.deleteMany({}, { session });
+        for (const card of dto.cards) {
+          const cardId = new Types.ObjectId().toString();
+          await this.quadCardModel.create(
+            [{ _id: cardId, id: cardId, title: card.title, link: card.link, order: card.order, isActive: card.isActive, platform: card.platform }],
+            { session },
+          );
+          if (card.items?.length) {
+            const itemDocs = (card.items as unknown as Record<string, unknown>[]).map((item: Record<string, unknown>, idx: number) => {
+              const itemId = new Types.ObjectId().toString();
+              return { _id: itemId, id: itemId, quadCardId: cardId, title: item.title, image: item.image, link: item.link, productId: item.productId, order: idx };
+            });
+            await this.quadCardItemModel.insertMany(itemDocs, { session });
           }
-        });
-      }
-      return { success: true };
-    });
-  }
-
-  @ApiOperation({ summary: 'Quad card sil' })
-  @ApiParam({ name: 'id' })
-  @Delete('quad-cards/:id')
-  async deleteQuadCard(@Param('id') id: string) {
-    await this.prisma.homeQuadCard.delete({ where: { id } });
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
     return { success: true };
   }
 
-  // ─── Help Kategorileri ────────────────────────────────────────────────────
+  @Delete('quad-cards/:id')
+  async deleteQuadCard(@Param('id') id: string) {
+    await this.quadCardModel.deleteOne({ id });
+    return { success: true };
+  }
 
-  @ApiOperation({ summary: 'Yardım kategorisi oluştur' })
-  @ApiBody({ type: CreateHelpCategoryDto })
   @Post('help/categories')
   async createHelpCategory(@Body() dto: CreateHelpCategoryDto) {
     return this.commandBus.execute(new CreateHelpCategoryCommand(dto));
   }
 
-  @ApiOperation({ summary: 'Yardım kategorisi güncelle' })
-  @ApiParam({ name: 'id' })
   @Put('help/categories/:id')
-  async updateHelpCategory(@Param('id') id: string, @Body() body: any) {
-    const updated = await this.prisma.helpCategory.update({
-      where: { id },
-      data: {
-        ...(body.title    !== undefined && { title: body.title }),
-        ...(body.slug     !== undefined && { slug: body.slug }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
+  async updateHelpCategory(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const upd: Record<string, unknown> = {};
+    if (body.title    !== undefined) upd.title    = body.title;
+    if (body.slug     !== undefined) upd.slug     = body.slug;
+    if (body.isActive !== undefined) upd.isActive = body.isActive;
+    const updated = await this.helpCategoryModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
-  @ApiOperation({ summary: 'Yardım kategorisi sil' })
-  @ApiParam({ name: 'id' })
   @Delete('help/categories/:id')
   async deleteHelpCategory(@Param('id') id: string) {
-    await this.prisma.helpCategory.delete({ where: { id } });
+    await this.helpCategoryModel.deleteOne({ id });
     return { success: true };
   }
 
-  // ─── Help Makaleleri ──────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Yardım makalesi oluştur' })
-  @ApiBody({ type: CreateHelpArticleDto })
   @Post('help/articles')
   async createHelpArticle(@Body() dto: CreateHelpArticleDto) {
     return this.commandBus.execute(new CreateHelpArticleCommand(dto));
   }
 
-  @ApiOperation({ summary: 'Yardım makalesi güncelle' })
-  @ApiParam({ name: 'id' })
   @Put('help/articles/:id')
-  async updateHelpArticle(@Param('id') id: string, @Body() body: any) {
-    const article = await this.prisma.helpArticle.findUnique({ where: { id } });
+  async updateHelpArticle(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const article = await this.helpArticleModel.findOne({ id }).lean();
     if (!article) throw new NotFoundException('Makale bulunamadı');
-    const updated = await this.prisma.helpArticle.update({
-      where: { id },
-      data: {
-        ...(body.title    !== undefined && { title: body.title }),
-        ...(body.content  !== undefined && { content: body.content }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
+    const upd: Record<string, unknown> = {};
+    if (body.title    !== undefined) upd.title    = body.title;
+    if (body.content  !== undefined) upd.content  = body.content;
+    if (body.isActive !== undefined) upd.isActive = body.isActive;
+    const updated = await this.helpArticleModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
-  @ApiOperation({ summary: 'Yardım makalesi sil' })
-  @ApiParam({ name: 'id' })
   @Delete('help/articles/:id')
   async deleteHelpArticle(@Param('id') id: string) {
-    await this.prisma.helpArticle.delete({ where: { id } });
+    await this.helpArticleModel.deleteOne({ id });
     return { success: true };
   }
 
-  // ─── Duyurular ────────────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Duyuru oluştur' })
-  @ApiBody({ type: CreateAnnouncementDto })
   @Post('announcements')
   async createAnnouncement(@Body() dto: CreateAnnouncementDto) {
     return this.commandBus.execute(new CreateAnnouncementCommand(dto));
   }
 
-  @ApiOperation({ summary: 'Duyuru güncelle' })
-  @ApiParam({ name: 'id' })
   @Put('announcements/:id')
-  async updateAnnouncement(@Param('id') id: string, @Body() body: any) {
-    const updated = await this.prisma.announcement.update({
-      where: { id },
-      data: {
-        ...(body.title    !== undefined && { title: body.title }),
-        ...(body.content  !== undefined && { content: body.content }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-        ...(body.endDate  !== undefined && { endDate: body.endDate ? new Date(body.endDate) : null }),
-      },
-    });
+  async updateAnnouncement(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const upd: Record<string, unknown> = {};
+    if (body.title    !== undefined) upd.title    = body.title;
+    if (body.content  !== undefined) upd.content  = body.content;
+    if (body.isActive !== undefined) upd.isActive = body.isActive;
+    if (body.endDate  !== undefined) upd.endDate  = body.endDate ? new Date(String(body.endDate)) : null;
+    const updated = await this.announcementModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
-  @ApiOperation({ summary: 'Duyuru sil' })
-  @ApiParam({ name: 'id' })
   @Delete('announcements/:id')
   async deleteAnnouncement(@Param('id') id: string) {
-    await this.prisma.announcement.delete({ where: { id } });
+    await this.announcementModel.deleteOne({ id });
     return { success: true };
   }
 
-  // ─── Politikalar ──────────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Politika oluştur' })
-  @ApiBody({ type: CreatePolicyDto })
   @Post('policies')
   async createPolicy(@Body() dto: CreatePolicyDto) {
     return this.commandBus.execute(new CreatePolicyCommand(dto));
   }
 
-  @ApiOperation({ summary: 'Politika güncelle' })
-  @ApiParam({ name: 'id' })
   @Put('policies/:id')
-  async updatePolicy(@Param('id') id: string, @Body() body: any) {
-    const updated = await this.prisma.policy.update({
-      where: { id },
-      data: {
-        ...(body.title    !== undefined && { title: body.title }),
-        ...(body.content  !== undefined && { content: body.content }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
+  async updatePolicy(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const upd: Record<string, unknown> = {};
+    if (body.title    !== undefined) upd.title    = body.title;
+    if (body.content  !== undefined) upd.content  = body.content;
+    if (body.isActive !== undefined) upd.isActive = body.isActive;
+    const updated = await this.policyModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
-  @ApiOperation({ summary: 'Politika sil' })
-  @ApiParam({ name: 'id' })
   @Delete('policies/:id')
   async deletePolicy(@Param('id') id: string) {
-    await this.prisma.policy.delete({ where: { id } });
+    await this.policyModel.deleteOne({ id });
     return { success: true };
   }
 
-  // ─── Dinamik İçerik ───────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Dinamik içerik oluştur' })
-  @ApiBody({ type: CreateDynamicContentDto })
   @Post('dynamic')
   async createDynamicContent(@Body() dto: CreateDynamicContentDto) {
     return this.commandBus.execute(new CreateDynamicContentCommand(dto));
   }
 
-  @ApiOperation({ summary: 'Dinamik içerik güncelle' })
-  @ApiParam({ name: 'id' })
   @Put('dynamic/:id')
-  async updateDynamicContent(@Param('id') id: string, @Body() body: any) {
-    const updated = await this.prisma.dynamicContent.update({
-      where: { id },
-      data: {
-        ...(body.title    !== undefined && { title: body.title }),
-        ...(body.content  !== undefined && { content: body.content }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
+  async updateDynamicContent(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const upd: Record<string, unknown> = {};
+    if (body.title    !== undefined) upd.title    = body.title;
+    if (body.content  !== undefined) upd.content  = body.content;
+    if (body.isActive !== undefined) upd.isActive = body.isActive;
+    const updated = await this.dynamicModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
-  @ApiOperation({ summary: 'Dinamik içerik sil' })
-  @ApiParam({ name: 'id' })
   @Delete('dynamic/:id')
   async deleteDynamicContent(@Param('id') id: string) {
-    await this.prisma.dynamicContent.delete({ where: { id } });
+    await this.dynamicModel.deleteOne({ id });
     return { success: true };
   }
 
-  // ─── Listelemeler (GET) ──────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Tüm duyuruları listele' })
   @Get('announcements')
   async getAnnouncements() {
-    const data = await this.prisma.announcement.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const data = await this.announcementModel.find().sort({ createdAt: -1 }).lean();
     return { success: true, data };
   }
 
-  @ApiOperation({ summary: 'Tüm politikaları listele' })
   @Get('policies')
   async getPolicies() {
-    const data = await this.prisma.policy.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const data = await this.policyModel.find().sort({ createdAt: -1 }).lean();
     return { success: true, data };
   }
 
-  @ApiOperation({ summary: 'Tüm dinamik içerikleri listele' })
   @Get('dynamic')
   async getDynamicContents() {
-    const data = await this.prisma.dynamicContent.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const data = await this.dynamicModel.find().sort({ createdAt: -1 }).lean();
     return { success: true, data };
   }
 
-  // ─── SEO ──────────────────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'SEO metadata upsert' })
-  @ApiBody({ type: UpsertSeoMetadataDto })
   @Post('seo')
   async upsertSeo(@Body() dto: UpsertSeoMetadataDto) {
     return this.commandBus.execute(new UpsertSeoMetadataCommand(dto));
   }
 
-  @ApiOperation({ summary: 'SEO metadata sil' })
-  @ApiParam({ name: 'id' })
   @Delete('seo/:id')
   async deleteSeo(@Param('id') id: string) {
-    await this.prisma.seoMetadata.delete({ where: { id } });
+    await this.seoModel.deleteOne({ id });
     return { success: true };
   }
 }

@@ -10,11 +10,13 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { WantedItem } from '../domain/entities/wanted-item.entity';
 import { WantedItemType } from '../domain/enums/wanted-item-type.enum';
+import { IWantedItemRepository } from '../domain/repositories/wanted-item.repository.interface';
+import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
+import { Inject } from '@nestjs/common';
 
-interface AuthenticatedUser { id: string; role: string; }
+interface AuthenticatedUser { id: string; role: string; vendorId?: string; }
 
 interface WantedItemCreateBody {
   categoryId: string;
@@ -32,18 +34,15 @@ interface WantedItemCreateBody {
 @UseGuards(JwtAuthGuard)
 @Controller('wanted-items')
 export class WantedItemsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IWantedItemRepository') private readonly wantedItemRepo: IWantedItemRepository,
+    @Inject('ISurplusItemRepository') private readonly surplusItemRepo: ISurplusItemRepository,
+  ) {}
 
   @ApiOperation({ summary: 'Kullanıcının aradıkları listesi' })
   @Get('me')
   async getMyItems(@CurrentUser() user: AuthenticatedUser) {
-    const items = await this.prisma.wantedItem.findMany({
-      where: { userId: user.id, isActive: true },
-      include: {
-        category: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const items = await this.wantedItemRepo.findByUserId(user.id);
     return { success: true, data: items };
   }
 
@@ -51,44 +50,32 @@ export class WantedItemsController {
   @ApiResponse({ status: 201 })
   @Post()
   async create(@CurrentUser() user: AuthenticatedUser, @Body() body: WantedItemCreateBody) {
-    // Kategori var mı kontrol et
-    const category = await this.prisma.surplusCategory.findUnique({
-      where: { id: body.categoryId },
-    });
+    const category = await this.surplusItemRepo.findById(body.categoryId);
     if (!category) throw new NotFoundException('Kategori bulunamadı');
 
-    // Şirket ID — vendor hesabından al
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: user.id },
-      include: { company: { select: { id: true } } },
-    });
-
-    // Domain entity ile oluştur
+    // Şirket ID — vendor hesabından al (surplusItem'tan companyId çekilir)
     const item = WantedItem.create(
       body.categoryId,
       body.keywords || [],
-      vendor?.company?.id,
+      undefined, // companyId — surplus category'den çekilebilir ama şimdilik undefined
       user.id,
       (body.type as WantedItemType) || WantedItemType.PRODUCT,
     );
 
-    // Prisma'ya yaz
-    await this.prisma.wantedItem.create({
-      data: {
-        id:          item.id,
-        categoryId:  body.categoryId,
-        keywords:    body.keywords ?? [],
-        description: body.description,
-        companyId:   vendor?.company?.id,
-        userId:      user.id,
-        type:        (body.type || 'PRODUCT') as any,
-        minPrice:    body.minPrice,
-        maxPrice:    body.maxPrice,
-        latitude:    body.latitude,
-        longitude:   body.longitude,
-        status:      'ACTIVE',
-        isActive:    true,
-      },
+    await this.wantedItemRepo.create({
+      id:          item.id,
+      categoryId:  body.categoryId,
+      keywords:    body.keywords ?? [],
+      description: body.description,
+      companyId:   undefined,
+      userId:      user.id,
+      type:        (body.type || 'PRODUCT'),
+      minPrice:    body.minPrice,
+      maxPrice:    body.maxPrice,
+      latitude:    body.latitude,
+      longitude:    body.longitude,
+      status:      'ACTIVE',
+      isActive:    true,
     });
 
     return { success: true, data: { id: item.id } };
@@ -99,15 +86,10 @@ export class WantedItemsController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    const item = await this.prisma.wantedItem.findFirst({
-      where: { id, userId: user.id },
-    });
-    if (!item) throw new NotFoundException('Aranan ürün bulunamadı');
+    const item = await this.wantedItemRepo.findById(id);
+    if (!item || (item as any).userId !== user.id) throw new NotFoundException('Aranan ürün bulunamadı');
 
-    await this.prisma.wantedItem.update({
-      where: { id },
-      data: { isActive: false, status: 'EXPIRED' },
-    });
+    await this.wantedItemRepo.softDelete(id);
     return { success: true };
   }
 }

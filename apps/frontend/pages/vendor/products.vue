@@ -349,7 +349,7 @@ const toast = useNuxtApp().$toast
 const deleteProduct = async (id: string) => {
   if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return
   try {
-    const res = await $api(`/api/listings/${id}`, { method: 'DELETE' })
+    const res = await $api(`/api/v1/listings/${id}`, { method: 'DELETE' })
     if (res.success) {
       toast.success('Ürün silindi')
       selectedIds.value = selectedIds.value.filter(sid => sid !== id)
@@ -368,7 +368,7 @@ const handleBulkDelete = async () => {
   
   try {
     for (const id of selectedIds.value) {
-      const res = await $api(`/api/listings/${id}`, { method: 'DELETE' })
+      const res = await $api(`/api/v1/listings/${id}`, { method: 'DELETE' })
       if (res.success) successCount++
     }
     

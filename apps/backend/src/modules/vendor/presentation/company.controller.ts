@@ -57,18 +57,25 @@ export class CompanyController {
     }
 
     // Satıcı otomatik onay mantığı: Eğer satıcı ise ve şirket kaydı yoksa/onaylı değilse bile devam et
+    let company: Record<string, unknown> | null = null;
+    if (result.companyId) {
+      try {
+        company = await this.queryBus.execute(new GetCompanyQuery(result.companyId));
+      } catch {
+        // şirket kaydı henüz oluşturulmamış olabilir
+      }
+    }
+
     if (result.isVendor) {
-      const company = result.companyId ? await this.queryBus.execute(new GetCompanyQuery(result.companyId)) : null;
-      
-      return { 
-        success: true, 
+      return {
+        success: true,
         company: {
-          id: result.companyId || result.vendorId || 'v-' + result.id,
-          name: company?.name || result.businessName || result.name || 'Satıcı Hesabı',
+          id: result.companyId || result.vendorId,
+          name: (company as Record<string, unknown> | null)?.['name'] || 'Satıcı Hesabı',
           status: 'APPROVED',
-          isVendorAutoApproved: true
+          isVendorAutoApproved: true,
         },
-        data: company || { name: result.businessName || 'Satıcı Hesabı' }
+        data: company || { name: 'Satıcı Hesabı', status: 'APPROVED' },
       };
     }
 
@@ -76,9 +83,6 @@ export class CompanyController {
       return { success: false, message: 'Şirket kaydı bulunamadı.' };
     }
 
-    const company = await this.queryBus.execute(
-      new GetCompanyQuery(result.companyId)
-    );
     return { success: true, data: company, company };
   }
 

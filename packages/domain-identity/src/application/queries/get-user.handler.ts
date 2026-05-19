@@ -3,31 +3,29 @@ import { Inject } from '@nestjs/common';
 import { GetUserQuery } from './get-user.query';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { Result, Ok, Err, NotFoundException } from '@barterborsa/shared-core';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { User as UserModel, Vendor as VendorModel, Company as CompanyModel, UserProfile as UserProfileModel } from '@barterborsa/shared-persistence';
 
 @QueryHandler(GetUserQuery)
 export class GetUserHandler implements IQueryHandler<GetUserQuery, Result<any>> {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
-    private readonly prisma: PrismaService
   ) { }
 
   async execute(query: GetUserQuery): Promise<Result<any>> {
-    // Prisma'dan tüm ilişkileriyle birlikte çek
-    const record = await this.prisma.user.findUnique({
-      where: { id: query.userId },
-      include: {
-        profile: true,
-        vendor: {
-          include: {
-            company: true
-          }
-        }
-      }
-    });
+    const userId = query.userId;
 
+    const record = await UserModel.findOne({ id: userId }).exec();
+    
     if (!record) {
       return Err(new NotFoundException('Kullanıcı bulunamadı.'));
+    }
+
+    const userProfileDoc = await UserProfileModel.findOne({ userId: userId }).exec();
+    const vendorDoc = await VendorModel.findOne({ userId: userId }).exec();
+    let companyDoc = null;
+    
+    if (vendorDoc?.companyId) {
+      companyDoc = await CompanyModel.findOne({ id: vendorDoc.companyId }).exec();
     }
 
     // Frontend'in beklediği formatta düzleştirilmiş (flattened) kullanıcı nesnesi
@@ -36,36 +34,36 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery, Result<any>> 
       email: record.email,
       role: record.role,
       status: record.status,
-      platform: record.platform,
+      platform: (record as any).platform,
       isEmailVerified: record.isEmailVerified,
       phoneNumber: record.phoneNumber,
-      firstName: record.profile?.firstName || undefined,
-      lastName: record.profile?.lastName || undefined,
-      avatar: record.profile?.avatar || undefined,
+      firstName: userProfileDoc?.firstName || undefined,
+      lastName: userProfileDoc?.lastName || undefined,
+      avatar: userProfileDoc?.avatar || undefined,
       lastLoginAt: record.lastLoginAt,
       createdAt: record.createdAt,
       // Profile verisi (şehir, ilçe, telefon vb.)
-      profile: record.profile ? {
-        phone: record.profile.phone,
-        city: record.profile.city,
-        district: record.profile.district,
-        neighborhood: record.profile.neighborhood,
-        avatar: record.profile.avatar,
-        bio: record.profile.bio,
-        birthday: record.profile.birthday,
-        gender: record.profile.gender,
-        firstName: record.profile.firstName,
-        lastName: record.profile.lastName,
+      profile: userProfileDoc ? {
+        phone: userProfileDoc.phone,
+        city: userProfileDoc.city,
+        district: userProfileDoc.district,
+        neighborhood: (userProfileDoc as any).neighborhood,
+        avatar: userProfileDoc.avatar,
+        bio: userProfileDoc.bio,
+        birthday: userProfileDoc.birthday,
+        gender: userProfileDoc.gender,
+        firstName: userProfileDoc.firstName,
+        lastName: userProfileDoc.lastName,
       } : undefined,
       // Vendor verisi
-      vendor: record.vendor ? {
-        status: record.vendor.status,
-        slug: (record.vendor as any).slug,
-        company: record.vendor.company ? {
-          id: record.vendor.company.id,
-          name: record.vendor.company.name,
-          taxNumber: record.vendor.company.taxNumber,
-          taxOffice: record.vendor.company.taxOffice,
+      vendor: vendorDoc ? {
+        status: vendorDoc.status,
+        slug: (vendorDoc as any).slug,
+        company: companyDoc ? {
+          id: companyDoc.id,
+          name: companyDoc.name,
+          taxNumber: companyDoc.taxNumber,
+          taxOffice: companyDoc.taxOffice,
         } : undefined
       } : undefined,
     };

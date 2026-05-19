@@ -4,8 +4,9 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { FinalizeSwapCommand } from './finalize-swap.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
+import { IBarterPartRepository } from '../../domain/repositories/barter-part.repository.interface';
+import { IVendorB2BDataRepository } from '../../domain/repositories/vendor-b2b-data.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { DomainException } from '@barterborsa/shared-core';
@@ -16,7 +17,8 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
 
   constructor(
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
-    private readonly prisma: PrismaService,
+    @Inject('IBarterPartRepository') private readonly partRepository: IBarterPartRepository,
+    @Inject('IVendorB2BDataRepository') private readonly b2bDataRepository: IVendorB2BDataRepository,
     private readonly auditLog: AuditLogService,
     private readonly financialGateway: FinancialGatewayService,
   ) {}
@@ -37,18 +39,13 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
       throw new ForbiddenException('Bu swap session\'a erişim yetkiniz yok.');
     }
 
-    // Teminat holdId'leri var mı kontrol et
     if (!props.fromCollateralHoldId || !props.toCollateralHoldId) {
       throw new DomainException('Teminat hold ID\'leri eksik, sistem hatası.');
     }
 
-    // 3. Güvenlik Kontrolü: 3 günlük itiraz penceresinin dolup dolmadığını kontrol et
-    const parts = await this.prisma.barterPart.findMany({
-      where: { swapSessionId: command.sessionId },
-    });
-
+    const allParts = await this.partRepository.findAllBySwapSession(command.sessionId);
     const now = new Date();
-    const pendingParts = parts.filter(p => p.disputeWindowEndsAt && p.disputeWindowEndsAt > now);
+    const pendingParts = allParts.filter(p => p.disputeWindowEndsAt && p.disputeWindowEndsAt > now);
 
     if (pendingParts.length > 0) {
       const latestEndsAt = new Date(Math.max(...pendingParts.map(p => p.disputeWindowEndsAt!.getTime())));
@@ -59,7 +56,6 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
 
     const idempotencyBase = `finalize-${command.sessionId}`;
 
-    // İki tarafın teminatını iade et
     try {
       await this.financialGateway.releaseFunds(props.fromCollateralHoldId, `${idempotencyBase}-from`);
     } catch (err: unknown) {
@@ -74,25 +70,11 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
       this.logger.error('To collateral iadesi başarısız', { holdId: props.toCollateralHoldId, msg });
     }
 
-    // Session collateralStatus'unu güncelle
-    await this.prisma.swapSession.update({
-      where: { id: command.sessionId },
-      data: {
-        collateralStatus:    'RELEASED',
-        collateralReleasedAt: new Date(),
-        updatedAt:           new Date(),
-      },
-    });
+    session['props'].collateralStatus = 'RELEASED';
+    session['props'].collateralReleasedAt = new Date();
+    await this.sessionRepository.save(session);
 
-    // Master Plan v4.3 §3.4 — İlk işlem işaretle (taraflarda firstTransactionAt null ise)
-    // Bir sonraki işlemde XP kazanım/kullanım açılır.
-    await this.prisma.vendorB2BData.updateMany({
-      where: {
-        vendorId:           { in: [props.initiatorId, props.receiverId] },
-        firstTransactionAt: null,
-      },
-      data: { firstTransactionAt: new Date() },
-    });
+    await this.b2bDataRepository.updateFirstTransaction([props.initiatorId, props.receiverId]);
 
     await this.auditLog.log({
       actorId:      command.actorUserId,

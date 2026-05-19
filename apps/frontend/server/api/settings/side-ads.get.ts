@@ -3,8 +3,8 @@ export default defineEventHandler(async (event): Promise<any> => {
   const config = useRuntimeConfig()
   const query = getQuery(event)
   
-  // Yeni oluşturulan SideAdsController: /api/v1/side-ads
-  const backendUrl = `${config.public.apiBase}/api/v1/side-ads`
+  // Backend SettingsController: /api/v1/settings/side-ads
+  const backendUrl = `${config.public.apiBase}/api/v1/settings/side-ads`
   
   try {
     const res = await $fetch<any>(backendUrl, { query })

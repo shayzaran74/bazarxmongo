@@ -1,14 +1,13 @@
 // apps/backend/src/modules/auction/domain/entities/lottery.entity.ts
 
 import { AggregateRoot } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { LotteryStatus } from '../enums/lottery-status.enum';
 import * as crypto from 'crypto';
 
 export interface LotteryProps {
   title: string;
   prizeDescription?: string;
-  ticketPrice: Prisma.Decimal;
+  ticketPrice: number;
   status: LotteryStatus;
   winnerId?: string;
   endTime: Date;
@@ -18,7 +17,7 @@ export interface LotteryProps {
   ticketDigits: number;
   totalTickets: number;
   numbersPerTicket: number;
-  prizeValue?: Prisma.Decimal;
+  prizeValue?: number;
   winningNumber?: string;
   listingId?: string;
   createdAt: Date;
@@ -32,7 +31,7 @@ export class Lottery extends AggregateRoot<LotteryProps> {
 
   public static create(
     title: string,
-    ticketPrice: Prisma.Decimal,
+    ticketPrice: number,
     endTime: Date,
     ownerId: string,
     totalTickets: number = 100,
@@ -62,7 +61,6 @@ export class Lottery extends AggregateRoot<LotteryProps> {
       throw new Error('Yalnızca aktif çekilişler çekilebilir');
     }
 
-    // crypto.randomInt adil rastgelelik sağlar
     const maxVal = this.props.totalTickets;
     const winningInt = crypto.randomInt(0, maxVal);
     const winningNumber = winningInt.toString().padStart(this.props.ticketDigits, '0');
@@ -89,7 +87,6 @@ export class Lottery extends AggregateRoot<LotteryProps> {
     this.props.updatedAt = new Date();
   }
 
-  // Persistence'dan yeniden oluşturmak için (domain doğrulaması atlanır)
   public static createFrom(props: LotteryProps, id: string): Lottery {
     return new Lottery(props, id);
   }

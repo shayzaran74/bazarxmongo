@@ -1,12 +1,13 @@
 // apps/backend/src/modules/barter/application/services/watchtower.service.ts
 // Master Plan v4.3 §3.4 — Watchtower ve Denetim
-// KVKK md. 5, 10, 12 — kullanıcı üyelik sözleşmesinde bu yetkiyi kabul eder
+// ADR-005 Faz 2c: Prisma → Mongoose (WatchtowerService migration)
 
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DomainException } from '@barterborsa/shared-core';
+import { MongoBlindPoolRepository } from '../../../barterborsa/infrastructure/persistence/mongo-blind-pool.repository';
+import { MongoVendorB2BDataRepository } from '../../../barterborsa/infrastructure/persistence/mongo-vendor-b2b-data.repository';
+import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audit/audit-log.repository';
 
 export type WatchFlag = 'PRICE_MANIPULATION' | 'QUOTA_ABUSE' | 'SUSPICIOUS_PATTERN' | 'COMPLIANCE_BREACH';
 
@@ -23,13 +24,13 @@ export class WatchtowerService {
   private readonly logger = new Logger(WatchtowerService.name);
 
   constructor(
-    private readonly prisma:    PrismaService,
-    private readonly auditLog:  AuditLogService,
+    private readonly auditLog:      AuditLogService,
+    private readonly poolRepo:       MongoBlindPoolRepository,
+    private readonly b2bDataRepo:    MongoVendorB2BDataRepository,
+    private readonly auditRepo:      AuditLogRepository,
   ) {}
 
-  // Şüpheli işlemi kaydet ve ilgili admin'e bildir
   async flag(event: WatchtowerEvent): Promise<void> {
-    // Şifreli log formatında AuditLog'a kaydet
     await this.auditLog.log({
       actorId:      event.vendorId,
       action:       `WATCHTOWER_FLAG_${event.flag}`,
@@ -51,9 +52,8 @@ export class WatchtowerService {
     });
   }
 
-  // Fiyat tabanı (Price Floor) ihlali tespiti
   async checkPriceFloor(vendorId: string, offeredPrice: number, marketPrice: number): Promise<boolean> {
-    const PRICE_FLOOR_THRESHOLD = 0.30; // Piyasa fiyatının %30 altı şüpheli
+    const PRICE_FLOOR_THRESHOLD = 0.30;
     const isViolation = offeredPrice < marketPrice * (1 - PRICE_FLOOR_THRESHOLD);
 
     if (isViolation) {
@@ -68,12 +68,8 @@ export class WatchtowerService {
     return isViolation;
   }
 
-  // Smart Cap (%25) ihlali tespiti
   async checkSmartCap(poolId: string, vendorId: string, requestedQty: number): Promise<boolean> {
-    const pool = await this.prisma.blindPool.findUnique({
-      where: { id: poolId },
-      select: { totalStock: true },
-    });
+    const pool = await this.poolRepo.findById(poolId);
     if (!pool) return false;
 
     const pct = requestedQty / Number(pool.totalStock);
@@ -91,56 +87,50 @@ export class WatchtowerService {
     return isViolation;
   }
 
-  // Barter SmartCap: teminat tutarı şirket limitini aşıyorsa flag + throw
   async checkBarterSmartCap(
     vendorId: string,
-    collateralAmount: Prisma.Decimal,
+    collateralAmount: number,
     offerId: string,
   ): Promise<void> {
-    const DEFAULT_BARTER_LIMIT = new Prisma.Decimal(50_000);
+    const DEFAULT_BARTER_LIMIT = 50_000;
 
-    // Firmaya özgü barter limitini VendorB2BData'dan al
-    const b2bData = await this.prisma.vendorB2BData.findFirst({
-      where: { vendor: { userId: vendorId } },
-      select: { barterLimitOverride: true, b2bWalletLimit: true },
-    });
+    const b2bData = await this.b2bDataRepo.findByVendorId(vendorId);
 
-    const limit =
-      b2bData?.barterLimitOverride ??
-      b2bData?.b2bWalletLimit ??
-      DEFAULT_BARTER_LIMIT;
+    const limit = b2bData?.barterLimitOverride
+      ? Number(b2bData.barterLimitOverride.toString())
+      : b2bData?.b2bWalletLimit
+      ? Number(b2bData.b2bWalletLimit.toString())
+      : DEFAULT_BARTER_LIMIT;
 
-    if (collateralAmount.gt(limit)) {
+    const collateralNum = Number(collateralAmount);
+
+    if (collateralNum > limit) {
       await this.flag({
         vendorId,
         flag: 'QUOTA_ABUSE',
-        description: `Teminat tutarı (${collateralAmount.toString()} TRY) firma limitini (${limit.toString()} TRY) aşıyor`,
+        description: `Teminat tutarı (${collateralNum} TRY) firma limitini (${limit} TRY) aşıyor`,
         tradeId: offerId,
         severity: 'HIGH',
       });
       throw new DomainException(
-        `Takas teklifi firma barter limitini aşıyor (limit: ${limit.toString()} TRY)`,
+        `Takas teklifi firma barter limitini aşıyor (limit: ${limit} TRY)`,
       );
     }
   }
 
-  // Admin: Watchtower olaylarını listele
   async getFlags(vendorId?: string, limit = 50): Promise<object[]> {
-    const logs = await this.prisma.auditLog.findMany({
-      where: {
-        action:       { startsWith: 'WATCHTOWER_FLAG_' },
-        ...(vendorId ? { actorId: vendorId } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
+    const allLogs = await this.auditRepo.findByAction('WATCHTOWER_FLAG_', limit * 2);
 
-    return logs.map((log) => ({
-      id:          log.id,
-      vendorId:    log.actorId,
-      flag:        log.action.replace('WATCHTOWER_FLAG_', ''),
-      details:     log.newValue,
-      flaggedAt:   log.createdAt,
+    const filtered = vendorId
+      ? allLogs.filter(log => log.actorId === vendorId)
+      : allLogs;
+
+    return filtered.slice(0, limit).map((log) => ({
+      id:        log.id,
+      vendorId:  log.actorId,
+      flag:      log.action.replace('WATCHTOWER_FLAG_', ''),
+      details:   log.newValue,
+      flaggedAt: log.createdAt,
     }));
   }
 }

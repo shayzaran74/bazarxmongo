@@ -1,0 +1,20 @@
+{
+  "name": "@barterborsa/shared-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "reflect-metadata": "^0.2.1",
+    "uuid": "^9.0.1",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.8",
+    "@types/lodash": "^4.14.202"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc"
+  }
+}

@@ -54,6 +54,21 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
       } else {
         this.logger.log(`MinIO Connection OK. Bucket: ${this.bucketName}`);
       }
+
+      // Set bucket policy to public (always ensure it's set)
+      const policy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { AWS: ['*'] },
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${this.bucketName}/*`],
+          },
+        ],
+      };
+      await this.minioClient.setBucketPolicy(this.bucketName, JSON.stringify(policy));
+      this.logger.log(`Bucket politikası public olarak ayarlandı: ${this.bucketName}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes('BucketAlreadyOwnedByYou') || message.includes('already own it')) {

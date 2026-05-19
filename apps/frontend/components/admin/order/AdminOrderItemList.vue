@@ -23,7 +23,7 @@
           </h4>
           <p class="text-xs text-gray-500 mt-1">
             SKU: {{ item.Product?.sku || 'N/A' }} | Satıcı: {{
-              item.Product?.Vendor?.businessName || 'Mağaza' }}
+              item.Product?.Vendor?.profile?.storeName || item.Product?.Vendor?.businessName || 'Mağaza' }}
           </p>
           <div class="flex items-center gap-2 mt-2">
             <span :class="getStatusBadgeClass(item.status || 'PENDING')">{{ getStatusText(item.status || 'PENDING') }}</span>
@@ -77,7 +77,13 @@ interface OrderItemRow {
     name?: string
     image?: string
     sku?: string
-    Vendor?: { businessName?: string }
+    Vendor?: {
+      businessName?: string
+      id?: string
+      profile?: {
+        storeName?: string
+      } | null
+    }
   } | null
 }
 

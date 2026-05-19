@@ -2,7 +2,11 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema,
+  OrderSchema, ReferralSchema, UserLevelSchema, XpTransactionSchema, LoyaltyTierHistorySchema,
+} from '@barterborsa/shared-persistence';
 import { SubscriptionController } from './presentation/subscription.controller';
 import { SubscribeUserHandler } from './application/commands/subscribe-user.handler';
 import { UpgradeTierHandler } from './application/commands/upgrade-tier.handler';
@@ -13,7 +17,19 @@ import { SubscriptionPricingService } from './application/services/subscription-
 import { SubscriptionRenewalService } from './application/services/subscription-renewal.service';
 
 @Module({
-  imports: [CqrsModule, PrismaModule],
+  imports: [
+    CqrsModule,
+    MongooseModule.forFeature([
+      { name: 'UserSubscription',   schema: UserSubscriptionSchema },
+      { name: 'MembershipPlan',     schema: MembershipPlanSchema },
+      { name: 'MenuUsage',          schema: MenuUsageSchema },
+      { name: 'Order',              schema: OrderSchema },
+      { name: 'Referral',           schema: ReferralSchema },
+      { name: 'UserLevel',          schema: UserLevelSchema },
+      { name: 'XpTransaction',      schema: XpTransactionSchema },
+      { name: 'LoyaltyTierHistory', schema: LoyaltyTierHistorySchema },
+    ]),
+  ],
   controllers: [SubscriptionController],
   providers: [
     SubscriptionPricingService,

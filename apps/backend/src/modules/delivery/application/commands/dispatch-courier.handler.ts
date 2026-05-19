@@ -7,7 +7,8 @@ import { Queue } from 'bullmq';
 import { DispatchCourierCommand } from './dispatch-courier.command';
 import { IDeliveryDispatchRepository } from '../../domain/repositories/delivery-dispatch.repository.interface';
 import { IOrderRepository } from '../../../commerce/domain/repositories/order.repository.interface';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DeliveryDispatch } from '../../domain/entities/delivery-dispatch.entity';
 import { OrderStatus } from '../../../commerce/domain/enums/order-status.enum';
@@ -19,7 +20,6 @@ export class DispatchCourierHandler implements ICommandHandler<DispatchCourierCo
   constructor(
     @Inject('IDeliveryDispatchRepository') private readonly dispatchRepo: IDeliveryDispatchRepository,
     @Inject('IOrderRepository') private readonly orderRepository: IOrderRepository,
-    private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
     @InjectQueue(DELIVERY_DISPATCH_QUEUE) private readonly dispatchQueue: Queue,
   ) {}
@@ -30,18 +30,17 @@ export class DispatchCourierHandler implements ICommandHandler<DispatchCourierCo
     const order = await this.orderRepository.findById(orderId);
     if (!order) throw new NotFoundException('Sipariş bulunamadı.');
 
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId, id: order.vendorId },
-      select: { 
-        id: true, 
-        vendorType: true, 
-        company: { select: { name: true } } 
-      },
-    });
+    const vendor = await Vendor.findOne({ userId, id: (order as any).vendorId })
+      .select('id vendorType companyId')
+      .exec();
     if (!vendor) throw new ForbiddenException('Bu sipariş üzerinde işlem yetkiniz yok.');
     if (vendor.vendorType !== 'RESTAURANT') {
       throw new BadRequestException('Bu aksiyon yalnızca RESTAURANT siparişlerinde geçerlidir.');
     }
+
+    const company = vendor.companyId
+      ? await Company.findOne({ id: vendor.companyId }).select('name').exec()
+      : null;
 
     if (![OrderStatus.READY, OrderStatus.AWAITING_PICKUP].includes(order.status)) {
       throw new BadRequestException('Sipariş kuryeye ancak READY veya AWAITING_PICKUP durumlarında verilebilir.');
@@ -64,7 +63,7 @@ export class DispatchCourierHandler implements ICommandHandler<DispatchCourierCo
     const notificationJob: DispatchNotificationJob = {
       dispatchId: dispatch.id!,
       orderId,
-      restaurantName: vendor.company.name || 'Restoran',
+      restaurantName: company?.name || 'Restoran',
       pickupAddress: shippingAddress?.addressLine1 || '',
       customerName: shippingAddress?.firstName || '',
       customerPhone: shippingAddress?.phone || '',

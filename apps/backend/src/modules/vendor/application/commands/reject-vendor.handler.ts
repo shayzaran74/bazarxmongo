@@ -1,36 +1,30 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { RejectVendorCommand } from './reject-vendor.command';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 
 @CommandHandler(RejectVendorCommand)
 export class RejectVendorHandler implements ICommandHandler<RejectVendorCommand> {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(command: RejectVendorCommand) {
     const { vendorId, rejectionReason, adminId } = command;
 
-    const existing = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
-      select: { id: true, status: true },
-    });
-    if (!existing) throw new NotFoundException('Satıcı bulunamadı');
+    const vendor = await this.vendorRepo.findById(vendorId);
+    if (!vendor) throw new NotFoundException('Satıcı bulunamadı');
 
-    // State machine: yalnızca PENDING vendor reddedilebilir
-    if (existing.status !== 'PENDING') {
+    if (vendor.status !== 'PENDING') {
       throw new BadRequestException(
-        `Bu satıcı zaten "${existing.status}" durumunda, reddedilemez`,
+        `Bu satıcı zaten "${vendor.status}" durumunda, reddedilemez`,
       );
     }
 
-    const vendor = await this.prisma.vendor.update({
-      where: { id: vendorId },
-      data: { status: 'REJECTED', rejectionReason },
-    });
+    await this.vendorRepo.update(vendorId, { status: 'REJECTED', rejectionReason });
 
     await this.auditLog.log({
       actorId:      adminId,
@@ -41,6 +35,6 @@ export class RejectVendorHandler implements ICommandHandler<RejectVendorCommand>
       newValue:     { status: 'REJECTED', rejectionReason },
     });
 
-    return vendor;
+    return { id: vendorId, status: 'REJECTED' };
   }
 }

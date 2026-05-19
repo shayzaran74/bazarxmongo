@@ -1,40 +1,49 @@
 // apps/financial-service/src/modules/commission/infrastructure/persistence/mappers/commission.mapper.ts
 
 import { Injectable } from '@nestjs/common';
-import { CommissionRecord as PrismaCommission } from '../../../../../generated/client';
+import { Types } from 'mongoose';
+import { Decimal } from 'decimal.js';
+import { IFinancialCommissionRecord } from '@barterborsa/shared-persistence';
 import { CommissionRecord } from '../../../domain/entities/commission-record.entity';
+
+const fromD128 = (v: Types.Decimal128): Decimal => new Decimal(v.toString());
+const toD128 = (v: Decimal): Types.Decimal128 =>
+  Types.Decimal128.fromString(v.toFixed(4));
 
 @Injectable()
 export class CommissionMapper {
-  toDomain(raw: PrismaCommission): CommissionRecord {
-    return new CommissionRecord({
-      orderId: raw.orderId || undefined,
-      tradeOfferId: raw.tradeOfferId || undefined,
-      vendorId: raw.vendorId,
-      vendorTier: raw.vendorTier,
-      baseAmount: raw.baseAmount,
-      commissionRate: raw.commissionRate,
-      commissionAmount: raw.commissionAmount,
-      commissionType: raw.commissionType as 'CASH' | 'BARTER',
-      status: raw.status as 'CALCULATED' | 'COLLECTED' | 'FAILED',
-      createdAt: raw.createdAt,
-      collectedAt: raw.collectedAt || undefined,
-    }, raw.id);
+  toDomain(raw: IFinancialCommissionRecord): CommissionRecord {
+    return new CommissionRecord(
+      {
+        orderId:          raw.orderId ?? undefined,
+        tradeOfferId:     raw.tradeOfferId ?? undefined,
+        vendorId:         raw.vendorId,
+        vendorTier:       raw.vendorTier,
+        baseAmount:       fromD128(raw.baseAmount),
+        commissionRate:   fromD128(raw.commissionRate),
+        commissionAmount: fromD128(raw.commissionAmount),
+        commissionType:   raw.commissionType as 'CASH' | 'BARTER',
+        status:           raw.status as 'CALCULATED' | 'COLLECTED' | 'FAILED',
+        createdAt:        raw.createdAt,
+        collectedAt:      raw.collectedAt ?? undefined,
+      },
+      raw.id,
+    );
   }
 
-  toPersistence(entity: CommissionRecord) {
+  toPersistence(entity: CommissionRecord): Partial<IFinancialCommissionRecord> {
     return {
-      orderId: entity.orderId,
-      tradeOfferId: entity.tradeOfferId,
-      vendorId: entity.vendorId,
-      vendorTier: entity.vendorTier,
-      baseAmount: entity.baseAmount,
-      commissionRate: entity.commissionRate,
-      commissionAmount: entity.commissionAmount,
-      commissionType: entity.commissionType,
-      status: entity.status,
-      createdAt: entity.createdAt,
-      collectedAt: entity.collectedAt,
+      orderId:          entity.orderId,
+      tradeOfferId:     entity.tradeOfferId,
+      vendorId:         entity.vendorId,
+      vendorTier:       entity.vendorTier,
+      baseAmount:       toD128(entity.baseAmount),
+      commissionRate:   toD128(entity.commissionRate),
+      commissionAmount: toD128(entity.commissionAmount),
+      commissionType:   entity.commissionType as IFinancialCommissionRecord['commissionType'],
+      status:           entity.status as IFinancialCommissionRecord['status'],
+      createdAt:        entity.createdAt,
+      collectedAt:      entity.collectedAt,
     };
   }
 }

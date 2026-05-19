@@ -256,7 +256,10 @@
 </template>
 
 <script setup>
-definePageMeta({ middleware: ['auth', 'admin'] })
+definePageMeta({
+  layout:     'admin',
+  middleware: ['auth', 'admin'],
+})
 
 import { ref, onMounted } from 'vue'
 const { $api } = useApi()

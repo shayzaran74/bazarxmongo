@@ -285,7 +285,7 @@ const handleFileUpload = async (event: Event) => {
 
   try {
     const { $api } = useApi()
-    const response = await $api<ImportResult>('/api/vendors/products/bulk/import', {
+    const response = await $api<ImportResult>('/api/v1/vendors/products/bulk/import', {
       method: 'POST',
       body: formData
     })

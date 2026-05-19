@@ -2,56 +2,69 @@
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { ListVendorsQuery } from './list-vendors.query';
-import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { PaginatedResult } from '@barterborsa/shared-core';
-import { Inject } from '@nestjs/common';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { User } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
 
 @QueryHandler(ListVendorsQuery)
 export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
-  constructor(
-    @Inject('IVendorRepository')
-    private readonly vendorRepository: IVendorRepository,
-  ) {}
 
   async execute(query: ListVendorsQuery): Promise<any> {
     const { params } = query;
-    const skip = (Number(params.page || 1) - 1) * Number(params.limit || 10);
-    const take = Number(params.limit || 10);
+    const page  = Number(params.page  || 1);
+    const limit = Number(params.limit || 10);
+    const skip  = (page - 1) * limit;
 
-    const { items, total } = await this.vendorRepository.search({
-      status: params.status,
-      tier: params.tier,
-      vendorType: params.vendorType,
-      city: params.city,
-      searchTerm: params.search,
-      skip,
-      take,
+    const filter: Record<string, unknown> = {};
+    if (params.status)     filter.status     = params.status.toUpperCase();
+    if (params.tier)       filter.tier       = params.tier.toUpperCase();
+    if (params.vendorType) filter.vendorType = params.vendorType;
+    if (params.search)     filter.$or = [
+      { slug: { $regex: params.search, $options: 'i' } },
+      { userId: { $regex: params.search, $options: 'i' } },
+    ];
+
+    const [vendors, total] = await Promise.all([
+      Vendor.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).lean().exec(),
+      Vendor.countDocuments(filter).exec(),
+    ]);
+
+    const companyIds = [...new Set(vendors.map((v: any) => v.companyId).filter(Boolean))];
+    const userEmails = [...new Set(vendors.map((v: any) => v.userId).filter(Boolean))];
+
+    const [companies, users] = await Promise.all([
+      companyIds.length ? Company.find({ id: { $in: companyIds } }).lean().exec() : [],
+      userEmails.length ? User.find({ email: { $in: userEmails } }).lean().exec() : [],
+    ]);
+
+    const companyMap = new Map((companies as any[]).map(c => [c.id, c]));
+    const userMap    = new Map((users as any[]).map(u => [u.email, u]));
+
+    const items = vendors.map((v: any) => {
+      const company = companyMap.get(v.companyId);
+      const user    = userMap.get(v.userId);
+      return {
+        id:          v.id,
+        slug:        v.slug,
+        tier:        v.tier,
+        status:      v.status,
+        vendorType:  v.vendorType,
+        userId:      v.userId,
+        companyId:   v.companyId,
+        businessName: company?.name || 'İsimsiz İşletme',
+        email:       user?.email || v.userId,
+        phone:       user?.phoneNumber || null,
+        productCount: 0,
+        isFeatured:  v.isFeatured || false,
+        profile: {
+          storeName: company?.name || v.slug || 'İsimsiz İşletme',
+          city: v.city || null,
+          imageUrl: v.logo || null,
+          isFeatured: v.isFeatured || false,
+        },
+      };
     });
 
-    return {
-      items: items.map(vendor => ({
-        id: vendor.id,
-        slug: vendor.slug.value,
-        tier: vendor.tier,
-        status: vendor.status,
-        vendorType: vendor.vendorType,
-        profile: vendor.profile ? {
-          storeName: vendor.profile.storeName,
-          description: vendor.profile.description,
-          city: vendor.profile.city,
-          cuisineType: vendor.profile.cuisineType,
-          rating: vendor.profile.rating,
-          reviewCount: vendor.profile.reviewCount,
-          avgPrepTime: vendor.profile.avgPrepTimeMinutes,
-          minOrderAmount: vendor.profile.minOrderAmount,
-          deliveryRadius: vendor.profile.deliveryRadius,
-          isFeatured: vendor.profile.isFeatured,
-          imageUrl: vendor.profile.imageUrl,
-        } : null,
-      })),
-      total,
-      page: Number(params.page || 1),
-      limit: take,
-    };
+    return { items, total, page, limit };
   }
 }

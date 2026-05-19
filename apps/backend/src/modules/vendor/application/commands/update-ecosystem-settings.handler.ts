@@ -1,31 +1,31 @@
 // apps/backend/src/modules/vendor/application/commands/update-ecosystem-settings.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateEcosystemSettingsCommand } from './update-ecosystem-settings.command';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
+import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 
 @CommandHandler(UpdateEcosystemSettingsCommand)
 export class UpdateEcosystemSettingsHandler
   implements ICommandHandler<UpdateEcosystemSettingsCommand> {
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
+  ) {}
 
   async execute(command: UpdateEcosystemSettingsCommand) {
     const { userId, settings } = command;
 
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId },
-      include: { brandEcosystem: { select: { id: true, isBlindPool: true, internalCommRate: true } } },
-    });
-
-    if (!vendor?.brandEcosystem) {
+    const vendor = await this.vendorRepo.findByUserId(userId);
+    if (!vendor?.ecosystemId) {
       throw new NotFoundException('Bu kullanıcıya ait bir ekosistem bulunamadı');
     }
 
-    const ecosystem = vendor.brandEcosystem;
-
-    // Sadece owner güncelleyebilir (admin zaten bu handler'ı RBAC'ten geçip çağırır)
     if (vendor.userId !== userId) {
       throw new ForbiddenException('Ekosistem ayarlarını yalnızca sahibi güncelleyebilir');
     }
@@ -34,25 +34,16 @@ export class UpdateEcosystemSettingsHandler
     if (settings.isBlindPool !== undefined) updateData.isBlindPool = settings.isBlindPool;
     if (settings.internalCommRate !== undefined) updateData.internalCommRate = settings.internalCommRate;
 
-    const updated = await this.prisma.brandEcosystem.update({
-      where: { id: ecosystem.id },
-      data: updateData,
-    });
+    const updated = await this.ecosystemRepo.update(vendor.ecosystemId, updateData as { isBlindPool?: boolean; internalCommRate?: number });
 
-    await this.prisma.ecosystemAuditLog.create({
-      data: {
-        action: 'SETTINGS_UPDATED',
-        severity: 'HIGH',
-        ecosystemId: ecosystem.id,
-        vendorId: vendor.id,
-        details: {
-          updatedBy: userId,
-          oldValues: {
-            isBlindPool: ecosystem.isBlindPool,
-            internalCommRate: ecosystem.internalCommRate.toString(),
-          },
-          newValues: updateData,
-        } as any,
+    await this.auditLogRepo.create({
+      ecosystemId: vendor.ecosystemId,
+      vendorId: vendor.id,
+      action: 'SETTINGS_UPDATED',
+      severity: 'HIGH',
+      details: {
+        updatedBy: userId,
+        newValues: updateData,
       },
     });
 

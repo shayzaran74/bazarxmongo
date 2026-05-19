@@ -1,102 +1,86 @@
+// apps/backend/src/modules/catalog/application/commands/update-listing.handler.ts
+
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { UpdateListingCommand } from './update-listing.command';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 @CommandHandler(UpdateListingCommand)
 export class UpdateListingHandler implements ICommandHandler<UpdateListingCommand> {
-  constructor(private readonly prisma: PrismaService) {}
-
   async execute(command: UpdateListingCommand) {
     const { userId, userRole, id, dto } = command;
 
-    const listing = await this.prisma.listing.findUnique({
-      where: { id },
-      include: { vendor: true }
-    });
+    const listing = await Listing.findOne({ id }).exec();
+    if (!listing) throw new NotFoundException('İlan bulunamadı');
 
-    if (!listing) {
-      throw new NotFoundException('İlan bulunamadı');
-    }
-
-    const isAdmin = Array.isArray(userRole) 
-      ? userRole.includes('ADMIN') 
+    const isAdmin = Array.isArray(userRole)
+      ? userRole.includes('ADMIN')
       : userRole === 'ADMIN';
 
-    // Yetki Kontrolü
     if (!isAdmin) {
-      const vendor = await this.prisma.vendor.findUnique({
-        where: { userId }
-      });
-
-      if (!vendor || listing.vendorId !== vendor.id) {
+      const vendor = await Vendor.findOne({ userId }).exec();
+      if (!vendor || (listing as any).vendorId !== vendor.id) {
         throw new ForbiddenException('Bu ilanı güncelleme yetkiniz yok');
       }
     }
 
-    // Güncelleme işlemi
-    const updateData: any = {
-      title: dto.title || dto.name,
-      description: dto.description,
-      price: dto.price !== undefined ? Number(dto.price) : undefined,
-      status: dto.status,
-      sku: dto.sku,
-      visibility: dto.visibility,
-      minMarketPrice: dto.minMarketPrice !== undefined ? Number(dto.minMarketPrice) : undefined,
-      maxPurchasePerMember: dto.maxPurchasePerMember !== undefined ? Number(dto.maxPurchasePerMember) : undefined,
-      originalPrice: dto.compareAtPrice !== undefined ? Number(dto.compareAtPrice) : undefined,
-      weight: dto.weight !== undefined ? Number(dto.weight) : undefined,
-      volume: dto.volume !== undefined ? Number(dto.volume) : undefined,
-      isDigital: dto.isDigital,
-      isB2BOnly: dto.isB2BOnly,
-    };
+    const updateData: Record<string, unknown> = {};
+    if (dto.title || dto.name) updateData.title = dto.title || dto.name;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.price !== undefined) updateData.price = Number(dto.price);
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.sku !== undefined) updateData.sku = dto.sku;
+    if (dto.visibility !== undefined) updateData.visibility = dto.visibility;
+    if (dto.minMarketPrice !== undefined) updateData.minMarketPrice = Number(dto.minMarketPrice);
+    if (dto.maxPurchasePerMember !== undefined) updateData.maxPurchasePerMember = Number(dto.maxPurchasePerMember);
+    if (dto.compareAtPrice !== undefined) updateData.originalPrice = Number(dto.compareAtPrice);
+    if (dto.weight !== undefined) updateData.weight = Number(dto.weight);
+    if (dto.volume !== undefined) updateData.volume = Number(dto.volume);
+    if (dto.isDigital !== undefined) updateData.isDigital = dto.isDigital;
+    if (dto.isB2BOnly !== undefined) updateData.isB2BOnly = dto.isB2BOnly;
 
     if (dto.stock !== undefined) {
       const newStock = Number(dto.stock);
       const stockDiff = newStock - listing.stock;
       updateData.stock = newStock;
-      updateData.availableQuantity = listing.availableQuantity + stockDiff;
-      
-      // Eğer stok arttıysa ve status OUT_OF_STOCK ise ACTIVE yapalım
-      if (updateData.availableQuantity > 0 && listing.status === 'OUT_OF_STOCK') {
+      updateData.availableQuantity = Number((listing as any).availableQuantity || 0) + stockDiff;
+      if (Number(updateData.availableQuantity) > 0 && listing.status === 'OUT_OF_STOCK') {
         updateData.status = 'ACTIVE';
       }
     }
 
-    const updatedListing = await this.prisma.listing.update({
-      where: { id },
-      data: updateData
-    });
+    const updatedListing = await Listing.findOneAndUpdate(
+      { id },
+      { $set: updateData },
+      { new: true }
+    ).exec();
 
-    // CatalogProduct güncellemesi (Kategori, isim vb. için)
     if (listing.catalogProductId && (dto.categoryId || dto.name || dto.title || dto.description)) {
-      const catalogData: any = {};
+      const catalogData: Record<string, unknown> = {};
       if (dto.categoryId) catalogData.categoryId = dto.categoryId;
       if (dto.name || dto.title) catalogData.name = dto.name || dto.title;
       if (dto.description) catalogData.description = dto.description;
 
-      await this.prisma.catalogProduct.update({
-        where: { id: listing.catalogProductId },
-        data: catalogData
-      });
+      await CatalogProduct.updateOne(
+        { id: listing.catalogProductId },
+        { $set: catalogData }
+      ).exec();
 
-      // Medya (Resim) Güncellemesi
       if (dto.productImages && Array.isArray(dto.productImages)) {
-        // Önce eskileri sil (veya senkronize et)
-        await this.prisma.productMedia.deleteMany({
-          where: { productId: listing.catalogProductId }
-        });
-
-        // Yenileri ekle
+        await ProductMedia.deleteMany({ productId: listing.catalogProductId }).exec();
         if (dto.productImages.length > 0) {
-          await this.prisma.productMedia.createMany({
-            data: dto.productImages.map((url: string, index: number) => ({
-              productId: listing.catalogProductId!,
-              url,
-              type: 'IMAGE',
-              sortOrder: index
-            }))
-          });
+          const mediaDocs = dto.productImages.map((url: string, index: number) => ({
+            id: 'media-' + Date.now() + '-' + index,
+            productId: listing.catalogProductId,
+            url,
+            type: 'IMAGE',
+            sortOrder: index,
+          }));
+          await ProductMedia.insertMany(mediaDocs);
         }
       }
     }

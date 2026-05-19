@@ -60,18 +60,18 @@ export const useVendorService = () => {
         },
 
         async getMyListings(params: any = {}): Promise<ApiResponse<PaginatedResponse<any>>> {
-            return await $api<PaginatedResponse<any>>('/api/listings', { query: { ...params, scope: 'vendor' } })
+            return await $api<PaginatedResponse<any>>('/api/v1/listings', { query: { ...params, scope: 'vendor' } })
         },
 
         async createListing(data: any): Promise<ApiResponse<any>> {
-            return await $api<any>('/api/listings', {
+            return await $api<any>('/api/v1/listings', {
                 method: 'POST',
                 body: data
             })
         },
 
         async updateListing(id: string, data: any): Promise<ApiResponse<any>> {
-            return await $api<any>(`/api/listings/${id}`, {
+            return await $api<any>(`/api/v1/listings/${id}`, {
                 method: 'PUT',
                 body: data
             })

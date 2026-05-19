@@ -1,5 +1,5 @@
 // apps/backend/src/modules/commerce/presentation/order-admin.controller.ts
-import { Controller, Get, Query, UseGuards, Param, Patch, Post, Body } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Param, Patch, Post, Body, Inject, BadRequestException } from '@nestjs/common';
 import { QueryBus, CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -14,6 +14,8 @@ import { ResolveOrderDisputeDto } from './dto/resolve-dispute.dto';
 import { UpdateOrderStatusDto } from '../application/dtos/update-order-status.dto';
 import { BulkUpdateOrderStatusDto } from '../application/dtos/bulk-update-order-status.dto';
 import { CancelOrderAdminDto } from '../application/dtos/cancel-order-admin.dto';
+import { IOrderRepository } from '../domain/repositories/order.repository.interface';
+import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 
 interface AuthenticatedUser {
   id: string;
@@ -29,6 +31,8 @@ export class OrderAdminController {
   constructor(
     private readonly queryBus: QueryBus,
     private readonly commandBus: CommandBus,
+    @Inject('IOrderRepository') private readonly orderRepo: IOrderRepository,
+    private readonly financialGateway: FinancialGatewayService,
   ) {}
 
   @ApiOperation({ summary: 'Tüm siparişleri listele (Admin)' })
@@ -118,5 +122,96 @@ export class OrderAdminController {
     return this.commandBus.execute(
       new ResolveOrderDisputeCommand(disputeId, admin.id, dto.resolution, dto.adminNote),
     );
+  }
+
+  @ApiOperation({ summary: 'Onay bekleyen hak edişleri listele' })
+  @Get('payouts/pending')
+  async getPendingPayouts() {
+    const orderModel = (this.orderRepo as any).model;
+    const docs = await orderModel.find({ escrowStatus: 'HELD' }).lean().exec();
+
+    const formattedOrders = [];
+    for (const doc of docs) {
+      const orderItems = [];
+      for (const item of (doc.items || [])) {
+        const vendorId = doc.vendorId;
+        let vendorName = 'Mağaza';
+        let commissionRate = 10.0;
+        
+        if (vendorId) {
+          const vendorDoc = await orderModel.db.collection('vendors').findOne({ id: vendorId });
+          if (vendorDoc) {
+            commissionRate = vendorDoc.commissionRate || 10.0;
+            if (vendorDoc.companyId) {
+              const companyDoc = await orderModel.db.collection('companies').findOne({ id: vendorDoc.companyId });
+              if (companyDoc) {
+                vendorName = companyDoc.name || 'Mağaza';
+              }
+            }
+          }
+        }
+        
+        orderItems.push({
+          id: item.id || `item-${item.listingId}`,
+          price: item.price ? (typeof item.price === 'object' && '$numberDecimal' in item.price ? Number(item.price.$numberDecimal) : Number(item.price)) : 0,
+          quantity: item.quantity || 1,
+          Product: {
+            vendorId,
+            Vendor: {
+              id: vendorId,
+              businessName: vendorName,
+              commissionRate,
+            }
+          }
+        });
+      }
+      
+      formattedOrders.push({
+        id: doc.id,
+        orderNumber: doc.orderNumber,
+        createdAt: doc.createdAt,
+        payoutEligibleAt: doc.payoutEligibleAt,
+        OrderItem: orderItems,
+      });
+    }
+
+    return { success: true, data: formattedOrders };
+  }
+
+  @ApiOperation({ summary: 'Hak edişi onayla ve serbest bırak' })
+  @Post('payouts/:id/approve')
+  async approvePayout(@Param('id') id: string) {
+    const order = await this.orderRepo.findById(id);
+    if (!order) {
+      throw new BadRequestException('Sipariş bulunamadı');
+    }
+
+    const props = order.getProps();
+    if (props.escrowStatus !== 'HELD') {
+      throw new BadRequestException(`Bu siparişin hak edişi serbest bırakılmaya uygun değil (durum: ${props.escrowStatus})`);
+    }
+
+    const escrowHoldId = props.escrowHoldId;
+    if (!escrowHoldId) {
+      throw new BadRequestException('Siparişe ait escrow kilidi bulunamadı');
+    }
+
+    const idempotencyKey = `release-order-${order.id}-${props.orderNumber?.value || order.id}-manual`;
+    const result: any = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
+
+    if (!result.success) {
+      throw new BadRequestException(result.error || 'Hak ediş serbest bırakılamadı');
+    }
+
+    await this.orderRepo.updateOne(
+      order.id,
+      {
+        escrowStatus: 'RELEASED',
+        payoutStatus: 'PAID_TO_VENDOR',
+        completedAt: new Date(),
+      }
+    );
+
+    return { success: true, message: 'Hak ediş serbest bırakıldı' };
   }
 }

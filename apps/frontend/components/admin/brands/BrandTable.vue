@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { MagnifyingGlassIcon, StarIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, StarIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/vue/20/solid'
 defineProps({
   brands: Array, totalItems: Number, totalPages: Number,
   currentPage: Number, searchQuery: String, selectedLetter: String,

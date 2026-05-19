@@ -1,6 +1,6 @@
 // apps/backend/src/modules/vendor/application/services/file-parser.service.ts
 
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 
 // Dosyadan parse edilen ham satır tipi
@@ -10,17 +10,25 @@ export interface ParsedRow {
 
 @Injectable()
 export class FileParserService {
+  private readonly logger = new Logger(FileParserService.name);
+
   // RFC 4180 uyumlu CSV satır ayrıştırıcı — virgül içeren değerleri doğru işler
   parseCSV(content: string): ParsedRow[] {
+    this.logger.debug(`[parseCSV] Gelen içerik uzunluğu: ${content.length} char`);
     // UTF-8 BOM varsa temizle
     const stripped = content.startsWith('﻿') ? content.slice(1) : content;
     const lines = stripped.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    if (lines.length < 2) return [];
+    this.logger.debug(`[parseCSV] Satır sayısı (boş satırlar filtreli): ${lines.length}`);
+    if (lines.length < 2) {
+      this.logger.warn('[parseCSV] Yeterli satır yok (header + data en az 2 olmalı)');
+      return [];
+    }
 
     const headers = this.parseCSVLine(lines[0]).map((h) =>
       h.toLowerCase().trim(),
     );
-    return lines.slice(1).map((line) => {
+    this.logger.debug(`[parseCSV] Header sayısı: ${headers.length}, başlıklar: ${headers.join(', ')}`);
+    const rows = lines.slice(1).map((line, idx) => {
       const values = this.parseCSVLine(line);
       const row: ParsedRow = {};
       headers.forEach((h, i) => {
@@ -28,6 +36,8 @@ export class FileParserService {
       });
       return row;
     });
+    this.logger.debug(`[parseCSV] Parse edilen veri satırı: ${rows.length}`);
+    return rows;
   }
 
   // Tırnak içi virgülleri doğru yönetir, çift tırnaktan kaçar
@@ -56,7 +66,24 @@ export class FileParserService {
     return result;
   }
 
+  parseJSON(content: string): ParsedRow[] {
+    try {
+      const parsed: unknown = JSON.parse(content);
+      const arr: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
+      return arr.map((item) => {
+        const row: ParsedRow = {};
+        for (const [k, v] of Object.entries(item as Record<string, unknown>)) {
+          row[k.toLowerCase().trim()] = v !== null && v !== undefined ? String(v) : '';
+        }
+        return row;
+      });
+    } catch {
+      throw new BadRequestException('JSON dosyası işlenemedi. Geçerli bir JSON dizisi olmalı.');
+    }
+  }
+
   async parseExcel(buffer: Buffer): Promise<ParsedRow[]> {
+    this.logger.debug(`[parseExcel] Buffer boyutu: ${buffer.length} byte`);
     try {
       // xlsx backend package.json'da kayıtlı (build-time bağımlılık)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -66,6 +93,7 @@ export class FileParserService {
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
         defval: '',
       });
+      this.logger.debug(`[parseExcel] Sheet "${workbook.SheetNames[0]}" — satır: ${rows.length}`);
       return rows.map((row) => {
         const normalized: ParsedRow = {};
         for (const [k, v] of Object.entries(row)) {
@@ -73,7 +101,9 @@ export class FileParserService {
         }
         return normalized;
       });
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+      this.logger.error(`[parseExcel] Hata: ${msg}`);
       throw new BadRequestException('Excel dosyası işlenemedi.');
     }
   }

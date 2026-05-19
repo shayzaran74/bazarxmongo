@@ -1,45 +1,32 @@
+// apps/backend/src/modules/catalog/application/commands/delete-listing.handler.ts
+
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { DeleteListingCommand } from './delete-listing.command';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 @CommandHandler(DeleteListingCommand)
 export class DeleteListingHandler implements ICommandHandler<DeleteListingCommand> {
-  constructor(private readonly prisma: PrismaService) {}
-
   async execute(command: DeleteListingCommand) {
     const { userId, userRole, id } = command;
 
-    const listing = await this.prisma.listing.findUnique({
-      where: { id },
-      include: { vendor: true }
-    });
+    const listing = await Listing.findOne({ id }).exec();
+    if (!listing) throw new NotFoundException('İlan bulunamadı');
 
-    if (!listing) {
-      throw new NotFoundException('İlan bulunamadı');
-    }
-
-    const isAdmin = Array.isArray(userRole) 
-      ? userRole.includes('ADMIN') 
+    const isAdmin = Array.isArray(userRole)
+      ? userRole.includes('ADMIN')
       : userRole === 'ADMIN';
 
-    // Eğer ADMIN değilse, ilanın sahibi olan vendor mu kontrol et
     if (!isAdmin) {
-      const vendor = await this.prisma.vendor.findUnique({
-        where: { userId }
-      });
-
-      if (!vendor || listing.vendorId !== vendor.id) {
+      const vendor = await Vendor.findOne({ userId }).exec();
+      if (!vendor || (listing as any).vendorId !== vendor.id) {
         throw new ForbiddenException('Bu ilanı silme yetkiniz yok');
       }
     }
 
-    // İlanı sil (veya pasife çek)
-    // Sipariş geçmişi varsa silme hata verebilir, bu yüzden prisma transaction veya soft delete düşünülebilir
-    await this.prisma.listing.delete({
-      where: { id }
-    });
-
+    await Listing.deleteOne({ id }).exec();
     return { success: true };
   }
 }

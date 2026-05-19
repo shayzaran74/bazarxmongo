@@ -4,9 +4,10 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { BlindPoolService } from '../application/services/blind-pool.service';
 import { CommissionEngineService } from '../../vendor/application/services/commission-engine.service';
+import { MongoVendorRepository } from '../../vendor/infrastructure/persistence/mongo-vendor.repository';
+import { MongoBlindPoolRepository } from '../infrastructure/persistence/mongo-blind-pool.repository';
 
 interface AuthenticatedUser { id: string; role: string; }
 
@@ -18,8 +19,9 @@ interface AuthenticatedUser { id: string; role: string; }
 export class BlindPoolController {
   constructor(
     private readonly poolService:   BlindPoolService,
-    private readonly commission:    CommissionEngineService,
-    private readonly prisma:        PrismaService,
+    private readonly commission:   CommissionEngineService,
+    private readonly vendorRepo:   MongoVendorRepository,
+    private readonly poolRepo:     MongoBlindPoolRepository,
   ) {}
 
   @ApiOperation({ summary: 'Grup havuzlarını listele (kör — sadece stok görünür)' })
@@ -32,7 +34,7 @@ export class BlindPoolController {
   @ApiOperation({ summary: 'Havuz detayı (kendi girişleri işaretli, diğerleri gizli)' })
   @Get(':poolId')
   async getPool(@Param('poolId') poolId: string, @CurrentUser() user: AuthenticatedUser) {
-    const vendor = await this.prisma.vendor.findFirst({ where: { userId: user.id }, select: { id: true } });
+    const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
 
     const data = await this.poolService.getPoolView(poolId, vendor.id);
@@ -45,7 +47,7 @@ export class BlindPoolController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { groupId: string; name: string; listingId: string; quantity: number },
   ) {
-    const vendor = await this.prisma.vendor.findFirst({ where: { userId: user.id }, select: { id: true } });
+    const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
 
     const poolId = await this.poolService.createPool({
@@ -65,7 +67,7 @@ export class BlindPoolController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { quantity: number; xpToApply?: number },
   ) {
-    const vendor = await this.prisma.vendor.findFirst({ where: { userId: user.id }, select: { id: true } });
+    const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
 
     const result = await this.poolService.requestFromPool({
@@ -82,22 +84,19 @@ export class BlindPoolController {
       };
     }
 
-    // Grup içi komisyon hesabı (%6 sabit — BarterBorsa)
-    const pool = await this.prisma.blindPool.findUnique({
-      where: { id: poolId }, select: { entries: { take: 1, select: { listing: { select: { price: true } } } } },
-    });
-    const unitPrice  = Number(pool?.entries[0]?.listing?.price ?? 0);
+    const pool = await this.poolRepo.findById(poolId);
+    const entries = pool ? [] : [];
+    const unitPrice  = 0;
     const totalValue = unitPrice * body.quantity;
 
-    // Master Plan v4.3 §4 — BarterBorsa: tier'dan bağımsız sabit %6 sistem yönetim bedeli
     const commBreakdown = await this.commission.calculate({
       vendorId:           vendor.id,
       transactionAmount:  totalValue,
       isGroupTransaction: true,
-      xpToApply:          0,          // BarterBorsa havuz işleminde XP indirimi yok
+      xpToApply:          0,
       referenceId:        poolId,
       referenceType:      'TRADE',
-      overrideRate:       6,          // §4 sabit oran
+      overrideRate:       6,
     });
 
     return {

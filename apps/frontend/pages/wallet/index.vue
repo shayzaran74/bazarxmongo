@@ -194,7 +194,11 @@ const loadTransactions = async () => {
       ? await fetchTransactions({ limit: 15 })
       : await fetchAccountTransactions(selectedAccountId.value, { limit: 15 })
     
-    if (res.success) transactions.value = res.data || []
+    if (res.success) {
+      const rawData = res.data
+      const items = Array.isArray(rawData) ? rawData : (rawData?.items || [])
+      transactions.value = items.filter(tx => (tx.account?.type || tx.accountType) !== 'SYSTEM')
+    }
   } finally {
     txLoading.value = false
   }

@@ -1,30 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { RedisService } from '@barterborsa/shared-security'; // or wherever it is
+import { Session as SessionModel } from '@barterborsa/shared-persistence';
 
 @Injectable()
 export class SessionService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly redis: RedisService
-  ) {}
 
   async createSession(userId: string, userAgent?: string, ipAddress?: string) {
-    return this.prisma.session.create({
-      data: {
-        userId,
-        userAgent,
-        ipAddress,
-        lastActiveAt: new Date()
-      }
+    return SessionModel.create({
+      userId,
+      userAgent,
+      ipAddress,
+      lastActiveAt: new Date()
     });
   }
 
   async invalidateSession(sessionId: string) {
-    await this.prisma.session.delete({ where: { id: sessionId } });
+    await SessionModel.deleteOne({ id: sessionId }).exec();
   }
 
   async invalidateAllUserSessions(userId: string) {
-    await this.prisma.session.deleteMany({ where: { userId } });
+    await SessionModel.deleteMany({ userId }).exec();
   }
 }

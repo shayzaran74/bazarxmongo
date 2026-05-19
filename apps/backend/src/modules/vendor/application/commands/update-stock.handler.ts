@@ -1,56 +1,48 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Logger, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateStockCommand } from './update-stock.command';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
+import { MongoInventoryLogRepository } from '../../infrastructure/persistence/mongo-inventory-log.repository';
+import { MongoListingRepository } from '../../../catalog/infrastructure/persistence/mongo-listing.repository';
 
 @CommandHandler(UpdateStockCommand)
 export class UpdateStockHandler implements ICommandHandler<UpdateStockCommand> {
   private readonly logger = new Logger(UpdateStockHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly listingRepo: MongoListingRepository,
+    private readonly inventoryLogRepo: MongoInventoryLogRepository,
+  ) {}
 
   async execute(command: UpdateStockCommand) {
     const { listingId, userId, change, reason } = command;
 
-    // 1. Vendor lookup
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId }
-    });
+    const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    // 2. Listing ownership check
-    const listing = await this.prisma.listing.findFirst({
-      where: { id: listingId, vendorId: vendor.id }
-    });
-    if (!listing) throw new NotFoundException('Listing not found');
+    const listing = await this.listingRepo.findById(listingId);
+    if (!listing || listing.vendorId !== vendor.id) throw new NotFoundException('Listing not found');
 
-    // 3. Stock güncelle
     const newStock = Math.max(0, listing.stock + change);
-    const updated = await this.prisma.listing.update({
-      where: { id: listingId },
-      data: { stock: newStock }
-    });
+    const updated = await this.listingRepo.update(listingId, { stock: newStock });
 
-    // 4. InventoryLog kaydı (Schema'ya tam uyumlu mapping)
     try {
-      await this.prisma.inventoryLog.create({
-        data: {
-          vendorId: vendor.id,
-          listingId: listingId,
-          quantity: change,
-          type: change > 0 ? 'MANUAL_IN' : 'MANUAL_OUT',
-          referenceType: 'MANUAL_ADJUSTMENT',
-          referenceId: null,
-          // Not: 'reason' field'ı schema'da olmadığı için metadata/log bazlı tutuluyor
-        }
+      await this.inventoryLogRepo.create({
+        vendorId: vendor.id,
+        listingId,
+        quantity: change,
+        type: change > 0 ? 'ADJUSTMENT' : 'ADJUSTMENT',
+        reason,
+        referenceType: 'MANUAL_ADJUSTMENT',
       });
-      
+
       this.logger.log(
         `Stock updated: listing=${listingId}, change=${change}, reason=${reason}, newStock=${newStock}`
       );
-    } catch (e: any) {
-      // Log hatası işlemin kendisini (stock update) iptal etmemeli
-      this.logger.warn(`InventoryLog yazılamadı: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.warn(`InventoryLog yazılamadı: ${(e as Error).message}`);
     }
 
     return { success: true, data: updated };

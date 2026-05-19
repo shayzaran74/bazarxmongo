@@ -3,7 +3,10 @@
 // Vendor Prime 1-4 paketi satın aldığında AdCampaign oluşturur ve fiyat/içeriği uygular.
 
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Types } from 'mongoose';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { VendorB2BData } from '@barterborsa/shared-persistence/schemas/backend/vendorB2BData.schema';
+import { AdCampaign } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import {
   B2BAdPackageType,
@@ -36,10 +39,7 @@ export interface B2BAdPackagePurchaseResult {
 export class B2BAdPackageService {
   private readonly logger = new Logger(B2BAdPackageService.name);
 
-  constructor(
-    private readonly prisma:   PrismaService,
-    private readonly auditLog: AuditLogService,
-  ) {}
+  constructor(private readonly auditLog: AuditLogService) {}
 
   // Tüm paketleri listele (frontend için)
   listPackages(): B2BAdPackageDefinition[] {
@@ -69,62 +69,63 @@ export class B2BAdPackageService {
     const endAt   = this.computeEndDate(startAt, input.period);
 
     // Vendor B2B aidatı aktif mi? (havuz erişimi gibi)
-    const vendor = await this.prisma.vendor.findUnique({
-      where:  { id: input.vendorId },
-      select: {
-        status: true,
-        b2bData: {
-          select: {
-            isB2B:              true,
-            subscriptionStatus: true,
-          },
-        },
-      },
-    });
+    const vendor = await Vendor.findOne({ id: input.vendorId }).select('status').exec();
+    if (!vendor) {
+      throw new NotFoundException('Vendor bulunamadı');
+    }
 
-    if (!vendor || vendor.status !== 'APPROVED') {
+    let isB2B = false;
+    let subscriptionStatus = 'EXPIRED';
+    try {
+      const b2bData = await VendorB2BData.findOne({ vendorId: input.vendorId }).select('isB2B subscriptionStatus').exec();
+      if (b2bData) {
+        isB2B = b2bData.isB2B;
+        subscriptionStatus = b2bData.subscriptionStatus;
+      }
+    } catch { /* Vendor B2B data yok */ }
+
+    if (vendor.status !== 'APPROVED') {
       throw new BadRequestException('Vendor onaylı değil, reklam paketi satın alınamaz.');
     }
-    if (!vendor.b2bData?.isB2B) {
+    if (!isB2B) {
       throw new BadRequestException('Bu paket yalnızca B2B (TicariTakas) üyeler içindir.');
     }
-    if (!['ACTIVE', 'GRACE_PERIOD'].includes(vendor.b2bData.subscriptionStatus)) {
+    if (!['ACTIVE', 'GRACE_PERIOD'].includes(subscriptionStatus)) {
       throw new BadRequestException(
         'B2B aidat ödemeniz aktif değil. Reklam paketi satın almak için aidatınızı yenileyin.',
       );
     }
 
-    const campaign = await this.prisma.adCampaign.create({
-      data: {
-        name:            `${input.type} ${input.period === 'WEEKLY' ? 'Haftalık' : 'Aylık'}`,
-        platform:        'BARTERBORSA',  // B2B paketleri TicariTakas/BarterBorsa kanalında yayınlanır
-        budget:          price,
-        remainingBudget: price,
-        adType:          'BANNER',
-        bidAmount:       0,
-        billingModel:    'PREPAID',
-        pricingModel:    'FIXED',
-        startDate:       startAt,
-        endDate:         endAt,
-        vendorId:        input.vendorId,
-        imageUrl:        input.imageUrl,
-        linkUrl:         input.linkUrl,
-        adStatus:        'PENDING',
-        metadata: {
-          b2bPackageType: input.type,
-          period:         input.period,
-          comboValue:     pkg.comboValue,
-          contentSummary: pkg.contentSummary,
-        },
-      },
-      select: { id: true },
+    const campaignId = 'adcam-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    await AdCampaign.create({
+      id: campaignId,
+      name:            `${input.type} ${input.period === 'WEEKLY' ? 'Haftalık' : 'Aylık'}`,
+      platform:        'BARTERBORSA',  // B2B paketleri TicariTakas/BarterBorsa kanalında yayınlanır
+      budget:          Types.Decimal128.fromString(String(price)),
+      remainingBudget: Types.Decimal128.fromString(String(price)),
+      adType:          'BANNER',
+      bidAmount:       Types.Decimal128.fromString('0'),
+      billingModel:    'PREPAID',
+      pricingModel:    'FIXED',
+      startDate:       startAt,
+      endDate:         endAt,
+      vendorId:        input.vendorId,
+      imageUrl:        input.imageUrl,
+      linkUrl:         input.linkUrl,
+      adStatus:        'PENDING',
+      metadata: {
+        b2bPackageType: input.type,
+        period:         input.period,
+        comboValue:     pkg.comboValue,
+        contentSummary: pkg.contentSummary,
+      } as Record<string, unknown>,
     });
 
     await this.auditLog.log({
       actorId:      input.vendorId,
       action:       'B2B_AD_PACKAGE_PURCHASED',
       resourceType: 'AdCampaign',
-      resourceId:   campaign.id,
+      resourceId:   campaignId,
       newValue: {
         type:       input.type,
         period:     input.period,
@@ -143,7 +144,7 @@ export class B2BAdPackageService {
     });
 
     return {
-      campaignId: campaign.id,
+      campaignId,
       type:       input.type,
       period:     input.period,
       price,

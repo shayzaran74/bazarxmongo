@@ -1,40 +1,19 @@
 // apps/backend/src/modules/commerce/application/queries/get-my-orders.handler.ts
+// GetMyOrdersHandler — Mongoose migration (ADR-005 Faz 2b)
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { GetMyOrdersQuery } from './get-my-orders.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
+import { OrderMapper } from '../../infrastructure/persistence/mappers/order.mapper';
 
 @QueryHandler(GetMyOrdersQuery)
 export class GetMyOrdersHandler implements IQueryHandler<GetMyOrdersQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject('IOrderRepository') private readonly orderRepo: IOrderRepository) {}
 
   async execute(query: GetMyOrdersQuery) {
-    const orders = await this.prisma.order.findMany({
-      where: { userId: query.userId },
-      include: { 
-        orderItems: {
-          include: {
-            listing: {
-              include: {
-                catalogProduct: {
-                  include: {
-                    media: {
-                      orderBy: { sortOrder: 'asc' },
-                      take: 1
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        dispute: {
-          select: { id: true, status: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return orders;
+    const result = await this.orderRepo.findByUserId(query.userId, { page: 1, limit: 50 });
+    const response = result.items.map(order => OrderMapper.toResponse(order));
+    return OrderMapper.populateImages(response);
   }
 }

@@ -2,14 +2,16 @@
 
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { IUserComplaint } from '@barterborsa/shared-persistence';
 import { CreateComplaintDto } from '../application/dtos/create-complaint.dto';
 import { CreateComplaintCommand } from '../application/commands/create-complaint.command';
+
+interface AuthenticatedUser { id: string; role: string }
 
 @ApiTags('Complaints')
 @ApiBearerAuth()
@@ -18,27 +20,22 @@ import { CreateComplaintCommand } from '../application/commands/create-complaint
 export class ComplaintController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly prisma: PrismaService,
+    @InjectModel('UserComplaint') private readonly complaintModel: Model<IUserComplaint>,
   ) {}
 
-  @ApiOperation({ summary: 'Şikayet oluştur' })
-  @ApiBody({ type: CreateComplaintDto })
-  @ApiResponse({ status: 201 })
   @Post()
-  async createComplaint(@CurrentUser() user: any, @Body() dto: CreateComplaintDto) {
+  createComplaint(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateComplaintDto) {
     return this.commandBus.execute(
       new CreateComplaintCommand(user.id, dto.subjectId, dto.reason, dto.description),
     );
   }
 
-  @ApiOperation({ summary: 'Kendi şikayetlerimi listele' })
-  @ApiResponse({ status: 200 })
   @Get()
-  async getMyComplaints(@CurrentUser() user: any) {
-    const data = await this.prisma.userComplaint.findMany({
-      where: { reporterId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getMyComplaints(@CurrentUser() user: AuthenticatedUser) {
+    const data = await this.complaintModel
+      .find({ reporterId: user.id })
+      .sort({ createdAt: -1 })
+      .lean();
     return { success: true, data };
   }
 }

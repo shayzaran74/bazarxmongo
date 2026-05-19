@@ -2,21 +2,23 @@
 // Master Plan v4.3 §3.3 — TrustScore Algoritması
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { Decimal } from 'decimal.js';
+import { Inject } from '@nestjs/common';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
+import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
+import { IUserLevelRepository } from '../../domain/repositories/user-level.repository.interface';
 
 // Ağırlıklar (toplam: %100)
-const WEIGHT_TRADING    = 0.40; // Ticari performans
-const WEIGHT_XP_LOYALTY = 0.30; // XP sadakati
-const WEIGHT_COMPLIANCE = 0.30; // Uyumluluk
+const WEIGHT_TRADING    = 0.40;
+const WEIGHT_XP_LOYALTY = 0.30;
+const WEIGHT_COMPLIANCE = 0.30;
 
-// Ceza eşikleri
 const INACTIVITY_THRESHOLD_DAYS   = 90;
 const INACTIVITY_PENALTY_PER_MONTH = 10;
 const LOW_XP_PENALTY_PER_MONTH     = 5;
 
 export interface TrustScoreComponents {
-  trading:    number; // 0–100
+  trading:    number;
   xpLoyalty:  number;
   compliance: number;
   overall:    number;
@@ -26,9 +28,13 @@ export interface TrustScoreComponents {
 export class TrustScoreCalculatorService {
   private readonly logger = new Logger(TrustScoreCalculatorService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('ITradeOfferRepository') private readonly tradeOfferRepo: ITradeOfferRepository,
+    @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
+    @Inject('IUserLevelRepository') private readonly userLevelRepo: IUserLevelRepository,
+  ) {}
 
-  // Tek bir vendor için TrustScore hesapla ve kaydet
   async recalculate(vendorId: string): Promise<TrustScoreComponents> {
     const [trading, xpLoyalty, compliance] = await Promise.all([
       this.calculateTradingPerformance(vendorId),
@@ -45,53 +51,42 @@ export class TrustScoreCalculatorService {
       )),
     );
 
-    await this.prisma.trustScore.upsert({
-      where:  { vendorId },
-      create: { vendorId, score: overall, tradingPerformance: trading, xpLoyalty, compliance },
-      update: { score: overall, tradingPerformance: trading, xpLoyalty, compliance, lastCalculatedAt: new Date() },
+    await this.trustScoreRepo.upsert(vendorId, {
+      score: overall,
+      tradingPerformance: trading,
+      xpLoyalty,
+      compliance,
     });
 
     this.logger.debug('TrustScore güncellendi', { vendorId, overall, trading, xpLoyalty, compliance });
     return { trading, xpLoyalty, compliance, overall };
   }
 
-  // Ticari performans (% 40): tamamlanan takas / başlatılan takas
   private async calculateTradingPerformance(vendorId: string): Promise<number> {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
-      select: { id: true, companyId: true },
-    });
+    const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) return 50;
 
-    // Vendor doğrudan companyId alanına sahip
-    const company = vendor.companyId ? { id: vendor.companyId } : null;
+    const props = vendor.getProps();
+    const companyId = (props as any).companyId;
 
-    if (!company) return 80; // Şirket kayıtlı değilse başlangıç skoru
+    if (!companyId) return 80;
 
-    const [total, completed] = await Promise.all([
-      this.prisma.tradeOffer.count({
-        where: { OR: [{ fromCompanyId: company.id }, { toCompanyId: company.id }] },
-      }),
-      this.prisma.tradeOffer.count({
-        where: {
-          status: 'COMPLETED',
-          OR: [{ fromCompanyId: company.id }, { toCompanyId: company.id }],
-        },
-      }),
-    ]);
+    // Tamamlanan ve toplam teklif sayısını çek
+    const allOffers = await this.tradeOfferRepo.findByCompanyWithFilters(companyId, 0, 1000);
+    const completedOffers = await this.tradeOfferRepo.findByCompanyWithFilters(
+      companyId, 0, 1000, ['COMPLETED', 'CLOSED'],
+    );
 
-    if (total === 0) return 80; // Yeni üye → başlangıç skoru
+    const total = allOffers.items.length;
+    const completed = completedOffers.items.length;
 
-    // Tamamlanma oranı
+    if (total === 0) return 80;
+
     const completionRate = completed / total;
     let score = Math.round(completionRate * 100);
 
-    // 90 gün hareketsizlik cezası
-    const existingScore = await this.prisma.trustScore.findUnique({
-      where: { vendorId },
-      select: { inactiveDays: true },
-    });
-    const inactiveDays = existingScore?.inactiveDays ?? 0;
+    const existingScore = await this.trustScoreRepo.findByVendorId(vendorId);
+    const inactiveDays = (existingScore as any)?.inactiveDays ?? 0;
 
     if (inactiveDays >= INACTIVITY_THRESHOLD_DAYS) {
       const months  = Math.floor(inactiveDays / 30);
@@ -102,60 +97,46 @@ export class TrustScoreCalculatorService {
     return Math.min(100, score);
   }
 
-  // XP sadakati (%30): cüzdandaki XP bakiyesi / son 3 aylık takas hacmi
   private async calculateXpLoyalty(vendorId: string): Promise<number> {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
-      select: { userId: true },
-    });
-    if (!vendor?.userId) return 50;
+    const vendor = await this.vendorRepo.findById(vendorId);
+    if (!vendor) return 50;
 
-    const xpBalance = await this.prisma.userLevel.findUnique({
-      where: { userId: vendor.userId },
-      select: { currentXp: true },
-    });
+    const props = vendor.getProps();
+    const userId = (props as any).userId;
+    if (!userId) return 50;
 
-    if (!xpBalance || xpBalance.currentXp <= 0) {
-      // Bakiye sıfır → ceza uygulanır ama skoru önceki değerden düşür
+    const userLevel = await this.userLevelRepo.findByUserId(userId);
+    const currentXp = (userLevel as any)?.currentXp ?? 0;
+
+    if (currentXp <= 0) {
       return 50;
     }
 
-    // XP bakiyesi > 500 → tam puan, daha az → orantılı
-    const score = Math.min(100, Math.round((xpBalance.currentXp / 500) * 100));
+    const score = Math.min(100, Math.round((currentXp / 500) * 100));
 
-    // Düşük XP cezası
-    const existingScore = await this.prisma.trustScore.findUnique({
-      where: { vendorId },
-      select: { xpLoyalty: true },
-    });
-    const currentLoyalty = existingScore ? Number(existingScore.xpLoyalty) : 100;
+    const existingScore = await this.trustScoreRepo.findByVendorId(vendorId);
+    const currentLoyalty = (existingScore as any)?.xpLoyalty ?? 100;
 
-    if (xpBalance.currentXp === 0) {
+    if (currentXp === 0) {
       return Math.max(0, currentLoyalty - LOW_XP_PENALTY_PER_MONTH);
     }
 
     return score;
   }
 
-  // Uyumluluk (%30): ihlal geçmişine göre hesap
   private async calculateCompliance(vendorId: string): Promise<number> {
-    const score = await this.prisma.trustScore.findUnique({
-      where: { vendorId },
-      select: { violationCount: true, compliance: true },
-    });
+    const score = await this.trustScoreRepo.findByVendorId(vendorId);
 
-    if (!score) return 100; // Yeni üye → tam uyumluluk
+    if (!score) return 100;
 
-    const violations = score.violationCount;
+    const violations = (score as any).violationCount ?? 0;
     let complianceScore = 100;
 
     if (violations >= 3) {
-      // 3+ ihlal: dondurma (compliance 0, önceki adımda isFrozen=true yapılır)
       complianceScore = 0;
     } else if (violations === 2) {
-      complianceScore = 85; // −15 puan
+      complianceScore = 85;
     }
-    // 1 ihlal: sadece uyarı, puan düşmez
 
     return complianceScore;
   }

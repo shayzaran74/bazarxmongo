@@ -2,13 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "src",
     "baseUrl": ".",
     "paths": {
-      "@barterborsa/shared-core": ["../shared/shared-core/dist/index"],
-      "@barterborsa/shared-persistence": ["../shared/shared-persistence/dist/index"],
-      "@barterborsa/shared-security": ["../shared/shared-security/dist/index"],
-      "@barterborsa/shared-types": ["../shared/shared-types/dist/index"]
+      "@barterborsa/shared-core": ["../shared/shared-core/src/index"],
+      "@barterborsa/shared-persistence": ["../shared/shared-persistence/src/index"],
+      "@barterborsa/shared-security": ["../shared/shared-security/src/index"],
+      "@barterborsa/shared-types": ["../shared/shared-types/src/index"]
     }
   },
   "include": [

@@ -1,4 +1,4 @@
-export const useCheckout = () => {
+export const useCheckout = (): any => {
   const { $api } = useApi()
   const { $toast } = useNuxtApp() as any
   const authStore = useAuthStore()
@@ -7,11 +7,9 @@ export const useCheckout = () => {
 
   const loading = ref(false)
   const processing = ref(false)
-  const clientSecret = ref('')
   const selectedMethod = ref('card')
   const walletBalance = ref(0)
   const walletLoading = ref(false)
-  const stripeError = ref('')
   const loyaltyStatus = ref<any>(null)
   const loyaltyXpDiscount = ref(0)
   const showLegalModal = ref(false)
@@ -38,10 +36,12 @@ export const useCheckout = () => {
   const finalAmountExcludingLoyalty = computed(() => {
     let total = cartStore.totalPrice || 0
     if (appliedCoupon.value) {
-      if (appliedCoupon.value.type === 'PERCENTAGE') {
+      if (typeof appliedCoupon.value.discountAmount === 'number') {
+        total -= appliedCoupon.value.discountAmount
+      } else if (appliedCoupon.value.type === 'PERCENTAGE') {
         total -= (total * (appliedCoupon.value.value / 100))
       } else {
-        total -= appliedCoupon.value.value
+        total -= (appliedCoupon.value.value || 0)
       }
     }
     return Math.max(0, total)
@@ -141,7 +141,7 @@ export const useCheckout = () => {
     try {
       const res: any = await $api('/api/coupons/validate', {
         method: 'POST',
-        body: { code }
+        body: { code, totalAmount: cartStore.totalPrice }
       })
       if (res.success) {
         appliedCoupon.value = res.data
@@ -231,8 +231,8 @@ export const useCheckout = () => {
   }
 
   return {
-    cartStore, addressStore, processing, clientSecret, selectedMethod,
-    walletBalance, walletLoading, stripeError, loyaltyStatus, loyaltyXpDiscount,
+    cartStore, addressStore, processing, selectedMethod,
+    walletBalance, walletLoading, loyaltyStatus, loyaltyXpDiscount,
     showLegalModal, currentLegalDoc, acceptedAgreements, shippingCost,
     appliedCoupon, validatingCoupon, couponError, paymentFormContent,
     appliedEscrowCoupon, selectedAddressId, showNewAddressForm, saveNewAddress,

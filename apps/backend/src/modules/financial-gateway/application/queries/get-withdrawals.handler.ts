@@ -1,16 +1,13 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { FinancialGatewayService } from '../../financial-gateway.service';
 import { GetWithdrawalsQuery } from './get-withdrawals.query';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { User } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
 
 @QueryHandler(GetWithdrawalsQuery)
 export class GetWithdrawalsHandler
   implements IQueryHandler<GetWithdrawalsQuery> {
 
-  constructor(
-    private readonly financialGateway: FinancialGatewayService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly financialGateway: FinancialGatewayService) {}
 
   async execute(query: GetWithdrawalsQuery) {
     const result = (await this.financialGateway.getWithdrawals(
@@ -22,12 +19,11 @@ export class GetWithdrawalsHandler
 
     if (result && result.items && result.items.length > 0) {
       const userIds = [...new Set(result.items.map((item: any) => item.userId))];
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: userIds as string[] } },
-        select: { id: true, email: true },
-      });
+      const users = await User.find({ id: { $in: userIds as string[] } })
+        .select('id email')
+        .lean();
 
-      const userMap = new Map(users.map(u => [u.id, u]));
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
 
       result.items = result.items.map((item: any) => ({
         ...item,

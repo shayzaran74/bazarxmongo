@@ -112,7 +112,7 @@ const fetchData = async () => {
         // Explicitly type the API calls to avoid tuple inference issues
         const adsRes = await ads.fetchCampaigns() as any
         const summaryRes = await ads.getAdSummary(30) as any
-        const productsRes = await $api<any[]>('/api/vendors/products', { params: { limit: 500 } })
+        const productsRes = await $api<any[]>('/api/v1/vendors/products', { params: { limit: 500 } })
 
 
         if (adsRes && (adsRes as any).success && (adsRes as any).data) adCampaigns.value = (adsRes as any).data

@@ -1,46 +1,51 @@
 // apps/backend/src/modules/auction/infrastructure/persistence/mappers/auction.mapper.ts
+// AuctionMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Types } from 'mongoose';
+import { IAuction } from '@barterborsa/shared-persistence/schemas/backend/auction.schema';
 import { Auction, AuctionProps } from '../../../domain/entities/auction.entity';
 import { AuctionStatus } from '../../../domain/enums/auction-status.enum';
 
-type AuctionRaw = Prisma.AuctionGetPayload<object>;
+export interface AuctionDocument extends IAuction {
+  _id?: string;
+}
 
 @Injectable()
 export class AuctionMapper {
-  toDomain(raw: AuctionRaw): Auction {
+  toDomain(doc: AuctionDocument): Auction {
     const props: AuctionProps = {
-      listingId: raw.listingId,
-      userId: raw.userId,
-      startingPrice: raw.startingPrice,
-      currentPrice: raw.currentPrice,
-      minBidIncrement: raw.minBidIncrement,
-      participationDeposit: raw.participationDeposit ?? undefined,
-      startTime: raw.startTime,
-      endTime: raw.endTime,
-      status: raw.status as AuctionStatus,
-      winnerId: raw.winnerId ?? undefined,
-      winner2Id: raw.winner2Id ?? undefined,
-      winner3Id: raw.winner3Id ?? undefined,
-      currentWinnerStep: raw.currentWinnerStep,
-      paymentDeadline: raw.paymentDeadline ?? undefined,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
+      listingId: doc.listingId,
+      userId: doc.userId,
+      startingPrice: Number(doc.startingPrice) || 0,
+      currentPrice: Number(doc.currentPrice) || 0,
+      minBidIncrement: Number(doc.minBidIncrement) || 1,
+      participationDeposit: doc.participationDeposit ? Number(doc.participationDeposit) : undefined,
+      startTime: doc.startTime,
+      endTime: doc.endTime,
+      status: doc.status as AuctionStatus,
+      winnerId: doc.winnerId ?? undefined,
+      winner2Id: doc.winner2Id ?? undefined,
+      winner3Id: doc.winner3Id ?? undefined,
+      currentWinnerStep: doc.currentWinnerStep ?? 1,
+      paymentDeadline: doc.paymentDeadline ?? undefined,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
-    return Auction.createFrom(props, raw.id);
+    return Auction.createFrom(props, doc.id);
   }
 
   toPersistence(domain: Auction): Record<string, unknown> {
     const props = domain.getProps();
     return {
+      _id: domain.id,
       id: domain.id,
       listingId: props.listingId,
       userId: props.userId,
-      startingPrice: props.startingPrice,
-      currentPrice: props.currentPrice,
-      minBidIncrement: props.minBidIncrement,
-      participationDeposit: props.participationDeposit,
+      startingPrice: Types.Decimal128.fromString(String(props.startingPrice)),
+      currentPrice: Types.Decimal128.fromString(String(props.currentPrice)),
+      minBidIncrement: Types.Decimal128.fromString(String(props.minBidIncrement)),
+      participationDeposit: props.participationDeposit != null ? Types.Decimal128.fromString(String(props.participationDeposit)) : undefined,
       startTime: props.startTime,
       endTime: props.endTime,
       status: props.status,

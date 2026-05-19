@@ -5,13 +5,12 @@ import { UpdateProfileCommand } from './update-profile.command';
 import { IUserProfileRepository } from '../../domain/repositories/user-profile.repository.interface';
 import { Result, Ok } from '@barterborsa/shared-core';
 import { UserProfile } from '../../domain/entities/user-profile.entity';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { User as UserModel, Vendor as VendorModel, Company as CompanyModel, UserProfile as UserProfileModel } from '@barterborsa/shared-persistence';
 
 @CommandHandler(UpdateProfileCommand)
 export class UpdateProfileHandler implements ICommandHandler<UpdateProfileCommand, Result<any>> {
   constructor(
     @Inject('IUserProfileRepository') private readonly profileRepository: IUserProfileRepository,
-    private readonly prisma: PrismaService,
   ) { }
 
   async execute(command: UpdateProfileCommand): Promise<Result<any>> {
@@ -43,36 +42,41 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
 
     // Vendor ise şirket bilgileri değiştiğinde yeniden onaya gönder
     if (dto.companyName || dto.taxNumber || dto.taxOffice) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { vendor: true },
-      });
+      const user = await UserModel.findOne({ id: userId }).exec();
 
-      if (user?.role === 'VENDOR' && user.vendor?.companyId) {
-        await this.prisma.company.update({
-          where: { id: user.vendor.companyId },
-          data: {
-            name: dto.companyName || undefined,
-            taxNumber: dto.taxNumber || undefined,
-            taxOffice: dto.taxOffice || undefined,
-            status: 'PENDING',
-          },
-        });
-        await this.prisma.vendor.update({
-          where: { id: user.vendor.id },
-          data: { status: 'PENDING' },
-        });
+      if (user?.role === 'VENDOR') {
+        const vendor = await VendorModel.findOne({ userId: userId }).exec();
+        
+        if (vendor?.companyId) {
+          await CompanyModel.updateOne(
+            { id: vendor.companyId },
+            {
+              $set: {
+                name: dto.companyName || undefined,
+                taxNumber: dto.taxNumber || undefined,
+                taxOffice: dto.taxOffice || undefined,
+                status: 'PENDING',
+              },
+            }
+          ).exec();
+          
+          await VendorModel.updateOne(
+            { id: vendor.id },
+            { $set: { status: 'PENDING' } }
+          ).exec();
+        }
       }
     }
 
     // Güncel kullanıcıyı düzleştirilmiş halde dön
-    const updatedUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        profile: true,
-        vendor: { include: { company: true } },
-      },
-    });
+    const updatedUser = await UserModel.findOne({ id: userId }).exec();
+    const userProfileDoc = await UserProfileModel.findOne({ userId: userId }).exec();
+    const vendorDoc = await VendorModel.findOne({ userId: userId }).exec();
+    let companyDoc = null;
+    
+    if (vendorDoc?.companyId) {
+      companyDoc = await CompanyModel.findOne({ id: vendorDoc.companyId }).exec();
+    }
 
     if (!updatedUser) return Ok({ user: null });
 
@@ -81,26 +85,26 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
       email: updatedUser.email,
       role: updatedUser.role,
       status: updatedUser.status,
-      firstName: updatedUser.profile?.firstName,
-      lastName: updatedUser.profile?.lastName,
-      profile: updatedUser.profile ? {
-        phone: updatedUser.profile.phone,
-        city: updatedUser.profile.city,
-        district: updatedUser.profile.district,
-        neighborhood: (updatedUser.profile as any).neighborhood,
-        gender: updatedUser.profile.gender,
-        bio: updatedUser.profile.bio,
-        avatar: updatedUser.profile.avatar,
-        birthday: updatedUser.profile.birthday,
-        firstName: updatedUser.profile.firstName,
-        lastName: updatedUser.profile.lastName,
+      firstName: userProfileDoc?.firstName,
+      lastName: userProfileDoc?.lastName,
+      profile: userProfileDoc ? {
+        phone: userProfileDoc.phone,
+        city: userProfileDoc.city,
+        district: userProfileDoc.district,
+        neighborhood: (userProfileDoc as any).neighborhood,
+        gender: userProfileDoc.gender,
+        bio: userProfileDoc.bio,
+        avatar: userProfileDoc.avatar,
+        birthday: userProfileDoc.birthday,
+        firstName: userProfileDoc.firstName,
+        lastName: userProfileDoc.lastName,
       } : undefined,
-      vendor: updatedUser.vendor ? {
-        status: updatedUser.vendor.status,
-        company: updatedUser.vendor.company ? {
-          name: updatedUser.vendor.company.name,
-          taxNumber: updatedUser.vendor.company.taxNumber,
-          taxOffice: updatedUser.vendor.company.taxOffice,
+      vendor: vendorDoc ? {
+        status: vendorDoc.status,
+        company: companyDoc ? {
+          name: companyDoc.name,
+          taxNumber: companyDoc.taxNumber,
+          taxOffice: companyDoc.taxOffice,
         } : undefined,
       } : undefined,
     };

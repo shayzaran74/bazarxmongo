@@ -17,7 +17,7 @@
     <div class="relative flex justify-center">
       <ClientOnly>
         <LayoutPremiumSideAd 
-          v-if="sideAds.length && settingsStore.homepageSettings.showAds !== 'false'" 
+          v-if="sideAds.length" 
           side="left" 
           :ads="sideAds.filter(a => a.side === 'LEFT')" 
         />
@@ -29,7 +29,7 @@
 
       <ClientOnly>
         <LayoutPremiumSideAd 
-          v-if="sideAds.length && settingsStore.homepageSettings.showAds !== 'false'" 
+          v-if="sideAds.length" 
           side="right" 
           :ads="sideAds.filter(a => a.side === 'RIGHT')" 
         />

@@ -57,6 +57,7 @@
             @input="updateField('status', ($event.target as HTMLSelectElement).value)"
           >
             <option value="PENDING">Beklemede</option>
+            <option value="PAID">Ödendi</option>
             <option value="CONFIRMED">Onaylandı</option>
             <option value="PROCESSING">Hazırlanıyor</option>
             <option value="PREPARING">Mutfakta</option>

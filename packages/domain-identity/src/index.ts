@@ -78,13 +78,13 @@ export * from './application/event-handlers/user-registered.handler';
 export * from './application/event-handlers/user-updated.handler';
 
 // Persistence (Infrastructure)
-export * from './infrastructure/persistence/prisma-user.repository';
-export * from './infrastructure/persistence/prisma-user-profile.repository';
-export * from './infrastructure/persistence/prisma-user-address.repository';
-export * from './infrastructure/persistence/prisma-verification-token.repository';
-export * from './infrastructure/persistence/mappers/user.mapper';
-export * from './infrastructure/persistence/mappers/user-profile.mapper';
-export * from './infrastructure/persistence/mappers/user-address.mapper';
+export * from './infrastructure/persistence/mongo-user.repository';
+export * from './infrastructure/persistence/mongo-user-profile.repository';
+export * from './infrastructure/persistence/mongo-user-address.repository';
+export * from './infrastructure/persistence/mongo-verification-token.repository';
+export * from './infrastructure/persistence/mappers/mongo-user.mapper';
+export * from './infrastructure/persistence/mappers/mongo-user-profile.mapper';
+export * from './infrastructure/persistence/mappers/mongo-user-address.mapper';
 
 // Auth & Events (Infrastructure)
 export * from './infrastructure/auth/local.strategy';

@@ -1,10 +1,9 @@
 // apps/backend/src/modules/catalog/domain/value-objects/price.vo.ts
 
 import { ValueObject, Result, Ok, Err } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 
 interface PriceProps {
-  amount: Prisma.Decimal;
+  amount: number;
   currency: string;
 }
 
@@ -13,7 +12,7 @@ export class Price extends ValueObject<PriceProps> {
     super(props);
   }
 
-  get amount(): Prisma.Decimal {
+  get amount(): number {
     return this.props.amount;
   }
 
@@ -21,22 +20,22 @@ export class Price extends ValueObject<PriceProps> {
     return this.props.currency;
   }
 
-  public static create(amount: number | string | Prisma.Decimal, currency: string = 'TRY'): Result<Price> {
+  public static create(amount: number | string, currency: string = 'TRY'): Result<Price> {
     try {
-      const decimalAmount = new Prisma.Decimal(amount);
-      
-      if (decimalAmount.lt(0)) {
-        return Err(new Error('Fiyat negatif olamaz.'));
+      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+      if (isNaN(numAmount) || numAmount < 0) {
+        return Err(new Error('Fiyat negatif veya geçersiz olamaz.'));
       }
 
-      return Ok(new Price({ amount: decimalAmount, currency }));
+      return Ok(new Price({ amount: numAmount, currency }));
     } catch (error) {
       return Err(new Error('Geçersiz fiyat formatı.'));
     }
   }
 
   public toValue(): number {
-    return this.props.amount.toNumber();
+    return this.props.amount;
   }
 
   public toString(): string {

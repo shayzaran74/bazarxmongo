@@ -50,8 +50,6 @@
           :final-amount="totalAmountWithShipping"
           :loyalty-status="loyaltyStatus"
           :final-amount-excluding-loyalty="finalAmountExcludingLoyalty"
-          :client-secret="clientSecret"
-          :stripe-error="stripeError"
           :payment-form-content="paymentFormContent"
           :processing="processing"
           :is-form-valid="isFormValid"
@@ -115,13 +113,13 @@ const $toast = (app as unknown as { $toast: ToastService }).$toast
 
 
 const {
-  cartStore, addressStore, processing, clientSecret, selectedMethod,
-  walletBalance, walletLoading, stripeError, loyaltyStatus, loyaltyXpDiscount,
+  cartStore, addressStore, processing, selectedMethod,
+  walletBalance, walletLoading, loyaltyStatus, loyaltyXpDiscount,
   showLegalModal, currentLegalDoc, acceptedAgreements, shippingCost,
   appliedCoupon, validatingCoupon, couponError, paymentFormContent,
   appliedEscrowCoupon, selectedAddressId, showNewAddressForm, saveNewAddress,
   newAddress, useWalletBalance, finalAmountExcludingLoyalty, finalAmount,
-  xpToUse, cashToPay, isFormValid, totalAmountWithShipping,
+  xpToUse, cashToPay, isFormValid, loading, totalAmountWithShipping,
   init, applyCoupon: applyCouponAction, removeCoupon, handlePayment, openLegalDoc
 } = useCheckout()
 

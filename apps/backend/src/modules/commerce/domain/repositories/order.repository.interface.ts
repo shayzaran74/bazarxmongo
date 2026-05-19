@@ -8,5 +8,14 @@ export interface IOrderRepository extends IRepository<Order> {
   findByUserId(userId: string, pagination: any): Promise<{ items: Order[]; total: number }>;
   findByVendorId(vendorId: string, pagination: any): Promise<{ items: Order[]; total: number }>;
   findByOrderNumber(orderNumber: string): Promise<Order | null>;
-  // Additional filters can be added here
+  findByIdempotencyKey(userId: string, key: string): Promise<Order[]>;
+  findAll(): Promise<Order[]>;
+  findAllFiltered(params: { status?: string; vendorId?: string; skip?: number; limit?: number }): Promise<{ items: Order[]; total: number }>;
+  create(order: Order): Promise<void>;
+  updateStatus(orderId: string, status: string): Promise<void>;
+  updatePaid(orderId: string, escrowHoldId: string): Promise<void>;
+  updateOne(orderId: string, data: Record<string, unknown>): Promise<void>;
+  decrementStock(listingId: string, quantity: number): Promise<boolean>;
+  incrementStock(listingId: string, quantity: number): Promise<void>;
+  findExpiredPending(now: Date): Promise<Order[]>;
 }

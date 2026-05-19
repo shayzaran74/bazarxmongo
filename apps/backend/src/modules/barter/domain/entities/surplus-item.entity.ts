@@ -1,7 +1,6 @@
 // apps/backend/src/modules/barter/domain/entities/surplus-item.entity.ts
 
 import { AggregateRoot } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { SurplusStatus } from '../enums/surplus-status.enum';
 import { PilotCity } from '../enums/pilot-city.enum';
 import { BadRequestException } from '@nestjs/common';
@@ -12,11 +11,11 @@ export interface SurplusItemProps {
   description?:      string;
   category:          string;
   materialType?:     string;
-  quantity:          Prisma.Decimal;
-  blockedQuantity:   Prisma.Decimal;
+  quantity:          number;
+  blockedQuantity:   number;
   unit:              string;
-  minTradeQuantity?: Prisma.Decimal;
-  unitPrice?:        Prisma.Decimal;
+  minTradeQuantity?: number;
+  unitPrice?:        number;
   wantedCategories?: unknown;
   tradeModes?:       unknown;
   technicalSpecs?:   unknown;
@@ -46,11 +45,11 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
     companyId:        string,
     title:            string,
     category:         string,
-    quantity:         Prisma.Decimal,
+    quantity:         number,
     unit:             string,
     city:             PilotCity,
     description?:     string,
-    unitPrice?:       Prisma.Decimal,
+    unitPrice?:       number,
     images?:          unknown,
     materialType?:    string,
     location?:        string,
@@ -58,7 +57,7 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
     tradeModes?:      unknown,
     technicalSpecs?:  unknown,
   ): SurplusItem {
-    if (quantity.lte(0)) {
+    if (quantity <= 0) {
       throw new BadRequestException('Miktar sıfırdan büyük olmalıdır');
     }
     const now = new Date();
@@ -69,7 +68,7 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
       category,
       materialType,
       quantity,
-      blockedQuantity:   new Prisma.Decimal(0),
+      blockedQuantity:   0,
       unit,
       unitPrice,
       city,
@@ -117,7 +116,7 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
   }
 
   // Vendor yeniden aktivasyonu: DEACTIVATED|EXPIRED|REJECTED → PENDING_APPROVAL
-  public reactivate(newQuantity: Prisma.Decimal): void {
+  public reactivate(newQuantity: number): void {
     const allowed: SurplusStatus[] = [
       SurplusStatus.DEACTIVATED,
       SurplusStatus.EXPIRED,
@@ -128,7 +127,7 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
         `Sadece pasif ilanlar yeniden aktifleştirilebilir. Mevcut durum: ${this.props.status}`,
       );
     }
-    if (newQuantity.lte(0)) {
+    if (newQuantity <= 0) {
       throw new BadRequestException('Miktar sıfırdan büyük olmalıdır');
     }
     this.props.quantity           = newQuantity;
@@ -138,16 +137,16 @@ export class SurplusItem extends AggregateRoot<SurplusItemProps> {
     this.props.updatedAt          = new Date();
   }
 
-  public blockQuantity(amount: Prisma.Decimal): void {
-    const remaining = this.props.quantity.minus(this.props.blockedQuantity);
-    if (remaining.lt(amount)) {
+  public blockQuantity(amount: number): void {
+    const remaining = this.props.quantity - this.props.blockedQuantity;
+    if (remaining < amount) {
       throw new BadRequestException('Yetersiz surplus miktarı');
     }
-    this.props.blockedQuantity = this.props.blockedQuantity.plus(amount);
+    this.props.blockedQuantity = this.props.blockedQuantity + amount;
   }
 
-  public unblockQuantity(amount: Prisma.Decimal): void {
-    this.props.blockedQuantity = this.props.blockedQuantity.minus(amount);
+  public unblockQuantity(amount: number): void {
+    this.props.blockedQuantity = this.props.blockedQuantity - amount;
   }
 
   // Getter'lar

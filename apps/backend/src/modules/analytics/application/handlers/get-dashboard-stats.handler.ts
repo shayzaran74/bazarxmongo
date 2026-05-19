@@ -2,13 +2,13 @@
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetDashboardStatsQuery, GetAdminStatsQuery, GetVendorStatsQuery } from '../commands-queries/analytics.bus';
-import { PrismaAnalyticsRepository } from '../../infrastructure/persistence/prisma-analytics.repositories';
+import { MongoAnalyticsRepository } from '../../infrastructure/persistence/mongo-analytics.repository';
 import { AdminStatsDto } from '../dtos/admin-stats.dto';
 import { VendorStatsDto } from '../dtos/vendor-stats.dto';
 
 @QueryHandler(GetDashboardStatsQuery)
 export class GetDashboardStatsHandler implements IQueryHandler<GetDashboardStatsQuery> {
-  constructor(private readonly repository: PrismaAnalyticsRepository) {}
+  constructor(private readonly repository: MongoAnalyticsRepository) {}
   async execute(query: GetDashboardStatsQuery) {
     const startDate = new Date();
     if (query.period === 'week') startDate.setDate(startDate.getDate() - 7);

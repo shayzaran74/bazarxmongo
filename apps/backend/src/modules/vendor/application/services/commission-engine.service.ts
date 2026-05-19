@@ -1,27 +1,26 @@
 // apps/backend/src/modules/vendor/application/services/commission-engine.service.ts
 // Master Plan v4.3 §3.2 — TicariTakas B2B komisyon motoru
 
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Injectable, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { VendorTier } from '../../domain/enums/vendor-tier.enum';
 import { VendorTierVO } from '../../domain/value-objects/vendor-tier.vo';
 import { Decimal } from 'decimal.js';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { IVendorB2BDataRepository } from '../../../barter/domain/repositories/vendor-b2b-data.repository.interface';
+import { IUserLevelRepository } from '../../../barter/domain/repositories/user-level.repository.interface';
+import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 
 export interface CommissionInput {
   vendorId:            string;
   transactionAmount:   number;
-  isGroupTransaction:  boolean;  // Aynı BrandEcosystem içi mi?
-  xpToApply:           number;   // Kullanmak istenen XP (1XP = 1₺ indirim)
+  isGroupTransaction:  boolean;
+  xpToApply:           number;
   referenceId:         string;
   referenceType:       'TRADE' | 'ORDER';
-  // Master Plan v4.3 §3.4 — İlk işlemde XP kazanımı/kullanımı kapalıdır
   isFirstTransaction?: boolean;
-  // Master Plan v4.3 §4 — BarterBorsa kör havuz: grup içi orana değil
-  // sabit %6 sistem yönetim bedeline tabi. overrideRate ile tier bypass edilir.
   overrideRate?: number;
 }
 
-// Master Plan v4.3 §3.3 — XP indirimi komisyonun max %50'sine uygulanır
 const XP_COMMISSION_SUBSIDY_MAX_PCT = 0.50;
 
 export interface CommissionBreakdown {
@@ -31,39 +30,37 @@ export interface CommissionBreakdown {
   appliedRate:        number;
   rateType:           'STANDARD' | 'GROUP' | 'XP_DISCOUNTED';
   totalCommission:    number;
-  cashCommission:     number;   // nakit ödenen
-  xpCommission:       number;   // XP ile ödenen (1XP=1₺)
-  vendorNetAmount:    number;   // işlemden geriye kalan
+  cashCommission:     number;
+  xpCommission:       number;
+  vendorNetAmount:    number;
 }
 
 @Injectable()
 export class CommissionEngineService {
   private readonly logger = new Logger(CommissionEngineService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('IVendorB2BDataRepository') private readonly b2bRepo: IVendorB2BDataRepository,
+    @Inject('IUserLevelRepository') private readonly userLevelRepo: IUserLevelRepository,
+    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+  ) {}
 
   async calculate(input: CommissionInput): Promise<CommissionBreakdown> {
     const { vendorId, transactionAmount, isGroupTransaction, xpToApply } = input;
 
-    // Vendor tier'ını ve B2B aidat/ilk işlem bilgisini DB'den al
-    const vendor = await this.prisma.vendor.findUnique({
-      where:  { id: vendorId },
-      select: {
-        tier: true,
-        b2bData: {
-          select: {
-            subscriptionStatus: true,
-            firstTransactionAt: true,
-          },
-        },
-      },
-    });
+    const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) throw new BadRequestException('Vendor bulunamadı');
 
-    // Master Plan v4.3 §3.4 — İlk işlem kuralı: XP kazanım ve kullanımı kapalı
-    // Flag explicit verilmediyse firstTransactionAt'tan türet
+    const vendorProps = vendor.getProps();
+    const tier = (vendorProps as any).tier as VendorTier;
+    const tierVO = VendorTierVO.create(tier);
+    const amount = new Decimal(transactionAmount);
+
+    // B2B data — firstTransactionAt
+    const b2bData = await this.b2bRepo.findByVendorId(vendorId);
     const isFirstTransaction = input.isFirstTransaction
-      ?? !vendor.b2bData?.firstTransactionAt;
+      ?? !(b2bData && (b2bData as any).firstTransactionAt);
 
     if (isFirstTransaction && xpToApply > 0) {
       throw new BadRequestException(
@@ -71,12 +68,6 @@ export class CommissionEngineService {
       );
     }
 
-    const tier   = vendor.tier as VendorTier;
-    const tierVO = VendorTierVO.create(tier);
-    const amount = new Decimal(transactionAmount);
-
-    // Master Plan v4.3 §4 — overrideRate: BarterBorsa sabit %6 sistem yönetim bedeli
-    // (tier bağımsız, XP indirimi + grup oranı bypass edilir)
     if (input.overrideRate !== undefined) {
       const commission = amount.mul(input.overrideRate).div(100).toDecimalPlaces(2);
       return {
@@ -92,25 +83,19 @@ export class CommissionEngineService {
       };
     }
 
-    // Grup içi işlem → XP indirimi uygulanamaz (Master Plan §3.2)
-    // Ekosisteme özel internalCommRate önceliklidir; yoksa tier tabanlı grup oranı
     if (isGroupTransaction) {
-      const ecosystem = await this.prisma.brandEcosystem.findFirst({
-        where: {
-          OR: [
-            { ownerId: vendorId },
-            { members: { some: { id: vendorId } } },
-          ],
-        },
-        select: { internalCommRate: true },
-      });
-
-      const groupRate = ecosystem
-        ? Number(ecosystem.internalCommRate)
-        : tierVO.getGroupCommissionRate();
+      // BrandEcosystem'ten owner veya member kontrolü
+      let groupRate = tierVO.getGroupCommissionRate();
+      const ecosystems = await this.ecosystemRepo.findAll();
+      const ecosystem = ecosystems.find((e: any) =>
+        (e as any).ownerId === vendorId ||
+        ((e as any).memberIds && (e as any).memberIds.includes(vendorId))
+      );
+      if (ecosystem) {
+        groupRate = Number((ecosystem as any).internalCommRate ?? groupRate);
+      }
 
       const commission = amount.mul(groupRate).div(100).toDecimalPlaces(2);
-
       return {
         vendorTier:        tier,
         transactionAmount,
@@ -124,14 +109,12 @@ export class CommissionEngineService {
       };
     }
 
-    const standardRate      = tierVO.getCommissionRate();
-    const xpDiscountedRate  = tierVO.getXpDiscountedRate();
+    const standardRate       = tierVO.getCommissionRate();
+    const xpDiscountedRate   = tierVO.getXpDiscountedRate();
     const standardCommission = amount.mul(standardRate).div(100).toDecimalPlaces(2);
     const xpDiscountedComm   = amount.mul(xpDiscountedRate).div(100).toDecimalPlaces(2);
 
-    // XP uygulanıyor mu?
     if (xpToApply > 0) {
-      // Master Plan v4.3 §3.3 — XP indirimi komisyonun max %50'sine uygulanır
       const maxAllowedXp = standardCommission.mul(XP_COMMISSION_SUBSIDY_MAX_PCT).toDecimalPlaces(2);
       if (new Decimal(xpToApply).gt(maxAllowedXp)) {
         throw new BadRequestException(
@@ -139,10 +122,9 @@ export class CommissionEngineService {
         );
       }
 
-      // Vendor XP bakiye kontrolü — vendor'a bağlı user'ın UserLevel.currentXp'i
-      await this.assertXpBalance(vendorId, xpToApply);
+      const userId = (vendorProps as any).userId;
+      await this.assertXpBalance(userId, xpToApply);
 
-      // Max XP indirimi = standart komisyon - XP indirimli komisyon
       const maxXpReduction = standardCommission.sub(xpDiscountedComm);
       const effectiveXp    = Decimal.min(new Decimal(xpToApply), maxXpReduction).toDecimalPlaces(2);
 
@@ -151,7 +133,6 @@ export class CommissionEngineService {
       }
 
       const cashCommission = standardCommission.sub(effectiveXp).toDecimalPlaces(2);
-
       return {
         vendorTier:        tier,
         transactionAmount,
@@ -165,7 +146,6 @@ export class CommissionEngineService {
       };
     }
 
-    // Standart oran
     return {
       vendorTier:        tier,
       transactionAmount,
@@ -179,34 +159,20 @@ export class CommissionEngineService {
     };
   }
 
-  // Takas öncesi komisyon ön görüntüsü (kayıt olmadan hesapla)
   async preview(input: CommissionInput): Promise<CommissionBreakdown> {
     return this.calculate(input);
   }
 
-  // Master Plan v4.3 §3.4 — Trade tamamlandığında çağrılır
-  // İlk işlem yapan vendor'ın firstTransactionAt'i set edilir, sonraki işlemlerde XP açılır.
   async markFirstTransaction(vendorId: string): Promise<void> {
-    await this.prisma.vendorB2BData.updateMany({
-      where: { vendorId, firstTransactionAt: null },
-      data:  { firstTransactionAt: new Date() },
-    });
+    await this.b2bRepo.updateFirstTransaction([vendorId]);
   }
 
-  // Master Plan v4.3 §3.3 — Vendor'a bağlı user'ın XP bakiyesi yeterli mi?
-  private async assertXpBalance(vendorId: string, requestedXp: number): Promise<void> {
-    const vendor = await this.prisma.vendor.findUnique({
-      where:  { id: vendorId },
-      select: { userId: true },
-    });
-    if (!vendor?.userId) {
+  private async assertXpBalance(userId: string, requestedXp: number): Promise<void> {
+    if (!userId) {
       throw new BadRequestException('Vendor kullanıcı bağlantısı eksik.');
     }
 
-    const userLevel = await this.prisma.userLevel.findUnique({
-      where:  { userId: vendor.userId },
-      select: { currentXp: true },
-    });
+    const userLevel = await this.userLevelRepo.findByUserId(userId);
     const balance = userLevel?.currentXp ?? 0;
 
     if (balance < requestedXp) {

@@ -149,6 +149,25 @@
                   </p>
                 </div>
               </div>
+
+              <div
+                v-if="report?.errors?.length"
+                class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200 text-sm text-red-700 max-h-40 overflow-y-auto"
+              >
+                <p class="font-bold mb-2">Hatalar:</p>
+                <ul class="space-y-1">
+                  <li
+                    v-for="(err, idx) in report.errors.slice(0, 10)"
+                    :key="idx"
+                    class="text-xs"
+                  >
+                    {{ err }}
+                  </li>
+                </ul>
+                <p v-if="report.errors.length > 10" class="mt-2 text-xs text-red-500">
+                  ...ve {{ report.errors.length - 10 }} hata daha
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -238,7 +257,7 @@ const startUpload = async () => {
     formData.append('file', selectedFile.value)
 
     try {
-        const res = await $api('/api/vendors/products/bulk/import', {
+        const res = await $api('/api/v1/vendors/products/bulk/import', {
             method: 'POST',
             body: formData
         })
@@ -246,7 +265,13 @@ const startUpload = async () => {
         if (res.success) {
             progress.value = 100
             uploadStatus.value = 'completed'
-            report.value = res.data
+            report.value = {
+              success: res.data?.created ?? 0,
+              updated: res.data?.updated ?? 0,
+              failed: res.data?.failed ?? 0,
+              skipped: 0,
+              errors: res.data?.errors ?? []
+            }
         }
     } catch (err) {
         useNuxtApp().$toast.error('Yükleme hatası: ' + (err.data?.error || err.message))
@@ -257,6 +282,6 @@ const startUpload = async () => {
 }
 
 const downloadTemplate = () => {
-    window.open('/api/vendors/products/bulk/template/bayi', '_blank')
+    window.open('/api/v1/vendors/products/bulk/template/bayi', '_blank')
 }
 </script>

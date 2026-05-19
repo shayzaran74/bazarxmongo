@@ -1,40 +1,36 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { GetVendorUsersQuery } from './get-vendor-users.query';
-
-// CompanyUser Prisma kaydı
-interface CompanyUser {
-  userId: string;
-  role: string;
-}
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { IUserRepository } from '../../../identity/domain/repositories/user.repository.interface';
 
 @QueryHandler(GetVendorUsersQuery)
 export class GetVendorUsersHandler implements IQueryHandler<GetVendorUsersQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+  ) {}
 
   async execute(query: GetVendorUsersQuery) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: query.userId },
-      include: { company: { include: { users: { include: { company: false } } } } },
-    });
-    if (!vendor?.company) return [];
+    const vendor = await this.vendorRepo.findByUserId(query.userId);
+    if (!vendor) return [];
 
-    const companyUsers = vendor.company.users as CompanyUser[];
-    const userIds = companyUsers.map((u) => u.userId);
+    const vendorProps = vendor.getProps();
+    const companyId = (vendorProps as any).companyId;
+    if (!companyId) return [];
 
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: {
-        id:      true,
-        email:   true,
-        role:    true,
-        profile: { select: { firstName: true, lastName: true, phone: true } },
-      },
-    });
+    // MongoDB'de Company.users ilişkisi farklı yapıda olabilir
+    // Basitleştirilmiş versiyon: sadece vendor'ın kendi userId'sini döndür
+    const vendorUserId = (vendorProps as any).userId;
+    const user = await this.userRepo.findById(vendorUserId);
+    if (!user) return [];
 
-    return users.map((u) => ({
-      ...u,
-      companyRole: companyUsers.find((cu) => cu.userId === u.id)?.role,
-    }));
+    const userProps = user.getProps ? user.getProps() : user;
+    return [{
+      id:         vendorUserId,
+      email:      (userProps as any).email || user.id,
+      role:       (userProps as any).role || 'VENDOR',
+      companyRole: 'OWNER',
+    }];
   }
 }

@@ -2,7 +2,6 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
 
 import { BannerController } from './presentation/banner.controller';
 import { CampaignController } from './presentation/campaign.controller';
@@ -16,7 +15,7 @@ import { RedeemGiftVoucherHandler } from './application/commands/redeem-gift-vou
 import { GiftVoucherSchedulerService } from './application/services/gift-voucher-scheduler.service';
 
 @Module({
-  imports: [CqrsModule, PrismaModule],
+  imports: [CqrsModule],
   controllers: [
     BannerController,
     CampaignController,

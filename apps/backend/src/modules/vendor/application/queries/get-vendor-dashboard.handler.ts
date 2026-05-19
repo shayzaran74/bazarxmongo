@@ -1,9 +1,13 @@
 // apps/backend/src/modules/vendor/application/queries/get-vendor-dashboard.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Logger, NotFoundException, Inject } from '@nestjs/common';
 import { GetVendorDashboardQuery } from './get-vendor-dashboard.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
+import { IOrderRepository } from '../../../commerce/domain/repositories/order.repository.interface';
+import { VendorStats } from '@barterborsa/shared-persistence/schemas/backend/vendorStats.schema';
+import { VendorMetrics } from '@barterborsa/shared-persistence/schemas/backend/vendorMetrics.schema';
 
 @QueryHandler(GetVendorDashboardQuery)
 export class GetVendorDashboardHandler
@@ -11,71 +15,80 @@ export class GetVendorDashboardHandler
 {
   private readonly logger = new Logger(GetVendorDashboardHandler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    @Inject('IListingRepository') private readonly listingRepo: IListingRepository,
+    @Inject('IOrderRepository') private readonly orderRepo: IOrderRepository,
+  ) {}
 
   async execute(query: GetVendorDashboardQuery) {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId: query.userId },
-      include: {
-        stats:   true,
-        metrics: true,
-      },
-    });
-
+    const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
 
-    // Paralel sorgular — performans için
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
+
+    // VendorStats ve VendorMetrics ayrı sorgular
+    const [statsDoc, metricsDoc] = await Promise.all([
+      VendorStats.findOne({ vendorId }).exec(),
+      VendorMetrics.findOne({ vendorId }).exec(),
+    ]);
+
     const [
       activeListingCount,
       pendingOrderCount,
-      recentOrders,
-      monthlyRevenue,
+      recentOrdersResult,
+      monthlyRevenueResult,
     ] = await Promise.all([
-      this.prisma.listing.count({
-        where: { vendorId: vendor.id, status: 'ACTIVE' },
-      }),
-
-      this.prisma.order.count({
-        where: { vendorId: vendor.id, status: 'PENDING' },
-      }),
-
-      this.prisma.order.findMany({
-        where: { vendorId: vendor.id },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id:          true,
-          status:      true,
-          totalAmount: true,
-          currency:    true,
-          createdAt:   true,
-        },
-      }),
-
-      this.prisma.order.aggregate({
-        where: {
-          vendorId:  vendor.id,
-          status:    { in: ['COMPLETED', 'DELIVERED'] },
-          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
-        },
-        _sum: { totalAmount: true },
+      this.listingRepo.search({ vendorId, status: 'ACTIVE', take: 1 }),
+      this.orderRepo.findAllFiltered({ vendorId, status: 'PENDING', limit: 0 }),
+      this.orderRepo.findAllFiltered({ vendorId, limit: 5 }),
+      this.orderRepo.findAllFiltered({
+        vendorId,
+        status: 'COMPLETED',
+        skip: 0,
+        limit: 0,
       }),
     ]);
 
-    const stats   = vendor.stats;
-    const metrics = vendor.metrics;
+    // Aylık gelir için aggregate (Order'da date filter yok, manuel hesapla)
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const allOrdersResult = await this.orderRepo.findAllFiltered({ vendorId, limit: 0 });
+    const monthlyOrders = allOrdersResult.items.filter((o: any) => {
+      const createdAt = new Date((o as any).createdAt || (o as any).props?.createdAt);
+      return createdAt >= monthStart && ['COMPLETED', 'DELIVERED'].includes((o as any).status || (o as any).props?.status);
+    });
+    const monthlyRevenue = monthlyOrders.reduce((sum: number, o: any) => {
+      const amount = Number((o as any).totalAmount ?? (o as any).props?.totalAmount ?? 0);
+      return sum + amount;
+    }, 0);
+
+    const stats = statsDoc ? statsDoc.toObject() : null;
+    const metrics = metricsDoc ? metricsDoc.toObject() : null;
+
+    const recentOrders = recentOrdersResult.items.map((o: any) => {
+      const p = o.getProps ? o.getProps() : o;
+      return {
+        id:          (p as any).id || (o as any).id,
+        status:      (p as any).status || (o as any).status,
+        totalAmount: Number((p as any).totalAmount ?? 0),
+        currency:    (p as any).currency || 'TRY',
+        createdAt:   (p as any).createdAt || (o as any).createdAt,
+      };
+    });
 
     return {
       vendor: {
-        id:     vendor.id,
-        tier:   vendor.tier,
-        status: vendor.status,
+        id:     vendorId,
+        tier:   (vendorProps as any).tier,
+        status: (vendorProps as any).status,
       },
       summary: {
-        activeListingCount,
-        pendingOrderCount,
+        activeListingCount: activeListingCount.total,
+        pendingOrderCount:  pendingOrderCount.total,
         totalRevenue:    Number(metrics?.totalRevenue   ?? 0),
-        monthlyRevenue:  Number(monthlyRevenue._sum.totalAmount ?? 0),
+        monthlyRevenue,
         orderCount:      metrics?.monthlyOrderCount ?? 0,
         rating:          Number(stats?.rating       ?? 0),
         reviewCount:     stats?.reviewCount         ?? 0,

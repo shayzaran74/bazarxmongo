@@ -22,20 +22,6 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_pass
-          POSTGRES_DB: bazarx_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
       redis:
         image: redis:7-alpine
         ports:
@@ -47,7 +33,6 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/bazarx_test
       REDIS_HOST: localhost
       REDIS_PORT: 6379
       JWT_SECRET: ci-test-secret-minimum-32-chars-long
@@ -71,9 +56,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm --filter @bazarx/backend prisma:generate
 
       - name: Type-check
         run: pnpm --filter @bazarx/backend build

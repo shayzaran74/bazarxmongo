@@ -1,55 +1,29 @@
 // apps/backend/src/modules/commerce/application/queries/list-admin-orders.handler.ts
+// ListAdminOrdersHandler — Mongoose migration (ADR-005 Faz 2b)
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { Prisma } from '@prisma/client';
+import { Inject } from '@nestjs/common';
 import { ListAdminOrdersQuery } from './list-admin-orders.query';
-import { OrderStatus } from '../../domain/enums/order-status.enum';
+import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
+import { OrderMapper } from '../../infrastructure/persistence/mappers/order.mapper';
 
 @QueryHandler(ListAdminOrdersQuery)
 export class ListAdminOrdersHandler implements IQueryHandler<ListAdminOrdersQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject('IOrderRepository') private readonly orderRepo: IOrderRepository) {}
 
   async execute(query: ListAdminOrdersQuery) {
-    const { status, vendorId, search, page = 1, limit = 20 } = query.filters;
-    const skip = (page - 1) * limit;
+    const { status, vendorId, page = 1, limit = 20 } = query.filters;
 
-    const where: Prisma.OrderWhereInput = {};
-    if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
-      where.status = status as OrderStatus;
-    }
-    if (vendorId) where.vendorId = vendorId;
-    if (search) {
-      where.OR = [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
-        { user: { profile: { firstName: { contains: search, mode: 'insensitive' } } } },
-        { user: { profile: { lastName: { contains: search, mode: 'insensitive' } } } },
-      ];
-    }
+    const result = await this.orderRepo.findAllFiltered({
+      status,
+      vendorId,
+      skip: (page - 1) * limit,
+      limit,
+    });
 
-    const [items, total] = await Promise.all([
-      this.prisma.order.findMany({
-        where,
-        include: {
-          orderItems: true,
-          statusHistory: true,
-          user: {
-            select: {
-              email: true,
-              profile: { select: { firstName: true, lastName: true } },
-            },
-          },
-          vendor: {
-            include: { company: { select: { name: true } } },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.order.count({ where }),
-    ]);
+    const items = result.items.map(o => OrderMapper.toResponse(o));
+    await OrderMapper.populateImages(items);
 
-    return { items, total, page, limit };
+    return { items, total: result.total, page, limit };
   }
 }

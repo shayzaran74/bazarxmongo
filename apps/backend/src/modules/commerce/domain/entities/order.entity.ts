@@ -1,7 +1,6 @@
 // apps/backend/src/modules/commerce/domain/entities/order.entity.ts
 
 import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
-import { Prisma } from '@prisma/client';
 import { OrderStatus } from '../enums/order-status.enum';
 import { DeliveryType } from '../enums/delivery-type.enum';
 import { OrderNumber } from '../value-objects/order-number.vo';
@@ -16,16 +15,16 @@ export interface OrderProps {
   orderNumber: OrderNumber;
   shippingAddress: ShippingAddress;
   billingAddress: ShippingAddress;
-  totalAmount: Prisma.Decimal;
+  totalAmount: number;
   paymentMethod: string; // From Enum if preferred
   paymentStatus: string;
   vendorStatus: string;
   buyerStatus: string;
   currency: string;
-  discountAmount: Prisma.Decimal;
-  shippingCost: Prisma.Decimal;
-  paidWithXP: Prisma.Decimal;
-  paidWithCash: Prisma.Decimal;
+  discountAmount: number;
+  shippingCost: number;
+  paidWithXP: number;
+  paidWithCash: number;
   // BazarX Go — Teslim türü (CARGO/LOCAL_COURIER/PICKUP). Vendor tipine göre set edilir.
   deliveryType: DeliveryType;
   paidAt?: Date;

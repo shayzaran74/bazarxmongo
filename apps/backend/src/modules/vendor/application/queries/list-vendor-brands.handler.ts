@@ -1,21 +1,24 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '@barterborsa/shared-persistence';
+import { Inject } from '@nestjs/common';
 import { ListVendorBrandsQuery } from './list-vendor-brands.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
+import { MongoBrandRepository } from '../../infrastructure/persistence/mongo-brand.repository';
 
 @QueryHandler(ListVendorBrandsQuery)
 export class ListVendorBrandsHandler implements IQueryHandler<ListVendorBrandsQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly brandRepo: MongoBrandRepository,
+  ) {}
 
   async execute(query: ListVendorBrandsQuery) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: query.userId },
-      select: { id: true },
-    });
+    const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) return [];
 
-    return this.prisma.brand.findMany({
-      where: { vendorId: vendor.id },
-      orderBy: { createdAt: 'desc' },
-    });
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
+
+    const docs = await this.brandRepo.findByVendorId(vendorId);
+    return docs.map((doc: any) => doc.toObject ? doc.toObject() : doc);
   }
 }

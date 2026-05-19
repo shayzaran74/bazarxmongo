@@ -5,7 +5,6 @@ import { Inject, Logger } from '@nestjs/common';
 import { DrawLotteryCommand } from './draw-lottery.command';
 import { ILotteryRepository } from '../../domain/repositories/lottery.repository.interface';
 import { DomainException } from '@barterborsa/shared-core';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import * as crypto from 'crypto';
 
@@ -15,7 +14,6 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
 
   constructor(
     @Inject('ILotteryRepository') private readonly repository: ILotteryRepository,
-    private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -23,10 +21,8 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
     const lottery = await this.repository.findById(command.lotteryId);
     if (!lottery) throw new DomainException('Lottery not found');
 
-    // Satılan biletleri getir
-    const soldTickets = await this.prisma.lotteryTicket.findMany({
-      where: { lotteryId: command.lotteryId },
-    });
+    // Biletleri repository üzerinden getir
+    const soldTickets = await this.repository.findTickets(command.lotteryId);
 
     let winningNumber: string | null = null;
     let winnerId: string | null = null;
@@ -41,7 +37,7 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
       winnerId = winnerTicket.userId;
 
       lottery.drawManual(winningNumber, winnerId);
-      
+
       this.logger.log('Çekiliş kazananı bulundu', {
         lotteryId: command.lotteryId,
         winnerId,

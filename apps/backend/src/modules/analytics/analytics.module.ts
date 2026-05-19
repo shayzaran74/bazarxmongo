@@ -2,7 +2,8 @@
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@barterborsa/shared-persistence';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AnalyticsEvent, AnalyticsEventSchema } from '@barterborsa/shared-persistence';
 
 import { TrackingController } from './presentation/tracking.controller';
 import { AnalyticsAdminController } from './presentation/analytics-admin.controller';
@@ -14,10 +15,15 @@ import { GetDashboardStatsHandler } from './application/handlers/get-dashboard-s
 import { GetAdminStatsHandler } from './application/handlers/get-admin-stats.handler';
 import { GetVendorStatsHandler } from './application/handlers/get-vendor-stats.handler';
 
-import { PrismaAnalyticsRepository } from './infrastructure/persistence/prisma-analytics.repositories';
+import { MongoAnalyticsRepository } from './infrastructure/persistence/mongo-analytics.repository';
 
 @Module({
-  imports: [CqrsModule, PrismaModule],
+  imports: [
+    CqrsModule,
+    MongooseModule.forFeature([
+      { name: AnalyticsEvent.name, schema: AnalyticsEventSchema },
+    ]),
+  ],
   controllers: [
     TrackingController,
     AnalyticsAdminController,
@@ -29,7 +35,7 @@ import { PrismaAnalyticsRepository } from './infrastructure/persistence/prisma-a
     GetDashboardStatsHandler,
     GetAdminStatsHandler,
     GetVendorStatsHandler,
-    PrismaAnalyticsRepository,
+    MongoAnalyticsRepository,
   ],
 })
 export class AnalyticsModule {}

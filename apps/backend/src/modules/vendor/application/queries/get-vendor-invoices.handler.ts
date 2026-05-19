@@ -1,16 +1,15 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@barterborsa/shared-persistence';
-import { IInvoiceRepository }
-  from '../../../commerce/domain/repositories/invoice.repository.interface';
+import { IInvoiceRepository } from '../../../commerce/domain/repositories/invoice.repository.interface';
 import { GetVendorInvoicesQuery } from './get-vendor-invoices.query';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 
 @QueryHandler(GetVendorInvoicesQuery)
 export class GetVendorInvoicesHandler
   implements IQueryHandler<GetVendorInvoicesQuery> {
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('IInvoiceRepository')
     private readonly invoiceRepository: IInvoiceRepository,
   ) {}
@@ -19,26 +18,27 @@ export class GetVendorInvoicesHandler
     const { userId, filters } = query;
     const { page = 1, limit = 20 } = filters;
 
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { userId }
-    });
+    const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
+    const vendorProps = vendor.getProps();
+    const vendorId = (vendorProps as any).id || vendor.id;
+
     const { items, total } = await this.invoiceRepository.findByRecipientId(
-      vendor.id,
+      vendorId,
       { page, limit }
     );
 
     return {
       items: items.map((inv: any) => ({
         id: inv.id,
-        invoiceNumber: inv.invoiceNumber,
-        status: inv.status,
-        totalAmount: inv.getProps().totalAmount,
-        currency: inv.getProps().currency,
-        issuedAt: inv.getProps().issuedAt,
-        pdfUrl: inv.pdfUrl,
-        orderId: inv.getProps().orderId,
+        invoiceNumber: (inv as any).invoiceNumber || (inv.getProps && inv.getProps().invoiceNumber),
+        status: (inv as any).status || (inv.getProps && inv.getProps().status),
+        totalAmount: inv.getProps ? Number(inv.getProps().totalAmount ?? 0) : Number((inv as any).totalAmount ?? 0),
+        currency: inv.getProps ? inv.getProps().currency : (inv as any).currency || 'TRY',
+        issuedAt: inv.getProps ? inv.getProps().issuedAt : (inv as any).issuedAt,
+        pdfUrl: (inv as any).pdfUrl,
+        orderId: inv.getProps ? inv.getProps().orderId : (inv as any).orderId,
       })),
       total,
       page,

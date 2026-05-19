@@ -1,63 +1,77 @@
 // apps/backend/src/modules/catalog/infrastructure/persistence/mappers/listing.mapper.ts
+// ListingMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
+import { IListing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 import { Listing, ListingProps } from '../../../domain/entities/listing.entity';
 import { Slug } from '../../../domain/value-objects/slug.vo';
 import { Price } from '../../../domain/value-objects/price.vo';
 import { ListingStatus } from '../../../domain/enums/listing-status.enum';
 import { ListingVisibility } from '../../../domain/enums/listing-visibility.enum';
 import { ProductCondition } from '../../../domain/enums/product-condition.enum';
-import { Listing as PrismaListing } from '@prisma/client';
+
+export interface ListingDocument extends IListing {
+  _id?: string;
+}
 
 export class ListingMapper {
-  public static toDomain(record: PrismaListing): Listing {
-    const slugResult = Slug.create(record.slug || '');
-    const priceResult = Price.create(record.price);
+  public static toDomain(doc: ListingDocument): Listing {
+    const slugResult = Slug.create(doc.slug || '');
+    const priceResult = Price.create(doc.price?.toString() || '0');
     const zeroPrice = Price.create('0');
-    const promotedPriceResult = record.promotedPrice ? Price.create(record.promotedPrice) : null;
-    const originalPriceResult = record.originalPrice ? Price.create(record.originalPrice) : null;
-    const wholesalePriceResult = record.wholesalePrice ? Price.create(record.wholesalePrice) : null;
-    
+
     const props: ListingProps = {
-      vendorId: record.vendorId,
-      catalogProductId: record.catalogProductId,
-      title: record.title,
-      description: record.description || undefined,
-      price: priceResult.success ? priceResult.data : (zeroPrice.success ? zeroPrice.data : null as any),
-      stock: record.stock,
-      status: record.status as ListingStatus,
-      visibility: record.visibility as ListingVisibility,
-      condition: record.condition as ProductCondition,
-      slug: slugResult.success ? slugResult.data : Slug.fromText(record.slug || ''),
-      sku: record.sku || undefined,
-      isPromoted: record.isPromoted,
-      promotedPrice: promotedPriceResult?.success ? promotedPriceResult.data : undefined,
-      originalPrice: originalPriceResult?.success ? originalPriceResult.data : undefined,
-      wholesalePrice: wholesalePriceResult?.success ? wholesalePriceResult.data : undefined,
-      minWholesaleQty: record.minWholesaleQty || undefined,
-      isDigital: record.isDigital,
-      isB2BOnly: record.isB2BOnly,
-      b2bDiscount: record.b2bDiscount ? Number(record.b2bDiscount) : undefined,
-      tags: record.tags,
-      isFeatured: record.isFeatured,
-      featuredUntil: record.featuredUntil || undefined,
-      listingType: record.listingType,
-      isAuctionEnabled: record.isAuctionEnabled,
-      isLotteryEnabled: record.isLotteryEnabled,
-      ecosystemId: record.ecosystemId || undefined,
-      commissionRate: record.commissionRate ? Number(record.commissionRate) : undefined,
-      variants: record.variants,
-      metadata: record.metadata,
-      availableQuantity: record.availableQuantity,
-      reservedQuantity: record.reservedQuantity,
+      vendorId: doc.vendorId,
+      catalogProductId: doc.catalogProductId,
+      title: doc.title,
+      description: doc.description ?? undefined,
+      price: (priceResult.success ? priceResult.data : zeroPrice.data) as Price,
+      stock: doc.stock,
+      status: doc.status as ListingStatus,
+      visibility: doc.visibility as ListingVisibility,
+      condition: doc.condition as ProductCondition,
+      slug: slugResult.success ? slugResult.data : Slug.fromText(doc.slug || ''),
+      sku: doc.sku ?? undefined,
+      isPromoted: doc.isPromoted,
+      promotedPrice: (() => {
+        if (!doc.promotedPrice) return undefined;
+        const r = Price.create(doc.promotedPrice.toString());
+        return r.success ? r.data : undefined;
+      })(),
+      originalPrice: (() => {
+        if (!doc.originalPrice) return undefined;
+        const r = Price.create(doc.originalPrice.toString());
+        return r.success ? r.data : undefined;
+      })(),
+      wholesalePrice: (() => {
+        if (!doc.wholesalePrice) return undefined;
+        const r = Price.create(doc.wholesalePrice.toString());
+        return r.success ? r.data : undefined;
+      })(),
+      minWholesaleQty: doc.minWholesaleQty ?? undefined,
+      isDigital: doc.isDigital,
+      isB2BOnly: doc.isB2BOnly,
+      b2bDiscount: doc.b2bDiscount ? Number(doc.b2bDiscount.toString()) : undefined,
+      tags: doc.tags,
+      isFeatured: doc.isFeatured,
+      featuredUntil: doc.featuredUntil ?? undefined,
+      listingType: doc.listingType,
+      isAuctionEnabled: doc.isAuctionEnabled,
+      isLotteryEnabled: doc.isLotteryEnabled,
+      ecosystemId: doc.ecosystemId ?? undefined,
+      commissionRate: doc.commissionRate ? Number(doc.commissionRate.toString()) : undefined,
+      variants: doc.variants as Record<string, unknown> | undefined,
+      metadata: doc.metadata as Record<string, unknown> | undefined,
+      availableQuantity: doc.availableQuantity,
+      reservedQuantity: doc.reservedQuantity,
     };
 
-    return Listing.fromPersistence(props, record.id);
+    return Listing.fromPersistence(props, doc.id);
   }
 
-  public static toPersistence(domain: Listing): any {
+  public static toPersistence(domain: Listing): Record<string, unknown> {
     const props = domain.getProps();
-    
     return {
+      _id: domain.id,
       id: domain.id,
       vendorId: props.vendorId,
       catalogProductId: props.catalogProductId,
@@ -90,7 +104,6 @@ export class ListingMapper {
       metadata: props.metadata,
       availableQuantity: props.availableQuantity,
       reservedQuantity: props.reservedQuantity,
-      updatedAt: new Date(),
     };
   }
 }

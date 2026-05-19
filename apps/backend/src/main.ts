@@ -12,9 +12,11 @@ import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  console.log('Bootstrap: Starting NestFactory.create...');
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
   );
+  console.log('Bootstrap: NestFactory.create completed.');
 
   // CORS: Frontend'in backend ile konuşabilmesi için şart
   // Production'da origin whitelist kullan

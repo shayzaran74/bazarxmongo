@@ -1,32 +1,30 @@
 // apps/backend/src/modules/barter/application/commands/register-barter.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Inject } from '@nestjs/common';
 import { RegisterBarterCommand } from './register-barter.command';
-import { PrismaService } from '@barterborsa/shared-persistence';
 import { BadRequestException } from '@nestjs/common';
+import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
 
 @CommandHandler(RegisterBarterCommand)
 export class RegisterBarterHandler implements ICommandHandler<RegisterBarterCommand> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+  ) {}
 
   async execute(command: RegisterBarterCommand) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { userId: command.userId },
-      select: { id: true, status: true },
-    });
+    const vendor = await this.vendorRepository.findByUserId(command.userId);
 
     if (!vendor) {
       throw new BadRequestException('Önce satıcı kaydı yapılmalıdır');
     }
-    if (vendor.status !== 'APPROVED') {
+    const props = vendor.getProps();
+    if (props.status !== 'APPROVED') {
       throw new BadRequestException('Barter sistemine katılmak için satıcı hesabı onaylı olmalıdır');
     }
 
     // Vendor tier'ı güncelle — barter erişimi aç
-    await this.prisma.vendor.update({
-      where: { id: vendor.id },
-      data: { barterEnabled: true },
-    });
+    await this.vendorRepository.update(vendor.id, { barterEnabled: true } as any);
 
     return {
       success: true,
