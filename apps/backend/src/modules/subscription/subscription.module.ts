@@ -35,6 +35,7 @@ import { MenuRightsService } from '../menu/application/services/menu-rights.serv
       { name: 'XpTransaction',      schema: XpTransactionSchema },
       { name: 'LoyaltyTierHistory', schema: LoyaltyTierHistorySchema },
       { name: 'MenuRight',          schema: MenuRightSchema },
+      { name: 'MenuPurchase',       schema: MenuPurchaseSchema },
     ]),
   ],
   controllers: [SubscriptionController],
