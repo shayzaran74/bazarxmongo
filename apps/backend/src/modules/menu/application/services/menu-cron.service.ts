@@ -5,7 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IMenuPurchase, IMenuReservation, ISurpriseMenu } from '@barterborsa/shared-persistence';
+import { IMenuPurchase, IMenuReservation, ISurpriseMenu, IGoReferral } from '@barterborsa/shared-persistence';
 import { GoNotificationService } from './go-notification.service';
 
 @Injectable()
@@ -16,6 +16,7 @@ export class MenuCronService {
     @InjectModel('MenuPurchase')    private readonly purchaseModel:    Model<IMenuPurchase>,
     @InjectModel('MenuReservation') private readonly reservationModel: Model<IMenuReservation>,
     @InjectModel('SurpriseMenu')    private readonly surpriseModel:    Model<ISurpriseMenu>,
+    @InjectModel('GoReferral')      private readonly referralModel:    Model<IGoReferral>,
     private readonly goNotif: GoNotificationService,
   ) {}
 
@@ -110,6 +111,22 @@ export class MenuCronService {
     );
     if (result.modifiedCount > 0) {
       this.logger.log(`${result.modifiedCount} rezervasyon otomatik iptal edildi`);
+    }
+  }
+
+  /**
+   * §7 Referans bonus süresi dolumu — her gün 09:00
+   * bonusExpiresAt < now olan BONUS_GRANTED kayıtları BONUS_EXPIRED olarak işaretlenir.
+   */
+  @Cron('0 9 * * *', { name: 'referralBonusExpiry', timeZone: 'Europe/Istanbul' })
+  async expireReferralBonuses(): Promise<void> {
+    const now = new Date();
+    const result = await this.referralModel.updateMany(
+      { status: 'BONUS_GRANTED', bonusExpiresAt: { $lt: now } },
+      { $set: { status: 'BONUS_EXPIRED' } },
+    );
+    if (result.modifiedCount > 0) {
+      this.logger.log(`${result.modifiedCount} referans bonusu BONUS_EXPIRED olarak işaretlendi`);
     }
   }
 }

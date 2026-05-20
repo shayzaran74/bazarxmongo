@@ -103,6 +103,7 @@ export { LaunchPartner, ILaunchPartner, LaunchPartnerSchema, LaunchPartnerPhase,
 export { MenuReservation, IMenuReservation, MenuReservationSchema, ReservationStatus, ReservationStatusType } from './schemas/backend/menuReservation.schema';
 export { SurpriseMenu, ISurpriseMenu, SurpriseMenuSchema, ISurpriseMenuTimeBlock } from './schemas/backend/surpriseMenu.schema';
 export { UserDeviceToken, IUserDeviceToken, UserDeviceTokenSchema } from './schemas/backend/userDeviceToken.schema';
+export { GoReferral, IGoReferral, GoReferralSchema, GoReferralStatus, GoReferralStatusType } from './schemas/backend/goReferral.schema';
 
 // Loyalty repository — Subscription/TrustScore/XP/Referral/Menu
 export * from './mongodb/loyalty/loyalty.repository';

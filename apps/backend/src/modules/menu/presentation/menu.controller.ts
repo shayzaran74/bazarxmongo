@@ -11,8 +11,10 @@ import {
 import { Type } from 'class-transformer';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { GetMyPurchasesQuery }   from '../application/queries/get-my-purchases.query';
-import { PurchaseMenuCommand }   from '../application/commands/purchase-menu.command';
+import { GetMyPurchasesQuery }          from '../application/queries/get-my-purchases.query';
+import { GetMyReferralStatusQuery }      from '../application/queries/get-my-referral-status.handler';
+import { PurchaseMenuCommand }          from '../application/commands/purchase-menu.command';
+import { RegisterGoReferralCommand }     from '../application/commands/register-go-referral.command';
 import { ActivateOneFreeCommand } from '../application/commands/activate-one-free.command';
 import { TransferMenuCommand }   from '../application/commands/transfer-menu.command';
 import { CreateReservationCommand } from '../application/commands/create-reservation.command';
@@ -185,8 +187,25 @@ export class MenuController {
     @Body() dto: { lat: number; lng: number; vendorCoords?: { vendorId: string; lat: number; lng: number }[] },
   ) {
     const { GeofenceService } = require('../application/services/geofence.service');
-    // Module DI olmadığı için lazy — gerçek modül wiring menu.module.ts üzerinden
-    // Bu endpoint gerçek GeofenceService inject almak için menu.module.ts güncellenmeli
     return { success: true, data: [] };
+  }
+
+  // ── §7 Referans Sistemi ───────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Referans durumumu ve bonus hakkımı göster' })
+  @Get('referral/my-status')
+  async getMyReferralStatus(@CurrentUser() user: AuthenticatedUser) {
+    return { success: true, data: await this.queryBus.execute(new GetMyReferralStatusQuery(user.id)) };
+  }
+
+  @ApiOperation({ summary: 'Referans kodu ile kayıt ol (üyelik sonrası çağrılır)' })
+  @Post('referral/register')
+  async registerReferral(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: { referralCode: string; tier: string; paidAmount: number },
+  ) {
+    return this.commandBus.execute(
+      new RegisterGoReferralCommand(dto.referralCode, user.id, dto.tier, dto.paidAmount),
+    );
   }
 }

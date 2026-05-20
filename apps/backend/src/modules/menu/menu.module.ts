@@ -10,8 +10,9 @@ import {
   UserLevelSchema, XpTransactionSchema, VendorSchema, UserProfileSchema,
   MenuRightSchema, MenuReservationSchema, SurpriseMenuSchema,
 } from '@barterborsa/shared-persistence';
-import { NotificationSchema } from '@barterborsa/shared-persistence/schemas/backend/notification.schema';
-import { UserDeviceTokenSchema } from '@barterborsa/shared-persistence/schemas/backend/userDeviceToken.schema';
+import { NotificationSchema }    from '@barterborsa/shared-persistence/schemas/backend/notification.schema';
+import { UserDeviceTokenSchema }  from '@barterborsa/shared-persistence/schemas/backend/userDeviceToken.schema';
+import { GoReferralSchema }        from '@barterborsa/shared-persistence/schemas/backend/goReferral.schema';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
 // Controllers
@@ -27,13 +28,15 @@ import { AdvanceLaunchPartnerPhaseHandler } from './application/commands/advance
 import { DistributeFreeMenuHandler }       from './application/commands/distribute-free-menu.handler';
 
 // Commands — Sprint 1
-import { TransferMenuHandler }      from './application/commands/transfer-menu.handler';
-import { CreateReservationHandler }  from './application/commands/create-reservation.handler';
-import { UpdateSurpriseMenuHandler } from './application/commands/update-surprise-menu.handler';
+import { TransferMenuHandler }          from './application/commands/transfer-menu.handler';
+import { CreateReservationHandler }      from './application/commands/create-reservation.handler';
+import { UpdateSurpriseMenuHandler }     from './application/commands/update-surprise-menu.handler';
+import { RegisterGoReferralHandler }     from './application/commands/register-go-referral.handler';
 
 // Queries
-import { GetMyPurchasesHandler }    from './application/queries/get-my-purchases.handler';
-import { GetLaunchPartnersHandler }  from './application/queries/get-launch-partners.handler';
+import { GetMyPurchasesHandler }         from './application/queries/get-my-purchases.handler';
+import { GetLaunchPartnersHandler }       from './application/queries/get-launch-partners.handler';
+import { GetMyReferralStatusHandler }     from './application/queries/get-my-referral-status.handler';
 
 // Services — mevcut
 import { QrGeneratorService }       from './application/services/qr-generator.service';
@@ -70,6 +73,8 @@ import { MailService }            from '../communication/infrastructure/mail/mai
       // Sprint 4
       { name: 'Notification',    schema: NotificationSchema },
       { name: 'UserDeviceToken', schema: UserDeviceTokenSchema },
+      // Referans sistemi
+      { name: 'GoReferral',      schema: GoReferralSchema },
     ]),
   ],
   controllers: [MenuController, MenuRedeemController, MenuAdminController],
@@ -94,9 +99,11 @@ import { MailService }            from '../communication/infrastructure/mail/mai
     TransferMenuHandler,
     CreateReservationHandler,
     UpdateSurpriseMenuHandler,
+    RegisterGoReferralHandler,
     // Query Handlers
     GetMyPurchasesHandler,
     GetLaunchPartnersHandler,
+    GetMyReferralStatusHandler,
   ],
   exports: [MenuUsageTrackerService, MenuRightsService, GoNotificationService],
 })
