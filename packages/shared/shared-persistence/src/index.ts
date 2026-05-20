@@ -84,6 +84,7 @@ export { LoyaltyTierHistory, ILoyaltyTierHistory, LoyaltyTierHistorySchema } fro
 export { XpDistributionRule, IXpDistributionRule, XpDistributionRuleSchema } from './schemas/backend/xpDistributionRule.schema';
 export { XpSpendingLimitRule, IXpSpendingLimitRule, XpSpendingLimitRuleSchema } from './schemas/backend/xpSpendingLimitRule.schema';
 export { TrustScore, ITrustScore, TrustLevel, TrustLevelType } from './schemas/backend/trustScore.schema';
+export { BadgeRule, IBadgeRule, BadgeRuleSchema } from './schemas/backend/badgeRule.schema';
 export { VendorViolationSchema, VendorViolationModel, IVendorViolation, VendorViolationLevel, VendorViolationLevelType } from './schemas/backend/vendorViolation.schema';
 export { GiftVoucher, IGiftVoucher, GiftVoucherType, GiftVoucherTypeType } from './schemas/backend/giftVoucher.schema';
 export { XpTransaction, IXpTransaction, XpTransactionSchema, XpTransactionType, XpTransactionTypeType } from './schemas/backend/xpTransaction.schema';
@@ -91,6 +92,11 @@ export { Referral, IReferral, ReferralSchema } from './schemas/backend/referral.
 export { MenuUsage, IMenuUsage, MenuUsageSchema } from './schemas/backend/menuUsage.schema';
 export { MenuPurchase, IMenuPurchase, MenuPurchaseSchema, MenuPurchaseStatus, MenuPurchaseStatusType } from './schemas/backend/menuPurchase.schema';
 export { MenuRedemption, IMenuRedemption, MenuRedemptionSchema } from './schemas/backend/menuRedemption.schema';
+export { MenuRight, IMenuRight, MenuRightSchema, MenuRightSource, MenuRightSourceType, MenuRightTier, MenuRightTierType } from './schemas/backend/menuRight.schema';
+export {
+  GarageSale, IGarageSale, GarageSaleSchema, GarageSaleStatus, GarageSaleStatusType,
+  GarageSalePurchase, IGarageSalePurchase, GarageSalePurchaseSchema,
+} from './schemas/backend/garageSale.schema';
 export { LaunchPartner, ILaunchPartner, LaunchPartnerSchema, LaunchPartnerPhase, LaunchPartnerPhaseType } from './schemas/backend/launchPartner.schema';
 
 // Loyalty repository — Subscription/TrustScore/XP/Referral/Menu

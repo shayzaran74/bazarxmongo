@@ -1,14 +1,17 @@
 // apps/backend/src/modules/catalog/application/queries/list-catalog-listings/list-catalog-listings.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
 import { ListCatalogListingsQuery } from './list-catalog-listings.query';
 import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { AnonymizerService } from '../../../../barterborsa/application/services/anonymizer.service';
+import { populateDynamicBadges } from '../../helpers/badge-evaluator.helper';
 
 @QueryHandler(ListCatalogListingsQuery)
 export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogListingsQuery> {
+  constructor(private readonly anonymizer: AnonymizerService) {}
+
   async execute(query: ListCatalogListingsQuery) {
     try {
       const { userId, userRole, filters } = query;
@@ -47,6 +50,25 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
 
     if (filters.vendorType) {
       filter.vendorType = filters.vendorType;
+    }
+
+    // Master Plan v4.3 §4.2 — Fabrika ekosistemi görünürlük + zaman filtresi
+    // Public scope'ta NONE/null visibleTo veya zaman aralığı dışındaki ekosistem listing'leri gizlenir
+    if (!isAdmin && !isVendorScope) {
+      const now = new Date();
+      filter.$and = [
+        // Ekosistem dışı (genel pazaryeri) veya ekosistem içi ama görünürlük açık
+        {
+          $or: [
+            { ecosystemId: { $exists: false } },
+            { ecosystemId: null },
+            { visibleTo: { $in: ['ALL_DEALERS', 'SELECTED_DEALERS'] } },
+          ],
+        },
+        // Zaman aralığı kontrolü (availableFrom yoksa veya geçtiyse)
+        { $or: [{ availableFrom: { $exists: false } }, { availableFrom: null }, { availableFrom: { $lte: now } }] },
+        { $or: [{ availableTo: { $exists: false } }, { availableTo: null }, { availableTo: { $gte: now } }] },
+      ];
     }
 
     const [items, total] = await Promise.all([
@@ -90,19 +112,40 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
       }
     }
 
-    const mappedItems = items.map((l: any) => ({
-      id: l.id,
-      name: l.title,
-      price: l.price ? Number(l.price) : 0,
-      stock: l.stock,
-      sku: l.sku || '',
-      barcode: l.barcode || '',
-      status: l.status,
-      images: mediaMap[l.catalogProductId] || [],
-      category: catalogProducts[l.catalogProductId]?.categoryId || null,
-      vendorName: vendors[l.vendorId]?.company?.name || 'Bilinmeyen Satıcı',
-      catalogProduct: catalogProducts[l.catalogProductId] || null,
-    }));
+    const mappedItems = items.map((l: any) => {
+      // Master Plan §4.4 + §5.3 — Ekosistem listing'lerinde gerçek vendor kimliği gizli
+      const isEcosystemListing = Boolean(l.ecosystemId);
+      const exposeRealIdentity = isAdmin || (isVendor && vendors[l.vendorId]?.userId === userId);
+      const showVendor = !isEcosystemListing || exposeRealIdentity;
+
+      return {
+        id: l.id,
+        name: l.title,
+        price: l.price ? Number(l.price) : 0,
+        stock: l.stock,
+        sku: l.sku || '',
+        barcode: l.barcode || '',
+        status: l.status,
+        images: mediaMap[l.catalogProductId] || [],
+        category: catalogProducts[l.catalogProductId]?.categoryId || null,
+        // Sadece görünürlük izinliyse gerçek vendor adı
+        vendorName: showVendor ? (vendors[l.vendorId]?.company?.name || 'Bilinmeyen Satıcı') : 'Anonim Bayi',
+        anonymousVendorId: isEcosystemListing && !exposeRealIdentity
+          ? this.anonymizer.anonymize(l.vendorId, 'vendor')
+          : undefined,
+        catalogProduct: catalogProducts[l.catalogProductId] || null,
+        // Master Plan §4.2 — ekosistem alanları
+        ecosystemId: l.ecosystemId,
+        visibleTo: l.visibleTo,
+        availableFrom: l.availableFrom,
+        availableTo: l.availableTo,
+        allowOnlineResale: l.allowOnlineResale ?? false,
+        maxOrderQtyPerDealer: l.maxOrderQtyPerDealer,
+        userTier: vendors[l.vendorId]?.tier || 'CORE',
+      };
+    });
+
+    await populateDynamicBadges(mappedItems);
 
     return {
       items: mappedItems,

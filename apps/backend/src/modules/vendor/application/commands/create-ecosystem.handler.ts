@@ -1,12 +1,12 @@
 // apps/backend/src/modules/vendor/application/commands/create-ecosystem.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { CreateEcosystemCommand } from './create-ecosystem.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
+import { VendorTier } from '../../domain/enums/vendor-tier.enum';
 
 @CommandHandler(CreateEcosystemCommand)
 export class CreateEcosystemHandler
@@ -24,6 +24,15 @@ export class CreateEcosystemHandler
 
     const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor bulunamadı');
+
+    // Master Plan v4.3 §4.1 — Fabrika sisteme APEX seviyesinde girmek ZORUNDADIR.
+    // APEX altında ekosistem kurulamaz.
+    if (vendor.tier !== VendorTier.APEX) {
+      throw new ForbiddenException({
+        code: 'ECOSYSTEM_REQUIRES_APEX',
+        message: 'Ekosistem kurabilmek için APEX B2B üyeliği gereklidir. Mevcut seviye: ' + vendor.tier,
+      });
+    }
 
     const existing = await this.ecosystemRepo.findByOwnerId(vendor.id);
     if (existing) {

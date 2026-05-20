@@ -2,7 +2,7 @@
 // ListingMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { IListing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
-import { Listing, ListingProps } from '../../../domain/entities/listing.entity';
+import { Listing, ListingProps, DealerVisibility } from '../../../domain/entities/listing.entity';
 import { Slug } from '../../../domain/value-objects/slug.vo';
 import { Price } from '../../../domain/value-objects/price.vo';
 import { ListingStatus } from '../../../domain/enums/listing-status.enum';
@@ -63,6 +63,13 @@ export class ListingMapper {
       metadata: doc.metadata as Record<string, unknown> | undefined,
       availableQuantity: doc.availableQuantity,
       reservedQuantity: doc.reservedQuantity,
+      // Master Plan v4.3 §4.2 — Fabrika ekosistemi alanları
+      visibleTo: doc.visibleTo as DealerVisibility | undefined,
+      selectedDealerIds: doc.selectedDealerIds ?? [],
+      availableFrom: doc.availableFrom ?? undefined,
+      availableTo: doc.availableTo ?? undefined,
+      allowOnlineResale: doc.allowOnlineResale ?? false,
+      maxOrderQtyPerDealer: doc.maxOrderQtyPerDealer ?? undefined,
     };
 
     return Listing.fromPersistence(props, doc.id);
@@ -104,6 +111,13 @@ export class ListingMapper {
       metadata: props.metadata,
       availableQuantity: props.availableQuantity,
       reservedQuantity: props.reservedQuantity,
+      // Master Plan v4.3 §4.2 — Fabrika ekosistemi alanları
+      visibleTo: props.visibleTo,
+      selectedDealerIds: props.selectedDealerIds ?? [],
+      availableFrom: props.availableFrom,
+      availableTo: props.availableTo,
+      allowOnlineResale: props.allowOnlineResale ?? false,
+      maxOrderQtyPerDealer: props.maxOrderQtyPerDealer,
     };
   }
 }

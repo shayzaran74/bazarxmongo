@@ -9,3 +9,5 @@ export * from './types/result.type';
 export * from './types/exceptions';
 export * from './domain/repository.interface';
 export * from './common/constants';
+// Master Plan §7 — Money / Decimal128 API (financial-services-expert kuralı)
+export * from './math/decimal';

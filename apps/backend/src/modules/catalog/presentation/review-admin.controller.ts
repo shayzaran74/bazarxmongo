@@ -19,12 +19,19 @@ export class ReviewAdminController {
   @Get()
   async getReviews(
     @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10'
+    @Query('limit') limit: string = '10',
+    @Query('product') product?: string,
+    @Query('user') user?: string,
+    @Query('approved') approved?: string
   ) {
+    const isApproved = approved === 'true' ? true : (approved === 'false' ? false : undefined);
     const result = await this.queryBus.execute(
       new ListAdminReviewsQuery({
         page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 10
+        limit: parseInt(limit, 10) || 10,
+        searchProduct: product,
+        searchUser: user,
+        isApproved
       })
     );
     return { success: true, data: result };

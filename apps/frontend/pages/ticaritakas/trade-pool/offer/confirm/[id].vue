@@ -39,10 +39,13 @@ const fetchOpportunity = async () => {
 }
 
 const isSubmitting = ref(false)
+const errorBanner = ref<{ code: string; message: string } | null>(null)
+
 const confirmAndSubmit = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
-  
+  errorBanner.value = null
+
   try {
     const res: any = await $api('/api/v1/offers', {
       method: 'POST',
@@ -54,7 +57,7 @@ const confirmAndSubmit = async () => {
         type: type.value
       }
     })
-    
+
     if (res.success) {
       router.push({
         path: '/ticaritakas/trade-pool/offer/success',
@@ -67,7 +70,22 @@ const confirmAndSubmit = async () => {
       })
     }
   } catch (error: any) {
-    alert(error.data?.message || 'Teklif onaylanırken bir hata oluştu.')
+    // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı + §4.2 allowOnlineResale
+    const code = error?.data?.code || error?.data?.response?.code
+    const message = error?.data?.message || error?.message || 'Teklif onaylanırken bir hata oluştu.'
+    if (code === 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM') {
+      errorBanner.value = {
+        code,
+        message: 'Aynı ekosistemdeki bayilerle takas yapamazsınız. Lütfen BazarX Pazaryeri\'ne geçin.',
+      }
+    } else if (code === 'ONLINE_RESALE_NOT_ALLOWED') {
+      errorBanner.value = {
+        code,
+        message: 'Bu fabrika ürünü çevrimiçi takasa açık değil. Üretici tarafından kapatılmıştır.',
+      }
+    } else {
+      errorBanner.value = { code: code ?? 'UNKNOWN', message }
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -300,12 +318,42 @@ const discountedCommission = computed(() => commission.value / 2)
             </div>
           </div>
 
+          <!-- Master Plan §4.5 — Ekosistem içi takas yasağı uyarı bandı -->
+          <div
+            v-if="errorBanner"
+            class="rounded-2xl border-2 px-5 py-4 mb-4"
+            :class="errorBanner.code === 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM'
+              ? 'bg-amber-50 border-amber-300 text-amber-900'
+              : errorBanner.code === 'ONLINE_RESALE_NOT_ALLOWED'
+              ? 'bg-blue-50 border-blue-300 text-blue-900'
+              : 'bg-red-50 border-red-300 text-red-900'"
+          >
+            <div class="flex items-start gap-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-5 h-5 flex-shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <div class="flex-1">
+                <div class="font-black uppercase tracking-wide text-xs mb-1">{{ errorBanner.code }}</div>
+                <div class="text-sm font-medium leading-relaxed">{{ errorBanner.message }}</div>
+                <NuxtLink
+                  v-if="errorBanner.code === 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM'"
+                  to="/marketplace"
+                  class="inline-flex items-center gap-1 mt-2 text-xs font-bold underline hover:no-underline"
+                >
+                  BazarX Pazaryeri'ne git →
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
           <!-- Action Button -->
           <div class="space-y-4">
-            <button 
+            <button
               @click="confirmAndSubmit"
-              :disabled="isSubmitting"
-              class="w-full bg-[#002444] text-white py-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-900/20 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest"
+              :disabled="isSubmitting || errorBanner?.code === 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM' || errorBanner?.code === 'ONLINE_RESALE_NOT_ALLOWED'"
+              class="w-full bg-[#002444] text-white py-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-900/20 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 uppercase tracking-widest"
             >
               <template v-if="isSubmitting">
                 <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

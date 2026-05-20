@@ -100,6 +100,37 @@ export class OffersController {
     if (!toCompanyId) throw new BadRequestException('Hedef şirket ID (toCompanyId) bulunamadı.');
     if (!receiverId) throw new BadRequestException('Hedef alıcı ID (receiverId) bulunamadı.');
 
+    // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı.
+    // Aynı fabrika ekosistemine ait iki bayi birbirleriyle takas yapamaz; pazaryerine geçmeliler.
+    if (vendor.ecosystemId) {
+      // Hedef şirketin vendor kaydından ekosistem bilgisini al
+      const receiverVendor = await this.vendorRepository.findByCompanyId(toCompanyId);
+      const receiverEcosystemId = receiverVendor?.getProps()?.ecosystemId;
+      if (receiverEcosystemId && receiverEcosystemId === vendor.ecosystemId) {
+        throw new ForbiddenException({
+          code: 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM',
+          message: 'Aynı ekosistemdeki bayilerle takas yapamazsınız. Lütfen BazarX Pazaryeri\'ne geçin.',
+          details: { ecosystemId: vendor.ecosystemId },
+        });
+      }
+    }
+
+    // Master Plan v4.3 §4.2 — Fabrikadan satın alınan ürünler pazaryerinde takas edilebilir mi?
+    // `allowOnlineResale` izni olmayan ekosistem listing'leri takasa konu edilemez.
+    if (body.surplusItemId) {
+      const surplus = await this.surplusItemRepository.findById(body.surplusItemId);
+      // SurplusItem domain entity'sinde allowOnlineResale yansıtılmışsa kontrol et
+      const surplusProps = (surplus as any)?.getProps?.();
+      const ecosystemListing = surplusProps?.ecosystemId as string | undefined;
+      const allowResale = surplusProps?.allowOnlineResale as boolean | undefined;
+      if (ecosystemListing && allowResale === false) {
+        throw new ForbiddenException({
+          code: 'ONLINE_RESALE_NOT_ALLOWED',
+          message: 'Bu fabrika ürünü çevrimiçi takasa açık değil.',
+        });
+      }
+    }
+
     const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7));
     const cashAmount = body.cashAmount ?? 0;
 
@@ -225,6 +256,7 @@ export class OffersController {
     id: string;
     status: string;
     barterEnabled: boolean;
+    ecosystemId?: string;
     company: { id: string; name: string; status: string };
   }> {
     const vendor = await this.vendorRepository.findByUserId(userId);
@@ -243,6 +275,12 @@ export class OffersController {
       status: 'APPROVED',
     };
 
-    return { id: vendor.id, status: props.status, barterEnabled: false, company };
+    return {
+      id: vendor.id,
+      status: props.status,
+      barterEnabled: false,
+      ecosystemId: props.ecosystemId,
+      company,
+    };
   }
 }

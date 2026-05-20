@@ -10,6 +10,7 @@ import {
   MenuPurchaseSchema, MenuRedemptionSchema, LaunchPartnerSchema, ListingSchema,
   UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema,
   UserLevelSchema, XpTransactionSchema, VendorSchema, UserProfileSchema,
+  MenuRightSchema,
 } from '@barterborsa/shared-persistence';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
@@ -31,6 +32,9 @@ import { GetLaunchPartnersHandler } from './application/queries/get-launch-partn
 // Services
 import { QrGeneratorService } from './application/services/qr-generator.service';
 import { MenuUsageTrackerService } from './application/services/menu-usage-tracker.service';
+// Master Plan §2.2 + §2.7 — Menü hakkı yönetimi (tier recalc + 30 gün grace)
+import { MenuRightsService } from './application/services/menu-rights.service';
+import { MenuRightsCleanupService } from './application/services/menu-rights-cleanup.service';
 
 @Module({
   imports: [
@@ -48,12 +52,15 @@ import { MenuUsageTrackerService } from './application/services/menu-usage-track
       { name: 'XpTransaction',   schema: XpTransactionSchema },
       { name: 'Vendor',          schema: VendorSchema },
       { name: 'UserProfile',     schema: UserProfileSchema },
+      { name: 'MenuRight',       schema: MenuRightSchema },
     ]),
   ],
   controllers: [MenuController, MenuRedeemController],
   providers: [
     QrGeneratorService,
     MenuUsageTrackerService,
+    MenuRightsService,
+    MenuRightsCleanupService,
     PurchaseMenuHandler,
     ActivateOneFreeHandler,
     RedeemMenuHandler,
@@ -62,6 +69,6 @@ import { MenuUsageTrackerService } from './application/services/menu-usage-track
     GetMyPurchasesHandler,
     GetLaunchPartnersHandler,
   ],
-  exports: [MenuUsageTrackerService],
+  exports: [MenuUsageTrackerService, MenuRightsService],
 })
 export class MenuModule {}

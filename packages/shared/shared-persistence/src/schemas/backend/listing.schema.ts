@@ -1,3 +1,4 @@
+// packages/shared/shared-persistence/src/schemas/backend/listing.schema.ts
 import { Schema, model, Types } from 'mongoose';
 
 export const ListingStatus = ['DRAFT','ACTIVE','INACTIVE','OUT_OF_STOCK','SUSPENDED','REJECTED','ARCHIVED','PENDING'] as const;
@@ -5,6 +6,10 @@ export type ListingStatusType = typeof ListingStatus[number];
 
 export const ListingVisibility = ['PUBLIC','PRIVATE','ECOSYSTEM_ONLY','B2B_ONLY'] as const;
 export type ListingVisibilityType = typeof ListingVisibility[number];
+
+// Master Plan v4.3 §4.2 — Fabrika ürün gamı bayi görünürlük kontrolü
+export const DealerVisibility = ['ALL_DEALERS','SELECTED_DEALERS','NONE'] as const;
+export type DealerVisibilityType = typeof DealerVisibility[number];
 
 export const ProductCondition = ['NEW','SECOND_HAND','REFURBISHED','OPEN_BOX'] as const;
 export type ProductConditionType = typeof ProductCondition[number];
@@ -62,6 +67,13 @@ export interface IListing {
   sponsorBudget?: Types.Decimal128;
   barcode?: string;
   categoryId?: string;
+  // Master Plan v4.3 §4.2 — Fabrika ekosistemi ürün gamı kontrolleri
+  visibleTo?: DealerVisibilityType;
+  availableFrom?: Date;
+  availableTo?: Date;
+  allowOnlineResale?: boolean;
+  maxOrderQtyPerDealer?: number;
+  selectedDealerIds?: string[];
 }
 
 export const ListingSchema = new Schema<IListing>({
@@ -117,6 +129,13 @@ export const ListingSchema = new Schema<IListing>({
   sponsorBudget: { type: Types.Decimal128, default: 0, alias: 'sponsor_budget' },
   barcode: { type: String },
   categoryId: { type: String, alias: 'category_id' },
+  // Master Plan v4.3 §4.2 — Fabrika ekosistemi alanları
+  visibleTo: { type: String, enum: DealerVisibility, default: 'NONE', alias: 'visible_to' },
+  availableFrom: { type: Date, alias: 'available_from' },
+  availableTo: { type: Date, alias: 'available_to' },
+  allowOnlineResale: { type: Boolean, default: false, alias: 'allow_online_resale' },
+  maxOrderQtyPerDealer: { type: Number, alias: 'max_order_qty_per_dealer' },
+  selectedDealerIds: { type: [String], default: [], alias: 'selected_dealer_ids' },
 }, {
   timestamps: true,
   collection: 'listings',
@@ -128,5 +147,23 @@ ListingSchema.index({ slug: 1 });
 ListingSchema.index({ status: 1, createdAt: -1 });
 ListingSchema.index({ categoryId: 1, status: 1 });
 ListingSchema.index({ ecosystemId: 1, isActive: 1 });
+ListingSchema.index({ ecosystemId: 1, visibleTo: 1, availableFrom: 1, availableTo: 1 });
+
+// Master Plan v4.3 §4.2 — Ekosistem listing'leri için doğrulamalar
+ListingSchema.pre('validate', function (next) {
+  // Ekosistem listing'inde maxOrderQtyPerDealer zorunlu
+  if (this.ecosystemId && (this.maxOrderQtyPerDealer === undefined || this.maxOrderQtyPerDealer === null)) {
+    return next(new Error('ECOSYSTEM_LISTING_REQUIRES_MAX_ORDER_QTY_PER_DEALER'));
+  }
+  // SELECTED_DEALERS seçiliyse en az bir bayi olmalı
+  if (this.visibleTo === 'SELECTED_DEALERS' && (!this.selectedDealerIds || this.selectedDealerIds.length === 0)) {
+    return next(new Error('SELECTED_DEALERS_REQUIRES_DEALER_IDS'));
+  }
+  // Tarih aralığı tutarlılığı
+  if (this.availableFrom && this.availableTo && this.availableFrom >= this.availableTo) {
+    return next(new Error('AVAILABLE_FROM_MUST_BE_BEFORE_AVAILABLE_TO'));
+  }
+  next();
+});
 
 export const Listing = model<IListing>('Listing', ListingSchema);

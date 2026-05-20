@@ -7,7 +7,7 @@ import {
   UserLevelSchema, XpTransactionSchema, XpBatchSchema, MissionSchema,
   UserMissionSchema, MilestoneTrackerSchema, XpDistributionRuleSchema,
   XpSpendingLimitRuleSchema, UserSubscriptionSchema, MembershipPlanSchema,
-  MembershipTierSchema, VendorSchema,
+  MembershipTierSchema, VendorSchema, BadgeRuleSchema, ListingSchema,
 } from '@barterborsa/shared-persistence';
 
 import { XpController } from './presentation/xp.controller';
@@ -69,6 +69,8 @@ import { AdminTierController } from './presentation/admin-tier.controller';
       { name: 'MembershipPlan',      schema: MembershipPlanSchema },
       { name: 'MembershipTier',      schema: MembershipTierSchema },
       { name: 'Vendor',              schema: VendorSchema },
+      { name: 'BadgeRule',           schema: BadgeRuleSchema },
+      { name: 'Listing',             schema: ListingSchema },
     ]),
   ],
   controllers: [

@@ -13,6 +13,7 @@ import { UpgradeTierCommand } from './upgrade-tier.command';
 import { SubscriptionPricingService } from '../services/subscription-pricing.service';
 import { SubscriptionTier, SUBSCRIPTION_FEES } from '../../../loyalty/domain/enums/loyalty.enums';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { MenuRightsService } from '../../../menu/application/services/menu-rights.service';
 
 @CommandHandler(UpgradeTierCommand)
 export class UpgradeTierHandler implements ICommandHandler<UpgradeTierCommand> {
@@ -29,6 +30,7 @@ export class UpgradeTierHandler implements ICommandHandler<UpgradeTierCommand> {
     @InjectConnection()               private readonly connection:        Connection,
     private readonly pricing:   SubscriptionPricingService,
     private readonly auditLog:  AuditLogService,
+    private readonly menuRights: MenuRightsService,
   ) {}
 
   async execute(command: UpgradeTierCommand) {
@@ -103,6 +105,10 @@ export class UpgradeTierHandler implements ICommandHandler<UpgradeTierCommand> {
           [{ _id: histId, id: histId, userId, fromTier: currentTier, toTier: newTier, reason: 'MANUAL_UPGRADE' }],
           { session },
         );
+
+        // Master Plan §2.2 — Yeni tier'a göre menü hakkını yeniden hesapla (aidat × 2).
+        // Yükseltme (isDowngrade = false) → eski hak deaktive, yeni hak verilir.
+        await this.menuRights.recalculateForTier(userId, newTier, false, session);
       });
     } finally {
       await session.endSession();

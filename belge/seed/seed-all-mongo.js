@@ -6,10 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const seeders = [
-    { name: 'Master Data (V2)', path: './seed-v2-mongo.js' },
-    { name: 'Barter Categories', path: './seed-barter-categories-mongo.js' },
-    { name: 'Brands', path: './seed-brands-mongo.js' },
-    { name: 'Help Center', path: './seed-help-mongo.js' }
+    { name: 'Master Data (V2 + Users + Vendors)', path: './seed-v2-mongo.js' },
+    { name: 'Trendyol Kategori Hiyerarşisi',      path: './seed-trendyol-categories-mongo.js' },
+    { name: 'Barter Kategorileri',                 path: './seed-barter-categories-mongo.js' },
+    { name: 'Markalar (marka.json)',                path: './seed-brands-mongo.js' },
+    { name: 'Kategori Özellikleri (Attributes)',    path: './seed-attributes-mongo.js' },
+    { name: 'Rozet Kuralları (Badges)',             path: './seed-badges-mongo.js' },
+    { name: 'Yardım Merkezi (Tam)',                path: './seed-help-full-mongo.js' },
+    { name: 'İçerik (Duyurular + Politikalar)',    path: './seed-content-mongo.js' },
 ];
 
 async function runSeeders() {

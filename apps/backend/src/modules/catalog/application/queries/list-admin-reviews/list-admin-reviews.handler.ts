@@ -10,17 +10,58 @@ import { Order } from '@barterborsa/shared-persistence/schemas/backend/order.sch
 @QueryHandler(ListAdminReviewsQuery)
 export class ListAdminReviewsHandler implements IQueryHandler<ListAdminReviewsQuery> {
   async execute(query: ListAdminReviewsQuery) {
-    const { page = 1, limit = 10 } = query.filters;
+    const { page = 1, limit = 10, searchProduct, searchUser, isApproved } = query.filters;
+    const dbFilter: any = {};
+
+    if (isApproved !== undefined) {
+      dbFilter.isApproved = isApproved;
+    }
+
+    if (searchProduct) {
+      const matchingProducts = await CatalogProduct.find({
+        name: { $regex: searchProduct, $options: 'i' }
+      }).select('id').lean().exec();
+      const productIds = matchingProducts.map((p: any) => p.id).filter(Boolean);
+      dbFilter.catalogProductId = { $in: productIds };
+    }
+
+    if (searchUser) {
+      const [matchingUsers, matchingProfiles] = await Promise.all([
+        User.find({
+          $or: [
+            { email: { $regex: searchUser, $options: 'i' } },
+            { id: { $regex: searchUser, $options: 'i' } }
+          ]
+        }).select('id email').lean().exec(),
+        UserProfile.find({
+          $or: [
+            { firstName: { $regex: searchUser, $options: 'i' } },
+            { lastName: { $regex: searchUser, $options: 'i' } }
+          ]
+        }).select('userId').lean().exec()
+      ]);
+
+      const userIds = new Set<string>();
+      for (const u of matchingUsers) {
+        if (u.id) userIds.add(u.id);
+        if (u.email) userIds.add(u.email);
+      }
+      for (const p of matchingProfiles) {
+        if (p.userId) userIds.add(p.userId);
+      }
+      dbFilter.userId = { $in: Array.from(userIds) };
+    }
+
     const skip = (page - 1) * limit;
 
     const [rawItems, total] = await Promise.all([
-      Review.find()
+      Review.find(dbFilter)
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })
         .lean()
         .exec(),
-      Review.countDocuments().exec(),
+      Review.countDocuments(dbFilter).exec(),
     ]);
 
     const productIds = rawItems.map((i: any) => i.catalogProductId).filter(Boolean);

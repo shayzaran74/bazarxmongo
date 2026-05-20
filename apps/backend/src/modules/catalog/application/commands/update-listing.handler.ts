@@ -43,6 +43,38 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
     if (dto.isDigital !== undefined) updateData.isDigital = dto.isDigital;
     if (dto.isB2BOnly !== undefined) updateData.isB2BOnly = dto.isB2BOnly;
 
+    // Master Plan v4.3 §4.2 — Fabrika ekosistemi alanları
+    if (dto.ecosystemId !== undefined) updateData.ecosystemId = dto.ecosystemId;
+    if (dto.visibleTo !== undefined) {
+      if (!['ALL_DEALERS', 'SELECTED_DEALERS', 'NONE'].includes(dto.visibleTo as string)) {
+        throw new ForbiddenException('Geçersiz visibleTo değeri');
+      }
+      updateData.visibleTo = dto.visibleTo;
+    }
+    if (dto.selectedDealerIds !== undefined) {
+      if (dto.visibleTo === 'SELECTED_DEALERS' && (!Array.isArray(dto.selectedDealerIds) || dto.selectedDealerIds.length === 0)) {
+        throw new ForbiddenException('SELECTED_DEALERS_REQUIRES_DEALER_IDS');
+      }
+      updateData.selectedDealerIds = dto.selectedDealerIds;
+    }
+    if (dto.availableFrom !== undefined) updateData.availableFrom = dto.availableFrom ? new Date(dto.availableFrom as string) : null;
+    if (dto.availableTo !== undefined) updateData.availableTo = dto.availableTo ? new Date(dto.availableTo as string) : null;
+    if (dto.allowOnlineResale !== undefined) updateData.allowOnlineResale = Boolean(dto.allowOnlineResale);
+    if (dto.maxOrderQtyPerDealer !== undefined) updateData.maxOrderQtyPerDealer = Number(dto.maxOrderQtyPerDealer);
+
+    // Ekosistem listing'inde maxOrderQtyPerDealer null/undefined olamaz (§4.2)
+    const willBeEcosystem = (updateData.ecosystemId ?? (listing as any).ecosystemId);
+    const willBeMaxQty = (updateData.maxOrderQtyPerDealer ?? (listing as any).maxOrderQtyPerDealer);
+    if (willBeEcosystem && (willBeMaxQty === undefined || willBeMaxQty === null)) {
+      throw new ForbiddenException('ECOSYSTEM_LISTING_REQUIRES_MAX_ORDER_QTY_PER_DEALER');
+    }
+    // Tarih aralığı kontrolü
+    const fromVal = (updateData.availableFrom ?? (listing as any).availableFrom) as Date | undefined | null;
+    const toVal = (updateData.availableTo ?? (listing as any).availableTo) as Date | undefined | null;
+    if (fromVal && toVal && fromVal >= toVal) {
+      throw new ForbiddenException('AVAILABLE_FROM_MUST_BE_BEFORE_AVAILABLE_TO');
+    }
+
     if (dto.stock !== undefined) {
       const newStock = Number(dto.stock);
       const stockDiff = newStock - listing.stock;

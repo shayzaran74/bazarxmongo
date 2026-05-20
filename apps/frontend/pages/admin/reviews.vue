@@ -266,8 +266,14 @@ const fetchReviews = async () => {
     const response = await $api('/api/v1/admin/reviews', {
       query
     })
-    reviews.value = response.data || []
-    pagination.value = { ...pagination.value, ...response.pagination }
+    const responseData = response?.data
+    reviews.value = Array.isArray(responseData) ? responseData : (responseData?.items || [])
+    pagination.value = {
+      page: responseData?.page || pagination.value.page,
+      limit: responseData?.limit || pagination.value.limit,
+      total: responseData?.total || reviews.value.length,
+      pages: Math.ceil((responseData?.total || reviews.value.length) / (responseData?.limit || pagination.value.limit)) || 1
+    }
   } catch (error) {
     console.error('Error fetching reviews:', error)
   }

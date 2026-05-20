@@ -55,6 +55,22 @@
         <button class="px-12 py-6 bg-gray-900 text-white rounded-[2rem] font-black text-lg uppercase tracking-widest shadow-2xl hover:bg-black transition-all active:scale-95 italic" @click="showCreateModal = true">EKOSİSTEMİ ŞİMDİ BAŞLAT</button>
       </div>
 
+      <!-- Master Plan v4.3 §4.1 — Sadece APEX seviyesi ekosistem kurabilir -->
+      <div v-else-if="!ecosystem && !isApexPlus" class="relative overflow-hidden bg-white rounded-[3rem] shadow-2xl border border-amber-100 p-12 text-center">
+        <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
+        <ExclamationTriangleIcon class="h-20 w-20 text-amber-500 mx-auto mb-8" />
+        <h2 class="text-4xl font-black text-gray-900 mb-6 italic uppercase tracking-tighter">APEX Seviyesi Gerekli</h2>
+        <p class="text-gray-500 text-xl font-bold italic leading-relaxed mb-4">
+          Ekosistem kurabilmek için B2B üyeliğinizin <span class="text-amber-600">APEX</span> seviyesinde olması gerekir.
+        </p>
+        <p class="text-gray-400 text-sm font-bold italic mb-10">
+          Mevcut seviye: <span class="text-gray-900 font-black uppercase">{{ vendorTier || '—' }}</span>
+        </p>
+        <NuxtLink to="/vendor/subscription" class="inline-block px-12 py-6 bg-amber-500 text-white rounded-[2rem] font-black text-lg uppercase tracking-widest shadow-2xl hover:bg-amber-600 transition-all active:scale-95 italic">
+          APEX'E YÜKSELT
+        </NuxtLink>
+      </div>
+
       <div v-else-if="ecosystem" class="bg-white rounded-[3rem] p-16 shadow-2xl border border-gray-100 text-center">
         <CheckBadgeIcon class="h-24 w-24 text-green-600 mx-auto mb-8" />
         <h2 class="text-3xl font-black text-gray-900 mb-4 italic uppercase tracking-tight">{{ ecosystem.name }} ÜYESİSİNİZ</h2>
@@ -107,9 +123,9 @@ import EcosystemInviteModal from '~/components/vendor/ecosystem/EcosystemInviteM
 definePageMeta({ layout: 'vendor', middleware: 'vendor' })
 useHead({ title: 'Ekosistem Yönetimi - BazarX Private' })
 
-const { 
-  loading, ecosystem, isOwner, auditLogs, error, creating, isApexPlus,
-  fetchData, createEcosystem, removeMember 
+const {
+  loading, ecosystem, isOwner, auditLogs, error, creating, isApexPlus, vendorTier,
+  fetchData, createEcosystem, removeMember
 } = useVendorEcosystem()
 
 const { $api } = useApi()

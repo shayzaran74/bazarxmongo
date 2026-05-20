@@ -7,6 +7,13 @@ import { ListingStatus } from '../enums/listing-status.enum';
 import { ListingVisibility } from '../enums/listing-visibility.enum';
 import { ProductCondition } from '../enums/product-condition.enum';
 
+// Master Plan v4.3 §4.2 — Fabrika ürün gamı bayi görünürlük türü
+export enum DealerVisibility {
+  ALL_DEALERS = 'ALL_DEALERS',
+  SELECTED_DEALERS = 'SELECTED_DEALERS',
+  NONE = 'NONE',
+}
+
 export interface ListingProps {
   vendorId: string;
   catalogProductId: string;
@@ -39,6 +46,13 @@ export interface ListingProps {
   metadata?: any;
   availableQuantity: number;
   reservedQuantity: number;
+  // Master Plan v4.3 §4.2 — Fabrika ekosistemi ürün gamı kontrolleri
+  visibleTo?: DealerVisibility;
+  selectedDealerIds?: string[];
+  availableFrom?: Date;
+  availableTo?: Date;
+  allowOnlineResale?: boolean;
+  maxOrderQtyPerDealer?: number;
 }
 
 export class Listing extends AggregateRoot<ListingProps> {
@@ -51,6 +65,16 @@ export class Listing extends AggregateRoot<ListingProps> {
   }
 
   public static create(props: Omit<ListingProps, 'status' | 'isPromoted' | 'isFeatured' | 'availableQuantity' | 'reservedQuantity'>): Listing {
+    // Master Plan §4.2 — Ekosistem listing'inde maxOrderQtyPerDealer zorunlu
+    if (props.ecosystemId && (props.maxOrderQtyPerDealer === undefined || props.maxOrderQtyPerDealer === null)) {
+      throw new Error('ECOSYSTEM_LISTING_REQUIRES_MAX_ORDER_QTY_PER_DEALER');
+    }
+    if (props.visibleTo === DealerVisibility.SELECTED_DEALERS && (!props.selectedDealerIds || props.selectedDealerIds.length === 0)) {
+      throw new Error('SELECTED_DEALERS_REQUIRES_DEALER_IDS');
+    }
+    if (props.availableFrom && props.availableTo && props.availableFrom >= props.availableTo) {
+      throw new Error('AVAILABLE_FROM_MUST_BE_BEFORE_AVAILABLE_TO');
+    }
     return new Listing({
       ...props,
       status: ListingStatus.ACTIVE,
@@ -58,6 +82,8 @@ export class Listing extends AggregateRoot<ListingProps> {
       isFeatured: false,
       availableQuantity: props.stock,
       reservedQuantity: 0,
+      visibleTo: props.visibleTo ?? DealerVisibility.NONE,
+      allowOnlineResale: props.allowOnlineResale ?? false,
     });
   }
 
@@ -100,4 +126,11 @@ export class Listing extends AggregateRoot<ListingProps> {
   get stock(): number { return this.props.stock; }
   get status(): ListingStatus { return this.props.status; }
   get slug(): Slug { return this.props.slug; }
+  get ecosystemId(): string | undefined { return this.props.ecosystemId; }
+  get visibleTo(): DealerVisibility { return this.props.visibleTo ?? DealerVisibility.NONE; }
+  get selectedDealerIds(): string[] { return this.props.selectedDealerIds ?? []; }
+  get availableFrom(): Date | undefined { return this.props.availableFrom; }
+  get availableTo(): Date | undefined { return this.props.availableTo; }
+  get allowOnlineResale(): boolean { return this.props.allowOnlineResale ?? false; }
+  get maxOrderQtyPerDealer(): number | undefined { return this.props.maxOrderQtyPerDealer; }
 }

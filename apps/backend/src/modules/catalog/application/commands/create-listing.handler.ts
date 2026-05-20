@@ -60,7 +60,7 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
       throw priceResult.error;
     }
 
-    // 4. Listing oluştur
+    // 4. Listing oluştur — Master Plan §4.2 ekosistem alanları dahil
     const listing = Listing.create({
       vendorId,
       catalogProductId: catalogProductId,
@@ -78,6 +78,14 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
       listingType: 'SELL',
       isAuctionEnabled: false,
       isLotteryEnabled: false,
+      // Master Plan §4.2 — Ekosistem (fabrika) alanları
+      ecosystemId: dto.ecosystemId,
+      visibleTo: dto.visibleTo as unknown as import('../../domain/entities/listing.entity').DealerVisibility,
+      selectedDealerIds: dto.selectedDealerIds,
+      availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : undefined,
+      availableTo: dto.availableTo ? new Date(dto.availableTo) : undefined,
+      allowOnlineResale: dto.allowOnlineResale,
+      maxOrderQtyPerDealer: dto.maxOrderQtyPerDealer,
     });
 
     await this.listingRepository.save(listing);

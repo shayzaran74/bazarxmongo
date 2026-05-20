@@ -78,6 +78,9 @@ import { BuyboxHistory, BuyboxHistorySchema, VendorStats, VendorStatsSchema } fr
 import { ProductImportWorker } from './application/workers/product-import.worker';
 import { MongoVendorRepository } from '../vendor/infrastructure/persistence/mongo-vendor.repository';
 
+// Master Plan §4.4 + §5.3 — Ekosistem kör havuz anonimleştirme servisi
+import { AnonymizerService } from '../barterborsa/application/services/anonymizer.service';
+
 const CommandHandlers = [
   CreateCategoryHandler,
   CreateListingHandler,
@@ -162,6 +165,7 @@ const QueryHandlers = [
     ProductImportWorker,
     BuyboxCalculatorService,
     BuyboxRecalculateHandler,
+    AnonymizerService,
     ...CommandHandlers,
     ...QueryHandlers,
     { provide: 'ICategoryRepository', useClass: MongoCategoryRepository },

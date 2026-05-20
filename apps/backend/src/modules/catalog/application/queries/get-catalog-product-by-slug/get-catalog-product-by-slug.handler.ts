@@ -6,6 +6,8 @@ import { GetCatalogProductBySlugQuery } from './get-catalog-product-by-slug.quer
 import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
 import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { populateDynamicBadges } from '../../helpers/badge-evaluator.helper';
 
 @QueryHandler(GetCatalogProductBySlugQuery)
 export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogProductBySlugQuery> {
@@ -28,7 +30,15 @@ export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogP
     const product = rawProduct.toJSON() as any;
     const listing = product.listings?.[0] ?? null;
 
-    return {
+    let userTier = 'CORE';
+    if (listing?.vendorId) {
+      const vendor = await Vendor.findOne({ id: listing.vendorId }).lean().exec();
+      if (vendor) {
+        userTier = vendor.tier || 'CORE';
+      }
+    }
+
+    const result = {
       ...product,
       Brand: product.brands?.[0] ?? null,
       Vendor: listing?.vendor ?? null,
@@ -37,7 +47,11 @@ export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogP
       stock: listing?.stock ?? 0,
       sku: listing?.sku ?? '',
       image: product.media?.[0]?.url ?? null,
-      images: product.media?.map((m: any) => m.url) ?? []
+      images: product.media?.map((m: any) => m.url) ?? [],
+      userTier
     };
+
+    await populateDynamicBadges([result]);
+    return result;
   }
 }

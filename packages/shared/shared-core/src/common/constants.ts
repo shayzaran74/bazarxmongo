@@ -102,3 +102,13 @@ export const ORDER_NUMBER_MAX = 99_999
 
 // ─── Reklâm XP TTL ─────────────────────────────────────────────
 export const ADVERTISING_XP_TTL_MONTHS = 6
+
+// ─── BarterBorsa Smart Cap & Watchover (Master Plan v4.3 §4.3) ───
+// Tek bayinin tek siparişi havuz stoğunun %25'ini geçemez.
+export const MAX_POOL_SHARE_PERCENT = 25
+export const MAX_POOL_SHARE_RATIO = 0.25
+
+// ─── Master Plan §2.7 — Downgrade koruma süresi (gün) ──────────
+export const DOWNGRADE_GRACE_DAYS = 30
+// ─── Master Plan §2.2 — Menü hakkı çarpanı (aidat × 2) ─────────
+export const MENU_RIGHT_MULTIPLIER = 2

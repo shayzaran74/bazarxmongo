@@ -29,6 +29,7 @@ import { AuditMongooseModule } from './modules/audit/audit-mongoose.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { BarterBorsaModule } from './modules/barterborsa/barterborsa.module';
+import { GarageSaleModule } from './modules/garage-sale/garage-sale.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor.service';
@@ -112,6 +113,7 @@ import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor
     SubscriptionModule,
     MenuModule,
     BarterBorsaModule,
+    GarageSaleModule,
     TaxModule,
     IdentityModule,
     CatalogModule,

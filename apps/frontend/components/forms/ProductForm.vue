@@ -172,12 +172,19 @@ defineExpose({
         v-model:volume="form.volume"
       />
 
-      <!-- 8. BazarX Private -->
+      <!-- 8. BazarX Private — Master Plan §4.2/§4.3 ekosistem alanları -->
       <ProductFormEcosystem
         v-if="userRole === 'admin' || userRole === 'vendor'"
         v-model:visibility="form.visibility"
         v-model:min-market-price="form.minMarketPrice"
         v-model:max-purchase-per-member="form.maxPurchasePerMember"
+        v-model:ecosystem-id="form.ecosystemId"
+        v-model:visible-to="form.visibleTo"
+        v-model:selected-dealer-ids="form.selectedDealerIds"
+        v-model:available-from="form.availableFrom"
+        v-model:available-to="form.availableTo"
+        v-model:allow-online-resale="form.allowOnlineResale"
+        v-model:max-order-qty-per-dealer="form.maxOrderQtyPerDealer"
       />
 
       <!-- 9. Marketing & Visibility -->

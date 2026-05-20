@@ -20,6 +20,7 @@ import { VendorBrandsController } from './presentation/vendor-brands.controller'
 import { VendorAdsController } from './presentation/vendor-ads.controller';
 import { EarlyPaymentController, AdminEarlyPaymentController } from './presentation/early-payment.controller';
 import { VendorScoreController } from './presentation/vendor-score.controller';
+import { EcosystemAdminController } from './presentation/ecosystem-admin.controller';
 
 // Command handlers
 import { CreateCompanyHandler } from './application/commands/create-company.handler';
@@ -225,6 +226,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     EarlyPaymentController,
     AdminEarlyPaymentController,
     VendorScoreController,
+    EcosystemAdminController,
   ],
   providers: [
     VendorRegistrationService,
