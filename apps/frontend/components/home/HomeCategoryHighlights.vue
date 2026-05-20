@@ -39,7 +39,7 @@ const fetchHighlights = async () => {
     const categoryListings = await Promise.all(
       topCategories.map((cat: Category) =>
         $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
-          query: { categoryId: cat.id, limit: 8 },
+          query: { categoryId: cat.id, limit: 8, vendorType: 'COMMERCE' },
         }).then(r => ({ catId: cat.id, items: r?.data?.items ?? [] }))
           .catch(() => ({ catId: cat.id, items: [] as Product[] }))
       )

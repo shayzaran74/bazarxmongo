@@ -165,7 +165,7 @@ const fetchProducts = async () => {
   try {
     const { $api } = useApi()
     const res = await $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
-      query: { isFeatured: 'true', limit: 14 }
+      query: { isFeatured: 'true', limit: 14, vendorType: 'COMMERCE' }
     })
     const items = res?.data?.items ?? []
     // İstemci tarafı sıralama (backend sort parametresi henüz desteklenmiyor)

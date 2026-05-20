@@ -123,7 +123,7 @@ const fetchFlashSales = async () => {
   try {
     const { $api } = useApi()
     const res = await $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
-      query: { isFlashSale: 'true', limit: 6 }
+      query: { isFlashSale: 'true', limit: 6, vendorType: 'COMMERCE' }
     })
     flashSaleProducts.value = res?.data?.items ?? []
   } catch {

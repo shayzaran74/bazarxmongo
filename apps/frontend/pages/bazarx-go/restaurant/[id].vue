@@ -239,30 +239,79 @@
 
         <!-- Product Display Area -->
         <div class="flex-1 space-y-8">
-          <!-- Menu Search -->
-          <div class="bg-white p-4 rounded-xl shadow-sm border border-black/5 flex items-center gap-3">
-            <MagnifyingGlassIcon class="w-5 h-5 text-black/30" />
-            <input
-              v-model="menuSearchQuery"
-              type="text"
-              placeholder="Menü içinde ara..."
-              class="flex-1 bg-transparent border-none outline-none text-sm font-medium placeholder:text-black/30"
-            />
-            <div v-if="menuSearchQuery" class="flex items-center gap-2">
-              <span class="text-[10px] font-bold text-black/30 uppercase tracking-widest">{{ filteredProducts.length }} Sonuç</span>
-              <button @click="menuSearchQuery = ''" class="text-black/40 hover:text-red-500 transition-colors">
-                <XMarkIcon class="w-4 h-4" />
-              </button>
+          <!-- Arama + Filtre Çubuğu -->
+          <div class="space-y-3">
+            <!-- Arama kutusu -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-black/5 flex items-center gap-3">
+              <MagnifyingGlassIcon class="w-5 h-5 text-black/30 shrink-0" />
+              <input
+                v-model="menuSearchQuery"
+                type="text"
+                placeholder="Menü içinde ara..."
+                class="flex-1 bg-transparent border-none outline-none text-sm font-medium placeholder:text-black/30"
+              />
+              <div class="flex items-center gap-2">
+                <span v-if="menuSearchQuery" class="text-[10px] font-bold text-black/30 uppercase tracking-widest">
+                  {{ filteredProducts.length }} Sonuç
+                </span>
+                <button
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                  :class="showFilters ? 'bg-[var(--brand-deep)] text-white' : 'bg-[var(--surface)] text-black/60 hover:bg-[var(--surface-2)]'"
+                  @click="showFilters = !showFilters"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                  </svg>
+                  Filtrele
+                </button>
+                <button v-if="menuSearchQuery" @click="menuSearchQuery = ''" class="text-black/40 hover:text-red-500 transition-colors">
+                  <XMarkIcon class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Genişleyen filtre paneli -->
+            <div v-show="showFilters" class="bg-white rounded-xl border border-black/5 shadow-sm p-5 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Fiyat aralığı -->
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-black/40 uppercase tracking-widest block">Min. Fiyat (₺)</label>
+                  <input v-model.number="priceMin" type="number" min="0" placeholder="0"
+                    class="w-full bg-[var(--surface)] rounded-lg px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-black/40 uppercase tracking-widest block">Maks. Fiyat (₺)</label>
+                  <input v-model.number="priceMax" type="number" min="0" placeholder="Sınırsız"
+                    class="w-full bg-[var(--surface)] rounded-lg px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all" />
+                </div>
+                <!-- Sıralama -->
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-black/40 uppercase tracking-widest block">Sırala</label>
+                  <select v-model="sortBy"
+                    class="w-full bg-[var(--surface)] rounded-lg px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all appearance-none">
+                    <option value="default">Varsayılan</option>
+                    <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
+                    <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
+                    <option value="name_asc">İsim: A → Z</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-black/5">
+                <span class="text-xs font-bold text-black/40">{{ filteredProducts.length }} ürün listeleniyor</span>
+                <button class="text-xs font-black text-[var(--brand-deep)] hover:underline" @click="resetFilters">
+                  Filtreleri Temizle
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- No Results -->
+          <!-- Sonuç yok -->
           <div v-if="filteredProducts.length === 0" class="py-20 flex flex-col items-center justify-center gap-4 bg-white rounded-2xl border-2 border-dashed border-black/5">
             <div class="w-16 h-16 bg-[var(--surface)] rounded-full flex items-center justify-center">
               <MagnifyingGlassIcon class="w-8 h-8 text-black/20" />
             </div>
             <p class="font-bold text-black/40">Aradığınız kriterlere uygun ürün bulunamadı.</p>
-            <button @click="menuSearchQuery = ''" class="text-[var(--brand-deep)] font-bold text-sm hover:underline">Aramayı Temizle</button>
+            <button @click="resetFilters" class="text-[var(--brand-deep)] font-bold text-sm hover:underline">Filtreleri Temizle</button>
           </div>
 
           <!-- Menu Sections -->
@@ -881,10 +930,16 @@ function closeProductModal() {
 }
 
 // Popular filters
+// ── Detaylı Filtreler ─────────────────────────────────────────────────────
+const priceMin    = ref<number | null>(null)
+const priceMax    = ref<number | null>(null)
+const sortBy      = ref<'default' | 'price_asc' | 'price_desc' | 'name_asc'>('default')
+const showFilters = ref(false)
+
 const popularFilters = [
   { label: 'Ücretsiz Teslimat', icon: TruckIcon },
-  { label: '4.5+ Puan', icon: StarFilled },
-  { label: 'İndirimli', icon: FireIcon }
+  { label: '4.5+ Puan',        icon: StarFilled },
+  { label: 'İndirimli',        icon: FireIcon },
 ]
 
 // Dynamic products and categories
@@ -903,13 +958,35 @@ const products = computed(() => {
 })
 
 const filteredProducts = computed(() => {
-  if (!menuSearchQuery.value) return products.value
-  const q = menuSearchQuery.value.toLowerCase()
-  return products.value.filter(p => 
-    p.name.toLowerCase().includes(q) || 
-    p.description.toLowerCase().includes(q)
-  )
+  let result = [...products.value]
+
+  // Metin araması
+  if (menuSearchQuery.value) {
+    const q = menuSearchQuery.value.toLowerCase()
+    result = result.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q)
+    )
+  }
+
+  // Fiyat aralığı
+  if (priceMin.value !== null) result = result.filter(p => (p.price ?? 0) >= priceMin.value!)
+  if (priceMax.value !== null) result = result.filter(p => (p.price ?? 0) <= priceMax.value!)
+
+  // Sıralama
+  if (sortBy.value === 'price_asc')  result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0))
+  if (sortBy.value === 'price_desc') result.sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+  if (sortBy.value === 'name_asc')   result.sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+
+  return result
 })
+
+const resetFilters = () => {
+  menuSearchQuery.value = ''
+  priceMin.value        = null
+  priceMax.value        = null
+  sortBy.value          = 'default'
+}
 
 const menuCategories = computed(() => {
   const catsMap: Record<string, any> = {}

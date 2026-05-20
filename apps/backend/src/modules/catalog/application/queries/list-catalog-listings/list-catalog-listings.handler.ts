@@ -52,7 +52,35 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
     if (isFlashSale !== undefined) filter.isFlashSale   = isFlashSale;
     if (isSpecialOffer !== undefined) filter.isSpecialOffer = isSpecialOffer;
 
-    if (filters.vendorType) filter.vendorType = filters.vendorType;
+    // ── VendorType filtresi — Vendor koleksiyonu join (Listing'de alan yok) ──
+    // RESTAURANT vendor'ları yalnızca BazarX-GO'da görünür.
+    // Public/marketplace scope'ta varsayılan olarak RESTAURANT'lar hariç tutulur.
+    if (!isAdmin && !isVendorScope) {
+      const requestedType = filters.vendorType ?? '';
+
+      if (requestedType === 'RESTAURANT') {
+        // BazarX-GO: sadece RESTAURANT vendor'larının listelerini göster
+        const restVendors = await Vendor.find({ vendorType: 'RESTAURANT' }, { id: 1 }).lean().exec();
+        const restIds = (restVendors as { id: string }[]).map(v => v.id);
+        if (restIds.length === 0) {
+          return { items: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+        }
+        filter.vendorId = { $in: restIds };
+      } else {
+        // Marketplace/homepage: RESTAURANT vendor'larını hariç tut
+        const restVendors = await Vendor.find({ vendorType: 'RESTAURANT' }, { id: 1 }).lean().exec();
+        const restIds = (restVendors as { id: string }[]).map(v => v.id);
+        if (restIds.length > 0) {
+          filter.vendorId = { $nin: restIds };
+        }
+        // Belirli bir COMMERCE tipi istenmişse ekle
+        if (requestedType && requestedType !== 'RESTAURANT') {
+          const typeVendors = await Vendor.find({ vendorType: requestedType }, { id: 1 }).lean().exec();
+          const typeIds = (typeVendors as { id: string }[]).map(v => v.id);
+          filter.vendorId = restIds.length > 0 ? { $in: typeIds } : { $in: typeIds };
+        }
+      }
+    }
 
     // ── Arama filtresi ────────────────────────────────────────────────────
     if (search) {

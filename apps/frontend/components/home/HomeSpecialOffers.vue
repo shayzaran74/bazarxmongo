@@ -79,7 +79,7 @@ const fetchSpecialOffers = async () => {
   try {
     const { $api } = useApi()
     const res = await $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
-      query: { isSpecialOffer: 'true', limit: 6 }
+      query: { isSpecialOffer: 'true', limit: 6, vendorType: 'COMMERCE' }
     })
     specialOfferProducts.value = res?.data?.items ?? []
   } catch {
