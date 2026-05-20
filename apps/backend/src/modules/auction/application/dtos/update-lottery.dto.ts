@@ -12,6 +12,10 @@ export class UpdateLotteryDto {
   @IsOptional()
   prizeDescription?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @IsNumber()
   @IsPositive()
   @IsOptional()

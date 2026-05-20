@@ -34,8 +34,9 @@
           >
             <td class="px-10 py-8">
               <div class="flex items-center gap-6">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                  <TicketIcon class="h-8 w-8 text-white" />
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform overflow-hidden">
+                  <img v-if="lottery.imageUrl" :src="resolveImageUrl(lottery.imageUrl)" class="w-full h-full object-cover">
+                  <TicketIcon v-else class="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <div class="text-sm font-black text-gray-900 uppercase tracking-tight">{{ lottery.title }}</div>
@@ -130,11 +131,15 @@
 <script setup lang="ts">
 import { computed } from '#imports'
 import { TicketIcon, FireIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { useAppImage } from '~/composables/useAppImage'
+
+const { resolveImageUrl } = useAppImage()
 
 interface LotteryRow {
   id: string
   title: string
   prizeDescription?: string
+  imageUrl?: string
   ticketPrice: number
   prizeValue?: number
   totalTickets: number

@@ -3,11 +3,11 @@
     <!-- Hero / Prize Section -->
     <div class="relative h-[400px] overflow-hidden bg-[#0f172a]">
       <div
-        v-if="lottery?.Product"
+        v-if="lottery?.Product || lottery?.imageUrl"
         class="absolute inset-0 opacity-40 blur-sm scale-110"
       >
         <img
-          :src="resolveImageUrl(lottery.Product.image)"
+          :src="resolveImageUrl(lottery.imageUrl || lottery.Product?.image)"
           class="w-full h-full object-cover"
         >
       </div>
@@ -67,11 +67,11 @@
             <div class="p-8 md:p-12">
               <div class="flex flex-col md:flex-row gap-12 items-center">
                 <div
-                  v-if="lottery?.Product"
+                  v-if="lottery?.Product || lottery?.imageUrl"
                   class="w-full md:w-1/2 aspect-square rounded-[2rem] overflow-hidden shadow-2xl"
                 >
                   <img
-                    :src="resolveImageUrl(lottery.Product.image)"
+                    :src="resolveImageUrl(lottery.imageUrl || lottery.Product?.image)"
                     class="w-full h-full object-cover"
                   >
                 </div>

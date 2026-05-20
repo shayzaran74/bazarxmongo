@@ -235,6 +235,15 @@ export class LotteryController {
 
     return lotteries.map(l => {
       const raw = l.toJSON ? l.toJSON() : (l.getProps ? { id: l.id, ...l.getProps() } : l);
+      
+      // Convert Decimal128 objects to numbers/strings
+      if (raw.ticketPrice && raw.ticketPrice.$numberDecimal !== undefined) {
+        raw.ticketPrice = raw.ticketPrice.$numberDecimal;
+      }
+      if (raw.prizeValue && raw.prizeValue.$numberDecimal !== undefined) {
+        raw.prizeValue = raw.prizeValue.$numberDecimal;
+      }
+
       const listingId = l.getProps ? l.getProps().listingId : l.listingId;
 
       const listing = listings.find(lst => lst.id === listingId);

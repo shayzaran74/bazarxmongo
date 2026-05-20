@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 export interface LotteryProps {
   title: string;
   prizeDescription?: string;
+  imageUrl?: string;
   ticketPrice: number;
   status: LotteryStatus;
   winnerId?: string;

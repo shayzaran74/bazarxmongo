@@ -10,6 +10,10 @@ export class CreateLotteryDto {
   @IsOptional()
   prizeDescription?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @IsNumber()
   @IsPositive()
   @Type(() => Number)

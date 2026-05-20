@@ -49,10 +49,15 @@ export class LotteryAdminController {
     const result = await this.lotteryRepository.findWithFilters(filter, skip, limitNum);
     
     // Flatten result items
-    const items = result.items.map(l => ({
-      id: l.id,
-      ...l.getProps(),
-    }));
+    const items = result.items.map(l => {
+      const props = l.getProps();
+      return {
+        id: l.id,
+        ...props,
+        ticketPrice: (props as any).ticketPrice?.$numberDecimal ?? props.ticketPrice,
+        prizeValue: (props as any).prizeValue?.$numberDecimal ?? props.prizeValue,
+      };
+    });
 
     return { success: true, data: { items, total: result.total } };
   }
@@ -79,6 +84,7 @@ export class LotteryAdminController {
       status: LotteryStatus.ACTIVE,
       ownerId: user.id,
       listingId: dto.listingId,
+      imageUrl: dto.imageUrl,
       createdAt: now,
       updatedAt: now,
     };
@@ -116,6 +122,7 @@ export class LotteryAdminController {
     if (dto.endTime !== undefined) (props as any).endTime = new Date(dto.endTime);
     if (dto.status !== undefined) (props as any).status = dto.status;
     if (dto.prizeValue !== undefined) (props as any).prizeValue = dto.prizeValue;
+    if (dto.imageUrl !== undefined) (props as any).imageUrl = dto.imageUrl;
 
     await this.lotteryRepository.save(lottery);
 

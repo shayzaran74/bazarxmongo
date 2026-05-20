@@ -10,6 +10,7 @@ export interface ILottery {
   listingId?: string;
   title: string;
   prizeDescription?: string;
+  imageUrl?: string;
   status: LotteryStatusType;
   ticketPrice: Types.Decimal128;
   prizeValue?: Types.Decimal128;
@@ -32,6 +33,7 @@ export const LotterySchema = new Schema<ILottery>({
   listingId: { type: String },
   title: { type: String },
   prizeDescription: { type: String },
+  imageUrl: { type: String },
   status: { type: String, enum: LotteryStatus, default: 'SCHEDULED' },
   ticketPrice: { type: Types.Decimal128 },
   prizeValue: { type: Types.Decimal128 },

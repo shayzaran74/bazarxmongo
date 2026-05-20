@@ -34,6 +34,26 @@
               >
             </div>
 
+            <div class="md:col-span-2 flex flex-col gap-2">
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Özel Çekiliş Görseli</label>
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img v-if="form.imageUrl" :src="resolveImageUrl(form.imageUrl)" class="w-full h-full object-cover">
+                  <span v-else class="text-[10px] font-bold text-gray-400">YOK</span>
+                </div>
+                <div class="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition-all cursor-pointer"
+                    @change="onFileChange"
+                    :disabled="uploading"
+                  >
+                  <p v-if="uploading" class="text-[10px] text-indigo-500 font-bold mt-1">YÜKLENİYOR...</p>
+                </div>
+              </div>
+            </div>
+
             <div class="md:col-span-2">
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Ödül İlanı (İsteğe Bağlı)</label>
               <select v-model="form.listingId" class="form-input-premium">
@@ -136,6 +156,7 @@ interface ListingItem {
 interface LotteryForm {
   title: string
   listingId: string
+  imageUrl?: string
   ticketPrice: number
   prizeValue: number
   totalTickets: number
@@ -146,54 +167,13 @@ interface LotteryForm {
   endTime: string
 }
 
-const props = defineProps<{ lottery?: Record<string, unknown> | null }>()
-const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
-
-const { resolveImageUrl } = useAppImage()
-const { $api } = useApi()
-const { $toast } = useNuxtApp()
-
-const saving = ref(false)
-const listings = ref<ListingItem[]>([])
-const listingsError = ref('')
-const isEdit = computed(() => !!props.lottery)
-
-const selectedListing = computed<ListingItem | undefined>(() => {
-  if (!form.value.listingId) return undefined
-  return listings.value.find(l => l.id === form.value.listingId)
-})
-
-const form = ref<LotteryForm>({
-  title: '',
-  listingId: '',
-  ticketPrice: 0,
-  prizeValue: 0,
-  totalTickets: 100,
-  maxTicketsPerUser: 10,
-  ticketDigits: 3,
-  numbersPerTicket: 1,
-  startTime: '',
-  endTime: '',
-})
-
-const fetchListings = async () => {
-  listingsError.value = ''
-  try {
-    const res = await $api<{ items?: ListingItem[] } | ListingItem[]>('/api/v1/listings', {
-      query: { limit: 100 },
-    })
-    listings.value = (res as any).data?.items || (res as any).data || []
-  } catch {
-    listingsError.value = 'İlanlar yüklenemedi. Kimlik doğrulama kontrol edin.'
-  }
-}
-
 const initForm = () => {
   if (props.lottery) {
     const l = props.lottery
     form.value = {
       title: (l.title as string) || '',
       listingId: (l.listingId as string) || '',
+      imageUrl: (l.imageUrl as string) || '',
       ticketPrice: Number(l.ticketPrice) || 0,
       prizeValue: Number(l.prizeValue) || 0,
       totalTickets: (l.totalTickets as number) || 100,
@@ -210,6 +190,7 @@ const initForm = () => {
     form.value = {
       title: '',
       listingId: '',
+      imageUrl: '',
       ticketPrice: 0,
       prizeValue: 0,
       totalTickets: 100,
@@ -219,6 +200,73 @@ const initForm = () => {
       startTime: tomorrow.toISOString().slice(0, 16),
       endTime: nextWeek.toISOString().slice(0, 16),
     }
+  }
+}
+
+const props = defineProps<{ lottery?: Record<string, unknown> | null }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+
+const { resolveImageUrl } = useAppImage()
+const { $api } = useApi()
+const { $toast } = useNuxtApp()
+
+const saving = ref(false)
+const uploading = ref(false)
+const listings = ref<ListingItem[]>([])
+const listingsError = ref('')
+const isEdit = computed(() => !!props.lottery)
+
+const selectedListing = computed<ListingItem | undefined>(() => {
+  if (!form.value.listingId) return undefined
+  return listings.value.find(l => l.id === form.value.listingId)
+})
+
+const form = ref<LotteryForm>({
+  title: '',
+  listingId: '',
+  imageUrl: '',
+  ticketPrice: 0,
+  prizeValue: 0,
+  totalTickets: 100,
+  maxTicketsPerUser: 10,
+  ticketDigits: 3,
+  numbersPerTicket: 1,
+  startTime: '',
+  endTime: '',
+})
+
+const onFileChange = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', 'lotteries')
+
+  try {
+    const res = await $api<{ url: string }>('/api/v1/upload', {
+      method: 'POST',
+      body: formData
+    })
+    form.value.imageUrl = res.url
+    $toast.success('Görsel yüklendi')
+  } catch {
+    $toast.error('Görsel yüklenemedi')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const fetchListings = async () => {
+  listingsError.value = ''
+  try {
+    const res = await $api<{ items?: ListingItem[] } | ListingItem[]>('/api/v1/listings', {
+      query: { limit: 100 },
+    })
+    listings.value = (res as any).data?.items || (res as any).data || []
+  } catch {
+    listingsError.value = 'İlanlar yüklenemedi. Kimlik doğrulama kontrol edin.'
   }
 }
 
