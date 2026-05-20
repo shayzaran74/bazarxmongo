@@ -175,11 +175,13 @@ export class EcosystemAdminController {
     const oldScore = oldRecord ? Number(oldRecord.score) : 100;
     
     // Save/update score
+    const { scoreToLevel } = require('../../../barter/domain/trust-level.constants');
     await this.trustScoreRepo.upsert(vendorId, {
-      score: newScore,
+      score:              newScore,
       tradingPerformance: oldRecord ? Number(oldRecord.tradingPerformance) : 100,
-      xpLoyalty: oldRecord ? Number(oldRecord.xpLoyalty) : 100,
-      compliance: oldRecord ? Number(oldRecord.compliance) : 100,
+      xpLoyalty:          oldRecord ? Number(oldRecord.xpLoyalty) : 100,
+      compliance:         oldRecord ? Number(oldRecord.compliance) : 100,
+      level:              scoreToLevel(newScore, oldRecord?.isFrozen ?? false),
     });
     
     // Log trust score override

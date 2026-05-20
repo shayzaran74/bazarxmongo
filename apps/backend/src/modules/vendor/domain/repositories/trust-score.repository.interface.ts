@@ -11,6 +11,7 @@ export interface ITrustScoreRepository {
     tradingPerformance?: number;
     xpLoyalty?: number;
     compliance?: number;
+    level?: string;
     violationCount?: number;
     isFrozen?: boolean;
     inactiveDays?: number;
@@ -21,6 +22,9 @@ export interface ITrustScoreRepository {
     tradingPerformance: number;
     xpLoyalty: number;
     compliance: number;
+    level: string;
+    isFrozen?: boolean;
     inactiveDays?: number;
   }): Promise<void>;
+  findFreezeCandidates(violationThreshold: number): Promise<{ vendorId: string; violationCount: number }[]>;
 }

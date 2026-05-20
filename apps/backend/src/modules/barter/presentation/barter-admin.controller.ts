@@ -12,6 +12,9 @@ import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repos
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 import { SwapSchedulerService } from '../application/services/swap-session.scheduler';
 import { SwapSessionStatus } from '../domain/enums/swap-session-status.enum';
+import { TrustScoreRecalculationService } from '../application/services/trust-score-recalculation.service';
+import { ITrustScoreRepository } from '../../vendor/domain/repositories/trust-score.repository.interface';
+import { FREEZE_VIOLATION_THRESHOLD } from '../domain/trust-level.constants';
 
 interface SurplusCategoryDto {
   name: string;
@@ -36,6 +39,8 @@ export class BarterAdminController {
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly financialGateway:    FinancialGatewayService,
     private readonly swapScheduler:       SwapSchedulerService,
+    private readonly trustScoreSvc:       TrustScoreRecalculationService,
+    @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
   ) {}
 
   @ApiOperation({ summary: 'List all trade offers for admin' })
@@ -215,10 +220,64 @@ export class BarterAdminController {
     };
   }
 
-  @ApiOperation({ summary: 'Timeout cron\'unu manuel tetikle (test/acil durum)' })
+  @ApiOperation({ summary: 'Timeout cron\'unu manuel tetikle' })
   @Post('run-timeout-check')
   async runTimeoutCheck() {
     await this.swapScheduler.runManually();
     return { success: true, message: 'Timeout taraması tamamlandı — loglara bakın' };
+  }
+
+  // ── TrustScore Yönetimi ───────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Tüm vendor TrustScore listesi' })
+  @Get('trust-scores')
+  async listTrustScores(
+    @Query('level')    level?:    string,
+    @Query('isFrozen') isFrozen?: string,
+    @Query('page')     page  = '1',
+    @Query('limit')    limit = '20',
+  ) {
+    const { TrustScore } = require('@barterborsa/shared-persistence/schemas/backend/trustScore.schema');
+    const filter: Record<string, unknown> = {};
+    if (level)    filter.level    = level;
+    if (isFrozen) filter.isFrozen = isFrozen === 'true';
+
+    const skip  = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const [items, total] = await Promise.all([
+      TrustScore.find(filter).sort({ score: 1 }).skip(skip).limit(parseInt(limit, 10)).lean(),
+      TrustScore.countDocuments(filter),
+    ]);
+
+    return { success: true, data: items, total };
+  }
+
+  @ApiOperation({ summary: 'Vendor TrustScore manuel override (puan veya dondurma)' })
+  @Patch('trust-scores/:vendorId')
+  async overrideTrustScore(
+    @Param('vendorId') vendorId: string,
+    @Body() dto: { isFrozen?: boolean; violationCount?: number; resetInactiveDays?: boolean },
+  ) {
+    const update: Record<string, unknown> = { lastCalculatedAt: new Date() };
+    if (dto.isFrozen       !== undefined) update.isFrozen       = dto.isFrozen;
+    if (dto.violationCount !== undefined) update.violationCount  = dto.violationCount;
+    if (dto.resetInactiveDays) update.inactiveDays = 0;
+    if (dto.isFrozen === false) update.level = undefined; // recalculate on next cron
+
+    await this.trustScoreRepo.updateScore(vendorId, update);
+    return { success: true, message: `${vendorId} TrustScore güncellendi` };
+  }
+
+  @ApiOperation({ summary: 'TrustScore tam yeniden hesaplamayı manuel tetikle' })
+  @Post('run-trust-score-recalc')
+  async runTrustScoreRecalc() {
+    const result = await this.trustScoreSvc.runFullRecalculation();
+    return { success: true, data: result };
+  }
+
+  @ApiOperation({ summary: 'Dondurma adaylarını listele (violationCount >= eşik)' })
+  @Get('trust-scores/freeze-candidates')
+  async getFreezeCandidates() {
+    const candidates = await this.trustScoreRepo.findFreezeCandidates(FREEZE_VIOLATION_THRESHOLD);
+    return { success: true, data: candidates, threshold: FREEZE_VIOLATION_THRESHOLD };
   }
 }

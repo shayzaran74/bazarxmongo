@@ -7,6 +7,7 @@ import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.re
 import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
 import { IUserLevelRepository } from '../../domain/repositories/user-level.repository.interface';
+import { scoreToLevel } from '../../domain/trust-level.constants';
 
 // Ağırlıklar (toplam: %100)
 const WEIGHT_TRADING    = 0.40;
@@ -51,14 +52,20 @@ export class TrustScoreCalculatorService {
       )),
     );
 
+    const existing = await this.trustScoreRepo.findByVendorId(vendorId);
+    const level    = scoreToLevel(overall, existing?.isFrozen ?? false);
+
     await this.trustScoreRepo.upsert(vendorId, {
-      score: overall,
+      score:              overall,
       tradingPerformance: trading,
       xpLoyalty,
       compliance,
+      level,
+      isFrozen:           existing?.isFrozen ?? false,
+      inactiveDays:       existing?.inactiveDays ?? 0,
     });
 
-    this.logger.debug('TrustScore güncellendi', { vendorId, overall, trading, xpLoyalty, compliance });
+    this.logger.debug('TrustScore güncellendi', { vendorId, overall, level, trading, xpLoyalty, compliance });
     return { trading, xpLoyalty, compliance, overall };
   }
 
