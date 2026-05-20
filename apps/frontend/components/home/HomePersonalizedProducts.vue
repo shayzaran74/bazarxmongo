@@ -164,20 +164,24 @@ const fetchProducts = async () => {
   error.value = null
   try {
     const { $api } = useApi()
-    const data = await $api<Product[]>('/api/products', {
-      query: { isFeatured: true, limit: 7, sort: sortBy.value }
+    const res = await $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
+      query: { isFeatured: 'true', limit: 14 }
     })
-    if (data.success && data.data) {
-      products.value = data.data
-    } else {
-      error.value = data.message || 'Failed to fetch products'
-    }
-  } catch (err: unknown) {
-    error.value = (err as Error).message || 'An error occurred'
-    console.error('Personalized products error:', err)
+    const items = res?.data?.items ?? []
+    // İstemci tarafı sıralama (backend sort parametresi henüz desteklenmiyor)
+    products.value = sortProducts(items, sortBy.value).slice(0, 7)
+  } catch {
+    error.value = 'Ürünler yüklenemedi'
   } finally {
     loading.value = false
   }
+}
+
+const sortProducts = (items: Product[], sort: string): Product[] => {
+  const arr = [...items]
+  if (sort === 'price_asc')  return arr.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+  if (sort === 'price_desc') return arr.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
+  return arr // created_desc ve popular — backend zaten öne çıkanları önce gönderir
 }
 
 const applySort = () => {

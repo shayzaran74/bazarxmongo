@@ -122,14 +122,12 @@ const fetchFlashSales = async () => {
   flashSaleLoading.value = true
   try {
     const { $api } = useApi()
-    const data = await $api<Product[]>('/api/products', {
-      query: { isFlashSale: true, limit: 6 }
+    const res = await $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
+      query: { isFlashSale: 'true', limit: 6 }
     })
-    if (data.success && data.data) {
-      flashSaleProducts.value = data.data
-    }
-  } catch (error) {
-    console.error('Flash sales error:', error)
+    flashSaleProducts.value = res?.data?.items ?? []
+  } catch {
+    // sessizce geç — bölüm gizlenir
   } finally {
     flashSaleLoading.value = false
   }

@@ -41,13 +41,17 @@
 
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Admin Product Filter -->
-      <AdminProductFilter 
+      <AdminProductFilter
         v-if="!showForm"
         v-model:search="searchQuery"
         v-model:category-id="selectedFilterCategoryId"
         v-model:vendor-id="selectedFilterVendorId"
         v-model:vendor-products-only="showVendorProducts"
         v-model:pending-only="showPendingProducts"
+        v-model:city="filterCity"
+        v-model:is-featured="filterFeatured"
+        v-model:is-flash-sale="filterFlashSale"
+        v-model:is-special-offer="filterSpecialOffer"
         :categories="categories"
         :vendors="vendors"
         @filter="fetchProducts(1)"
@@ -380,6 +384,7 @@ const {
   selectedMainCategory, selectedSubCategory1, selectedSubCategory2,
   variationOptions,
   mainCategories, subCategories1, subCategories2, isAllSelected,
+  filterCity, filterFeatured, filterFlashSale, filterSpecialOffer,
   fetchInitialData, fetchProducts, fetchProductStats, fetchCategoryAttributes, resetForm, submitForm,
   deleteProduct, approveProduct, bulkApprove, bulkDelete, executeBulkUpdate,
   editProduct, toggleSelectAll, handleFileUpload

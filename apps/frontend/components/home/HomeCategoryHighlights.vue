@@ -6,51 +6,59 @@
     <LayoutHorizontalProductScroll
       v-for="(prods, catId) in Object.fromEntries(Object.entries(bestSellersByCategory).slice(0, 4))"
       :key="catId"
-      :title="getCategoryNameDisplay(catId) + ' Favorileri'"
-      :products="prods"
+      :title="getCategoryNameDisplay(String(catId)) + ' Favorileri'"
+      :products="prods as Product[]"
       :link="'/products?category=' + catId"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-
-import type { Product, Category, ApiResponse, HomeCategoryHighlightsData } from '@barterborsa/shared-types'
+import type { Product, Category } from '@barterborsa/shared-types'
 
 const bestSellersByCategory = ref<Record<string, Product[]>>({})
 const categories = ref<Category[]>([])
-const loading = ref(false)
 
 const fetchHighlights = async () => {
-  loading.value = true
   try {
     const { $api } = useApi()
-    
-    // Fetch bulk data for category highlights
-    const bulkData = await $api<HomeCategoryHighlightsData>('/api/products/homepage-bulk')
-    if (bulkData.success && bulkData.data) {
-      bestSellersByCategory.value = bulkData.data.bestSellersByCategory || {}
+
+    // Kategorileri ve öne çıkan ürünleri paralel çek
+    const [catRes, listingRes] = await Promise.all([
+      $api<{ success: boolean; data: Category[] }>('/api/v1/listings/categories', { query: { all: 'true' } }),
+      $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
+        query: { limit: 48 }
+      }),
+    ])
+
+    categories.value = catRes?.data ?? []
+
+    const items: Product[] = listingRes?.data?.items ?? []
+
+    // Kategori bazlı gruplama — her kategoriden max 8 ürün
+    const grouped: Record<string, Product[]> = {}
+    for (const item of items) {
+      const catId = (item as unknown as { category: string }).category
+      if (!catId) continue
+      if (!grouped[catId]) grouped[catId] = []
+      if (grouped[catId].length < 8) grouped[catId].push(item)
     }
 
-    // Fetch categories for naming
-    const catData = await $api<Category[]>('/api/categories', { query: { all: true } })
-    if (catData.success && catData.data) {
-      categories.value = catData.data
-    }
-  } catch (error) {
-    console.error('Fetch category highlights error:', error)
-  } finally {
-    loading.value = false
+    // En az 3 ürünü olan kategorileri al, max 4 kategori göster
+    bestSellersByCategory.value = Object.fromEntries(
+      Object.entries(grouped)
+        .filter(([, prods]) => prods.length >= 3)
+        .slice(0, 4)
+    )
+  } catch {
+    // sessizce geç — bölüm gizlenir
   }
 }
 
-const getCategoryNameDisplay = (catId: string) => {
+const getCategoryNameDisplay = (catId: string): string => {
   const cat = categories.value.find(c => c.id === catId)
-  return cat ? cat.name : 'Kategori'
+  return cat?.name ?? 'Kategori'
 }
 
-onMounted(() => {
-  fetchHighlights()
-})
+onMounted(fetchHighlights)
 </script>

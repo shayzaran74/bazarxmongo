@@ -48,6 +48,7 @@ import {
   OrderSchema,
   Vendor, VendorSchema,
   Company, CompanySchema,
+  MembershipTierSchema,
 } from '@barterborsa/shared-persistence';
 
 import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
@@ -112,6 +113,7 @@ const Handlers = [
       { name: 'Order',                schema: OrderSchema },
       { name: 'Vendor',               schema: VendorSchema },
       { name: 'Company',              schema: CompanySchema },
+      { name: 'MembershipTier',       schema: MembershipTierSchema },
     ]),
     RabbitMQModule,
     CommunicationModule,

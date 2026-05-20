@@ -20,6 +20,8 @@
                   <select v-model="form.tier" :disabled="!form.isNew" class="input-premium appearance-none disabled:opacity-50">
                     <option value="CORE">CORE</option>
                     <option value="PRIME">PRIME</option>
+                    <option value="ELITE">ELITE</option>
+                    <option value="APEX">APEX</option>
                   </select>
                 </div>
                 <div class="space-y-2">

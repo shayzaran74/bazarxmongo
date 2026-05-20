@@ -29,6 +29,8 @@
                     <option value="">TÜMÜ</option>
                     <option value="CORE">CORE</option>
                     <option value="PRIME">PRIME</option>
+                    <option value="ELITE">ELITE</option>
+                    <option value="APEX">APEX</option>
                   </select>
                 </div>
                 <div class="grid grid-cols-3 gap-4">

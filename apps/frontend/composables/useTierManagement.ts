@@ -1,84 +1,117 @@
-import { ref, onMounted } from 'vue'
+// composables/useTierManagement.ts
+
+type B2BTier = 'CORE' | 'PRIME' | 'ELITE' | 'APEX'
+
+interface TierForm {
+  id?: string
+  tier: B2BTier
+  commissionCash: number
+  commissionBarter: number
+  burnRate: number
+  annualFee: number
+  listingLimit: number
+  excelBatchLimit: number
+  apiRatePerMin: number
+  archiveAfterDays: number
+  imageCountPerListing: number
+  roiRate: number
+  xpMultiplier: number
+}
+
+interface TierRecord extends TierForm {
+  createdAt?: string
+  updatedAt?: string
+}
+
+const DEFAULT_FORM: TierForm = {
+  tier: 'CORE',
+  commissionCash: 0.12,
+  commissionBarter: 0.08,
+  burnRate: 0.5,
+  annualFee: 12000,
+  listingLimit: 100,
+  excelBatchLimit: 50,
+  apiRatePerMin: 60,
+  archiveAfterDays: 365,
+  imageCountPerListing: 5,
+  roiRate: 0.5,
+  xpMultiplier: 1.0,
+}
 
 export const useTierManagement = () => {
-    const { $api } = useApi()
-    const toast = useNuxtApp().$toast
+  const { $api } = useApi()
+  const toast = useNuxtApp().$toast
 
-    const tiers = ref<any[]>([])
-    const loading = ref(true)
-    const showModal = ref(false)
-    const isEditing = ref(false)
-    const submitting = ref(false)
-    
-    const form = ref<any>({
-        tier: 'BRONZE',
-        commissionCash: 2.5,
-        commissionBarter: 3.5,
-        burnRate: 0.5,
-        annualFee: 1000,
-        listingLimit: 100,
-        excelBatchLimit: 50,
-        apiRatePerMin: 60,
-        archiveAfterDays: 365,
-        imageCountPerListing: 5,
-        roiRate: 1.2,
-        xpMultiplier: 1.0
-    })
+  const tiers = ref<TierRecord[]>([])
+  const loading = ref(true)
+  const saving = ref(false)
+  const resetting = ref(false)
+  const showModal = ref(false)
+  const form = ref<TierForm>({ ...DEFAULT_FORM })
 
-    const fetchData = async () => {
-        loading.value = true
-        try {
-            const data = await $api<any>('/api/v1/admin/tiers')
-            if (data.success) tiers.value = (data.data || []) as any[]
-        } catch (err) {
-            console.error('Fetch tiers error:', err)
-        } finally {
-            loading.value = false
-        }
+  const fetchTiers = async (): Promise<void> => {
+    loading.value = true
+    try {
+      const data = await $api<{ success: boolean; data: TierRecord[] }>('/api/v1/admin/tiers')
+      if (data.success) tiers.value = data.data ?? []
+    } catch {
+      toast.error('Tier verileri yüklenemedi')
+    } finally {
+      loading.value = false
     }
+  }
 
-    const saveTier = async () => {
-        submitting.value = true
-        try {
-            const payload = { ...form.value }
-            // Remove unnecessary fields
-            const cleanPayload: any = { ...payload }
-            delete cleanPayload.createdAt
-            delete cleanPayload.updatedAt
-            delete cleanPayload._stats
-            delete cleanPayload._count
-
-            await $api('/api/v1/admin/tiers', {
-                method: 'POST',
-                body: cleanPayload
-            })
-            toast.success('Kural başarıyla kaydedildi')
-            showModal.value = false
-            fetchData()
-        } catch (error: any) {
-            toast.error(error.data?.error || 'Kural kaydedilemedi')
-        } finally {
-            submitting.value = false
-        }
+  const resetCache = async (): Promise<void> => {
+    resetting.value = true
+    try {
+      await $api('/api/v1/admin/tiers/cache', { method: 'DELETE' })
+      toast.success('Önbellek temizlendi')
+      await fetchTiers()
+    } catch {
+      toast.error('Önbellek temizlenemedi')
+    } finally {
+      resetting.value = false
     }
+  }
 
-    const openEdit = (tier: any) => {
-        const data = { ...tier }
-        // Convert Decimal objects if any
-        Object.keys(data).forEach(key => {
-            if (typeof data[key] === 'object' && data[key]?.$numberDecimal) {
-                data[key] = parseFloat(data[key].$numberDecimal)
-            }
-        })
-        form.value = data
-        isEditing.value = true
-        showModal.value = true
+  const saveTier = async (): Promise<void> => {
+    saving.value = true
+    try {
+      const payload: TierForm = { ...form.value }
+      await $api('/api/v1/admin/tiers', { method: 'POST', body: payload })
+      toast.success('Kural başarıyla kaydedildi')
+      showModal.value = false
+      await fetchTiers()
+    } catch (error: unknown) {
+      const msg = (error as { data?: { error?: string } })?.data?.error
+      toast.error(msg ?? 'Kural kaydedilemedi')
+    } finally {
+      saving.value = false
     }
+  }
 
-    onMounted(fetchData)
-
-    return {
-        tiers, loading, showModal, isEditing, submitting, form,
-        fetchData, saveTier, openEdit
+  const openModal = (tier: TierRecord): void => {
+    // MongoDB Decimal128 nesnelerini sayıya dönüştür
+    const parsed: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(tier)) {
+      parsed[k] = (typeof v === 'object' && v !== null && '$numberDecimal' in (v as object))
+        ? parseFloat((v as { $numberDecimal: string }).$numberDecimal)
+        : v
     }
+    form.value = parsed as unknown as TierForm
+    showModal.value = true
+  }
+
+  return {
+    tiers,
+    loading,
+    saving,
+    resetting,
+    showModal,
+    form,
+    fetchTiers,
+    resetCache,
+    saveTier,
+    openModal,
+  }
 }

@@ -35,6 +35,9 @@
               Stok
             </th>
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+              Etiketler
+            </th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
               İşlemler
             </th>
           </tr>
@@ -100,6 +103,16 @@
                 {{ product.stock }} ADET
               </span>
             </td>
+            <!-- Görünürlük Bayrakları -->
+            <td class="px-6 py-4">
+              <div class="flex flex-wrap gap-1">
+                <span v-if="product.isFeatured"    class="px-2 py-0.5 bg-blue-100  text-blue-700  text-[9px] font-black rounded-full uppercase tracking-widest">✨ Featured</span>
+                <span v-if="product.isFlashSale"   class="px-2 py-0.5 bg-orange-100 text-orange-700 text-[9px] font-black rounded-full uppercase tracking-widest">⚡ Flash</span>
+                <span v-if="product.isSpecialOffer" class="px-2 py-0.5 bg-red-100   text-red-700   text-[9px] font-black rounded-full uppercase tracking-widest">🔥 Özel</span>
+                <span v-if="product.isActive === false" class="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-black rounded-full uppercase tracking-widest">Pasif</span>
+              </div>
+            </td>
+
             <td class="px-6 py-4 text-sm font-bold space-x-3">
               <span
                 v-if="product.status && PRODUCT_STATUS_CONFIG[product.status as keyof typeof PRODUCT_STATUS_CONFIG]"

@@ -1,3 +1,5 @@
+// apps/backend/src/modules/catalog/application/queries/list-catalog-listings/list-catalog-listings.query.ts
+
 export class ListCatalogListingsQuery {
   constructor(
     public readonly userId?: string,
@@ -8,6 +10,13 @@ export class ListCatalogListingsQuery {
       limit?: number;
       vendorType?: string;
       scope?: string;
+      // Konum filtresi — vendor profil şehrinden eşleştirilir
+      city?: string;
+      // Ürün tipi filtreleri
+      isFeatured?: boolean;
+      isFlashSale?: boolean;
+      isSpecialOffer?: boolean;
+      isActive?: boolean;
     } = {}
   ) {}
 }

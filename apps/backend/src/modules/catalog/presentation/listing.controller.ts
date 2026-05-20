@@ -52,14 +52,23 @@ export class ListingController {
   @Public()
   @Get('marketplace')
   async publicList(
-    @Query('search') search?: string,
-    @Query('limit') limit = '50',
-    @Query('page') page = '1',
-    @Query('vendorType') vendorType?: string,
+    @Query('search')         search?: string,
+    @Query('limit')          limit = '50',
+    @Query('page')           page = '1',
+    @Query('vendorType')     vendorType?: string,
+    @Query('city')           city?: string,
+    @Query('isFeatured')     isFeatured?: string,
+    @Query('isFlashSale')    isFlashSale?: string,
+    @Query('isSpecialOffer') isSpecialOffer?: string,
   ) {
+    const parseBool = (v?: string) => v === 'true' ? true : v === 'false' ? false : undefined;
     const data = await this.queryBus.execute(
       new ListCatalogListingsQuery(undefined, undefined, {
-        search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50, vendorType, scope: 'public',
+        search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50,
+        vendorType, scope: 'public', city,
+        isFeatured:    parseBool(isFeatured),
+        isFlashSale:   parseBool(isFlashSale),
+        isSpecialOffer:parseBool(isSpecialOffer),
       }),
     );
     return { success: true, data };
@@ -69,16 +78,27 @@ export class ListingController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   async list(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query('search') search?: string,
-    @Query('limit') limit = '50',
-    @Query('page') page = '1',
-    @Query('vendorType') vendorType?: string,
-    @Query('scope') scope?: string,
+    @CurrentUser()           user: AuthenticatedUser,
+    @Query('search')         search?: string,
+    @Query('limit')          limit = '50',
+    @Query('page')           page = '1',
+    @Query('vendorType')     vendorType?: string,
+    @Query('scope')          scope?: string,
+    @Query('city')           city?: string,
+    @Query('isFeatured')     isFeatured?: string,
+    @Query('isFlashSale')    isFlashSale?: string,
+    @Query('isSpecialOffer') isSpecialOffer?: string,
+    @Query('isActive')       isActive?: string,
   ) {
+    const parseBool = (v?: string) => v === 'true' ? true : v === 'false' ? false : undefined;
     const data = await this.queryBus.execute(
       new ListCatalogListingsQuery(user?.id, user?.role, {
-        search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50, vendorType, scope,
+        search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50,
+        vendorType, scope, city,
+        isFeatured:    parseBool(isFeatured),
+        isFlashSale:   parseBool(isFlashSale),
+        isSpecialOffer:parseBool(isSpecialOffer),
+        isActive:      parseBool(isActive),
       }),
     );
     return { success: true, data };

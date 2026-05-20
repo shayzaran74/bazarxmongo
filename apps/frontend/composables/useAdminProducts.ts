@@ -32,6 +32,11 @@ export const useAdminProducts = () => {
   const showVendorProducts       = ref(false)
   const showPendingProducts      = ref(false)
   const selectedProductIds       = ref<string[]>([])
+  // Yeni filtreler
+  const filterCity               = ref('')
+  const filterFeatured           = ref(false)
+  const filterFlashSale          = ref(false)
+  const filterSpecialOffer       = ref(false)
 
   // ─── Kategori Hiyerarşisi ───────────────────────────────────────────────────
   const selectedMainCategory = ref('')
@@ -61,11 +66,15 @@ export const useAdminProducts = () => {
         query: {
           page,
           limit: pagination.limit,
-          q: searchQuery.value || undefined,
-          categoryId: selectedFilterCategoryId.value || undefined,
-          vendorId: selectedFilterVendorId.value || undefined,
-          status: showPendingProducts.value ? 'PENDING' : undefined,
-          vendorOnly: showVendorProducts.value ? true : undefined,
+          q:            searchQuery.value || undefined,
+          categoryId:   selectedFilterCategoryId.value || undefined,
+          vendorId:     selectedFilterVendorId.value || undefined,
+          status:       showPendingProducts.value ? 'PENDING' : undefined,
+          vendorOnly:   showVendorProducts.value ? true : undefined,
+          city:         filterCity.value || undefined,
+          isFeatured:   filterFeatured.value     ? 'true' : undefined,
+          isFlashSale:  filterFlashSale.value    ? 'true' : undefined,
+          isSpecialOffer: filterSpecialOffer.value ? 'true' : undefined,
         }
       })
       products.value      = Array.isArray(res.data) ? res.data : (res.data?.items || [])
@@ -465,6 +474,7 @@ export const useAdminProducts = () => {
     bulkProcessing, showForm, editingId, formData, showBulkEditModal,
     searchQuery, selectedFilterCategoryId, selectedFilterVendorId,
     showVendorProducts, showPendingProducts, selectedProductIds,
+    filterCity, filterFeatured, filterFlashSale, filterSpecialOffer,
     selectedMainCategory, selectedSubCategory1, selectedSubCategory2,
     mainCategories, subCategories1, subCategories2,
     variationOptions, pagination, productStats, isAllSelected,

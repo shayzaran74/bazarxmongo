@@ -119,7 +119,12 @@ export class ListAdminProductsHandler implements IQueryHandler<ListAdminProducts
         images: item.media?.map((m: any) => m.url) ?? [],
         price: listing ? Number(listing.price) : 0,
         stock: totalStock,
-        sku: listing?.sku ?? ''
+        sku: listing?.sku ?? '',
+        // Görünürlük bayrakları — listing'den alınır (listing öncelikli, fallback catalog product)
+        isFeatured:    listing?.isFeatured    ?? item.isFeatured    ?? false,
+        isFlashSale:   listing?.isFlashSale   ?? item.isFlashSale   ?? false,
+        isSpecialOffer:listing?.isSpecialOffer ?? item.isSpecialOffer ?? false,
+        isActive:      listing?.isActive      ?? item.isActive       ?? true,
       };
     });
 

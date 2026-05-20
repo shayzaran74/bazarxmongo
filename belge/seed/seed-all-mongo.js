@@ -14,6 +14,8 @@ const seeders = [
     { name: 'Rozet Kuralları (Badges)',             path: './seed-badges-mongo.js' },
     { name: 'Yardım Merkezi (Tam)',                path: './seed-help-full-mongo.js' },
     { name: 'İçerik (Duyurular + Politikalar)',    path: './seed-content-mongo.js' },
+    { name: 'B2B Tier Konfigürasyonları',          path: './seed-tier-benefits-mongo.js' },
+    { name: 'Kullanıcı Loyalty Tier Sistemi',      path: './seed-user-loyalty-tiers-mongo.js' },
 ];
 
 async function runSeeders() {

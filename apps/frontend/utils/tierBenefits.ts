@@ -21,47 +21,49 @@ interface TierBenefit {
     benefits: string[]
 }
 
+// Komisyon oranları: barter-rules.md §3 ile senkronize (2026-05-20)
+// Standart oranlar — grup içi ve XP indirimi bu değerlerin üzerine uygulanır
 export const TIER_BENEFITS: Record<TierKey, TierBenefit> = {
     CORE: {
         label: 'Core', nametr: 'Çekirdek', icon: '🌱',
         color: '#4CAF50', bgGradient: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-        commissionRate: { cash: 0.12, barter: 0.08 },
+        commissionRate: { cash: 0.12, barter: 0.12 }, // Standart: %12
         roiRate: 0.50, xpMultiplier: 1.0, burnRate: 50,
-        limits: { dailyWithdraw: 10000, dailyTransfer: 15000, barterPoolLimit: 50000 },
+        limits: { dailyWithdraw: 10000, dailyTransfer: 15000, barterPoolLimit: 150000 },
         description: 'Başlangıç seviyesi. Temel takas ve ticaret özellikleri.',
-        benefits: ['Temel takas ve ticaret özellikleri', '%12 Nakit Komisyon / %8 Barter Komisyon',
-            '%50 XP Geri Dönüş Oranı', 'Günlük 10.000 TL Çekim Limiti', '50.000 TL Barter Havuz Limiti']
+        benefits: ['Temel takas ve ticaret özellikleri', '%12 Standart Komisyon',
+            '%50 XP Geri Dönüş Oranı', 'Günlük 10.000 TL Çekim Limiti', '150.000 TL Barter Havuz Limiti']
     },
     PRIME: {
         label: 'Prime', nametr: 'Asil', icon: '⭐',
         color: '#2196F3', bgGradient: 'linear-gradient(135deg, #2196F3 0%, #1565C0 100%)',
-        commissionRate: { cash: 0.09, barter: 0.05 },
+        commissionRate: { cash: 0.10, barter: 0.10 }, // Standart: %10
         roiRate: 0.65, xpMultiplier: 1.3, burnRate: 60,
-        limits: { dailyWithdraw: 25000, dailyTransfer: 35000, barterPoolLimit: 250000 },
+        limits: { dailyWithdraw: 25000, dailyTransfer: 35000, barterPoolLimit: 500000 },
         description: 'Büyüyen işletmeler için artırılmış limitler ve avantajlar.',
-        benefits: ['Gelişmiş takas özellikleri', '%9 Nakit Komisyon / %5 Barter Komisyon',
-            '%65 XP Geri Dönüş Oranı', '1.3x XP Çarpanı', 'Günlük 25.000 TL Çekim Limiti', '250.000 TL Barter Havuz Limiti']
+        benefits: ['Gelişmiş takas özellikleri', '%10 Standart Komisyon',
+            '%65 XP Geri Dönüş Oranı', '1.3x XP Çarpanı', 'Günlük 25.000 TL Çekim Limiti', '500.000 TL Barter Havuz Limiti']
     },
     ELITE: {
         label: 'Elite', nametr: 'Elit', icon: '🏢',
         color: '#FF9800', bgGradient: 'linear-gradient(135deg, #FF9800 0%, #E65100 100%)',
-        commissionRate: { cash: 0.06, barter: 0.04 },
+        commissionRate: { cash: 0.08, barter: 0.08 }, // Standart: %8
         roiRate: 0.85, xpMultiplier: 1.5, burnRate: 70,
-        limits: { dailyWithdraw: 50000, dailyTransfer: 75000, barterPoolLimit: 1000000 },
+        limits: { dailyWithdraw: 50000, dailyTransfer: 75000, barterPoolLimit: 1500000 },
         description: 'Yüksek hacimli ticaret yapanlar için özel oranlar.',
-        benefits: ['Özel takas oranları', '%6 Nakit Komisyon / %4 Barter Komisyon',
+        benefits: ['Özel takas oranları', '%8 Standart Komisyon',
             '%85 XP Geri Dönüş Oranı', '1.5x XP Çarpanı', 'Günlük 50.000 TL Çekim Limiti',
-            '1.000.000 TL Barter Havuz Limiti', 'Öncelikli Müşteri Desteği']
+            '1.500.000 TL Barter Havuz Limiti', 'Öncelikli Müşteri Desteği']
     },
     APEX: {
         label: 'Apex', nametr: 'Zirve', icon: '🏆',
         color: '#9C27B0', bgGradient: 'linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%)',
-        commissionRate: { cash: 0.04, barter: 0.02 },
-        roiRate: 1.00, xpMultiplier: 1.66, burnRate: 80,
+        commissionRate: { cash: 0.06, barter: 0.06 }, // Standart: %6
+        roiRate: 1.00, xpMultiplier: 2.0, burnRate: 80,
         limits: { dailyWithdraw: 100000, dailyTransfer: 150000, barterPoolLimit: null },
         description: 'Sektör liderleri için sınırsız takas ve en düşük komisyonlar.',
-        benefits: ['En düşük komisyon oranları', '%4 Nakit Komisyon / %2 Barter Komisyon',
-            '%100 XP Geri Dönüş Oranı', '1.66x XP Çarpanı', 'Sınırsız Barter Havuz Limiti',
+        benefits: ['En düşük komisyon oranları', '%6 Standart Komisyon',
+            '%100 XP Geri Dönüş Oranı', '2x XP Çarpanı', 'Sınırsız Barter Havuz Limiti',
             'VIP Müşteri Hizmetleri', 'Sınırsız Para Çekme Limiti']
     }
 }

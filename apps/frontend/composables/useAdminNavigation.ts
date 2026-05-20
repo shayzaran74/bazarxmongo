@@ -89,6 +89,8 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
         { label: 'Gelişmiş Analitik (OLAP)', to: '/admin/analytics/olap', icon: SparklesIcon },
         { label: 'Kullanıcılar', to: '/admin/users', activePath: '/admin/user', icon: UsersIcon },
         { label: 'Sadakat & Ödüller', to: '/admin/loyalty', icon: GiftIcon },
+        { label: 'Kullanıcı Loyalty Tier', to: '/admin/user-loyalty', icon: SparklesIcon },
+        { label: 'Satıcı Tier Atama', to: '/admin/vendor-tiers', icon: ChartBarIcon },
         { label: 'Cüzdan Onayları', to: '/admin/wallet', icon: WalletIcon },
         { label: 'Para Çekme Talepleri', to: '/admin/wallet?tab=withdrawal', icon: CurrencyDollarIcon },
         { label: 'Genel Mizan (Ledger)', to: '/admin/ledger-dashboard', icon: ChartBarIcon },
@@ -135,6 +137,8 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
     '/admin': 'Dashboard',
     '/admin/payouts': 'Hak Ediş Yönetimi',
     '/admin/tier-management': 'Satıcı Seviye (Tier) Yönetimi',
+    '/admin/vendor-tiers':    'Satıcı Tier Atama',
+    '/admin/user-loyalty':    'Kullanıcı Loyalty Tier Yönetimi',
     '/admin/ledger-dashboard': '📒 Genel Mizan — Ledger Dashboard',
     '/admin/marketing': 'Pazarlama Analitiği',
     '/admin/advertising': 'Reklam Yönetimi'
