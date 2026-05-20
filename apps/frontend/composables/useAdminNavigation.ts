@@ -125,6 +125,7 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
         { label: 'Restoran Anlaşmaları', to: '/admin/go/restaurants', icon: BuildingOfficeIcon },
         { label: 'Kârlılık Dashboard',  to: '/admin/go/revenue',     icon: ChartBarIcon },
         { label: 'Rezervasyonlar',       to: '/admin/go/reservations', icon: ClipboardDocumentListIcon },
+        { label: 'Push & Mail Kampanya',  to: '/admin/go/notifications', icon: MegaphoneIcon },
       ]
     },
     ...(isSuperAdmin ? [

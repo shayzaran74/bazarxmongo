@@ -102,6 +102,7 @@ export { LaunchPartner, ILaunchPartner, LaunchPartnerSchema, LaunchPartnerPhase,
 // BazarX-GO ek şemalar
 export { MenuReservation, IMenuReservation, MenuReservationSchema, ReservationStatus, ReservationStatusType } from './schemas/backend/menuReservation.schema';
 export { SurpriseMenu, ISurpriseMenu, SurpriseMenuSchema, ISurpriseMenuTimeBlock } from './schemas/backend/surpriseMenu.schema';
+export { UserDeviceToken, IUserDeviceToken, UserDeviceTokenSchema } from './schemas/backend/userDeviceToken.schema';
 
 // Loyalty repository — Subscription/TrustScore/XP/Referral/Menu
 export * from './mongodb/loyalty/loyalty.repository';

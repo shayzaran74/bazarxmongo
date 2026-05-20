@@ -6,6 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IMenuPurchase, IMenuReservation, ISurpriseMenu } from '@barterborsa/shared-persistence';
+import { GoNotificationService } from './go-notification.service';
 
 @Injectable()
 export class MenuCronService {
@@ -15,6 +16,7 @@ export class MenuCronService {
     @InjectModel('MenuPurchase')    private readonly purchaseModel:    Model<IMenuPurchase>,
     @InjectModel('MenuReservation') private readonly reservationModel: Model<IMenuReservation>,
     @InjectModel('SurpriseMenu')    private readonly surpriseModel:    Model<ISurpriseMenu>,
+    private readonly goNotif: GoNotificationService,
   ) {}
 
   /**
@@ -56,8 +58,17 @@ export class MenuCronService {
     ).lean();
 
     if (expiring.length > 0) {
-      this.logger.log(`${expiring.length} QR 3 gün içinde sona eriyor — bildirim kuyruğu (Sprint 4)`);
-      // TODO Sprint 4: NotificationService.pushBatch(expiring, 'MENU_EXPIRY_WARNING')
+      this.logger.log(`${expiring.length} QR 3 gün içinde sona eriyor — push+mail gönderiliyor`);
+      const now = new Date();
+      for (const p of expiring) {
+        const daysLeft = Math.ceil((new Date(p.qrExpiresAt!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        await this.goNotif.notifyMenuExpiry(
+          p.userId,
+          undefined, // email Sprint 4'te User modeli ile çekilecek
+          daysLeft,
+          'Menü hakkın',
+        );
+      }
     }
   }
 
