@@ -1,6 +1,6 @@
 // apps/backend/src/modules/menu/application/services/geofence.service.ts
 // BazarX-GO §10 — Konum bazlı sürpriz menü tetikleyici
-// Haversine formülü ile iki nokta arası mesafe hesabı
+// Haversine + VendorProfile'dan koordinat çekme (artık client'a bağımlı değil)
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -21,30 +21,31 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 export interface NearbyResult {
-  vendorId:    string;
-  listingId:   string;
-  distanceKm:  number;
-  radiusMeters:number;
+  vendorId:     string;
+  listingId:    string;
+  distanceKm:   number;
+  radiusMeters: number;
 }
+
+interface VendorCoord { vendorId: string; lat: number; lng: number }
 
 @Injectable()
 export class GeofenceService {
   private readonly logger = new Logger(GeofenceService.name);
 
   constructor(
-    @InjectModel('SurpriseMenu')       private readonly surpriseModel: Model<ISurpriseMenu>,
-    @InjectModel('UserDeviceToken')    private readonly tokenModel:    Model<IUserDeviceToken>,
+    @InjectModel('SurpriseMenu')    private readonly surpriseModel: Model<ISurpriseMenu>,
+    @InjectModel('UserDeviceToken') private readonly tokenModel:    Model<IUserDeviceToken>,
   ) {}
 
   /**
-   * Kullanıcının konumunu güncelle ve yakınındaki sürpriz menüleri döndür.
-   * §10 — 500m varsayılan yarıçap, restoran bazında ayarlanabilir.
+   * Kullanıcının konumunu güncelle + DB'den vendor koordinatlarını çek + yakın sürpriz menüleri bul.
+   * §10 — Artık vendorCoords client'tan gelmiyor, VendorProfile'dan otomatik çekiliyor.
    */
   async updateLocationAndFindNearby(
-    userId:  string,
-    lat:     number,
-    lng:     number,
-    vendorCoords: { vendorId: string; lat: number; lng: number }[],
+    userId: string,
+    lat:    number,
+    lng:    number,
   ): Promise<NearbyResult[]> {
     // Kullanıcının son konumunu güncelle
     await this.tokenModel.updateMany(
@@ -53,30 +54,39 @@ export class GeofenceService {
     );
 
     // Aktif sürpriz menüleri çek
-    const now        = new Date();
-    const hourStr    = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const now     = new Date();
+    const hourStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
     const activeSurprises = await this.surpriseModel
-      .find({ isActive: true, usedToday: { $lt: { $ref: 'dailyQuota' } } })
+      .find({ isActive: true })
       .lean<ISurpriseMenu[]>();
 
-    // Aktif saat bloğunda olanları filtrele
+    // Aktif saat bloğunda ve kota dolmamış olanlar
     const inWindow = activeSurprises.filter(s => {
-      // usedToday < dailyQuota kontrolü
       if (s.usedToday >= s.dailyQuota) return false;
-      // Saat dilimi kontrolü
       return s.activeHours.some(h => hourStr >= h.start && hourStr <= h.end);
     });
 
-    // Konum koordinatlarını map'e al
-    const coordMap = new Map(vendorCoords.map(vc => [vc.vendorId, vc]));
+    if (inWindow.length === 0) return [];
 
-    // Mesafe hesabı — yarıçap içindeki sürprizler
+    // Vendor koordinatlarını VendorProfile'dan çek
+    const vendorIds = inWindow.map(s => s.vendorId);
+    const { VendorProfile } = require('@barterborsa/shared-persistence/schemas/backend/vendorProfile.schema');
+    const profiles = await VendorProfile
+      .find({ vendorId: { $in: vendorIds }, lat: { $exists: true }, lng: { $exists: true } }, { vendorId: 1, lat: 1, lng: 1 })
+      .lean() as { vendorId: string; lat: number; lng: number }[];
+
+    const coordMap = new Map<string, VendorCoord>(profiles.map(p => [p.vendorId, p]));
+
+    // Mesafe hesabı
     const nearby: NearbyResult[] = [];
     for (const s of inWindow) {
       const vc = coordMap.get(s.vendorId);
-      if (!vc) continue;
+      if (!vc) continue; // koordinatı olmayan vendor atla
+
       const distKm = haversineKm(lat, lng, vc.lat, vc.lng);
       const distM  = distKm * 1000;
+
       if (distM <= s.radiusMeters) {
         nearby.push({
           vendorId:    s.vendorId,
@@ -88,18 +98,15 @@ export class GeofenceService {
     }
 
     if (nearby.length > 0) {
-      this.logger.log(`${nearby.length} sürpriz menü yakında: userId=${userId} (${lat},${lng})`);
+      this.logger.log(`${nearby.length} yakın sürpriz menü: userId=${userId} (${lat},${lng})`);
     }
 
     return nearby;
   }
 
-  /**
-   * Kullanıcının bir restorana yeterince yakın olup olmadığını kontrol et.
-   */
   isWithinRadius(
-    userLat:     number, userLng:     number,
-    vendorLat:   number, vendorLng:   number,
+    userLat: number, userLng: number,
+    vendorLat: number, vendorLng: number,
     radiusMeters = 500,
   ): boolean {
     return haversineKm(userLat, userLng, vendorLat, vendorLng) * 1000 <= radiusMeters;

@@ -174,4 +174,47 @@ export class AdminUserController {
   async deleteUser(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
     return this.commandBus.execute(new DeleteAdminUserCommand(id, admin.id));
   }
+
+  // ── XP Eşik Konfigürasyonu (§4 Tasarım Notu) ─────────────────────────────
+
+  @ApiOperation({ summary: 'Loyalty tier XP eşiklerini listele' })
+  @Get('loyalty/xp-thresholds')
+  async getXpThresholds() {
+    const tiers = await this.membershipTierModel
+      .find({}, { id: 1, tier: 1, minXp: 1, description: 1, rewardMultiplier: 1 })
+      .sort({ minXp: 1 })
+      .lean<IMembershipTier[]>();
+    return { success: true, data: tiers };
+  }
+
+  @ApiOperation({ summary: 'Loyalty tier XP eşiğini güncelle (admin)' })
+  @Patch('loyalty/xp-thresholds/:tier')
+  async updateXpThreshold(
+    @Param('tier') tier: string,
+    @Body('minXp') minXp: number,
+    @Body('description') description?: string,
+  ) {
+    if (!minXp || minXp < 0) {
+      throw new Error('Geçerli bir XP eşiği giriniz (≥0)');
+    }
+
+    const update: Record<string, unknown> = { minXp };
+    if (description !== undefined) update.description = description;
+
+    const result = await this.membershipTierModel.findOneAndUpdate(
+      { tier },
+      { $set: update },
+      { new: true },
+    ).lean();
+
+    if (!result) {
+      throw new Error(`${tier} tier bulunamadı`);
+    }
+
+    return {
+      success: true,
+      data: result,
+      message: `${tier} tier XP eşiği ${minXp} olarak güncellendi`,
+    };
+  }
 }

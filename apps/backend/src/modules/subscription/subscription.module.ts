@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
-  UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema,
+  UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema, MenuPurchaseSchema,
   OrderSchema, ReferralSchema, UserLevelSchema, XpTransactionSchema, LoyaltyTierHistorySchema,
   MenuRightSchema,
 } from '@barterborsa/shared-persistence';

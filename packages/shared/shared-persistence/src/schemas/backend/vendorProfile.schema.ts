@@ -18,6 +18,9 @@ export interface IVendorProfile {
   deliveryRadius?: number;
   minOrderAmount?: Types.Decimal128;
   avgPrepTimeMinutes?: number;
+  // Geofencing koordinatları (BazarX-GO §10)
+  lat?: number;
+  lng?: number;
 }
 
 export const VendorProfileSchema = new Schema<IVendorProfile>({
@@ -36,8 +39,10 @@ export const VendorProfileSchema = new Schema<IVendorProfile>({
   openingHours: { type: Schema.Types.Mixed, alias: 'opening_hours' },
   cuisineType: { type: String, alias: 'cuisine_type' },
   deliveryRadius: { type: Number, alias: 'delivery_radius' },
-  minOrderAmount: { type: Types.Decimal128, alias: 'min_order_amount' },
-  avgPrepTimeMinutes: { type: Number, alias: 'avg_prep_time_minutes' },
+  minOrderAmount:    { type: Types.Decimal128, alias: 'min_order_amount' },
+  avgPrepTimeMinutes:{ type: Number, alias: 'avg_prep_time_minutes' },
+  lat:               { type: Number },
+  lng:               { type: Number },
 }, {
   timestamps: true,
   collection: 'vendor_profiles',
@@ -45,5 +50,6 @@ export const VendorProfileSchema = new Schema<IVendorProfile>({
 
 // Composite index
 VendorProfileSchema.index({ city: 1 });
+VendorProfileSchema.index({ lat: 1, lng: 1 }); // geofence query
 
 export const VendorProfile = model<IVendorProfile>('VendorProfile', VendorProfileSchema);

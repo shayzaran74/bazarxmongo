@@ -10,6 +10,11 @@
         </h1>
         <p class="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-widest">BRONZE / SILVER / GOLD / PLATINUM / DIAMOND — XP VE TİER YÖNETİM MERKEZİ</p>
       </div>
+      <!-- XP Eşikleri kısa yol butonu -->
+      <button class="px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all"
+        @click="showXpThresholds = !showXpThresholds">
+        {{ showXpThresholds ? '← Listeye Dön' : '⚙️ XP Eşikleri' }}
+      </button>
 
       <!-- Tier dağılımı -->
       <div class="flex gap-3 flex-wrap">
@@ -21,8 +26,34 @@
       </div>
     </div>
 
+    <!-- XP Eşik Konfigürasyonu (§4 Tasarım Notu) -->
+    <div v-if="showXpThresholds" class="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm space-y-6">
+      <h2 class="font-black text-sm uppercase tracking-tight text-gray-900">XP Eşik Yapılandırması</h2>
+      <p class="text-xs text-gray-500">Loyalty tier geçişleri için gerekli minimum XP değerlerini ayarlayın.</p>
+      <div class="space-y-4">
+        <div v-for="t in xpThresholds" :key="t.tier" class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+          <div class="w-28 shrink-0">
+            <span class="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+              :class="LOYALTY_COLORS[t.tier as LoyaltyTier]?.badge ?? 'bg-gray-200 text-gray-700'">
+              {{ t.tier }}
+            </span>
+          </div>
+          <div class="flex-1">
+            <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Min. XP</label>
+            <input v-model.number="t.minXp" type="number" min="0"
+              class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-black focus:outline-none focus:border-indigo-400 transition-all" />
+          </div>
+          <button :disabled="savingThreshold === t.tier"
+            class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 shrink-0"
+            @click="saveXpThreshold(t.tier, t.minXp)">
+            {{ savingThreshold === t.tier ? '...' : 'Kaydet' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Filtreler -->
-    <div class="flex flex-wrap gap-4 items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+    <div v-if="!showXpThresholds" class="flex flex-wrap gap-4 items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
       <input
         v-model="search"
         type="text"
@@ -43,7 +74,7 @@
     </div>
 
     <!-- Tablo -->
-    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+    <div v-if="!showXpThresholds" class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
       <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
         <div class="h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
         <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Yükleniyor...</p>
@@ -205,6 +236,10 @@ const LOYALTY_COLORS: Record<LoyaltyTier, { text: string; badge: string }> = {
 const users        = ref<UserLoyaltyItem[]>([])
 const loading      = ref(true)
 const search       = ref('')
+// XP Eşik konfigürasyonu
+const showXpThresholds  = ref(false)
+const xpThresholds      = ref<{ tier: string; minXp: number }[]>([])
+const savingThreshold   = ref<string | null>(null)
 const loyaltyFilter = ref('')
 const page         = ref(1)
 const total        = ref(0)
@@ -285,5 +320,23 @@ const debouncedFetch = (): void => {
   debounceTimer = setTimeout(() => { page.value = 1; fetchUsers() }, 400)
 }
 
-onMounted(fetchUsers)
+const fetchXpThresholds = async (): Promise<void> => {
+  try {
+    const res = await $api<{ success: boolean; data: { tier: string; minXp: number }[] }>('/api/v1/admin/users/loyalty/xp-thresholds')
+    xpThresholds.value = res.data ?? []
+  } catch { /* sessizce */ }
+}
+
+const saveXpThreshold = async (tier: string, minXp: number): Promise<void> => {
+  savingThreshold.value = tier
+  try {
+    await $api(`/api/v1/admin/users/loyalty/xp-thresholds/${tier}`, { method: 'PATCH', body: { minXp } })
+    toast.success(`${tier} XP eşiği güncellendi`)
+  } catch { toast.error('Güncellenemedi') } finally { savingThreshold.value = null }
+}
+
+onMounted(() => {
+  fetchUsers()
+  fetchXpThresholds()
+})
 </script>

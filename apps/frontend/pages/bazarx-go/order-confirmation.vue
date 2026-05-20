@@ -160,6 +160,33 @@
       </div>
     </main>
 
+    <!-- §16.2 — Gel-Al "Üye Olsaydın" Huneri (üye olmayan kullanıcıya göster) -->
+    <section v-if="!isSubscribed" class="max-w-[640px] mx-auto px-5 pb-8">
+      <div class="bg-[var(--brand-deep)] text-white rounded-2xl p-7 space-y-4 relative overflow-hidden">
+        <div class="absolute -top-8 -right-8 w-32 h-32 bg-white/5 rounded-full" />
+        <div class="relative">
+          <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-2">💡 BİLİYOR MUSUN?</p>
+          <h3 class="text-xl font-black leading-tight">
+            Bu menüyü <span class="line-through opacity-60">{{ formatCurrency(orderTotal) }}</span>
+            yerine <span class="text-[var(--accent)]">{{ formatCurrency(orderTotal / 2) }}</span> öderdin
+          </h3>
+          <p class="text-sm opacity-80 mt-2 leading-relaxed">
+            BazarX-GO üyesi olsaydın hem yarı fiyata alırdın hem de bir tane daha bedava gelirdi.
+            Toplam <strong>{{ formatCurrency(orderTotal) }} tasarruf</strong> ederdin.
+          </p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <NuxtLink to="/bazarx-go/membership"
+            class="flex-1 text-center bg-white text-[var(--brand-deep)] font-black text-[11px] uppercase tracking-widest py-3 rounded-xl hover:bg-opacity-90 transition-all active:scale-95 shadow-lg">
+            Hemen Üye Ol — 199 ₺/ay
+          </NuxtLink>
+          <button class="text-white/60 text-[11px] font-bold px-4" @click="dismissMemberCta = true">
+            Kapat
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer class="bg-[var(--surface-2)] py-10 px-5">
       <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -181,18 +208,28 @@
 
 <script setup lang="ts">
 import {
-  CheckCircleIcon,
-  ClockIcon,
-  HomeIcon,
-  CreditCardIcon,
-  TruckIcon,
-  PlusIcon,
-  BellIcon,
-  ShoppingBagIcon
+  CheckCircleIcon, ClockIcon, HomeIcon, CreditCardIcon,
+  TruckIcon, PlusIcon, BellIcon, ShoppingBagIcon,
 } from '@heroicons/vue/24/outline'
 
-definePageMeta({
-  layout: false
+definePageMeta({ layout: false })
+
+const route = useRoute()
+const { $api } = useApi()
+
+// URL'den geçilen toplam tutar (Gel-Al huneri için)
+const orderTotal       = computed(() => Number(route.query.total ?? 191.80))
+const isSubscribed     = ref(false)
+const dismissMemberCta = ref(false)
+
+const formatCurrency = (v: number): string =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(v)
+
+onMounted(async () => {
+  try {
+    const res = await $api<{ success: boolean; data: { tier?: string } }>('/api/v1/subscriptions/me')
+    isSubscribed.value = !!res?.data?.tier
+  } catch { /* giriş yoksa non-member olarak göster */ }
 })
 
 useHead({
