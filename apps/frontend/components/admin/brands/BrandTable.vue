@@ -37,7 +37,7 @@
           <td class="px-8 py-4">
             <div class="flex items-center gap-4">
               <div class="w-11 h-11 rounded-2xl bg-white border border-gray-100 p-1 flex items-center justify-center shrink-0">
-                <img :src="resolveImageUrl(brand.logoUrl || brand.image)" class="w-full h-full object-contain rounded-xl" @error="$event.target.src='/images/no-brand.png'">
+                <img :src="resolveImageUrl(brand.icon || brand.image || brand.logoUrl)" class="w-full h-full object-contain rounded-xl" @error="$event.target.src='/images/no-brand.png'">
               </div>
               <div>
                 <div class="text-sm font-black text-gray-900 group-hover:text-indigo-700 transition-colors">{{ brand.name }}</div>

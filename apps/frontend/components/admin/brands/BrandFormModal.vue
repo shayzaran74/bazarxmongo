@@ -23,8 +23,16 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Logo URL</label>
-          <input v-model="form.icon" type="text" class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold outline-none focus:bg-white focus:border-indigo-500 transition-all" placeholder="https://...">
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Logo URL (veya Dosya Yükle)</label>
+          <div class="flex gap-2 items-center">
+            <input v-model="form.icon" type="text" class="flex-1 px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold outline-none focus:bg-white focus:border-indigo-500 transition-all" placeholder="https://...">
+            
+            <label class="px-4 py-3.5 bg-indigo-50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center min-w-[120px]">
+              <span v-if="uploading">YÜKLENİYOR...</span>
+              <span v-else>DOSYA SEÇ</span>
+              <input type="file" accept="image/*" class="hidden" @change="e => e.target.files?.[0] && $emit('upload', e.target.files[0])">
+            </label>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <label class="flex items-center gap-3 p-4 bg-indigo-50 rounded-2xl cursor-pointer border border-indigo-100">
@@ -50,6 +58,6 @@
 
 <script setup>
 import { XMarkIcon } from '@heroicons/vue/24/outline'
-defineProps({ show: Boolean, isEditing: Boolean, form: Object, saving: Boolean })
-defineEmits(['close', 'save', 'generate-slug'])
+defineProps({ show: Boolean, isEditing: Boolean, form: Object, saving: Boolean, uploading: Boolean })
+defineEmits(['close', 'save', 'generate-slug', 'upload'])
 </script>

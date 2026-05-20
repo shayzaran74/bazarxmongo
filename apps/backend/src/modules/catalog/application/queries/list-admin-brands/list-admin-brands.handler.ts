@@ -7,19 +7,30 @@ import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.sch
 @QueryHandler(ListAdminBrandsQuery)
 export class ListAdminBrandsHandler implements IQueryHandler<ListAdminBrandsQuery> {
   async execute(query: ListAdminBrandsQuery) {
-    const { search, page = 1, limit = 50 } = query.filters;
+    const { search, status, letter, page = 1, limit = 50 } = query.filters;
     const skip = (page - 1) * limit;
-    const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
+    const filter: any = {};
+    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (status) filter.status = status;
+    if (letter && letter !== 'ALL') filter.name = { ...filter.name, $regex: `^${letter}`, $options: 'i' };
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total, pending] = await Promise.all([
       Brand.find(filter)
         .sort({ name: 1 })
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
       Brand.countDocuments(filter).exec(),
+      Brand.countDocuments({ status: 'PENDING' }).exec()
     ]);
 
-    return { items, total, page, limit };
+    // Normalize: bazı markalar id alanı olmadan sadece _id ile kaydedilmiş
+    const items = rawItems.map((b: any) => ({
+      ...b,
+      id: b.id || b._id?.toString(),
+    }));
+
+    return { items, total, pending, page, limit };
   }
 }

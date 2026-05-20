@@ -68,9 +68,11 @@
       :is-editing="isEditing"
       :form="formData"
       :saving="saving"
+      :uploading="uploading"
       @close="showModal = false"
       @save="saveBrand"
       @generate-slug="generateSlug"
+      @upload="handleUpload"
     />
 
     <BrandReviewModal
@@ -101,12 +103,12 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 useHead({ title: 'Marka Yönetimi - BazarX Admin' })
 
 const {
-  brands, loading, saving, brandStats,
+  brands, loading, saving, uploading, brandStats,
   currentTab, searchQuery, selectedLetter, currentPage, totalPages, totalItems,
   showModal, showReviewModal, isEditing, selectedBrand, rejectionReason, isPopularToggle,
   violations, violationsLoading, formData,
   fetchBrands, handleSearch, openReviewModal, approveBrand,
-  rejectBrand, deleteBrand, generateSlug, resolveImageUrl
+  rejectBrand, deleteBrand, generateSlug, resolveImageUrl, saveBrand, handleUpload
 } = useAdminBrands()
 
 // Map template function calls to actual composable exports
@@ -115,7 +117,6 @@ const rejectBrandApplication = (id) => rejectBrand(id, rejectionReason.value)
 const requestAdditionalDocs = (id) => { /* TODO: Implement if needed */ }
 const openViolationModal = (violation) => { /* TODO */ }
 const resolveViolationQuickly = (id) => { /* TODO */ }
-const saveBrand = () => { /* TODO: Implement if needed */ }
 
 const filteredBrands = computed(() => {
   if (currentTab.value === 'pending') {

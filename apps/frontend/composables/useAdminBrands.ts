@@ -1,6 +1,7 @@
 export const useAdminBrands = () => {
   const { $api } = useApi()
   const { $toast } = useNuxtApp() as any
+  const config = useRuntimeConfig()
 
   const brands = ref<any[]>([])
   const loading = ref(false)
@@ -13,6 +14,7 @@ export const useAdminBrands = () => {
   const totalItems = ref(0)
 
   const saving = ref(false);
+  const uploading = ref(false);
   const showModal = ref(false);
   const showReviewModal = ref(false);
   const isEditing = ref(false);
@@ -29,19 +31,19 @@ export const useAdminBrands = () => {
     try {
       const res = await $api<any>('/api/v1/admin/brands', {
         query: {
-          q: filters.search || undefined,
+          q: searchQuery.value || filters.search || undefined,
+          status: currentTab.value === 'pending' ? 'PENDING' : undefined,
+          letter: selectedLetter.value || undefined,
           limit: 100,
+          page: currentPage.value
         }
       })
-      // Backend returns { success: true, data: result }
-      // result can be array or { items: [], total: n }
       const data = res?.data
       brands.value = Array.isArray(data) ? data : (data?.items || [])
       totalItems.value = data?.total || brands.value.length
-      totalPages.value = Math.ceil(totalItems.value / 50) || 1
-      // Update stats based on fetched brands
-      brandStats.PENDING = brands.value.filter(b => b.status === 'PENDING').length;
-      brandStats.ALL = brands.value.length;
+      totalPages.value = Math.ceil(totalItems.value / 100) || 1
+      brandStats.PENDING = Array.isArray(data) ? brands.value.filter((b: any) => b.status === 'PENDING').length : (data?.pending || 0);
+      brandStats.ALL = totalItems.value;
     } catch {
       $toast.error('Markalar yüklenemedi')
     } finally {
@@ -49,9 +51,19 @@ export const useAdminBrands = () => {
     }
   }
 
+  // Watch pagination and filters
+  watch([currentPage], () => {
+    fetchBrands();
+  });
+
+  watch([searchQuery, selectedLetter, currentTab], () => {
+    currentPage.value = 1;
+    fetchBrands();
+  });
+
   const approveBrand = async (id: string) => {
     try {
-      await $api(`/api/admin/brands/${id}/approve`, { method: 'PUT' })
+      await $api(`/api/v1/admin/brands/${id}/approve`, { method: 'PUT' })
       $toast.success('Marka onaylandı')
       fetchBrands()
     } catch {
@@ -61,7 +73,7 @@ export const useAdminBrands = () => {
 
   const rejectBrand = async (id: string, reason: string) => {
     try {
-      await $api(`/api/admin/brands/${id}/reject`, {
+      await $api(`/api/v1/admin/brands/${id}/reject`, {
         method: 'PUT',
         body: { rejectionReason: reason }
       })
@@ -75,7 +87,7 @@ export const useAdminBrands = () => {
   const deleteBrand = async (id: string) => {
     if (!confirm('Bu markayı silmek istediğinizden emin misiniz?')) return
     try {
-      await $api(`/api/admin/brands/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/brands/${id}`, { method: 'DELETE' })
       $toast.success('Marka silindi')
       fetchBrands()
     } catch {
@@ -101,14 +113,20 @@ export const useAdminBrands = () => {
   };
 
   const handleSearch = () => {
+    currentPage.value = 1;
     fetchBrands();
   };
 
-  const resolveImageUrl = (url: string) => url || '/images/no-brand.png';
+  const resolveImageUrl = (url: string) => {
+    if (!url) return '/images/no-brand.png'
+    if (url.startsWith('http') || url.startsWith('data:')) return url
+    const cleanUrl = url.startsWith('/') ? url.slice(1) : url
+    return config.public.minioBase + '/' + cleanUrl
+  }
 
   const approveBrandApplication = async (id: string) => {
     try {
-      await $api(`/api/admin/brands/${id}/approve`, { method: 'PUT' })
+      await $api(`/api/v1/admin/brands/${id}/approve`, { method: 'PUT' })
       $toast.success('Marka onaylandı')
       fetchBrands()
     } catch {
@@ -118,7 +136,7 @@ export const useAdminBrands = () => {
 
   const rejectBrandApplication = async (id: string, reason?: string) => {
     try {
-      await $api(`/api/admin/brands/${id}/reject`, {
+      await $api(`/api/v1/admin/brands/${id}/reject`, {
         method: 'PUT',
         body: { rejectionReason: reason }
       })
@@ -139,18 +157,58 @@ export const useAdminBrands = () => {
     }
   }
 
+  const handleUpload = async (file: File) => {
+    if (!file) return
+    uploading.value = true
+
+    try {
+      const authStore = useAuthStore()
+      const token = authStore.token || useCookie('access_token').value
+
+      const body = new FormData()
+      body.append('file', file)
+
+      const uploadUrl = '/api/v1/upload?subPath=brands'
+      
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || `Upload başarısız: ${res.status}`)
+      }
+
+      const json = await res.json()
+      const url = json?.data?.url
+      if (url) {
+        formData.value.icon = url
+        $toast.success('Logo başarıyla yüklendi')
+      } else {
+        throw new Error('Sunucu URL döndürmedi')
+      }
+    } catch (e: any) {
+      $toast.error(e?.message || 'Görsel yüklenemedi')
+    } finally {
+      uploading.value = false
+    }
+  }
+
   const saveBrand = async () => {
     saving.value = true
     try {
       const payload = { ...formData.value }
       if (isEditing.value) {
-        await $api(`/api/admin/brands/${selectedBrand.value.id}`, {
+        const brandId = selectedBrand.value?.id || selectedBrand.value?._id
+        await $api(`/api/v1/admin/brands/${brandId}`, {
           method: 'PUT',
           body: payload
         })
         $toast.success('Marka güncellendi')
       } else {
-        await $api('/api/admin/brands', {
+        await $api('/api/v1/admin/brands', {
           method: 'POST',
           body: payload
         })
@@ -167,7 +225,7 @@ export const useAdminBrands = () => {
 
   const resolveViolationQuickly = async (v: any) => {
     try {
-      await $api(`/api/admin/brand-violations/${v.id}/resolve`, { method: 'PUT' })
+      await $api(`/api/v1/admin/brand-violations/${v.id}/resolve`, { method: 'PUT' })
       $toast.success('İhlal çözüldü olarak işaretlendi')
       fetchBrands()
     } catch {
@@ -182,7 +240,7 @@ export const useAdminBrands = () => {
   }
 
   return {
-    brands, loading, filters, saving, brandStats,
+    brands, loading, filters, saving, uploading, brandStats,
     currentTab, searchQuery, selectedLetter, currentPage, totalPages, totalItems,
     showModal, showReviewModal, isEditing, selectedBrand, rejectionReason, isPopularToggle,
     violations, violationsLoading, formData,
@@ -190,7 +248,6 @@ export const useAdminBrands = () => {
     handleSearch,
     openReviewModal,
     openEditBrand,
-    openNewBrand,
     generateSlug,
     resolveImageUrl,
     approveBrand,
@@ -202,5 +259,6 @@ export const useAdminBrands = () => {
     openViolationModal,
     deleteBrand,
     saveBrand,
+    handleUpload
   }
 }

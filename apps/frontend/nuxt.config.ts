@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     public: {
       // Prod'da nginx üzerinden /api/ prefix ile gidiyor
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:3001',
-      minioBase: process.env.NUXT_PUBLIC_MINIO_BASE || 'http://localhost:9000/bazarx-public',
+      minioBase: process.env.NUXT_PUBLIC_MINIO_BASE || 'http://localhost:9000/bazarx-media',
 
       // Socket.io — prod'da aynı origin, path /socket.io/
       // Nginx upstream ile backend'e yönleniyor
