@@ -9,6 +9,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { CreateVendorProductCommand } from '../application/commands/create-vendor-product.command';
@@ -18,6 +20,7 @@ import { ListVendorProductsQuery } from '../application/queries/list-vendor-prod
 import { BulkImportVendorProductsCommand } from '../application/commands/bulk-import-vendor-products.command';
 import { FileParserService } from '../application/services/file-parser.service';
 import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
+import { ITierBenefit, TierBenefit } from '@barterborsa/shared-persistence';
 
 interface AuthenticatedUser {
   id: string;
@@ -32,7 +35,7 @@ const ACCEPTED_MIME = [
   'application/json',
   'text/plain',
 ];
-const MAX_ROWS = 5_000;
+const DEFAULT_EXCEL_BATCH_LIMIT = 50;
 
 @ApiTags('Vendors-Products')
 @Controller('vendors/products')
@@ -47,6 +50,7 @@ export class VendorProductController {
     private readonly queryBus: QueryBus,
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly fileParser: FileParserService,
+    @InjectModel('TierBenefit') private readonly tierModel: Model<ITierBenefit>,
   ) {}
 
   @ApiOperation({ summary: 'Excel/CSV dosyasından toplu ürün içe aktar' })
@@ -93,10 +97,15 @@ export class VendorProductController {
     if (!vendorDoc) throw new BadRequestException('Satıcı hesabı bulunamadı');
 
     const vendorId = vendorDoc['id'] as string;
+    const vendorTier = vendorDoc['tier'] as string | undefined;
+
+    // Tier benefit excelBatchLimit zorlaması
+    const tierBenefit = await this.tierModel.findOne({ tier: vendorTier ?? 'CORE' }).lean<ITierBenefit>().exec();
+    const excelBatchLimit = tierBenefit?.excelBatchLimit ?? DEFAULT_EXCEL_BATCH_LIMIT;
 
     const isCSV  = /\.csv$/i.test(file.originalname)  || file.mimetype === 'text/csv';
     const isJSON = /\.json$/i.test(file.originalname) || file.mimetype === 'application/json';
-    this.logger.log(`[bulkImport] Dosya tipi: ${isCSV ? 'CSV' : isJSON ? 'JSON' : 'Excel'}, vendorId: ${vendorId}`);
+    this.logger.log(`[bulkImport] Dosya tipi: ${isCSV ? 'CSV' : isJSON ? 'JSON' : 'Excel'}, vendorId: ${vendorId}, tier: ${vendorTier}, excelBatchLimit: ${excelBatchLimit}`);
     const rows = isJSON
       ? this.fileParser.parseJSON(file.buffer.toString('utf-8'))
       : isCSV
@@ -107,9 +116,9 @@ export class VendorProductController {
     if (rows.length === 0) {
       throw new BadRequestException('Dosyada işlenebilir satır bulunamadı');
     }
-    if (rows.length > MAX_ROWS) {
+    if (rows.length > excelBatchLimit) {
       throw new BadRequestException(
-        `Maksimum ${MAX_ROWS.toLocaleString('tr-TR')} satır yüklenebilir (gönderilen: ${rows.length})`,
+        `${vendorTier ?? 'CORE'} paketi için Excel batch limiti ${excelBatchLimit.toLocaleString('tr-TR')} satırdır (gönderilen: ${rows.length}). Lütfen paketinizi yükseltin veya dosyayı parçalara ayırın.`,
       );
     }
 

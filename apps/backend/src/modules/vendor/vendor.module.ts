@@ -182,6 +182,7 @@ import { User, UserSchema } from '../../../../../packages/shared/shared-persiste
 import { UserProfile, UserProfileSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/userProfile.schema';
 import { Category, CategorySchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/category.schema';
 import { Listing, ListingSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/listing.schema';
+import { TierBenefit, TierBenefitSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/financial/tierBenefit.schema';
 
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
@@ -211,6 +212,7 @@ import { InventoryModule } from '../inventory/inventory.module';
       { name: 'UserProfile', schema: UserProfileSchema },
       { name: 'Category', schema: CategorySchema },
       { name: 'Listing', schema: ListingSchema },
+      { name: 'TierBenefit', schema: TierBenefitSchema },
     ]),
   ],
   controllers: [

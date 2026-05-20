@@ -1,7 +1,7 @@
 // apps/backend/src/modules/loyalty/infrastructure/persistence/mongo-loyalty.repositories.ts
 // ADR-005: Prisma→Mongoose geçiş — tüm repository'ler Mongoose Model kullanır
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as repo from '../../domain/repositories/loyalty.repository.interfaces';
@@ -17,6 +17,7 @@ import {
 
 @Injectable()
 export class MongoUserLevelRepository implements repo.IUserLevelRepository {
+  private readonly logger = new Logger(MongoUserLevelRepository.name);
   constructor(
     @InjectModel('UserLevel') private readonly model: Model<IUserLevel>,
   ) {}
@@ -25,18 +26,39 @@ export class MongoUserLevelRepository implements repo.IUserLevelRepository {
   async delete(_id: string) { return; }
 
   async findByUserId(userId: string) {
-    const raw = await this.model.findOne({ userId }).lean();
-    return raw ? LoyaltyMappers.userLevelToDomain(raw) : null;
+    try {
+      const raw = await this.model.findOne({ userId } as Record<string, unknown>).lean();
+      this.logger.debug(`findByUserId raw keys: ${raw ? Object.keys(raw).join(',') : 'null'}, userId typeof=${typeof raw?.userId}, userId value=${JSON.stringify(raw?.userId)}`);
+      return raw ? LoyaltyMappers.userLevelToDomain(raw) : null;
+    } catch (err: unknown) {
+      this.logger.error(`findByUserId failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
+    }
   }
 
   async save(entity: UserLevel) {
-    const data = LoyaltyMappers.userLevelToPersistence(entity);
-    const existing = await this.model.findOne({ userId: entity.getProps().userId }).lean();
-    if (existing) {
-      await this.model.updateOne({ userId: entity.getProps().userId }, { $set: data });
-    } else {
-      const newId = new Types.ObjectId().toString();
-      await this.model.create([{ _id: newId, id: newId, ...data }]);
+    try {
+      const props = entity.getProps();
+      this.logger.debug(`save props keys: ${Object.keys(props).join(',')}, userId=${JSON.stringify(props.userId)}, typeof=${typeof props.userId}`);
+      const userId = String(props.userId ?? '');
+      const filter = { userId } as Record<string, unknown>;
+      const updateData = {
+        $set: {
+          id: entity.id?.toString() ?? new Types.ObjectId().toString(),
+          userId,
+          currentXp: props.currentXp,
+          lifetimeXp: props.lifetimeXp,
+          level: props.level,
+          tierId: props.tierId ?? undefined,
+          isFirstOrder: props.isFirstOrder,
+          lastLoginBonusAt: props.lastLoginBonusAt ?? undefined,
+        },
+      };
+      const result = await this.model.updateOne(filter, updateData, { upsert: true });
+      this.logger.debug(`save result: matched=${result.matchedCount}, upserted=${result.upsertedCount}, modified=${result.modifiedCount}`);
+    } catch (err: unknown) {
+      this.logger.error(`save failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
     }
   }
 }

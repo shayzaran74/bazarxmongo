@@ -105,7 +105,7 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
     }
 
     // ── Sıralama: öne çıkan ürünler önce, sonra en yeni ─────────────────
-    const sort: Record<string, number> = {};
+    const sort: Record<string, 1 | -1> = {};
     if (!isFeatured && !isFlashSale && !isSpecialOffer) {
       sort.isFeatured = -1;
     }

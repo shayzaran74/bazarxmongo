@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-export const XpTransactionType = ['EARNED','SPENT','EXPIRED','ERODED','BONUS','REFERRAL','COMMISSION','SUBSCRIPTION','MENU','TRADE'] as const;
+export const XpTransactionType = ['EARNED','SPENT','EXPIRED','ERODED','BONUS','REFERRAL','COMMISSION','SUBSCRIPTION','MENU','TRADE','ADMIN_MANUAL'] as const;
 export type XpTransactionTypeType = typeof XpTransactionType[number];
 
 export interface IXpTransaction {
