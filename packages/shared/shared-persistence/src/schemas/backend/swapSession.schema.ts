@@ -3,7 +3,8 @@ import { Schema, model, Types } from 'mongoose';
 export const CollateralStatus = ['NONE','DEPOSITED','HELD','RELEASED','FORFEITED'] as const;
 export type CollateralStatusType = typeof CollateralStatus[number];
 
-export const SwapSessionStatus = ['PENDING','ACTIVE','SHIPPING','PARTIALLY_COMPLETED','COMPLETED','DISPUTED','CANCELLED','TIMEOUT'] as const;
+// PENDING_COLLATERAL: teminat bekleniyor (Master Plan v4.3 §2 — barter-rules.md)
+export const SwapSessionStatus = ['PENDING_COLLATERAL','PENDING','ACTIVE','SHIPPING','PARTIALLY_COMPLETED','COMPLETED','DISPUTED','CANCELLED','TIMEOUT'] as const;
 export type SwapSessionStatusType = typeof SwapSessionStatus[number];
 
 export interface ISwapSession {

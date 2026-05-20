@@ -1,212 +1,130 @@
 // apps/backend/src/modules/barter/application/services/swap-session.scheduler.ts
 // SwapSchedulerService — Master Plan v4.3 §2 SwapSession Zaman Aşımı
-// Her gece 02:00'de çalışır (BarterMatchScheduler'dan sonra).
-// Timeout geçen PENDING_COLLATERAL ve ACTIVE session'ları TIMEOUT'a geçirir.
+//
+// Zamanlama: Her gece 02:05 (BarterMatchScheduler 02:00'da çalışır, bu 5 dk sonra)
+//
+// Düzeltmeler (2026-05-21):
+//   1. setInterval → @Cron ile gerçek 02:05 zamanlaması
+//   2. deadlineAt → timeoutAt (schema field adı düzeltmesi)
+//   3. PENDING_COLLATERAL schema'ya eklendi
 
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
 import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
+import type { SwapSession } from '../../domain/entities/swap-session.entity';
 
-const TICK_INTERVAL_MS = 60 * 60 * 1000; // 1 saat
 const BATCH_SIZE = 50;
 
+const TIMEOUT_ELIGIBLE_STATUSES: SwapSessionStatus[] = [
+  SwapSessionStatus.PENDING_COLLATERAL,
+  SwapSessionStatus.ACTIVE,
+  SwapSessionStatus.SHIPPING,
+];
+
 @Injectable()
-export class SwapSchedulerService implements OnApplicationBootstrap, OnModuleDestroy {
+export class SwapSchedulerService {
   private readonly logger = new Logger(SwapSchedulerService.name);
-  private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    @Inject('ISwapSessionRepository') private readonly swapRepo: ISwapSessionRepository,
-    @Inject('ITradeOfferRepository') private readonly offerRepo: ITradeOfferRepository,
-    private readonly auditLog: AuditLogService,
-    private readonly financialGateway: FinancialGatewayService,
+    @Inject('ISwapSessionRepository') private readonly swapRepo:  ISwapSessionRepository,
+    @Inject('ITradeOfferRepository')  private readonly offerRepo: ITradeOfferRepository,
+    private readonly auditLog:        AuditLogService,
+    private readonly financialGateway:FinancialGatewayService,
   ) {}
 
-  onApplicationBootstrap(): void {
-    setTimeout(() => {
-      void this.checkTimeouts();
-      this.intervalHandle = setInterval(() => void this.checkTimeouts(), TICK_INTERVAL_MS);
-    }, 30_000); // Sistem yüklenene kadar 30 saniye bekle
-    this.logger.log('SwapSchedulerService başlatıldı');
-  }
-
-  onModuleDestroy(): void {
-    if (this.intervalHandle) {
-      clearInterval(this.intervalHandle);
-      this.intervalHandle = null;
-    }
-  }
-
-  /**
-   * checkTimeouts — Master Plan v4.3 §2
-   * Zaman aşımına uğramış swap session'ları TIMEOUT'a geçirir.
-   * 1. deadlineAt < now olan PENDING_COLLATERAL ve ACTIVE session'ları bul
-   * 2. Her birinde state machine üzerinden transitionTo(TIMEOUT) çağır
-   * 3. Audit log yaz
-   */
+  @Cron('5 2 * * *', { name: 'swapSessionTimeout', timeZone: 'Europe/Istanbul' })
   async checkTimeouts(): Promise<void> {
     const now = new Date();
+    this.logger.log(`SwapSession timeout taraması başladı — ${now.toISOString()}`);
 
-    try {
-      // 1. PENDING_COLLATERAL timeout — teminat yatırılmadan süre dolanlar
-      const pendingExpired = await this.swapRepo.findByStatusAndDeadlineBefore(
-        SwapSessionStatus.PENDING_COLLATERAL,
-        now,
-        BATCH_SIZE,
-      );
+    let totalTimedOut = 0;
 
-      if (pendingExpired.length > 0) {
-        this.logger.log(`${pendingExpired.length} PENDING_COLLATERAL session timeout'a geçiyor`);
-        for (const session of pendingExpired) {
-          await this.transitionToTimeout(session, 'Teminat yatırılmadan 30 gün geçti');
+    const reasonMap: Record<string, string> = {
+      [SwapSessionStatus.PENDING_COLLATERAL]: 'Teminat yatırılmadan 30 gün geçti',
+      [SwapSessionStatus.ACTIVE]:             'Takas oturumu 30 gün içinde tamamlanamadı',
+      [SwapSessionStatus.SHIPPING]:           'Gönderim tamamlanmadan süre doldu',
+    };
+
+    for (const status of TIMEOUT_ELIGIBLE_STATUSES) {
+      try {
+        const expired = await this.swapRepo.findByStatusAndDeadlineBefore(status, now, BATCH_SIZE);
+        if (expired.length === 0) continue;
+
+        this.logger.log(`${expired.length} ${status} session timeout'a geçiyor`);
+
+        for (const session of expired) {
+          await this.transitionToTimeout(session, reasonMap[status] ?? 'Süre aşımı');
+          totalTimedOut++;
         }
+      } catch (err: unknown) {
+        this.logger.error(`${status} timeout taraması hatası:`, err instanceof Error ? err.message : String(err));
       }
-
-      // 2. ACTIVE timeout — takas süreci tamamlanmadan süre dolanlar
-      const activeExpired = await this.swapRepo.findByStatusAndDeadlineBefore(
-        SwapSessionStatus.ACTIVE,
-        now,
-        BATCH_SIZE,
-      );
-
-      if (activeExpired.length > 0) {
-        this.logger.log(`${activeExpired.length} ACTIVE session timeout'a geçiyor`);
-        for (const session of activeExpired) {
-          await this.transitionToTimeout(session, 'Takas oturumu 30 gün içinde tamamlanamadı');
-        }
-      }
-
-      // 3. SHIPPING timeout — gönderim yapılmadan süre dolanlar (opsiyonel ek güvenlik)
-      const shippingExpired = await this.swapRepo.findByStatusAndDeadlineBefore(
-        SwapSessionStatus.SHIPPING,
-        now,
-        BATCH_SIZE,
-      );
-
-      if (shippingExpired.length > 0) {
-        this.logger.log(`${shippingExpired.length} SHIPPING session timeout'a geçiyor`);
-        for (const session of shippingExpired) {
-          await this.transitionToTimeout(session, 'Gönderim tamamlanmadan süre doldu');
-        }
-      }
-
-      if (
-        pendingExpired.length === 0 &&
-        activeExpired.length === 0 &&
-        shippingExpired.length === 0
-      ) {
-        this.logger.debug('Timeout geçen swap session bulunamadı');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      this.logger.error('SwapSchedulerService checkTimeouts hatası', { error: msg });
     }
+
+    this.logger.log(totalTimedOut > 0
+      ? `Timeout taraması tamamlandı — ${totalTimedOut} session TIMEOUT'a geçirildi`
+      : 'Timeout geçen swap session bulunamadı'
+    );
   }
 
-  private async transitionToTimeout(session: any, reason: string): Promise<void> {
+  async runManually(): Promise<void> {
+    this.logger.log('SwapSession timeout taraması manuel tetiklendi');
+    await this.checkTimeouts();
+  }
+
+  private async transitionToTimeout(session: SwapSession, reason: string): Promise<void> {
+    const props = session.getProps();
+    const hasHoldIds = props.fromCollateralHoldId && props.toCollateralHoldId;
+
     try {
-      const props = session;
-      const hasHoldIds = props.fromCollateralHoldId && props.toCollateralHoldId;
-
-      // Teminat iadesi — TIMEOUT durumunda her iki tarafın hold'larını geri al
       if (hasHoldIds) {
-        const timeoutBase = `swap-timeout-${session.id}`;
-        try {
-          // TIMEOUT = her iki taraf da onaylamadı → teminat iade
-          await this.financialGateway.refundFunds(
-            props.fromCollateralHoldId,
-            `${timeoutBase}-from-refund`,
-          );
-          await this.financialGateway.refundFunds(
-            props.toCollateralHoldId,
-            `${timeoutBase}-to-refund`,
-          );
-          this.logger.log('Timeout teminat iadeleri yapıldı', {
-            sessionId: session.id,
-            fromHoldId: props.fromCollateralHoldId,
-            toHoldId: props.toCollateralHoldId,
-          });
-        } catch (refundErr: unknown) {
-          const msg = refundErr instanceof Error ? refundErr.message : 'Bilinmeyen hata';
-          this.logger.error('Timeout teminat iadesi başarısız', {
-            sessionId: session.id,
-            error: msg,
-          });
-        }
+        await this.refundCollateral(session.id, props.fromCollateralHoldId!, props.toCollateralHoldId!);
       }
 
-      // Domain entity üzerinden validasyonlu geçiş
-      const domainSession = this.toDomainSession(session);
-      if (domainSession) {
-        domainSession.markTimeout();
-        await this.swapRepo.save(domainSession);
-      } else {
-        // Domain entity dönüştürme başarısız olursa direkt DB güncelle
-        await this.swapRepo.updateStatus(session.id, SwapSessionStatus.TIMEOUT);
-      }
+      session.markTimeout();
+      await this.swapRepo.save(session);
 
       await this.auditLog.log({
-        actorId: 'SYSTEM',
-        action: 'SWAP_SESSION_TIMEOUT',
+        actorId:      'SYSTEM',
+        action:       'SWAP_SESSION_TIMEOUT',
         resourceType: 'SwapSession',
-        resourceId: session.id,
-        newValue: {
+        resourceId:   session.id,
+        oldValue:     { status: props.status },
+        newValue:     {
+          status:            SwapSessionStatus.TIMEOUT,
           reason,
-          previousStatus: session.status,
-          newStatus: SwapSessionStatus.TIMEOUT,
-          deadlineAt: session.deadlineAt ? session.deadlineAt.toISOString() : null,
-          collateralReleased: hasHoldIds,
+          timeoutAt:         props.timeoutAt?.toISOString() ?? null,
+          collateralRefunded:hasHoldIds,
         },
       });
 
-      this.logger.log('Swap session timeout geçiş', {
-        sessionId: session.id,
-        reason,
-        collateralReleased: !!hasHoldIds,
-      });
+      this.logger.log('Session TIMEOUT', { id: session.id, reason, from: props.status });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      this.logger.error('Session timeout geçiş hatası', {
-        sessionId: session.id,
-        error: msg,
+      this.logger.warn(`Domain geçişi başarısız — direkt updateStatus: ${session.id}`);
+      await this.swapRepo.updateStatus(session.id, SwapSessionStatus.TIMEOUT);
+
+      await this.auditLog.log({
+        actorId:      'SYSTEM',
+        action:       'SWAP_SESSION_TIMEOUT_FALLBACK',
+        resourceType: 'SwapSession',
+        resourceId:   session.id,
+        newValue:     { reason, error: err instanceof Error ? err.message : String(err) },
       });
     }
   }
 
-  private toDomainSession(doc: any): any | null {
+  private async refundCollateral(sessionId: string, fromHoldId: string, toHoldId: string): Promise<void> {
+    const base = `swap-timeout-${sessionId}`;
     try {
-      const { SwapSession } = require('../../domain/entities/swap-session.entity');
-      return SwapSession.createFrom(
-        {
-          tradeOfferId: doc.tradeOfferId,
-          initiatorId: doc.initiatorId,
-          receiverId: doc.receiverId,
-          shipmentMode: doc.shipmentMode ?? 'CARRIER',
-          shipments: doc.shipments,
-          escrowId: doc.escrowId,
-          collateralAmount: doc.collateralAmount,
-          collateralCurrency: doc.collateralCurrency ?? 'TRY',
-          collateralStatus: doc.collateralStatus ?? 'PENDING',
-          collateralLockedAt: doc.collateralLockedAt,
-          collateralReleasedAt: doc.collateralReleasedAt,
-          status: doc.status,
-          fromCollateralHoldId: doc.fromCollateralHoldId,
-          toCollateralHoldId: doc.toCollateralHoldId,
-          timeoutAt: doc.deadlineAt,
-          completedAt: doc.completedAt,
-          cancelledAt: doc.cancelledAt,
-          disputedAt: doc.disputedAt,
-          parts: doc.parts ?? [],
-          createdAt: doc.createdAt,
-          updatedAt: doc.updatedAt,
-        },
-        doc.id,
-      );
-    } catch {
-      return null;
+      await this.financialGateway.refundFunds(fromHoldId, `${base}-from`);
+      await this.financialGateway.refundFunds(toHoldId,   `${base}-to`);
+      this.logger.log('Teminat iadesi tamamlandı', { sessionId });
+    } catch (err: unknown) {
+      this.logger.error('Teminat iadesi başarısız', { sessionId, error: err instanceof Error ? err.message : String(err) });
     }
   }
 }

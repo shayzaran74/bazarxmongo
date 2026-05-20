@@ -10,6 +10,8 @@ import { ICategoryRepository } from '../domain/repositories/category.repository.
 import { ISwapSessionRepository } from '../domain/repositories/swap-session.repository.interface';
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
+import { SwapSchedulerService } from '../application/services/swap-session.scheduler';
+import { SwapSessionStatus } from '../domain/enums/swap-session-status.enum';
 
 interface SurplusCategoryDto {
   name: string;
@@ -32,7 +34,8 @@ export class BarterAdminController {
     @Inject('ICategoryRepository') private readonly categoryRepo: ICategoryRepository,
     @Inject('ISwapSessionRepository') private readonly sessionRepo: ISwapSessionRepository,
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly financialGateway: FinancialGatewayService,
+    private readonly financialGateway:    FinancialGatewayService,
+    private readonly swapScheduler:       SwapSchedulerService,
   ) {}
 
   @ApiOperation({ summary: 'List all trade offers for admin' })
@@ -166,7 +169,56 @@ export class BarterAdminController {
   @ApiOperation({ summary: 'List demand matches' })
   @Get('demand-matches')
   async getDemandMatches(@Query('status') _status?: string) {
-    // DemandMatch Prisma'dan geliyor, şimdilik boş döndür
     return { success: true, data: [] };
+  }
+
+  // ── Timeout İzleme & Manuel Tetikleme ────────────────────────────────────
+
+  @ApiOperation({ summary: 'Timeout riski taşıyan swap session\'ları listele' })
+  @Get('timeout-monitor')
+  async getTimeoutMonitor(@Query('warningDays') warningDays = '3') {
+    const days     = Math.max(1, parseInt(warningDays, 10));
+    const now      = new Date();
+    const warnDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const { SwapSession } = require('@barterborsa/shared-persistence/schemas/backend/swapSession.schema');
+
+    const [alreadyTimedOut, soonExpiring, byStatus] = await Promise.all([
+      SwapSession.countDocuments({ status: SwapSessionStatus.TIMEOUT }),
+      SwapSession.find(
+        {
+          status: { $in: [SwapSessionStatus.PENDING_COLLATERAL, SwapSessionStatus.ACTIVE, SwapSessionStatus.SHIPPING] },
+          timeoutAt: { $lte: warnDate },
+        },
+        { id: 1, status: 1, timeoutAt: 1, initiatorId: 1, receiverId: 1 },
+      ).sort({ timeoutAt: 1 }).limit(50).lean(),
+      SwapSession.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const statusMap: Record<string, number> = {};
+    for (const row of byStatus) statusMap[row._id] = row.count;
+
+    return {
+      success: true,
+      data: {
+        stats:         statusMap,
+        alreadyTimedOut,
+        soonExpiring: {
+          withinDays: days,
+          count:      soonExpiring.length,
+          sessions:   soonExpiring,
+        },
+        nextCronRun: '02:05 Europe/Istanbul',
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Timeout cron\'unu manuel tetikle (test/acil durum)' })
+  @Post('run-timeout-check')
+  async runTimeoutCheck() {
+    await this.swapScheduler.runManually();
+    return { success: true, message: 'Timeout taraması tamamlandı — loglara bakın' };
   }
 }

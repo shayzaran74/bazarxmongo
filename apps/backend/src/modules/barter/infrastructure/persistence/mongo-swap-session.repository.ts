@@ -70,7 +70,7 @@ export class MongoSwapSessionRepository
     const docs = await this.model
       .find({
         status,
-        deadlineAt: { $lte: deadline },
+        timeoutAt: { $lte: deadline },
       })
       .limit(limit)
       .exec();
