@@ -12,24 +12,29 @@ BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar mod
 - Tier yönetim sistemi (VendorTier / LoyaltyTier / SubscriptionTier) — uçtan uca
 - Ürün görünürlük filtreleri (isFeatured, isFlashSale, isSpecialOffer, city, categoryId)
 - API rate limiting — tier bazlı (CORE:60 / PRIME:120 / ELITE:300 / APEX:1000 istek/dk)
-- SwapSession timeout cron — 3 kritik hata düzeltildi (`deadlineAt→timeoutAt`, `PENDING_COLLATERAL` schema, `setInterval→@Cron 02:05`)
-- TrustScore cron — 4 hata düzeltildi (level hesabı, auto-freeze, inactivity tracking, aylık/günlük @Cron)
+- SwapSession timeout cron — 3 kritik hata düzeltildi
+- TrustScore cron — 4 hata düzeltildi (level hesabı, auto-freeze, inactivity, @Cron)
 
-### BazarX-GO (Sprint 1-5 + Eksikler)
+### Vendor Tipi Ayrımı (COMMERCE / RESTAURANT)
+- `listing` şemasında `vendorType` alanı yok — Vendor join ile çözüldü
+- Public/marketplace: RESTAURANT listing'leri otomatik hariç
+- `vendorType=RESTAURANT` parametresiyle BazarX-GO endpoint'i ayrışıyor
+- Ana sayfa bileşenlerinin tümüne `vendorType=COMMERCE` eklendi
 
-**Sprint 1-4:** Menü devir, rezervasyon, sürpriz menü, FCM push, Haversine geofencing, bildirim servisi
+### BazarX-GO (Sprint 1-5 + Tüm Eksikler Tamamlandı)
 
-**Sprint 5:** Referans bonus algoritması (§7) — `calculateReferralBonus()`, 3. referansta ücretsiz QR, XP dağıtımı
-
-**Eksikler tamamlandı:**
-| Madde | Çözüm |
+| Madde | Durum |
 |---|---|
-| 15 gün aktivasyon bekleme | `RedeemMenuHandler` — subscriptionId+15 gün kontrolü, devir/Gel-Al muaf |
-| Gel-Al "üye olsaydın" huneri | `order-confirmation.vue` — tasarruf hesabı CTA |
-| Geofencing vendor koordinatları | `VendorProfile` lat/lng alanları, `GeofenceService` DB'den çekiyor |
-| Mail sağlayıcı | `MailService` — Resend API + SMTP fallback |
-| Erken iptal cezası | `CancelSubscriptionHandler` — 16. günden önce EARLY_CANCEL_PENALTY |
-| XP eşik admin konfigürasyonu | `GET/PATCH /admin/users/loyalty/xp-thresholds/:tier` + admin UI |
+| Menü devir, rezervasyon, sürpriz menü | ✅ |
+| FCM push, Haversine geofencing, bildirim | ✅ |
+| Referans bonus algoritması §7 | ✅ |
+| 15 gün aktivasyon bekleme + kupon kilidi | ✅ |
+| Gel-Al "üye olsaydın" huneri | ✅ |
+| Geofencing vendor koordinatları (VendorProfile lat/lng) | ✅ |
+| Mail sağlayıcı (Resend API + SMTP fallback) | ✅ |
+| Erken iptal cezası (EARLY_CANCEL_PENALTY) | ✅ |
+| XP eşik admin konfigürasyonu | ✅ |
+| Restoran detay sayfası fiyat/sıralama filtresi | ✅ |
 
 ---
 
@@ -67,16 +72,15 @@ BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar mod
 ## Çalıştırma
 
 ```bash
-pnpm -F @barterborsa/shared-core build  # ilk kurulumda
+pnpm -F @barterborsa/shared-core build
 pnpm dev
 npx tsx belge/seed/seed-all-mongo.js
 
 # .env:
-# RESEND_API_KEY=...  (yoksa SMTP fallback)
+# RESEND_API_KEY=...  FCM_SERVER_KEY=...
 # SMTP_HOST / SMTP_USER / SMTP_PASSWORD / SMTP_FROM
-# FCM_SERVER_KEY=...  (yoksa log modu)
 ```
 
 ---
 
-*Son güncelleme: 2026-05-21 | Branch: main | Commit: da5beb88*
+*Son güncelleme: 2026-05-21 | Branch: main | Commit: 5b4158d0*
