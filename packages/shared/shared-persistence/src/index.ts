@@ -99,6 +99,9 @@ export {
   GarageSalePurchase, IGarageSalePurchase, GarageSalePurchaseSchema,
 } from './schemas/backend/garageSale.schema';
 export { LaunchPartner, ILaunchPartner, LaunchPartnerSchema, LaunchPartnerPhase, LaunchPartnerPhaseType } from './schemas/backend/launchPartner.schema';
+// BazarX-GO ek şemalar
+export { MenuReservation, IMenuReservation, MenuReservationSchema, ReservationStatus, ReservationStatusType } from './schemas/backend/menuReservation.schema';
+export { SurpriseMenu, ISurpriseMenu, SurpriseMenuSchema, ISurpriseMenuTimeBlock } from './schemas/backend/surpriseMenu.schema';
 
 // Loyalty repository — Subscription/TrustScore/XP/Referral/Menu
 export * from './mongodb/loyalty/loyalty.repository';

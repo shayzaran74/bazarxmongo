@@ -5,11 +5,12 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection, Types, ClientSession } from 'mongoose';
-import { IMenuPurchase, IListing, IUserSubscription, IUserLevel, IXpTransaction } from '@barterborsa/shared-persistence';
+import { IMenuPurchase, IListing, IUserSubscription, IUserLevel, IXpTransaction, IMembershipPlan } from '@barterborsa/shared-persistence';
 import { PurchaseMenuCommand } from './purchase-menu.command';
 import { QrGeneratorService }  from '../services/qr-generator.service';
 import { MenuUsageTrackerService } from '../services/menu-usage-tracker.service';
 import { SubscriptionPricingService } from '../../../subscription/application/services/subscription-pricing.service';
+import { canAccessCategory } from '../../domain/menu-category.constants';
 
 interface RestaurantListingMetadata {
   dailyLimit?: number;
@@ -28,6 +29,7 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
     @InjectModel('MenuPurchase')     private readonly purchaseModel:  Model<IMenuPurchase>,
     @InjectModel('Listing')          private readonly listingModel:   Model<IListing>,
     @InjectModel('UserSubscription') private readonly subModel:       Model<IUserSubscription>,
+    @InjectModel('MembershipPlan')   private readonly planModel:      Model<IMembershipPlan>,
     @InjectModel('UserLevel')        private readonly userLevelModel: Model<IUserLevel>,
     @InjectModel('XpTransaction')    private readonly xpTxModel:      Model<IXpTransaction>,
     @InjectConnection()              private readonly connection:      Connection,
@@ -47,9 +49,25 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
       throw new BadRequestException('Bu işlem yalnızca restoran menüleri için geçerlidir.');
     }
 
-    const metadata     = ((listing as Record<string, unknown>).metadata as RestaurantListingMetadata) ?? {};
-    const dailyLimit   = metadata.dailyLimit;
+    const metadata      = ((listing as Record<string, unknown>).metadata as RestaurantListingMetadata) ?? {};
+    const dailyLimit    = metadata.dailyLimit;
     const originalPrice = parseFloat(listing.price.toString());
+    const menuCategory  = ((listing as Record<string, unknown>).menuCategory as number | undefined) ?? 6;
+
+    // §6 — Tier ↔ Kategori erişim kontrolü
+    if (useMenuCredit) {
+      const sub = await this.subModel.findOne({ userId, status: 'ACTIVE' }).lean();
+      if (sub) {
+        const plan = await this.planModel.findOne({ id: sub.planId }).lean();
+        const userTier = plan?.tier ?? 'BRONZE_P1';
+        if (!canAccessCategory(userTier, menuCategory)) {
+          throw new BadRequestException(
+            `${userTier} üyeliğiniz bu menü kategorisine erişim sağlamıyor. ` +
+            'Üyeliğinizi yükseltebilirsiniz.',
+          );
+        }
+      }
+    }
 
     if (dailyLimit && dailyLimit > 0) {
       const today = new Date();
@@ -90,6 +108,7 @@ export class PurchaseMenuHandler implements ICommandHandler<PurchaseMenuCommand>
             serviceFee:  d128(breakdown.serviceFee),
             vatAmount:   d128(breakdown.vatAmount),
             qrCode, qrExpiresAt, oneFreeQrCode,
+            menuCategory, isTransferred: false,
             status: 'ACTIVE', xpEarned: 5,
           }],
           { session },

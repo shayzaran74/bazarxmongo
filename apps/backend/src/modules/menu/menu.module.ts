@@ -1,7 +1,5 @@
 // apps/backend/src/modules/menu/menu.module.ts
-// BazarX Go: Restaurant + BazarXMenu DROP edildi.
-// Menü modülü artık QR satın alım + redemption + abonelik kredisi takibi ile sınırlıdır.
-// Restoran/menü oluşturma vendor + listing modülleri üzerinden yapılır.
+// BazarX-GO Sprint 1: Devir, Rezervasyon, Sürpriz Menü, Cron job'lar eklendi
 
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
@@ -10,7 +8,7 @@ import {
   MenuPurchaseSchema, MenuRedemptionSchema, LaunchPartnerSchema, ListingSchema,
   UserSubscriptionSchema, MembershipPlanSchema, MenuUsageSchema,
   UserLevelSchema, XpTransactionSchema, VendorSchema, UserProfileSchema,
-  MenuRightSchema,
+  MenuRightSchema, MenuReservationSchema, SurpriseMenuSchema,
 } from '@barterborsa/shared-persistence';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
@@ -18,23 +16,28 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { MenuController } from './presentation/menu.controller';
 import { MenuRedeemController } from './presentation/menu-redeem.controller';
 
-// Commands
-import { PurchaseMenuHandler } from './application/commands/purchase-menu.handler';
-import { ActivateOneFreeHandler } from './application/commands/activate-one-free.handler';
-import { RedeemMenuHandler } from './application/commands/redeem-menu.handler';
+// Commands — mevcut
+import { PurchaseMenuHandler }            from './application/commands/purchase-menu.handler';
+import { ActivateOneFreeHandler }          from './application/commands/activate-one-free.handler';
+import { RedeemMenuHandler }              from './application/commands/redeem-menu.handler';
 import { AdvanceLaunchPartnerPhaseHandler } from './application/commands/advance-launch-partner-phase.handler';
-import { DistributeFreeMenuHandler } from './application/commands/distribute-free-menu.handler';
+import { DistributeFreeMenuHandler }      from './application/commands/distribute-free-menu.handler';
+
+// Commands — Sprint 1 yeni
+import { TransferMenuHandler }     from './application/commands/transfer-menu.handler';
+import { CreateReservationHandler } from './application/commands/create-reservation.handler';
+import { UpdateSurpriseMenuHandler } from './application/commands/update-surprise-menu.handler';
 
 // Queries
-import { GetMyPurchasesHandler } from './application/queries/get-my-purchases.handler';
+import { GetMyPurchasesHandler }   from './application/queries/get-my-purchases.handler';
 import { GetLaunchPartnersHandler } from './application/queries/get-launch-partners.handler';
 
 // Services
-import { QrGeneratorService } from './application/services/qr-generator.service';
+import { QrGeneratorService }      from './application/services/qr-generator.service';
 import { MenuUsageTrackerService } from './application/services/menu-usage-tracker.service';
-// Master Plan §2.2 + §2.7 — Menü hakkı yönetimi (tier recalc + 30 gün grace)
-import { MenuRightsService } from './application/services/menu-rights.service';
+import { MenuRightsService }       from './application/services/menu-rights.service';
 import { MenuRightsCleanupService } from './application/services/menu-rights-cleanup.service';
+import { MenuCronService }         from './application/services/menu-cron.service';
 
 @Module({
   imports: [
@@ -43,6 +46,8 @@ import { MenuRightsCleanupService } from './application/services/menu-rights-cle
     MongooseModule.forFeature([
       { name: 'MenuPurchase',    schema: MenuPurchaseSchema },
       { name: 'MenuRedemption',  schema: MenuRedemptionSchema },
+      { name: 'MenuReservation', schema: MenuReservationSchema },
+      { name: 'SurpriseMenu',    schema: SurpriseMenuSchema },
       { name: 'LaunchPartner',   schema: LaunchPartnerSchema },
       { name: 'Listing',         schema: ListingSchema },
       { name: 'UserSubscription',schema: UserSubscriptionSchema },
@@ -57,15 +62,22 @@ import { MenuRightsCleanupService } from './application/services/menu-rights-cle
   ],
   controllers: [MenuController, MenuRedeemController],
   providers: [
+    // Services
     QrGeneratorService,
     MenuUsageTrackerService,
     MenuRightsService,
     MenuRightsCleanupService,
+    MenuCronService,
+    // Command Handlers
     PurchaseMenuHandler,
     ActivateOneFreeHandler,
     RedeemMenuHandler,
     AdvanceLaunchPartnerPhaseHandler,
     DistributeFreeMenuHandler,
+    TransferMenuHandler,
+    CreateReservationHandler,
+    UpdateSurpriseMenuHandler,
+    // Query Handlers
     GetMyPurchasesHandler,
     GetLaunchPartnersHandler,
   ],
