@@ -20,7 +20,7 @@ export class MongoUserLevelRepository implements repo.IUserLevelRepository {
   private readonly logger = new Logger(MongoUserLevelRepository.name);
   constructor(
     @InjectModel('UserLevel') private readonly model: Model<IUserLevel>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
@@ -54,8 +54,8 @@ export class MongoUserLevelRepository implements repo.IUserLevelRepository {
           lastLoginBonusAt: props.lastLoginBonusAt ?? undefined,
         },
       };
-      const result = await this.model.updateOne(filter, updateData, { upsert: true });
-      this.logger.debug(`save result: matched=${result.matchedCount}, upserted=${result.upsertedCount}, modified=${result.modifiedCount}`);
+      await this.model.findOneAndUpdate(filter, updateData, { upsert: true });
+      this.logger.debug(`UserLevel kaydedildi: userId=${userId}`);
     } catch (err: unknown) {
       this.logger.error(`save failed: ${err instanceof Error ? err.message : String(err)}`);
       throw err;
@@ -67,7 +67,7 @@ export class MongoUserLevelRepository implements repo.IUserLevelRepository {
 export class MongoXpTransactionRepository implements repo.IXpTransactionRepository {
   constructor(
     @InjectModel('XpTransaction') private readonly model: Model<IXpTransaction>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
@@ -96,14 +96,14 @@ export class MongoXpTransactionRepository implements repo.IXpTransactionReposito
 export class MongoXpBatchRepository implements repo.IXpBatchRepository {
   constructor(
     @InjectModel('XpBatch') private readonly model: Model<IXpBatch>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
 
   async save(entity: XpBatch) {
     const data = LoyaltyMappers.xpBatchToPersistence(entity);
-    const id   = entity.id.toString();
+    const id = entity.id.toString();
     await this.model.findOneAndUpdate(
       { id },
       { $set: { ...data, id } },
@@ -129,7 +129,7 @@ export class MongoXpBatchRepository implements repo.IXpBatchRepository {
 export class MongoMissionRepository implements repo.IMissionRepository {
   constructor(
     @InjectModel('Mission') private readonly model: Model<IMission>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
@@ -149,7 +149,7 @@ export class MongoMissionRepository implements repo.IMissionRepository {
 export class MongoUserMissionRepository implements repo.IUserMissionRepository {
   constructor(
     @InjectModel('UserMission') private readonly model: Model<IUserMission>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
@@ -182,7 +182,7 @@ export class MongoUserMissionRepository implements repo.IUserMissionRepository {
 export class MongoMilestoneTrackerRepository implements repo.IMilestoneTrackerRepository {
   constructor(
     @InjectModel('MilestoneTracker') private readonly model: Model<IMilestoneTracker>,
-  ) {}
+  ) { }
   async findById(_id: string) { return null; }
   async findAll() { return []; }
   async delete(_id: string) { return; }
@@ -191,15 +191,15 @@ export class MongoMilestoneTrackerRepository implements repo.IMilestoneTrackerRe
     const r = await this.model.findOne({ userId }).lean();
     return r
       ? (MilestoneTracker as unknown as { create: (d: unknown, id: string) => MilestoneTracker }).create(
-          { ...r, monthlySpendTotal: parseFloat((r as Record<string, unknown>).monthlySpendTotal?.toString() ?? '0') },
-          r.id,
-        )
+        { ...r, monthlySpendTotal: parseFloat((r as Record<string, unknown>).monthlySpendTotal?.toString() ?? '0') },
+        r.id,
+      )
       : null;
   }
 
   async save(entity: MilestoneTracker) {
     const props = entity.getProps();
-    const data  = { ...props, id: entity.id.toString() };
+    const data = { ...props, id: entity.id.toString() };
     await this.model.findOneAndUpdate(
       { userId: props.userId },
       { $set: data },
