@@ -193,7 +193,7 @@ export class AdminUserController {
     @Param('tier') tier: string,
     @Body('minXp') minXp: number,
     @Body('description') description?: string,
-  ) {
+  ): Promise<{ success: boolean; data: unknown; message: string }> {
     if (!minXp || minXp < 0) {
       throw new Error('Geçerli bir XP eşiği giriniz (≥0)');
     }

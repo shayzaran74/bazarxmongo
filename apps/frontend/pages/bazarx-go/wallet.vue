@@ -1,15 +1,6 @@
 <template>
   <div class="bazarx-go min-h-screen bg-[var(--bg)] text-[var(--ink)] antialiased">
 
-    <!-- CSS token tanımları (index.vue ile senkron) -->
-    <style>
-      .bazarx-go {
-        --bg: #fafaf8; --ink: #111; --brand: #ff6b35; --brand-deep: #c94b1f;
-        --brand-soft: #ff9e78; --surface: #f5f5f3; --surface-2: #ebebea;
-        --accent: #22c55e;
-      }
-    </style>
-
     <!-- Header -->
     <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-black/[0.06] shadow-sm">
       <div class="max-w-4xl mx-auto flex items-center justify-between px-5 py-4">
@@ -312,6 +303,11 @@ onMounted(fetchWallet)
 </script>
 
 <style scoped>
+.bazarx-go {
+  --bg: #fafaf8; --ink: #111; --brand: #ff6b35; --brand-deep: #c94b1f;
+  --brand-soft: #ff9e78; --surface: #f5f5f3; --surface-2: #ebebea;
+  --accent: #22c55e;
+}
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 </style>

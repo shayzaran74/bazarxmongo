@@ -1,13 +1,6 @@
 <template>
   <div class="bazarx-go min-h-screen bg-[var(--bg)] text-[var(--ink)] antialiased">
-    <style>
-      .bazarx-go {
-        --bg: #fafaf8; --ink: #111; --brand: #ff6b35; --brand-deep: #c94b1f;
-        --brand-soft: #ff9e78; --surface: #f5f5f3; --surface-2: #ebebea;
-      }
-    </style>
-
-    <!-- Header -->
+<!-- Header -->
     <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-black/[0.06]">
       <div class="max-w-2xl mx-auto flex items-center gap-4 px-5 py-4">
         <NuxtLink to="/bazarx-go" class="p-2 rounded-full hover:bg-[var(--surface)] transition-all">
@@ -287,3 +280,10 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.bazarx-go {
+  --bg: #fafaf8; --ink: #111; --brand: #ff6b35; --brand-deep: #c94b1f;
+  --brand-soft: #ff9e78; --surface: #f5f5f3; --surface-2: #ebebea;
+}
+</style>
