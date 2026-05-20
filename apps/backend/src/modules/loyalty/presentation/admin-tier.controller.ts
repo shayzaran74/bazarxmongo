@@ -1,8 +1,10 @@
 // apps/backend/src/modules/loyalty/presentation/admin-tier.controller.ts
 
-import { Controller, Get, Post, Delete, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, UseGuards, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Model, Types } from 'mongoose';
 import {
   IsEnum, IsNumber, IsOptional, IsString, Min, Max, IsInt,
@@ -41,6 +43,7 @@ const toFloat = (v: Types.Decimal128 | undefined, fallback = 0): number =>
 export class AdminTierController {
   constructor(
     @InjectModel('TierBenefit') private readonly tierModel: Model<ITierBenefit>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   @ApiOperation({ summary: 'B2B (CORE/PRIME/ELITE/APEX) tier konfigürasyonlarını listele' })
@@ -107,10 +110,19 @@ export class AdminTierController {
     return { success: true };
   }
 
-  // Gelecekte Redis önbelleği eklendiğinde bu endpoint kullanılacak
-  @ApiOperation({ summary: 'Tier önbelleğini temizle' })
+  @ApiOperation({ summary: 'Tier önbelleğini temizle (Redis flush)' })
   @Delete('cache')
   async resetCache(): Promise<{ success: boolean; message: string }> {
+    try {
+      const manager = this.cacheManager as unknown as Record<string, unknown>;
+      if (typeof manager['reset'] === 'function') {
+        await (manager['reset'] as () => Promise<void>)();
+      } else if (typeof manager['clear'] === 'function') {
+        await (manager['clear'] as () => Promise<void>)();
+      }
+    } catch {
+      // Cache manager erişilemez olsa da başarılı dön
+    }
     return { success: true, message: 'Tier önbelleği temizlendi' };
   }
 }

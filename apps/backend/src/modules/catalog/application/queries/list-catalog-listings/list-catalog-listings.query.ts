@@ -12,6 +12,8 @@ export class ListCatalogListingsQuery {
       scope?: string;
       // Konum filtresi — vendor profil şehrinden eşleştirilir
       city?: string;
+      // Kategori filtresi — CatalogProduct.categoryId üzerinden
+      categoryId?: string;
       // Ürün tipi filtreleri
       isFeatured?: boolean;
       isFlashSale?: boolean;

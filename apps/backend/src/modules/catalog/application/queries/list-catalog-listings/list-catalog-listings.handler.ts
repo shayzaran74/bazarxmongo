@@ -16,7 +16,7 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
 
   async execute(query: ListCatalogListingsQuery) {
     const { userId, userRole, filters } = query;
-    const { search, page = 1, limit = 50, city, isFeatured, isFlashSale, isSpecialOffer } = filters;
+    const { search, page = 1, limit = 50, city, categoryId, isFeatured, isFlashSale, isSpecialOffer } = filters;
     const skip = (page - 1) * limit;
 
     const roles      = Array.isArray(userRole) ? userRole : (userRole ? [userRole] : []);
@@ -60,6 +60,17 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
         { title: { $regex: search, $options: 'i' } },
         { sku:   { $regex: search, $options: 'i' } },
       ];
+    }
+
+    // ── Kategori filtresi — CatalogProduct.categoryId üzerinden ─────────
+    if (categoryId && categoryId.trim()) {
+      const { CatalogProduct: CP } = require('@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema');
+      const matchingProducts = await CP.find({ categoryId }, { id: 1 }).lean().exec() as { id: string }[];
+      const catalogIds = matchingProducts.map(p => p.id).filter(Boolean);
+      if (catalogIds.length === 0) {
+        return { items: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+      }
+      filter.catalogProductId = { $in: catalogIds };
     }
 
     // ── Şehir (konum) filtresi — vendor profil üzerinden ─────────────────

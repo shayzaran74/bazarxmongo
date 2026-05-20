@@ -33,22 +33,22 @@ const fetchHighlights = async () => {
 
     categories.value = catRes?.data ?? []
 
-    const items: Product[] = listingRes?.data?.items ?? []
+    // Ana kategorilerden ilk 4'ünü al, her biri için ayrı listing isteği
+    const topCategories = (catRes?.data ?? []).filter((c: Category) => !c.parentId).slice(0, 4)
 
-    // Kategori bazlı gruplama — her kategoriden max 8 ürün
-    const grouped: Record<string, Product[]> = {}
-    for (const item of items) {
-      const catId = (item as unknown as { category: string }).category
-      if (!catId) continue
-      if (!grouped[catId]) grouped[catId] = []
-      if (grouped[catId].length < 8) grouped[catId].push(item)
-    }
+    const categoryListings = await Promise.all(
+      topCategories.map((cat: Category) =>
+        $api<{ success: boolean; data: { items: Product[] } }>('/api/v1/listings/marketplace', {
+          query: { categoryId: cat.id, limit: 8 },
+        }).then(r => ({ catId: cat.id, items: r?.data?.items ?? [] }))
+          .catch(() => ({ catId: cat.id, items: [] as Product[] }))
+      )
+    )
 
-    // En az 3 ürünü olan kategorileri al, max 4 kategori göster
     bestSellersByCategory.value = Object.fromEntries(
-      Object.entries(grouped)
-        .filter(([, prods]) => prods.length >= 3)
-        .slice(0, 4)
+      categoryListings
+        .filter(cl => cl.items.length >= 3)
+        .map(cl => [cl.catId, cl.items])
     )
   } catch {
     // sessizce geç — bölüm gizlenir

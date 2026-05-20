@@ -57,6 +57,7 @@ export class ListingController {
     @Query('page')           page = '1',
     @Query('vendorType')     vendorType?: string,
     @Query('city')           city?: string,
+    @Query('categoryId')     categoryId?: string,
     @Query('isFeatured')     isFeatured?: string,
     @Query('isFlashSale')    isFlashSale?: string,
     @Query('isSpecialOffer') isSpecialOffer?: string,
@@ -65,7 +66,7 @@ export class ListingController {
     const data = await this.queryBus.execute(
       new ListCatalogListingsQuery(undefined, undefined, {
         search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50,
-        vendorType, scope: 'public', city,
+        vendorType, scope: 'public', city, categoryId,
         isFeatured:    parseBool(isFeatured),
         isFlashSale:   parseBool(isFlashSale),
         isSpecialOffer:parseBool(isSpecialOffer),
@@ -85,6 +86,7 @@ export class ListingController {
     @Query('vendorType')     vendorType?: string,
     @Query('scope')          scope?: string,
     @Query('city')           city?: string,
+    @Query('categoryId')     categoryId?: string,
     @Query('isFeatured')     isFeatured?: string,
     @Query('isFlashSale')    isFlashSale?: string,
     @Query('isSpecialOffer') isSpecialOffer?: string,
@@ -94,7 +96,7 @@ export class ListingController {
     const data = await this.queryBus.execute(
       new ListCatalogListingsQuery(user?.id, user?.role, {
         search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50,
-        vendorType, scope, city,
+        vendorType, scope, city, categoryId,
         isFeatured:    parseBool(isFeatured),
         isFlashSale:   parseBool(isFlashSale),
         isSpecialOffer:parseBool(isSpecialOffer),

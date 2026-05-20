@@ -6,97 +6,93 @@ BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar olm
 
 ---
 
-## Tamamlanan Geliştirmeler (Bu Oturum)
+## Tamamlanan Geliştirmeler
 
 ### 1. Tier Yönetim Sistemi (Uçtan Uca)
 
-#### Mimari
-- **3 ayrı tier sistemi** netleştirildi:
-  - `VendorTier` → B2B TicariTakas (CORE / PRIME / ELITE / APEX)
-  - `LoyaltyTier` → XP tabanlı sadakat (BRONZE → DIAMOND)
-  - `SubscriptionTier` → B2C abonelik (BRONZE_P1 → DIAMOND_P2)
+#### Mimari — 3 Ayrı Tier Sistemi
+| Sistem | Değerler | Koleksiyon | Amaç |
+|---|---|---|---|
+| VendorTier | CORE / PRIME / ELITE / APEX | `tier_benefits` | B2B TicariTakas komisyon/limit |
+| LoyaltyTier | BRONZE → DIAMOND | `membership_tiers` | XP tabanlı sadakat |
+| SubscriptionTier | BRONZE_P1 → DIAMOND_P2 | `user_subscriptions` | B2C ücretli abonelik |
 
-#### Schema Değişiklikleri
-- `tierBenefit.schema.ts` — `tier: B2BTierType` alanı + unique index eklendi
-- `xpSpendingLimitRule.schema.ts` — `tier` alanı eklendi, field aliaslar temizlendi
-- `shared-persistence/index.ts` — `TierBenefitSchema`, `ITierBenefit`, `B2BTierValues` export edildi
-
-#### Backend — Yeni Endpointler
+#### Backend Endpointler
 | Endpoint | Açıklama |
 |---|---|
 | `GET /admin/tiers` | B2B tier konfigürasyonlarını listele |
-| `POST /admin/tiers` | Tier konfigürasyonu oluştur/güncelle (upsert) |
-| `DELETE /admin/tiers/cache` | Tier önbelleğini temizle |
+| `POST /admin/tiers` | Tier konfigürasyonu oluştur/güncelle |
+| `DELETE /admin/tiers/cache` | Redis önbelleği temizle |
 | `GET /admin/users/loyalty` | Kullanıcı XP + loyalty tier listesi |
 | `PATCH /admin/users/:id/xp` | Manuel XP ekleme |
-| `GET /admin/loyalty/distribution-rules` | XP dağıtım kurallarını listele |
-| `POST /admin/loyalty/distribution-rules` | Kural oluştur |
-| `PUT /admin/loyalty/distribution-rules/:id` | Kural güncelle |
-| `POST /admin/loyalty/spending-rules` | Harcama limiti oluştur |
-| `PUT /admin/loyalty/spending-rules/:id` | Harcama limiti güncelle |
+| `GET/POST/PUT /admin/loyalty/distribution-rules` | XP dağıtım kuralları CRUD |
+| `POST/PUT /admin/loyalty/spending-rules` | Harcama limiti CRUD |
 
-#### Frontend — Yeni Admin Sayfaları
-| Sayfa | URL | İçerik |
-|---|---|---|
-| Tier Konfigürasyonu | `/admin/tier-management` | CORE/PRIME/ELITE/APEX parametrelerini düzenle |
-| Satıcı Tier Atama | `/admin/vendor-tiers` | Vendor'lara tier ata, filtrele, inline değiştir |
-| Kullanıcı Loyalty | `/admin/user-loyalty` | XP/tier görüntüle, manuel XP ekle |
-| Loyalty Ayarları | `/admin/loyalty` | 3 sekme: Genel / Dağıtım Kuralları / Harcama Limitleri |
-| Tier Bilgi | `/tier-info` | Vendor'a özel tier karşılaştırma + XP progress |
+#### Admin Sayfaları
+| Sayfa | URL |
+|---|---|
+| Tier Konfigürasyonu | `/admin/tier-management` |
+| Satıcı Tier Atama | `/admin/vendor-tiers` |
+| Kullanıcı Loyalty & XP | `/admin/user-loyalty` |
+| Loyalty Sistem Ayarları | `/admin/loyalty` (3 sekme) |
+| Tier Bilgi + Yükseltme | `/tier-info` |
 
 #### Seed Dosyaları
-- `seed-tier-benefits-mongo.js` — 4 B2B tier konfigürasyonu (tier_benefits koleksiyonu)
-- `seed-user-loyalty-tiers-mongo.js` — 5 loyalty tier tanımı + tüm kullanıcılara başlangıç user_level kaydı
+```bash
+npx tsx belge/seed/seed-tier-benefits-mongo.js     # 4 B2B tier konfigürasyonu
+npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_level kayıtları
+```
 
 ---
 
-### 2. Ürün Görünürlük Sistemi (Featured / Flash / Special / isActive)
+### 2. Ürün Görünürlük Sistemi
 
-#### Backend
-- `ListCatalogListingsQuery` — `city`, `isFeatured`, `isFlashSale`, `isSpecialOffer`, `isActive` filtre parametreleri
-- `ListCatalogListingsHandler`:
-  - `isActive: true` filtresi public sorgulara eklendi
-  - Şehir filtresi → `VendorProfile.city` üzerinden vendor join
-  - 4 flag MongoDB filter'a uygulandı
-  - Varsayılan sıralama: isFeatured önce, sonra createdAt desc
-  - Response'a `isFeatured`, `isFlashSale`, `isSpecialOffer`, `isActive`, `city` eklendi
-- `ListingController` — `/marketplace` ve `/listings` endpoint'lerine yeni query param'lar
-- `ListAdminProductsHandler` — 4 flag admin response'una dahil edildi
+#### Backend — `ListCatalogListingsHandler` Güncellemeleri
+- `isFeatured`, `isFlashSale`, `isSpecialOffer`, `isActive` MongoDB filtreleri
+- `categoryId` filtresi — CatalogProduct.categoryId üzerinden listing filtreleme ✅
+- `city` filtresi — VendorProfile.city join ✅
+- Varsayılan sıralama: isFeatured ürünler önce
+- Response'a 4 flag + city alanı eklendi
 
 #### Frontend
-- `AdminProductFilter.vue` — Şehir input + ✨ Featured / ⚡ Flash Sale / 🔥 Özel Fırsat checkbox filtreleri
-- `AdminProductTable.vue` — "Etiketler" kolonu (badge'ler)
-- `useAdminProducts.ts` — 4 yeni filtre state + API entegrasyonu
-- `AdminBulkUpdateModal.vue` — Zaten çalışıyordu, dokunulmadı
+- `AdminProductFilter.vue` — Şehir + ✨⚡🔥 checkbox filtreleri
+- `AdminProductTable.vue` — Badge kolonu
+- `useAdminProducts.ts` — 4 yeni filtre state
 
 ---
 
-### 3. Ana Sayfa Ürün Bölümleri
+### 3. Ana Sayfa Ürün Bölümleri (Düzeltildi)
 
-| Bileşen | Sorun | Çözüm |
+| Bileşen | Eski Endpoint | Yeni Endpoint |
 |---|---|---|
-| `HomeFlashSales.vue` | `/api/products` (yok) | `/api/v1/listings/marketplace?isFlashSale=true` |
-| `HomeSpecialOffers.vue` | `/api/products` (yok) | `/api/v1/listings/marketplace?isSpecialOffer=true` |
-| `HomePersonalizedProducts.vue` | `/api/products` (yok) + console.error | `/api/v1/listings/marketplace?isFeatured=true` + client sort |
-| `HomeCategoryHighlights.vue` | `/api/products/homepage-bulk` (yok) | Listing'leri çekip category bazlı client gruplama |
+| `HomeFlashSales` | `/api/products` (yok) | `/api/v1/listings/marketplace?isFlashSale=true` |
+| `HomeSpecialOffers` | `/api/products` (yok) | `/api/v1/listings/marketplace?isSpecialOffer=true` |
+| `HomePersonalizedProducts` | `/api/products` (yok) | `/api/v1/listings/marketplace?isFeatured=true` |
+| `HomeCategoryHighlights` | `/api/products/homepage-bulk` (yok) | Kategori başına `/marketplace?categoryId=X` |
+
+---
+
+### 4. Açık Konular — Tamamlandı ✅
+
+| Konu | Durum |
+|---|---|
+| `HomeCategoryHighlights` categoryId filtresi | ✅ Backend + frontend tamamlandı |
+| `VendorProfile.city` alanı | ✅ Zaten vardı (index ile) |
+| Subscription/Vendor tier yükseltme UI | ✅ `/tier-info` sayfasına CTA + modal eklendi |
+| `resetCache` Redis entegrasyonu | ✅ `CACHE_MANAGER` inject edildi, gerçek flush yapıyor |
+| ExcelBatch/API rate limit enforcement | ⏳ Schema var, middleware enforcement sonraki sprint |
 
 ---
 
 ## Mevcut Sistem Durumu
 
 ### Veritabanı (MongoDB)
-- **Motor**: MongoDB 7 (Mongoose ODM)
-- **Koleksiyonlar**: `listings`, `vendors`, `users`, `user_levels`, `membership_tiers`, `tier_benefits`, `xp_spending_limit_rules`, `xp_distribution_rules`, `tier_benefits`
-
-### Backend (NestJS)
-- **Port**: 3001 (REST) + 50051 (gRPC)
-- **Mimari**: CQRS + DDD + Outbox Pattern
-- **Auth**: JWT (Access + Refresh)
-
-### Frontend (Nuxt 3)
-- **Port**: 3002
-- **State**: Pinia
-- **Stil**: TailwindCSS
+| Koleksiyon | İçerik |
+|---|---|
+| `tier_benefits` | 4 B2B tier konfigürasyonu (CORE/PRIME/ELITE/APEX) |
+| `membership_tiers` | 5 loyalty tier tanımı (0/1K/5K/15K/50K XP) |
+| `user_levels` | Tüm kullanıcılar için XP kayıtları |
+| `listings` | Ürün ilanları (isFeatured/isFlashSale/isSpecialOffer/isActive flag'leri) |
 
 ### Servisler
 | Servis | Port | Durum |
@@ -111,15 +107,16 @@ BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar olm
 
 ---
 
-## Bilinen Açık Konular
+## Sonraki Sprint — Önerilen Konular
 
-| Konu | Öncelik | Not |
-|---|---|---|
-| `HomeCategoryHighlights` — categoryId filtresi backend'de yok | ORTA | Şu an client-side gruplama yapıyor |
-| `VendorProfile.city` schema'ya yoksa city filtresi boş döner | ORTA | VendorProfile koleksiyonunda `city` alanı olmalı |
-| Subscription tier yükseltme akışı (BRONZE_P1→DIAMOND_P2) | ORTA | Handler mevcut, UI akışı eksik |
-| `resetCache` endpoint'i Redis entegrasyonu | DÜŞÜK | Şu an no-op, gelecekte Redis flush |
-| `ExcelBatch` ve API rate limit zorlama | DÜŞÜK | Schema var, enforcement yok |
+| Konu | Öncelik |
+|---|---|
+| API rate limit middleware (tier_benefits.apiRatePerMin zorlama) | YÜKSEK |
+| Excel batch upload limit (tier_benefits.excelBatchLimit zorlama) | ORTA |
+| B2C subscription ödeme entegrasyonu (Iyzico) | YÜKSEK |
+| TrustScore algoritması cron job implementasyonu | ORTA |
+| SwapSession timeout cron job (her gece 02:00) | YÜKSEK |
+| BarterBorsa batch matching engine | YÜKSEK |
 
 ---
 
@@ -132,7 +129,7 @@ pnpm dev
 # Seed (ilk kurulum)
 npx tsx belge/seed/seed-all-mongo.js
 
-# Sadece tier seed
+# Bireysel seed
 npx tsx belge/seed/seed-tier-benefits-mongo.js
 npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js
 ```

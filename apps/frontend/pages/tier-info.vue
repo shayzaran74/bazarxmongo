@@ -158,6 +158,66 @@
       </div>
     </section>
 
+    <!-- ── TIER YÜKSELTMESİ CTA ─────────────────────────────────────────── -->
+    <section v-if="currentVendorTier !== 'APEX'" class="max-w-4xl mx-auto px-6 py-8">
+      <div
+        class="rounded-[2rem] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8"
+        :style="{ background: currentTierData?.bgGradient }"
+      >
+        <div class="space-y-2">
+          <p class="text-[10px] font-black uppercase tracking-widest opacity-70">MEVCUT SEVİYENİZ</p>
+          <h2 class="text-3xl font-black italic uppercase tracking-tighter">{{ currentTierData?.nametr }} → {{ TIER_BENEFITS[nextTierKey!]?.nametr }}</h2>
+          <p class="text-sm font-bold opacity-80">Tier yükseltmek için son 1 ayda {{ formatCurrency(TIER_BENEFITS[currentVendorTier].limits.barterPoolLimit ? TIER_BENEFITS[currentVendorTier].limits.barterPoolLimit! * 5 : 0) }} ciro şartı aranır.</p>
+        </div>
+        <button
+          :disabled="upgrading"
+          class="shrink-0 bg-white font-black text-[11px] uppercase tracking-widest px-10 py-5 rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+          :style="{ color: currentTierData?.color }"
+          @click="openUpgradeModal"
+        >
+          {{ upgrading ? 'İşleniyor...' : `${TIER_BENEFITS[nextTierKey!]?.nametr} Tier\'e Yükselt →` }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Yükseltme Modalı -->
+    <div v-if="upgradeModal" class="fixed inset-0 z-[300] flex items-center justify-center px-4">
+      <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="upgradeModal = false" />
+      <div class="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-10 space-y-8">
+        <div>
+          <h2 class="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">Tier Yükseltme</h2>
+          <p class="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">{{ currentVendorTier }} → {{ nextTierKey }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-6 space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="font-bold text-gray-600">Yeni yıllık aidat</span>
+            <span class="font-black text-gray-900">{{ nextTierKey ? formatCurrency(TIER_BENEFITS[nextTierKey].limits.dailyWithdraw * 10) : '—' }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="font-bold text-gray-600">Komisyon indirimi</span>
+            <span class="font-black text-green-600">%{{ nextTierKey ? ((TIER_BENEFITS[currentVendorTier].commissionRate.cash - TIER_BENEFITS[nextTierKey].commissionRate.cash) * 100).toFixed(0) : 0 }} tasarruf</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="font-bold text-gray-600">XP ile ödeme (maks %50)</span>
+            <span class="font-black text-indigo-600">{{ xpData.currentXp.toLocaleString('tr-TR') }} XP mevcut</span>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Kullanılacak XP Miktarı</label>
+          <input v-model.number="xpToUse" type="number" min="0" :max="xpData.currentXp"
+            class="w-full bg-neutral-50 border-2 border-transparent rounded-2xl px-5 py-4 text-sm font-black focus:border-indigo-500 outline-none transition-all" />
+        </div>
+        <div class="flex gap-4 pt-2">
+          <button class="px-8 py-4 rounded-2xl text-[10px] font-black text-gray-400 hover:text-gray-900 uppercase tracking-widest" @click="upgradeModal = false">Vazgeç</button>
+          <button :disabled="upgrading"
+            class="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
+            @click="confirmUpgrade">
+            {{ upgrading ? 'Yükseltiliyor...' : 'Yükseltmeyi Onayla' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── SSS ───────────────────────────────────────────────────────────── -->
     <section class="max-w-3xl mx-auto px-6 pb-20 space-y-6">
       <h2 class="text-2xl font-black italic uppercase tracking-tighter text-gray-900 text-center">Sıkça Sorulan Sorular</h2>
@@ -228,7 +288,40 @@ const xpData = ref<XpState>({
   nextTierMinXp: 1000,
   isMaxTier: false,
 })
-const openFaq = ref<number | null>(null)
+const openFaq    = ref<number | null>(null)
+const upgradeModal = ref(false)
+const upgrading    = ref(false)
+const xpToUse      = ref(0)
+
+const TIER_ORDER: TierKey[] = ['CORE', 'PRIME', 'ELITE', 'APEX']
+const nextTierKey = computed<TierKey | null>(() => {
+  const idx = TIER_ORDER.indexOf(currentVendorTier.value)
+  return idx >= 0 && idx < TIER_ORDER.length - 1 ? TIER_ORDER[idx + 1] : null
+})
+
+const openUpgradeModal = (): void => {
+  xpToUse.value = 0
+  upgradeModal.value = true
+}
+
+const confirmUpgrade = async (): Promise<void> => {
+  if (!nextTierKey.value) return
+  upgrading.value = true
+  try {
+    await $api('/api/v1/subscriptions/upgrade', {
+      method: 'POST',
+      body: { newTier: nextTierKey.value, xpAmount: xpToUse.value },
+    })
+    currentVendorTier.value = nextTierKey.value
+    upgradeModal.value = false
+    useNuxtApp().$toast?.success(`${TIER_BENEFITS[nextTierKey.value].nametr} tier'a yükseltildiniz!`)
+  } catch (error: unknown) {
+    const msg = (error as { data?: { message?: string } })?.data?.message
+    useNuxtApp().$toast?.error(msg ?? 'Yükseltme işlemi başarısız')
+  } finally {
+    upgrading.value = false
+  }
+}
 
 // ── Computed ─────────────────────────────────────────────────────────────────
 
