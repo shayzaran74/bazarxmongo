@@ -13,8 +13,9 @@ import {
 import { SubscriptionModule } from '../subscription/subscription.module';
 
 // Controllers
-import { MenuController } from './presentation/menu.controller';
+import { MenuController }      from './presentation/menu.controller';
 import { MenuRedeemController } from './presentation/menu-redeem.controller';
+import { MenuAdminController }  from './presentation/menu-admin.controller';
 
 // Commands — mevcut
 import { PurchaseMenuHandler }            from './application/commands/purchase-menu.handler';
@@ -60,7 +61,7 @@ import { MenuCronService }         from './application/services/menu-cron.servic
       { name: 'MenuRight',       schema: MenuRightSchema },
     ]),
   ],
-  controllers: [MenuController, MenuRedeemController],
+  controllers: [MenuController, MenuRedeemController, MenuAdminController],
   providers: [
     // Services
     QrGeneratorService,

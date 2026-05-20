@@ -119,6 +119,14 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
         { label: 'Yardım Merkezi', to: '/admin/help', icon: QuestionMarkCircleIcon }
       ]
     },
+    {
+      title: 'BazarX-GO',
+      items: [
+        { label: 'Restoran Anlaşmaları', to: '/admin/go/restaurants', icon: BuildingOfficeIcon },
+        { label: 'Kârlılık Dashboard',  to: '/admin/go/revenue',     icon: ChartBarIcon },
+        { label: 'Rezervasyonlar',       to: '/admin/go/reservations', icon: ClipboardDocumentListIcon },
+      ]
+    },
     ...(isSuperAdmin ? [
       {
         title: 'Super Admin',
