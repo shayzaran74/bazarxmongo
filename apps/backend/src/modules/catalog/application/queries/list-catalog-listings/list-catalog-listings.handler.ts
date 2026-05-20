@@ -17,6 +17,7 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
   async execute(query: ListCatalogListingsQuery) {
     const { userId, userRole, filters } = query;
     const { search, page = 1, limit = 50, city, categoryId, isFeatured, isFlashSale, isSpecialOffer } = filters;
+    const publicVendorId = filters.vendorId; // belirli vendor'ı public sorgula
     const skip = (page - 1) * limit;
 
     const roles      = Array.isArray(userRole) ? userRole : (userRole ? [userRole] : []);
@@ -52,14 +53,21 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
     if (isFlashSale !== undefined) filter.isFlashSale   = isFlashSale;
     if (isSpecialOffer !== undefined) filter.isSpecialOffer = isSpecialOffer;
 
-    // ── VendorType filtresi — Vendor koleksiyonu join (Listing'de alan yok) ──
+    // ── VendorType / VendorId filtresi ──────────────────────────────────────
     // RESTAURANT vendor'ları yalnızca BazarX-GO'da görünür.
-    // Public/marketplace scope'ta varsayılan olarak RESTAURANT'lar hariç tutulur.
+    // Kural özeti:
+    //   - Belirli vendorId istendi → o vendor'ın tip'ine göre izin ver
+    //   - vendorType=RESTAURANT → sadece restoranlar (BazarX-GO)
+    //   - Diğer public sorgular → RESTAURANT'lar hariç (marketplace)
     if (!isAdmin && !isVendorScope) {
       const requestedType = filters.vendorType ?? '';
 
-      if (requestedType === 'RESTAURANT') {
-        // BazarX-GO: sadece RESTAURANT vendor'larının listelerini göster
+      if (publicVendorId) {
+        // Belirli bir vendor'ın ürünleri isteniyor (restoran profil sayfası vb.)
+        // O vendor'ı doğrudan göster, tip kısıtlaması yapma
+        filter.vendorId = publicVendorId;
+      } else if (requestedType === 'RESTAURANT') {
+        // BazarX-GO genel liste: sadece RESTAURANT vendor'larının listing'leri
         const restVendors = await Vendor.find({ vendorType: 'RESTAURANT' }, { id: 1 }).lean().exec();
         const restIds = (restVendors as { id: string }[]).map(v => v.id);
         if (restIds.length === 0) {
@@ -67,17 +75,11 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
         }
         filter.vendorId = { $in: restIds };
       } else {
-        // Marketplace/homepage: RESTAURANT vendor'larını hariç tut
+        // Marketplace/homepage: RESTAURANT'ları hariç tut
         const restVendors = await Vendor.find({ vendorType: 'RESTAURANT' }, { id: 1 }).lean().exec();
         const restIds = (restVendors as { id: string }[]).map(v => v.id);
         if (restIds.length > 0) {
           filter.vendorId = { $nin: restIds };
-        }
-        // Belirli bir COMMERCE tipi istenmişse ekle
-        if (requestedType && requestedType !== 'RESTAURANT') {
-          const typeVendors = await Vendor.find({ vendorType: requestedType }, { id: 1 }).lean().exec();
-          const typeIds = (typeVendors as { id: string }[]).map(v => v.id);
-          filter.vendorId = restIds.length > 0 ? { $in: typeIds } : { $in: typeIds };
         }
       }
     }

@@ -9,6 +9,7 @@ export class ListCatalogListingsQuery {
       page?: number;
       limit?: number;
       vendorType?: string;
+      vendorId?: string;   // belirli bir vendor'ın ürünlerini getir (public restoran sayfası)
       scope?: string;
       // Konum filtresi — vendor profil şehrinden eşleştirilir
       city?: string;

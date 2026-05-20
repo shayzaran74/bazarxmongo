@@ -78,7 +78,10 @@ export const useVendorService = () => {
         },
 
         async getVendorProducts(vendorId: string | number, params: Record<string, unknown> = {}): Promise<ApiResponse<PaginatedResponse<Product>>> {
-            return $api<PaginatedResponse<Product>>('/api/products', { query: { vendorId, ...params } })
+            // /api/v1/listings/marketplace?vendorId=X — RESTAURANT dahil tüm tipler için çalışır
+            return $api<PaginatedResponse<Product>>('/api/v1/listings/marketplace', {
+                query: { vendorId, ...params }
+            })
         },
 
         async followVendor(vendorId: string | number): Promise<ApiResponse<unknown>> {

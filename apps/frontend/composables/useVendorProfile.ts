@@ -69,10 +69,14 @@ export const useVendorProfile = () => {
 
             const response = await vendorService.getVendorProducts(route.params.id as string, cleanParams)
             if (response.success && response.data) {
-                const fetchedItems = (response.data as any).items || (response.data as any).data || response.data || []
+                // listings/marketplace → { data: { items: [], pagination: {} } }
+                const payload = response.data as any
+                const fetchedItems = payload?.items ?? payload?.data?.items ?? payload?.data ?? payload ?? []
                 if (append) products.value = [...products.value, ...fetchedItems]
                 else products.value = fetchedItems
-                totalProducts.value = response.pagination?.total || 0
+                totalProducts.value = (response as any).data?.pagination?.total
+                    ?? (response as any).pagination?.total
+                    ?? fetchedItems.length
             }
         } catch (error) {
             console.error('Fetch products error:', error)

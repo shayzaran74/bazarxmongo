@@ -58,6 +58,7 @@ export class ListingController {
     @Query('vendorType')     vendorType?: string,
     @Query('city')           city?: string,
     @Query('categoryId')     categoryId?: string,
+    @Query('vendorId')       vendorId?: string,
     @Query('isFeatured')     isFeatured?: string,
     @Query('isFlashSale')    isFlashSale?: string,
     @Query('isSpecialOffer') isSpecialOffer?: string,
@@ -66,7 +67,7 @@ export class ListingController {
     const data = await this.queryBus.execute(
       new ListCatalogListingsQuery(undefined, undefined, {
         search, page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 50,
-        vendorType, scope: 'public', city, categoryId,
+        vendorType, vendorId, scope: 'public', city, categoryId,
         isFeatured:    parseBool(isFeatured),
         isFlashSale:   parseBool(isFlashSale),
         isSpecialOffer:parseBool(isSpecialOffer),

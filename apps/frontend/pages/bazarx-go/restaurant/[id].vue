@@ -639,7 +639,8 @@ const { vendor: vendorData, products: vendorProducts, fetchVendor, fetchProducts
 onMounted(async () => {
   await Promise.all([
     fetchVendor(),
-    fetchProducts({ limit: 100 })
+    // vendorId handler'da özel vendorId filtresini tetikler (RESTAURANT exclusion bypass)
+    fetchProducts({ limit: 100, vendorId: restaurantId })
   ])
   
   if (menuCategories.value.length > 0) {
