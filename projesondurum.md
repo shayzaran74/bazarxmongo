@@ -92,21 +92,18 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 | ELITE | 300 istek/dk |
 | APEX | 1000 istek/dk |
 
-**Bypass Kuralları:**
-- `@SkipTierRateLimit()` dekoratörü ile endpoint seviyesinde
-- ADMIN / SUPER_ADMIN — otomatik bypass
-- Giriş yapmamış kullanıcılar — otomatik bypass
+**Bypass:** `@SkipTierRateLimit()`, ADMIN/SUPER_ADMIN, giriş yapmamış kullanıcılar
 
-**429 Response:**
-```json
-{
-  "statusCode": 429,
-  "message": "CORE tier için dakikalık API limiti (60 istek) aşıldı.",
-  "tier": "CORE",
-  "limit": 60,
-  "resetAt": "2026-05-20T15:43:00.000Z"
-}
-```
+---
+
+### 5. Build Hataları — Düzeltildi ✅
+
+| Hata | Kök Neden | Çözüm |
+|---|---|---|
+| `delivery-service: Cannot find module './domain/entity.base'` | `shared-core/dist/` stale — `tsbuildinfo` eskiydi, tsc sıfır output üretiyordu | `rm tsconfig.tsbuildinfo && tsc` ile clean rebuild |
+| `backend TS2339: Property 'ok' does not exist` | `findOneAndUpdate({ rawResult: true })` Mongoose Document tipini yanlış çıkarıyordu | `rawResult` kaldırıldı, debug log sadeleştirildi |
+
+> **⚠️ Not:** `shared-core/dist/` gitignore'da. Yeni klonlarda veya CI/CD'de `pnpm -F @barterborsa/shared-core build` çalıştırılmalı.
 
 ---
 
@@ -119,6 +116,7 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 | Vendor tier yükseltme UI | ✅ `/tier-info` CTA + modal |
 | `resetCache` Redis entegrasyonu | ✅ CACHE_MANAGER flush |
 | API rate limit middleware | ✅ TierRateLimitGuard |
+| Build hataları (delivery-service + backend TS) | ✅ |
 
 ---
 
@@ -140,6 +138,7 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 | Backend (NestJS) | 3001 | ✅ |
 | Frontend (Nuxt 3) | 3002 | ✅ |
 | Financial Service | 3004 | ✅ |
+| Delivery Service | 3003 | ✅ (shared-core rebuild sonrası) |
 | MongoDB | 27017 | ✅ |
 | Redis | 6380 | ✅ |
 | MinIO | 9000/9001 | ✅ |
@@ -151,38 +150,21 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 
 | Konu | Öncelik |
 |---|---|
-| Excel batch upload limit (tier_benefits.excelBatchLimit zorlama) | ✅ TAMAMLANDI |
+| Excel batch upload limit (excelBatchLimit zorlama) | ORTA |
 | B2C subscription ödeme entegrasyonu (Iyzico) | YÜKSEK |
-| TrustScore algoritması cron job implementasyonu | ORTA |
+| TrustScore algoritması cron job | ORTA |
 | SwapSession timeout cron job (her gece 02:00) | YÜKSEK |
 | BarterBorsa batch matching engine | YÜKSEK |
-
----
-
-## Tamamlanan Geliştirmeler — 2026-05-20 Güncelleme
-
-### 5. Excel Batch Upload Limit Zorlama ✅
-
-**Dosyalar:**
-- `apps/backend/src/modules/vendor/presentation/vendor-product.controller.ts`
-- `apps/backend/src/modules/vendor/vendor.module.ts`
-
-**Akış:**
-```
-bulkImport → tier_benefits.excelBatchLimit sorgula → rows > limit → 400 BadRequestException
-```
-
-**Detay:**
-- Vendor'ın `vendor.tier` değerine göre `TierBenefit` dokümanından `excelBatchLimit` çekiliyor
-- Varsayılan limit: 50 satır (CORE paketi için)
-- Aşım durumunda Türkçe hata mesajı + paket yükseltme önerisi dönüyor
-- Admin panelden her tier için ayrı limit tanımlanabilir (CORE: 50, PRIME: 100, ELITE: 200, APEX: 500)
+| shared-core build adımını CI/CD pipeline'a ekle | YÜKSEK |
 
 ---
 
 ## Çalıştırma
 
 ```bash
+# shared-core (ilk kurulum veya kaynak değişikliğinde)
+pnpm -F @barterborsa/shared-core build
+
 # Tüm servisler
 pnpm dev
 
@@ -192,4 +174,4 @@ npx tsx belge/seed/seed-all-mongo.js
 
 ---
 
-*Son güncelleme: 2026-05-20 16:47 | Branch: main | Commit: (typescript fix + excelBatchLimit enforcement)*
+*Son güncelleme: 2026-05-20 | Branch: main | Commit: c1b1ea69*
