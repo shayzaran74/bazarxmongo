@@ -1,8 +1,8 @@
-# BazarX Proje Son Durum — 2026-05-20
+# BazarX Proje Son Durum — 2026-05-21
 
 ## Genel Bakış
 
-BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar olmak üzere dört ana modülden oluşan çok platformlu bir ticaret ekosistemidir.
+BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar olmak üzere dört ana modülden oluşan çok platformlu bir ticaret ekosistemidir. **BazarX-GO** O2O (Online-to-Offline) yiyecek/içecek deneyim modülü olarak ayrıca geliştirilmektedir.
 
 ---
 
@@ -10,113 +10,103 @@ BazarX; TicariTakas (B2B Barter), BazarX (Marketplace), BarterBorsa ve Pazar olm
 
 ### 1. Tier Yönetim Sistemi (Uçtan Uca)
 
-#### Mimari — 3 Ayrı Tier Sistemi
+#### 3 Ayrı Tier Sistemi
 | Sistem | Değerler | Koleksiyon | Amaç |
 |---|---|---|---|
 | VendorTier | CORE / PRIME / ELITE / APEX | `tier_benefits` | B2B TicariTakas komisyon/limit |
 | LoyaltyTier | BRONZE → DIAMOND | `membership_tiers` | XP tabanlı sadakat |
 | SubscriptionTier | BRONZE_P1 → DIAMOND_P2 | `user_subscriptions` | B2C ücretli abonelik |
 
-#### Backend Endpointler
-| Endpoint | Açıklama |
-|---|---|
-| `GET /admin/tiers` | B2B tier konfigürasyonlarını listele |
-| `POST /admin/tiers` | Tier konfigürasyonu oluştur/güncelle |
-| `DELETE /admin/tiers/cache` | Redis önbelleği temizle |
-| `GET /admin/users/loyalty` | Kullanıcı XP + loyalty tier listesi |
-| `PATCH /admin/users/:id/xp` | Manuel XP ekleme |
-| `GET/POST/PUT /admin/loyalty/distribution-rules` | XP dağıtım kuralları CRUD |
-| `POST/PUT /admin/loyalty/spending-rules` | Harcama limiti CRUD |
-
 #### Admin Sayfaları
-| Sayfa | URL |
-|---|---|
-| Tier Konfigürasyonu | `/admin/tier-management` |
-| Satıcı Tier Atama | `/admin/vendor-tiers` |
-| Kullanıcı Loyalty & XP | `/admin/user-loyalty` |
-| Loyalty Sistem Ayarları | `/admin/loyalty` (3 sekme) |
-| Tier Bilgi + Yükseltme | `/tier-info` |
-
-#### Seed Dosyaları
-```bash
-npx tsx belge/seed/seed-tier-benefits-mongo.js     # 4 B2B tier konfigürasyonu
-npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_level kayıtları
-```
+- `/admin/tier-management` — B2B tier parametreleri
+- `/admin/vendor-tiers` — Satıcı tier atama
+- `/admin/user-loyalty` — Kullanıcı XP/tier
+- `/admin/loyalty` — 3 sekmeli XP sistem ayarları
+- `/tier-info` — Vendor tier karşılaştırma + yükseltme UI
 
 ---
 
 ### 2. Ürün Görünürlük Sistemi
 
-#### Backend — `ListCatalogListingsHandler` Güncellemeleri
-- `isFeatured`, `isFlashSale`, `isSpecialOffer`, `isActive` MongoDB filtreleri ✅
-- `categoryId` filtresi — CatalogProduct.categoryId üzerinden listing filtreleme ✅
-- `city` filtresi — VendorProfile.city join ✅
-- Varsayılan sıralama: isFeatured ürünler önce ✅
-- Response'a 4 flag + city alanı eklendi ✅
-
-#### Frontend
-- `AdminProductFilter.vue` — Şehir + ✨⚡🔥 checkbox filtreleri ✅
-- `AdminProductTable.vue` — Badge kolonu ✅
-- `useAdminProducts.ts` — 4 yeni filtre state ✅
+- `isFeatured`, `isFlashSale`, `isSpecialOffer`, `isActive`, `categoryId`, `city` filtreleri
+- Admin tablo badge kolonları, composable filtre state
+- Ana sayfa bileşenleri gerçek API'ye bağlandı
 
 ---
 
-### 3. Ana Sayfa Ürün Bölümleri
+### 3. API Rate Limiting — Tier Bazlı
 
-| Bileşen | Eski Endpoint | Yeni Endpoint |
-|---|---|---|
-| `HomeFlashSales` | `/api/products` (yok) | `/api/v1/listings/marketplace?isFlashSale=true` |
-| `HomeSpecialOffers` | `/api/products` (yok) | `/api/v1/listings/marketplace?isSpecialOffer=true` |
-| `HomePersonalizedProducts` | `/api/products` (yok) | `/api/v1/listings/marketplace?isFeatured=true` |
-| `HomeCategoryHighlights` | `/api/products/homepage-bulk` (yok) | Kategori başına `/marketplace?categoryId=X` |
+- `TierRateLimitGuard` — CACHE_MANAGER ile vendor başına dakikalık limit
+- CORE:60 / PRIME:120 / ELITE:300 / APEX:1000 istek/dk
+- Admin/public otomatik bypass, `@SkipTierRateLimit()` dekoratörü
 
 ---
 
-### 4. API Rate Limiting — Tier Bazlı ✅
+### 4. BazarX-GO Sistemi (4 Sprint Tamamlandı)
 
-**Dosyalar:**
-- `src/infrastructure/rate-limit/tier-rate-limit.guard.ts`
-- `src/infrastructure/rate-limit/tier-rate-limit.module.ts`
-- `src/infrastructure/rate-limit/skip-tier-rate-limit.decorator.ts`
+#### Sprint 1 — Backend Altyapı ✅
+| Yenilik | Detay |
+|---|---|
+| `menuPurchase` şeması | Devir alanları (`isTransferred`, `transferredTo/From/At`), `menuCategory` |
+| `menuReservation` şeması (yeni) | PENDING/CONFIRMED/CANCELLED/COMPLETED/NO_SHOW, 1 QR = 1 rezervasyon |
+| `surpriseMenu` şeması (yeni) | Vendor opt-in, saatlik blok, günlük kota, 500m yarıçap |
+| `TransferMenuHandler` | QR devir — 45 gün penceresi korunur, geri alınamaz |
+| `CreateReservationHandler` | Tarih/saat/kişi + durum kontrolü |
+| `UpdateSurpriseMenuHandler` | Vendor sürpriz menü upsert |
+| `TIER_MIN_CATEGORY` haritası | BRONZE_P1→kat.6, DIAMOND_P2→tümü (PurchaseMenuHandler guard) |
+| `MenuCronService` | Expiry, 3 gün uyarı, ay sonu burn, sürpriz reset, rezervasyon cleanup |
 
-**Akış:**
+**Yeni Endpointler (Sprint 1):**
 ```
-İstek → JwtAuthGuard → TierRateLimitGuard → Controller
+GET  /menu/wallet          POST /menu/transfer/:id
+POST /menu/reservation/:id  PUT  /menu/surprise-menu
+GET  /menu/surprise-menus
 ```
 
-**Tier Limitleri (tier_benefits.apiRatePerMin):**
-| Tier | Limit |
-|---|---|
-| CORE | 60 istek/dk |
-| PRIME | 120 istek/dk |
-| ELITE | 300 istek/dk |
-| APEX | 1000 istek/dk |
-
-**Bypass:** `@SkipTierRateLimit()`, ADMIN/SUPER_ADMIN, giriş yapmamış kullanıcılar
-
----
-
-### 5. Build Hataları — Düzeltildi ✅
-
-| Hata | Kök Neden | Çözüm |
+#### Sprint 2 — Frontend Sayfaları ✅
+| Sayfa | URL | İçerik |
 |---|---|---|
-| `delivery-service: Cannot find module './domain/entity.base'` | `shared-core/dist/` stale — `tsbuildinfo` eskiydi, tsc sıfır output üretiyordu | `rm tsconfig.tsbuildinfo && tsc` ile clean rebuild |
-| `backend TS2339: Property 'ok' does not exist` | `findOneAndUpdate({ rawResult: true })` Mongoose Document tipini yanlış çıkarıyordu | `rawResult` kaldırıldı, debug log sadeleştirildi |
+| QR Cüzdanı | `/bazarx-go/wallet` | Aktif/sona eren filtre, devir modal, 1+1 aktivasyon, rezervasyon butonu |
+| Üyelik Seç | `/bazarx-go/membership` | 8 tier karşılaştırma, kategori erişimi, anlık üyelik başlatma |
+| Rezervasyon | `/bazarx-go/reservation/[purchaseId]` | 4 adım: Restoran→Tarih→Saat→Kişi |
 
-> **⚠️ Not:** `shared-core/dist/` gitignore'da. Yeni klonlarda veya CI/CD'de `pnpm -F @barterborsa/shared-core build` çalıştırılmalı.
+#### Sprint 3 — Admin Panel ✅
+| Sayfa | URL | İçerik |
+|---|---|---|
+| Restoran Anlaşmaları | `/admin/go/restaurants` | LaunchPartner 3 faz yönetimi, 60 menü kota progress |
+| Kârlılık Dashboard | `/admin/go/revenue` | Brüt/net gelir, QR stats, rezervasyon özeti, kategori bar chart |
+| Rezervasyon Yönetimi | `/admin/go/reservations` | Durum filtreli, inline onayla/iptal |
+
+**Yeni Endpointler (Sprint 3 — `/admin/go`):**
+```
+GET/POST /launch-partners    PUT /launch-partners/:id/advance
+GET /revenue?period=30       GET/PATCH /reservations
+```
+
+#### Sprint 4 — Push / Mail / Geofencing ✅
+| Servis | Açıklama |
+|---|---|
+| `FcmService` | FCM REST API, batch gönderim, mock mod (env yoksa log) |
+| `GoNotificationService` | Push + Mail + DB orkestrasyonu, sessiz saat (22:00-08:00) koruması |
+| `GeofenceService` | Haversine formülü, 500m yarıçap, sıfır bağımlılık |
+| `UserDeviceToken` şeması | FCM token + konum + bildirim tercihleri |
+
+**Bildirim Tipleri:**
+`MENU_EXPIRY_WARNING` · `MENU_TRANSFER_RECEIVED` · `RESERVATION_CONFIRMED` · `RESERVATION_CANCELLED` · `SURPRISE_MENU_NEARBY` · `NEW_RESTAURANT_NEARBY`
+
+**Admin:** `/admin/go/notifications` — Push & Mail kampanya sayfası
+
+**Gerekli .env:**
+```
+FCM_SERVER_KEY=AAAAxxxxx...   # Firebase Console → Cloud Messaging
+SMTP_HOST / SMTP_USER / SMTP_PASSWORD / SMTP_FROM
+```
 
 ---
 
-## Açık Konular — Tümü Tamamlandı ✅
-
-| Konu | Durum |
-|---|---|
-| `HomeCategoryHighlights` categoryId filtresi | ✅ |
-| `VendorProfile.city` alanı | ✅ Zaten vardı |
-| Vendor tier yükseltme UI | ✅ `/tier-info` CTA + modal |
-| `resetCache` Redis entegrasyonu | ✅ CACHE_MANAGER flush |
-| API rate limit middleware | ✅ TierRateLimitGuard |
-| Build hataları (delivery-service + backend TS) | ✅ |
+### 5. Build Düzeltmeleri
+- `mongo-loyalty.repositories.ts` — `rawResult` TypeScript hatası giderildi
+- `shared-core/dist` — stale tsbuildinfo clean rebuild
 
 ---
 
@@ -125,12 +115,14 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 ### Veritabanı (MongoDB)
 | Koleksiyon | İçerik |
 |---|---|
-| `tier_benefits` | 4 B2B tier konfigürasyonu (CORE/PRIME/ELITE/APEX) |
-| `membership_tiers` | 5 loyalty tier tanımı (0/1K/5K/15K/50K XP) |
-| `user_levels` | Tüm kullanıcılar için XP kayıtları |
-| `listings` | isFeatured/isFlashSale/isSpecialOffer/isActive flag'leri aktif |
-| `xp_distribution_rules` | XP dağıtım kuralları |
-| `xp_spending_limit_rules` | Tier bazlı harcama limitleri |
+| `tier_benefits` | 4 B2B tier (CORE/PRIME/ELITE/APEX) |
+| `membership_tiers` | 5 loyalty tier (0/1K/5K/15K/50K XP) |
+| `user_levels` | Tüm kullanıcı XP kayıtları |
+| `menu_purchases` | QR satın alımları (devir + kategori alanları) |
+| `menu_reservations` | Rezervasyon kayıtları |
+| `surprise_menus` | Vendor sürpriz menü konfigürasyonları |
+| `user_device_tokens` | FCM token + konum verisi |
+| `launch_partners` | GO restoran anlaşmaları (3 faz) |
 
 ### Servisler
 | Servis | Port | Durum |
@@ -138,7 +130,7 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 | Backend (NestJS) | 3001 | ✅ |
 | Frontend (Nuxt 3) | 3002 | ✅ |
 | Financial Service | 3004 | ✅ |
-| Delivery Service | 3003 | ✅ (shared-core rebuild sonrası) |
+| Delivery Service | 3003 | ✅ |
 | MongoDB | 27017 | ✅ |
 | Redis | 6380 | ✅ |
 | MinIO | 9000/9001 | ✅ |
@@ -146,16 +138,18 @@ npx tsx belge/seed/seed-user-loyalty-tiers-mongo.js # 5 loyalty tier + user_leve
 
 ---
 
-## Sonraki Sprint
+## Sonraki Sprint Önerileri
 
-| Konu | Öncelik |
-|---|---|
-| Excel batch upload limit (excelBatchLimit zorlama) | ORTA |
-| B2C subscription ödeme entegrasyonu (Iyzico) | YÜKSEK |
-| TrustScore algoritması cron job | ORTA |
-| SwapSession timeout cron job (her gece 02:00) | YÜKSEK |
-| BarterBorsa batch matching engine | YÜKSEK |
-| shared-core build adımını CI/CD pipeline'a ekle | YÜKSEK |
+| Konu | Öncelik | Notlar |
+|---|---|---|
+| Excel batch upload limit zorlama | ORTA | `excelBatchLimit` şemada var, middleware yok |
+| B2C subscription ödeme (Iyzico) | YÜKSEK | Handler var, ödeme entegrasyonu yok |
+| TrustScore cron job | ORTA | Algoritma §TrustScore'da tanımlı |
+| SwapSession timeout cron | YÜKSEK | Her gece 02:00 — handler var, cron yok |
+| BarterBorsa batch matching engine | YÜKSEK | §4 tanımlı, implementasyon yok |
+| GO geofence gerçek vendor koordinatları | ORTA | Şu an vendorCoords client'tan geliyor |
+| GO bildirim kampanya kuyruğu (BullMQ) | ORTA | Admin sayfası stub — gerçek gönderim yok |
+| shared-core CI/CD build adımı | YÜKSEK | `pnpm -F @barterborsa/shared-core build` |
 
 ---
 
@@ -174,4 +168,4 @@ npx tsx belge/seed/seed-all-mongo.js
 
 ---
 
-*Son güncelleme: 2026-05-20 | Branch: main | Commit: c1b1ea69*
+*Son güncelleme: 2026-05-21 | Branch: main | Commit: 17c1f199*
