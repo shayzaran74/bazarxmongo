@@ -249,7 +249,7 @@ const onFileChange = async (event: Event) => {
       method: 'POST',
       body: formData
     })
-    form.value.imageUrl = res.url
+    form.value.imageUrl = (res as any).data?.url || (res as any).url
     $toast.success('Görsel yüklendi')
   } catch {
     $toast.error('Görsel yüklenemedi')
