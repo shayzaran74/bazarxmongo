@@ -33,6 +33,7 @@ import { GarageSaleModule } from './modules/garage-sale/garage-sale.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor.service';
+import { TierRateLimitModule } from './infrastructure/rate-limit/tier-rate-limit.module';
 
 @Module({
   imports: [
@@ -131,6 +132,10 @@ import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor
     MediaModule,
     InventoryModule,
     DeliveryModule,
+
+    // ─── Infrastructure ────────────────────────────────────────────
+    // Tier bazlı rate limiting (APP_GUARD olarak kayıtlı — JwtAuthGuard'dan sonra çalışır)
+    TierRateLimitModule,
   ],
   providers: [
     {
