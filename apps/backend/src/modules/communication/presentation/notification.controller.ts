@@ -30,7 +30,7 @@ export class NotificationController {
   @ApiResponse({ status: 200, description: 'Bildirim listesi.' })
   @Get()
   async getNotifications(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number
   ) {
@@ -42,7 +42,7 @@ export class NotificationController {
   @ApiOperation({ summary: 'Get unread notification count', description: 'Kullanıcının henüz okumadığı bildirimlerin sayısını döner.' })
   @ApiResponse({ status: 200, description: 'Okunmamış bildirim sayısı.' })
   @Get('unread-count')
-  async getUnreadCount(@CurrentUser() user: any) {
+  async getUnreadCount(@CurrentUser() user: AuthenticatedUser) {
     return this.queryBus.execute(new GetNotificationUnreadCountQuery(user.id));
   }
 
@@ -50,7 +50,9 @@ export class NotificationController {
   @ApiParam({ name: 'id', description: 'Bildirim ID' })
   @ApiResponse({ status: 200, description: 'İşlem başarılı.' })
   @Patch(':id/read')
-  async markRead(@CurrentUser() user: any, @Param('id') id: string) {
+  async markRead(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.commandBus.execute(new MarkNotificationReadCommand(id, user.id));
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

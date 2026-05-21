@@ -31,7 +31,7 @@ export class CartEscrowCouponController {
 
   @ApiOperation({ summary: 'Sepetteki escrow kuponları listele' })
   @Get()
-  async getEscrowCoupons(@CurrentUser() user: any) {
+  async getEscrowCoupons(@CurrentUser() user: AuthenticatedUser) {
     const cart = await this.cartRepo.findByUserId(user.id);
     if (!cart) return { success: true, data: [] };
 
@@ -44,7 +44,7 @@ export class CartEscrowCouponController {
   @ApiBody({ type: ApplyEscrowCouponDto })
   @Post()
   async applyEscrowCoupon(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: ApplyEscrowCouponDto,
   ) {
     let cart = await this.cartRepo.findByUserId(user.id);
@@ -85,7 +85,7 @@ export class CartEscrowCouponController {
   @ApiParam({ name: 'id', description: 'EscrowCoupon ID' })
   @Delete(':id')
   async removeEscrowCoupon(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
     const coupon = await this.escrowCouponRepo.findById(id);
@@ -99,3 +99,4 @@ export class CartEscrowCouponController {
     return { success: true, message: 'Kupon sepetten kaldırıldı' };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; }

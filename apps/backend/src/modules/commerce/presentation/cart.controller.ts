@@ -52,7 +52,7 @@ export class CartController {
   @ApiBody({ type: AddToCartDto })
   @Post()
   @UseGuards(JwtAuthGuard)
-  async addToCart(@CurrentUser() user: any, @Body() dto: AddToCartDto) {
+  async addToCart(@CurrentUser() user: AuthenticatedUser, @Body() dto: AddToCartDto) {
     return this.commandBus.execute(
       new AddToCartCommand(user.id, dto.listingId, dto.productId, dto.quantity),
     );
@@ -62,14 +62,14 @@ export class CartController {
   @ApiBody({ type: MergeCartDto })
   @Post('merge')
   @UseGuards(JwtAuthGuard)
-  async mergeCart(@CurrentUser() user: any, @Body() dto: MergeCartDto) {
+  async mergeCart(@CurrentUser() user: AuthenticatedUser, @Body() dto: MergeCartDto) {
     return this.commandBus.execute(new MergeCartCommand(user.id, dto.items));
   }
 
   @ApiOperation({ summary: 'Mevcut sepeti getir' })
   @Get()
   @UseGuards(JwtAuthGuard)
-  async getCart(@CurrentUser() user: any) {
+  async getCart(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetCartQuery(user.id));
     return { success: true, data };
   }
@@ -78,7 +78,7 @@ export class CartController {
   @Patch(':itemId')
   @UseGuards(JwtAuthGuard)
   async updateQuantity(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('itemId') itemId: string,
     @Body('quantity') quantity: number,
   ) {
@@ -88,14 +88,14 @@ export class CartController {
   @ApiOperation({ summary: 'Sepetten ürün kaldır' })
   @Delete(':itemId')
   @UseGuards(JwtAuthGuard)
-  async removeItem(@CurrentUser() user: any, @Param('itemId') itemId: string) {
+  async removeItem(@CurrentUser() user: AuthenticatedUser, @Param('itemId') itemId: string) {
     return this.commandBus.execute(new RemoveCartItemCommand(user.id, itemId));
   }
 
   @ApiOperation({ summary: 'Sepeti temizle' })
   @Delete()
   @UseGuards(JwtAuthGuard)
-  async clearCart(@CurrentUser() user: any) {
+  async clearCart(@CurrentUser() user: AuthenticatedUser) {
     return this.commandBus.execute(new ClearCartCommand(user.id));
   }
 
@@ -106,3 +106,5 @@ export class CartController {
     return { success: true, data: [] };
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

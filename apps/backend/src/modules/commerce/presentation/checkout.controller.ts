@@ -32,7 +32,7 @@ export class CheckoutController {
   @ApiResponse({ status: 400, description: 'Geçersiz adres veya ödeme yöntemi.' })
   @Post()
   @UseGuards(JwtAuthGuard)
-  async checkout(@CurrentUser() user: any, @Body() dto: CheckoutDto) {
+  async checkout(@CurrentUser() user: AuthenticatedUser, @Body() dto: CheckoutDto) {
     let shippingAddress: ShippingAddress;
     let billingAddress: ShippingAddress;
 
@@ -95,3 +95,4 @@ export class CheckoutController {
     };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; }

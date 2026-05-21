@@ -39,7 +39,7 @@ export class CompanyController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current user company' })
   @Get('me')
-  async getMe(@CurrentUser() user: any) {
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
     if (!user?.id) {
       return { success: false, message: 'Oturum bilgisi bulunamadı.' };
     }

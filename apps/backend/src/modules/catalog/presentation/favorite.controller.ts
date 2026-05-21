@@ -15,8 +15,10 @@ export class FavoriteController {
   @ApiOperation({ summary: 'List user favorites' })
   @ApiResponse({ status: 200 })
   @Get()
-  async getFavorites(@CurrentUser() user: any) {
+  async getFavorites(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetFavoritesQuery(user.id));
     return { success: true, data };
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

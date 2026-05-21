@@ -25,7 +25,7 @@ export class XpController {
   @ApiOperation({ summary: 'Get XP balance', description: 'Kullanıcının mevcut toplam XP puanını ve seviye (level) bilgisini döner.' })
   @ApiResponse({ status: 200, description: 'XP bakiye bilgisi.' })
   @Get('balance')
-  async getBalance(@CurrentUser() user: any) {
+  async getBalance(@CurrentUser() user: AuthenticatedUser) {
     return this.queryBus.execute(new GetXpBalanceQuery(user.id));
   }
 
@@ -34,7 +34,7 @@ export class XpController {
   @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'XP geçmişi listesi.' })
   @Get('history')
-  async getHistory(@CurrentUser() user: any, @Query('skip') skip: number, @Query('take') take: number) {
+  async getHistory(@CurrentUser() user: AuthenticatedUser, @Query('skip') skip: number, @Query('take') take: number) {
     return this.queryBus.execute(new GetXpHistoryQuery(user.id, Number(skip || 0), Number(take || 20)));
   }
 
@@ -58,3 +58,5 @@ export class XpController {
     return this.commandBus.execute(new EarnXpCommand(dto.userId, dto.amount, dto.type));
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

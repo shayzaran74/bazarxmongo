@@ -17,7 +17,7 @@ export class PublicCouponController {
   @Post('validate')
   @UseGuards(JwtAuthGuard)
   async validateCoupon(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: { code: string; totalAmount?: number }
   ) {
     const { code, totalAmount } = body;
@@ -80,3 +80,5 @@ export class PublicCouponController {
     };
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

@@ -29,10 +29,12 @@ export class VendorAnalyticsController {
   @ApiOperation({ summary: 'Get general vendor statistics', description: 'Satıcının kendi ürün, satış ve müşteri verilerini döner.' })
   @ApiResponse({ status: 200, description: 'Satıcı istatistik verileri.' })
   @Get('stats')
-  async getStats(@CurrentUser() user: any) {
+  async getStats(@CurrentUser() user: AuthenticatedUser) {
     if (!user.vendorId) {
       throw new ForbiddenException('Bu işlem için bir satıcı profiline ihtiyacınız var.');
     }
     return this.queryBus.execute(new GetVendorStatsQuery(user.vendorId));
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

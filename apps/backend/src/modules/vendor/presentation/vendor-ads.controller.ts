@@ -36,7 +36,7 @@ export class VendorAdsController {
   @ApiOperation({ summary: 'List vendor banners' })
   @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @Get('banners')
-  async getBanners(@CurrentUser() user: any) {
+  async getBanners(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new ListVendorBannersQuery(user.id));
     return { success: true, data };
   }
@@ -63,3 +63,5 @@ export class VendorAdsController {
     return { success: true, data: [] };
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

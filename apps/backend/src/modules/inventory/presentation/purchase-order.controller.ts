@@ -16,7 +16,7 @@ import { InventoryLog } from '@barterborsa/shared-persistence/schemas/backend/in
 export class PurchaseOrderController {
   @ApiOperation({ summary: 'Get vendor purchase orders' })
   @Get()
-  async getPurchaseOrders(@CurrentUser() user: any) {
+  async getPurchaseOrders(@CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
@@ -29,7 +29,7 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Get purchase order details' })
   @Get(':id')
-  async getPurchaseOrderDetails(@Param('id') id: string, @CurrentUser() user: any) {
+  async getPurchaseOrderDetails(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
 
     const order = await PurchaseOrder.findOne({ id, vendorId: vendor?.id })
@@ -43,7 +43,7 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Create purchase order' })
   @Post()
-  async createPurchaseOrder(@Body() body: any, @CurrentUser() user: any) {
+  async createPurchaseOrder(@Body() body: any, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
@@ -76,7 +76,7 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Receive purchase order (Update Stock)' })
   @Patch(':id/receive')
-  async receiveOrder(@Param('id') id: string, @CurrentUser() user: any) {
+  async receiveOrder(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
 
     const order = await PurchaseOrder.findOne({ id, vendorId: vendor?.id })
@@ -113,3 +113,5 @@ export class PurchaseOrderController {
     return { success: true, data: updatedOrder };
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }

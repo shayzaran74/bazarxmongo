@@ -22,7 +22,7 @@ export class AdCampaignVendorController {
   @ApiOperation({ summary: 'List my ad campaigns', description: 'Satıcının kendine ait tüm reklam kampanyalarını listeler.' })
   @ApiResponse({ status: 200, description: 'Kampanya listesi.' })
   @Get()
-  async getMyCampaigns(@CurrentUser() user: any) {
+  async getMyCampaigns(@CurrentUser() user: AuthenticatedUser) {
     // Note: Assuming vendorId is same as user.id or reachable via user context
     return this.queryBus.execute(new GetVendorCampaignsQuery(user.id));
   }
@@ -44,7 +44,9 @@ export class AdCampaignVendorController {
   })
   @ApiResponse({ status: 201, description: 'Kampanya başarıyla oluşturuldu.' })
   @Post()
-  async createCampaign(@CurrentUser() user: any, @Body() dto: any) {
+  async createCampaign(@CurrentUser() user: AuthenticatedUser, @Body() dto: any) {
     return this.commandBus.execute(new CreateAdCampaignCommand(user.id, dto));
   }
 }
+
+export interface AuthenticatedUser { id: string; role: string; }
