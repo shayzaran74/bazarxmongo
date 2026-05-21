@@ -43,7 +43,7 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Create purchase order' })
   @Post()
-  async createPurchaseOrder(@Body() body: any, @CurrentUser() user: AuthenticatedUser) {
+  async createPurchaseOrder(@Body() body: Record<string, any>, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 

@@ -44,8 +44,8 @@ export class AdCampaignVendorController {
   })
   @ApiResponse({ status: 201, description: 'Kampanya başarıyla oluşturuldu.' })
   @Post()
-  async createCampaign(@CurrentUser() user: AuthenticatedUser, @Body() dto: any) {
-    return this.commandBus.execute(new CreateAdCampaignCommand(user.id, dto));
+  async createCampaign(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
+    return this.commandBus.execute(new CreateAdCampaignCommand(user.id, dto as any));
   }
 }
 

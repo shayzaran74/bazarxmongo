@@ -45,7 +45,7 @@ export class BrandAdminController {
 
   @ApiOperation({ summary: 'Create brand' })
   @Post()
-  async createBrand(@Body() data: any) {
+  async createBrand(@Body() data: Record<string, any>) {
     const mongoose = require('mongoose');
     const id = new mongoose.Types.ObjectId().toString();
     const brand = await Brand.create({ ...data, id, _id: id });
@@ -88,7 +88,7 @@ export class BrandAdminController {
 
   @ApiOperation({ summary: 'Update brand' })
   @Put(':id')
-  async updateBrand(@Param('id') id: string, @Body() data: any) {
+  async updateBrand(@Param('id') id: string, @Body() data: Record<string, any>) {
     const mongoose = require('mongoose');
     const filter = mongoose.Types.ObjectId.isValid(id)
       ? { $or: [{ id }, { _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }

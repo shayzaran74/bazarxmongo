@@ -31,7 +31,7 @@ export class AddressController {
   @ApiOperation({ summary: 'List user addresses', description: 'Kullanıcının kayıtlı tüm adreslerini listeler.' })
   @ApiResponse({ status: 200, description: 'Adres listesi.' })
   @Get()
-  async getAddresses(@Req() req: any) {
+  async getAddresses(@Req() req: Record<string, any>) {
     return this.queryBus.execute(new GetAddressesQuery(req.user.id));
   }
 
@@ -39,7 +39,7 @@ export class AddressController {
   @ApiBody({ type: AddAddressDto })
   @ApiResponse({ status: 201, description: 'Adres başarıyla eklendi.' })
   @Post()
-  async addAddress(@Req() req: any, @Body() dto: AddAddressDto) {
+  async addAddress(@Req() req: Record<string, any>, @Body() dto: AddAddressDto) {
     return this.commandBus.execute(new AddAddressCommand(req.user.id, dto));
   }
 
@@ -49,7 +49,7 @@ export class AddressController {
   @ApiResponse({ status: 200, description: 'Adres başarıyla güncellendi.' })
   @ApiResponse({ status: 404, description: 'Adres bulunamadı.' })
   @Put(':id')
-  async updateAddress(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateAddressDto) {
+  async updateAddress(@Req() req: Record<string, any>, @Param('id') id: string, @Body() dto: UpdateAddressDto) {
     return this.commandBus.execute(new UpdateAddressCommand(req.user.id, id, dto));
   }
 
@@ -58,7 +58,7 @@ export class AddressController {
   @ApiResponse({ status: 200, description: 'Adres başarıyla silindi.' })
   @ApiResponse({ status: 404, description: 'Adres bulunamadı.' })
   @Delete(':id')
-  async deleteAddress(@Req() req: any, @Param('id') id: string) {
+  async deleteAddress(@Req() req: Record<string, any>, @Param('id') id: string) {
     return this.commandBus.execute(new DeleteAddressCommand(req.user.id, id));
   }
 }

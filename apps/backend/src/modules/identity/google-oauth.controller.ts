@@ -23,7 +23,7 @@ export class GoogleOAuthController {
   @ApiResponse({ status: 302, description: 'Başarılı girişte frontend success sayfasına, hatada login sayfasına yönlendirir.' })
   @Get('callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthRedirect(@Req() req: any, @Res() res: any) {
+  async googleAuthRedirect(@Req() req: Record<string, any>, @Res() res: any) {
     const user = req.user;
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.connection.remoteAddress;

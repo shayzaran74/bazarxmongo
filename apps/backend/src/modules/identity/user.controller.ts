@@ -32,7 +32,7 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
   @ApiResponse({ status: 401, description: 'Yetkilendirme gerekli.' })
   @Get('me')
-  async getMe(@Req() req: any) {
+  async getMe(@Req() req: Record<string, any>) {
     return this.queryBus.execute(new GetUserQuery(req.user.id));
   }
 
@@ -64,7 +64,7 @@ export class UserController {
   })
   @ApiResponse({ status: 200, description: 'PIN başarıyla belirlendi.' })
   @Post('transaction-pin')
-  async setPin(@Req() req: any, @Body('pin') pin: string) {
+  async setPin(@Req() req: Record<string, any>, @Body('pin') pin: string) {
     return this.commandBus.execute(new SetTransactionPinCommand(req.user.id, pin));
   }
 

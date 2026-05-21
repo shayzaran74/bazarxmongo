@@ -25,7 +25,7 @@ export class BadgeAdminController {
 
   @ApiOperation({ summary: 'Create a new badge rule' })
   @Post()
-  async createBadgeRule(@Body() body: any) {
+  async createBadgeRule(@Body() body: Record<string, any>) {
     const id = 'badgerule-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const rule = await this.badgeRuleModel.create({
       _id: id,
@@ -72,7 +72,7 @@ export class BadgeAdminController {
 
   @ApiOperation({ summary: 'Update an existing badge rule' })
   @Put(':id')
-  async updateBadgeRule(@Param('id') id: string, @Body() body: any) {
+  async updateBadgeRule(@Param('id') id: string, @Body() body: Record<string, any>) {
     const rule = await this.badgeRuleModel.findOne({ id }).exec();
     if (!rule) {
       throw new NotFoundException('Kural bulunamadı');

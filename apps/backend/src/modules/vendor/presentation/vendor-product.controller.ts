@@ -153,8 +153,8 @@ export class VendorProductController {
 
   @ApiOperation({ summary: 'Yeni ürün/listing oluştur' })
   @Post()
-  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: any) {
-    return this.commandBus.execute(new CreateVendorProductCommand(user.id, body));
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: Record<string, any>) {
+    return this.commandBus.execute(new CreateVendorProductCommand(user.id, body as any));
   }
 
   @ApiOperation({ summary: 'Ürün güncelle' })
@@ -162,7 +162,7 @@ export class VendorProductController {
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: any,
+    @Body() body: Record<string, any>,
   ) {
     return this.commandBus.execute(new UpdateVendorProductCommand(user.id, id, body));
   }

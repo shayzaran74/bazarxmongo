@@ -69,7 +69,7 @@ export class CargoWebhookController {
   async handleWebhook(
     @Param('provider') provider: string,
     @Headers('x-signature') signature: string,
-    @Body() body: any,
+    @Body() body: Record<string, any>,
   ) {
     const cargoProvider = provider as CargoProvider;
     const payload = JSON.stringify(body);

@@ -18,7 +18,7 @@ export class CouponAdminController {
 
   @ApiOperation({ summary: 'Create new coupon' })
   @Post()
-  async createCoupon(@Body() dto: any) {
+  async createCoupon(@Body() dto: Record<string, any>) {
     const id = 'coupon-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const coupon = await Coupon.create({
       _id: id,

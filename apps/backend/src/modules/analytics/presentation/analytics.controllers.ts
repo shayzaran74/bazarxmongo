@@ -37,7 +37,7 @@ export class TrackingController {
   })
   @ApiResponse({ status: 201, description: 'Olay kaydedildi.' })
   @Post('track')
-  async track(@Body() dto: any) { return this.commandBus.execute(new TrackEventCommand(dto)); }
+  async track(@Body() dto: Record<string, any>) { return this.commandBus.execute(new TrackEventCommand(dto)); }
 }
 
 @ApiTags('Analytics Admin')

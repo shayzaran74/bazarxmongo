@@ -20,6 +20,7 @@ import {
   ResetPasswordDto,
   GetUserQuery
 } from '@barterborsa/domain-identity';
+import { LoginUserInput } from '@barterborsa/shared-types';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
 
@@ -38,7 +39,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
   @Get('me')
-  async me(@Req() req: any) {
+  async me(@Req() req: Record<string, any>) {
     console.log('AuthController.me called, user:', req.user);
     let userId = req.user.id;
     
@@ -111,7 +112,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Hatalı e-posta veya şifre.' })
   @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  async login(@Body() input: any, @Req() req: any, @Res({ passthrough: true }) res: Response) {
+  async login(@Body() input: LoginUserInput, @Req() req: Record<string, any>, @Res({ passthrough: true }) res: Response) {
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.connection.remoteAddress;
     const authData = await this.authService.login(input, userAgent, ipAddress);
@@ -147,7 +148,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Geçersiz veya süresi dolmuş refresh token.' })
   @Post('refresh')
   async refresh(
-    @Req() req: any,
+    @Req() req: Record<string, any>,
     @Body('refreshToken') bodyRefreshToken: string,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -188,7 +189,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Çıkış yapıldı.' })
   @Post('logout')
   async logout(
-    @Req() req: any,
+    @Req() req: Record<string, any>,
     @Body('refreshToken') bodyRefreshToken: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -217,7 +218,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Bağlantı başarıyla gönderildi.' })
   @Throttle({ auth: { limit: 3, ttl: 60_000 } })
   @Post('forgot-password')
-  async forgotPassword(@Body() dto: any) {
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.commandBus.execute(new ForgotPasswordCommand(dto));
     return {
       success: true,
@@ -231,7 +232,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Şifre başarıyla sıfırlandı.' })
   @ApiResponse({ status: 400, description: 'Geçersiz veya süresi dolmuş token.' })
   @Post('reset-password')
-  async resetPassword(@Body() dto: any) {
+  async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.commandBus.execute(new ResetPasswordCommand(dto));
     if (!result.success) {
       throw new HttpException(result.error.message, HttpStatus.BAD_REQUEST);

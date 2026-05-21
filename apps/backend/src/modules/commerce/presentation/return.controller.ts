@@ -23,13 +23,13 @@ export class ReturnController {
   @HttpCode(HttpStatus.CREATED)
   async createReturn(
     @Param('id') orderId: string,
-    @Body() dto: any,
+    @Body() dto: Record<string, any>,
     @Request() req: any,
   ) {
     const result = await this.returnService.createReturn(req.user.id, {
       ...dto,
       orderId,
-    });
+    } as any);
     return { success: true, data: result };
   }
 

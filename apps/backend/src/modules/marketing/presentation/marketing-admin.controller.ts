@@ -56,7 +56,7 @@ export class GroupBuyAdminController {
   }
 
   @Post()
-  async createCampaign(@Body() body: any) {
+  async createCampaign(@Body() body: Record<string, any>) {
     const id = 'gb-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const createData: any = {
       _id: id,
@@ -74,7 +74,7 @@ export class GroupBuyAdminController {
   }
 
   @Put(':id')
-  async updateCampaign(@Param('id') id: string, @Body() body: any) {
+  async updateCampaign(@Param('id') id: string, @Body() body: Record<string, any>) {
     const updateData: any = {
       title: body.title,
       productId: body.productId,
