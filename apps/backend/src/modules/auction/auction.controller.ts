@@ -23,6 +23,9 @@ interface AuctionListQuery {
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @ApiTags('Auctions')

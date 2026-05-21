@@ -10,6 +10,9 @@ import { FinancialGatewayService } from '../financial-gateway.service';
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @Controller('wallet')

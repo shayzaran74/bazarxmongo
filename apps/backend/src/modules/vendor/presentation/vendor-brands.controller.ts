@@ -26,6 +26,9 @@ import { MongoBrandRepository } from '../infrastructure/persistence/mongo-brand.
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 const fileInterceptor = FileInterceptor('file', {

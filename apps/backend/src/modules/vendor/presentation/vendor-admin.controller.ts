@@ -14,6 +14,9 @@ import { RemoveVendorCategoryCommand } from '../application/commands/remove-vend
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface UpdateVendorDto {

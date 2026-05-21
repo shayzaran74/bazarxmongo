@@ -9,6 +9,9 @@ import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.sch
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @ApiTags('Brand Admin')

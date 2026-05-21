@@ -81,4 +81,4 @@ export class PublicCouponController {
   }
 }
 
-export interface AuthenticatedUser { id: string; role: string; }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

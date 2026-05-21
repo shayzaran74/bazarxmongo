@@ -12,6 +12,9 @@ import { ProcessWithdrawalCommand } from '../application/commands/process-withdr
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @ApiTags('Wallet Admin')

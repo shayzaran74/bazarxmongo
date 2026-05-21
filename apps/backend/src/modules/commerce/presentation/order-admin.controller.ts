@@ -20,6 +20,9 @@ import { FinancialGatewayService } from '../../financial-gateway/financial-gatew
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @ApiTags('Order Admin')

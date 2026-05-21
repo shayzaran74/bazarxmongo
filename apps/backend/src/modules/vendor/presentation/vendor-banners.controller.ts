@@ -20,6 +20,9 @@ import { DeleteBannerCommand } from '../application/commands/delete-banner.comma
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 @ApiTags('Vendor Content')

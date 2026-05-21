@@ -25,6 +25,9 @@ import { ITierBenefit, TierBenefit } from '@barterborsa/shared-persistence';
 interface AuthenticatedUser {
   id: string;
   role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 const ACCEPTED_MIME = [
