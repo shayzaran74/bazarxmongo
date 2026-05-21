@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards, Inject, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard, RolesGuard, Public } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
 import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
 import { ConfigService } from '@nestjs/config';
@@ -33,7 +33,8 @@ export class LogsAdminController {
     });
   }
 
-  @Public()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Arşivlenmiş logları/faturaları listele' })
   @Get('archived')
   async getArchivedLogs(
@@ -99,7 +100,8 @@ export class LogsAdminController {
     return { success: true, data };
   }
 
-  @Public()
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Arşiv istatistiklerini getir' })
   @Get('stats')
   async getStats() {
