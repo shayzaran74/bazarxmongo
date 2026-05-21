@@ -68,31 +68,31 @@ export class ListAdminVendorsHandler
     const userMap = new Map(users.map(u => [u.email, u]));
     const userProfileMap = new Map(userProfiles.map(p => [p?.userId, p]));
     const listingsCountMap = new Map(listingsCounts.map(item => [item._id, item.count]));
-    const categoryMap = new Map((categories as any[]).map((cat: any) => [cat.id || cat._id?.toString(), cat]));
+    const categoryMap = new Map(categories.map((cat) => [cat.id || cat._id?.toString(), cat]));
 
     // group categories by vendor
     const vendorCategoriesMap = new Map<string, any[]>();
-    for (const vc of vendorCategories as any[]) {
+    for (const vc of vendorCategories) {
       const cat = categoryMap.get(vc.categoryId);
       if (!vendorCategoriesMap.has(vc.vendorId)) {
         vendorCategoriesMap.set(vc.vendorId, []);
       }
       vendorCategoriesMap.get(vc.vendorId)!.push({
-        id: vc.id || vc._id?.toString(),
+        id: vc._id?.toString(),
         category: cat ? { name: cat.name } : null
       });
     }
 
     const items = result.items.map((v: any) => {
-      const p = v.getProps ? v.getProps() : v;
-      const vid = (p as any).id || v.id;
-      const company = companyMap.get((p as any).companyId);
-      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get((p as any)?.userId);
-      const user = userMap.get((p as any)?.userId);
-      const uProfile = userProfileMap.get((p as any)?.userId);
+      const p = (v.getProps ? v.getProps() : v) as import('@barterborsa/shared-persistence').IVendor;
+      const vid = p.id || v.id;
+      const company = companyMap.get(p.companyId);
+      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get(p.userId);
+      const user = userMap.get(p.userId);
+      const uProfile = userProfileMap.get(p.userId);
       
       const userObj = user ? {
-        id: user.id || (user as any)._id?.toString(),
+        id: user.id || user._id?.toString(),
         email: user.email,
         profile: uProfile ? {
           firstName: uProfile.firstName,
@@ -122,10 +122,10 @@ export class ListAdminVendorsHandler
 
       return {
         id:         vid,
-        status:     (p as any).status || v.status,
-        tier:       (p as any).tier || v.tier,
-        vendorType: (p as any).vendorType || v.vendorType,
-        slug:       (p as any).slug || v.slug,
+        status:     p.status || v.status,
+        tier:       p.tier || v.tier,
+        vendorType: p.vendorType || v.vendorType,
+        slug:       p.slug || v.slug,
         company:    company ? { name: company.name } : null,
         profile:    profileObj,
         user:       userObj,
