@@ -13,6 +13,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+import { IVendor } from '@barterborsa/shared-persistence';
 import { IsString, IsOptional, IsNumber, IsBoolean, IsArray } from 'class-validator';
 
 export class CreateVendorProductDto {
@@ -134,11 +135,11 @@ export class VendorProductController {
     if (!file) throw new BadRequestException('Lütfen bir dosya yükleyin.');
 
     const { Vendor: VendorModel } = require('@barterborsa/shared-persistence/schemas/backend/vendor.schema') as typeof import('@barterborsa/shared-persistence/schemas/backend/vendor.schema');
-    const vendorDoc = await VendorModel.findOne({ userId: user.id }).lean().exec() as Record<string, unknown> | null;
+    const vendorDoc = await VendorModel.findOne({ userId: user.id }).lean().exec() as IVendor | null;
     if (!vendorDoc) throw new BadRequestException('Satıcı hesabı bulunamadı');
 
-    const vendorId = vendorDoc['id'] as string;
-    const vendorTier = vendorDoc['tier'] as string | undefined;
+    const vendorId = vendorDoc.id;
+    const vendorTier = vendorDoc.tier;
 
     // Tier benefit excelBatchLimit zorlaması
     const tierBenefit = await this.tierModel.findOne({ tier: vendorTier ?? 'CORE' }).lean<ITierBenefit>().exec();
