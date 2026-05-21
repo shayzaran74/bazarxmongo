@@ -80,14 +80,14 @@
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Arka Plan (Tint)</label>
                   <div class="flex gap-2">
-                    <input v-model="cat.tint" type="color" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                    <input v-model="cat.tint" type="text" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
                     <input v-model="cat.tint" type="text" placeholder="#FEF3F2" class="flex-1 text-sm bg-white border border-gray-200 rounded-lg px-3 py-1 font-bold" />
                   </div>
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Yazı Rengi (Accent)</label>
                   <div class="flex gap-2">
-                    <input v-model="cat.accent" type="color" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                    <input v-model="cat.accent" type="text" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
                     <input v-model="cat.accent" type="text" placeholder="#B42318" class="flex-1 text-sm bg-white border border-gray-200 rounded-lg px-3 py-1 font-bold" />
                   </div>
                 </div>
@@ -163,14 +163,14 @@
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Arka Plan (Tint)</label>
                   <div class="flex gap-2">
-                    <input v-model="coupon.tint" type="color" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                    <input v-model="coupon.tint" type="text" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
                     <input v-model="coupon.tint" type="text" class="flex-1 text-sm bg-white border border-gray-200 rounded-lg px-3 py-1 font-bold" />
                   </div>
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Yazı Rengi (Accent)</label>
                   <div class="flex gap-2">
-                    <input v-model="coupon.accent" type="color" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                    <input v-model="coupon.accent" type="text" class="w-8 h-8 rounded cursor-pointer border-0 p-0" />
                     <input v-model="coupon.accent" type="text" class="flex-1 text-sm bg-white border border-gray-200 rounded-lg px-3 py-1 font-bold" />
                   </div>
                 </div>
@@ -308,7 +308,7 @@
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Puan</label>
-                  <input v-model="product.rating" type="number" step="0.1" class="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2 font-bold" />
+                  <input v-model.number="product.rating" type="number" step="0.1" class="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2 font-bold" />
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Yorum Sayısı</label>
@@ -320,7 +320,7 @@
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Fiyat (₺)</label>
-                  <input v-model="product.price" type="number" class="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2 font-bold" />
+                  <input v-model.number="product.price" type="number" class="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2 font-bold" />
                 </div>
                 <div class="col-span-4">
                   <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Görsel URL</label>
@@ -397,11 +397,11 @@ const removePersonalizedProduct = (index) => {
 
 const saving = ref(false)
 const { $toast } = useNuxtApp()
-const apiFetch = useApi()
+const { $api } = useApi()
 
 onMounted(async () => {
   try {
-    const res = await apiFetch('/api/v1/admin/settings/bazarx-go')
+    const res = await $api('/api/v1/admin/settings/bazarx-go')
     if (res?.data) {
       settings.value = { ...settings.value, ...res.data }
     }
@@ -413,7 +413,7 @@ onMounted(async () => {
 const saveSettings = async () => {
   saving.value = true
   try {
-    await apiFetch('/api/v1/admin/settings/bazarx-go', {
+    const res = await $api('/api/v1/admin/settings/bazarx-go', {
       method: 'PUT',
       body: settings.value
     })

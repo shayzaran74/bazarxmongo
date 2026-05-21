@@ -496,8 +496,8 @@
         </section>
 
         <!-- KATEGORİLER -->
-        <section>
-          <SectionHeader title="Kategoriler" subtitle="İhtiyacın olan her şey, tek tıkla" />
+        <section v-if="pageSettings.showCategories">
+          <SectionHeader :title="pageSettings.categoriesTitle" :subtitle="pageSettings.categoriesSubtitle" />
           <div
             v-motion
             :initial="{ opacity: 0, y: 24, filter: 'blur(10px)' }"
@@ -583,8 +583,8 @@
         </section>
 
         <!-- KUPONLAR — Ticket Mask -->
-        <section>
-          <SectionHeader title="İndirim Kuponların" subtitle="3 aktif kupon · son 2 gün" with-link />
+        <section v-if="pageSettings.showCoupons">
+          <SectionHeader :title="pageSettings.couponsTitle" :subtitle="pageSettings.couponsSubtitle" with-link />
           <div
             v-motion
             :initial="{ opacity: 0, y: 24, filter: 'blur(10px)' }"
@@ -621,8 +621,8 @@
         </section>
 
         <!-- MUTFAKLAR — Cuisines -->
-        <section>
-          <SectionHeader title="Mutfaklar" subtitle="Damak tadına göre keşfet" with-link />
+        <section v-if="pageSettings.showCuisines">
+          <SectionHeader :title="pageSettings.cuisinesTitle" :subtitle="pageSettings.cuisinesSubtitle" with-link />
           <div
             v-motion
             :initial="{ opacity: 0, y: 24, filter: 'blur(10px)' }"
@@ -645,8 +645,8 @@
         </section>
 
         <!-- ÜRÜNLER — Sana Özel -->
-        <section>
-          <SectionHeader title="Sana Özel Seçimler" subtitle="Geçmişine göre hazırlandı" with-link />
+        <section v-if="pageSettings.showPersonalized">
+          <SectionHeader :title="pageSettings.personalizedTitle" :subtitle="pageSettings.personalizedSubtitle" with-link />
           <div
             v-motion
             :initial="{ opacity: 0, y: 24, filter: 'blur(10px)' }"
@@ -817,11 +817,19 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidFilled } from '@heroicons/vue/24/solid'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const categories = ref<any[]>([])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const coupons = ref<any[]>([])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const cuisines = ref<any[]>([])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const products = ref<any[]>([])
+
 const authStore = useAuthStore()
 const cartStore = useCartStore()
-const { fetchVendors, loading: vendorsLoading } = useVendors()
+const { fetchVendors } = useVendors()
 const { 
-  location,
   detectLocation, 
   loadSavedLocation, 
   displayLocation, 
@@ -832,10 +840,35 @@ const {
 const restaurants = ref<RestaurantItem[]>([])
 const isLocationModalOpen = ref(false)
 
+const { $api } = useApi()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pageSettings = ref<any>({
+  showCategories: true, categoriesTitle: 'Kategoriler', categoriesSubtitle: '', categories: [],
+  showCoupons: true, couponsTitle: 'İndirim Kuponların', couponsSubtitle: '', coupons: [],
+  showCuisines: true, cuisinesTitle: 'Mutfaklar', cuisinesSubtitle: '', cuisines: [],
+  showPersonalized: true, personalizedTitle: 'Sana Özel Seçimler', personalizedSubtitle: '', personalizedProducts: []
+})
+
+const loadSettings = async () => {
+  try {
+    const res = await $api('/api/v1/settings/bazarx-go')
+    if (res && res.data) {
+      const resData = res.data as any
+      pageSettings.value = resData
+      categories.value = resData.categories || []
+      coupons.value = resData.coupons || []
+      cuisines.value = resData.cuisines || []
+      products.value = resData.personalizedProducts || []
+    }
+  } catch (e) {
+    console.error('Failed to load bazarx go settings', e)
+  }
+}
+
 const loadRestaurants = async () => {
   const data = await fetchVendors({ vendorType: 'RESTAURANT', limit: 20 })
   if (data && data.items) {
-    restaurants.value = data.items.map((v: any) => ({
+    restaurants.value = data.items.map((v: Record<string, any>) => ({
       id: v.id,
       name: v.profile?.storeName || 'İsimsiz Restoran',
       cuisine: v.profile?.cuisineType || 'Genel Mutfak',
@@ -853,6 +886,7 @@ const loadRestaurants = async () => {
 }
 
 onMounted(() => {
+  loadSettings()
   loadRestaurants()
   loadSavedLocation()
 })
@@ -955,157 +989,6 @@ const tabs = [
   { label: 'Kasap' }
 ]
 
-// — Kategori kartları
-const categories = [
-  {
-    title: 'Market',
-    desc: 'Binlerce ürün indirimle kapında',
-    tag: 'Taze',
-    href: '/categories',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvQQy926v4-WPgfmHGCHucj5QhsiPmocLeQduLA5RqUEaW4s_OZBnVWcvfBnyHfAslZwd39lk1rs2bZGcBmqc1sZNhLWb2o8Ex5Bs9Sln8uuLHFdjDQghmwhSkHZpqG0HJOu1u-dkSu3K4rV-vzhVO1IF8UrHAE_QYvREPTbgYzkbfm2E0TK5AE39jw1QaX8YKQvg2xEOQ87eLH11LZiHUR_EEiNEjpWsQT-OoWEeMYHUN1dVlCdaxWciTCsmbCUQAMni0EDOTygo',
-    tint: 'rgba(0,109,61,0.08)',
-    accent: 'var(--brand-deep)'
-  },
-  {
-    title: 'Yemek',
-    desc: 'Sıcak ve indirimli lezzetler',
-    tag: 'Sıcak',
-    href: '/categories',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD41XP6Th-psY1GwkcH6g9anl9-s2C5I5IKWJZOE7PwGAw8YmBvzn-tBT_L9rVWHguB9UUCcD1kPmRrYXlNKW4LJdowcV1BE1dlbvXZsnWoFq2UrYJohSzGl-CzO2ul8k70yGeM5UrdDAAuylxZDM8GE0lEeFoYrUBvQi_8UE-IP8LB0JzdxckEH1YfbbIZkS06m2A_r82i9kATjjp_WEdSkIcgbwpMEeqlIDV2StnxVN67YiL095Hjh4EnrXpMOmk9VCuKbz8gNks',
-    tint: 'rgba(167,58,0,0.08)',
-    accent: 'var(--accent-deep)'
-  },
-  {
-    title: 'Su',
-    desc: 'Anında kapında, ferahlık bir tık uzakta',
-    tag: 'Hızlı',
-    href: '/categories',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBqfZ2CMXWbN7-5lXParu5Hdt7t1sGs2oW92QgwY5Le14Ie5U4N6AoV62ZZkLxScY_Sen9Gda-ObCQylLLXZcnSnlWQD7tsvenogCidtbrIGXi0_yQ3BynprBQqxPHKwETGpI81rhpU8XyGhmJiGXalSdK9mkpPDYRLV-4XoLv9GzwOlfS-qnMzWdPhnaeRCDEoY_8b6KHlv9FfYHk5DbVjSPtBXrJq2g2tssx8RP8PRmEBnGDzfrPpNTnTE8coGhKdVfirYHSeDBw',
-    tint: 'rgba(59,130,246,0.10)',
-    accent: '#1e40af'
-  },
-  {
-    title: 'Pet Shop',
-    desc: 'Can dostların için en iyisi',
-    tag: 'Sevimli',
-    href: '/categories',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAC2kclDb9lWUWOVrT0M-Z6OZmOk7EoeWhPVcdE8gLh8g38VgqVKuIkUhppMJkQ8Lhcq2nnzaiEs4WZOeKun2rqEmq2LwqFeYBRqlkao8zWh-aSvla1pxGJS_TMoRj9sQmnx_zzJtzJWaqagVGWizeZ86l7WV_pnSu-KIZh1CHt0fPFjnxF6CyCAT6XZOMgfHkCuNk5t3X0GaJAiT9-Dzo5JanNbZh5f-EVJR_ycOkCmuAaDScfc76aF9vCKmlXGqNF4joQO2GAoi4',
-    tint: 'rgba(234,88,12,0.10)',
-    accent: '#9a3412'
-  }
-]
-
-// — Kuponlar
-const coupons = [
-  {
-    label: 'Yemek',
-    value: '₺50 İndirim',
-    desc: '₺250 ve üzeri siparişe',
-    code: 'YEMEK50',
-    icon: FireIcon,
-    tint: 'rgba(0,109,61,0.08)',
-    accent: 'var(--brand-deep)'
-  },
-  {
-    label: 'Market',
-    value: '₺150 İndirim',
-    desc: '₺1.000 ve üzeri siparişe',
-    code: 'MARKET150',
-    icon: ShoppingBagIcon,
-    tint: 'rgba(167,58,0,0.08)',
-    accent: 'var(--accent-deep)'
-  },
-  {
-    label: 'Su & İçecek',
-    value: 'Kargo Bedava',
-    desc: 'Tüm su siparişlerinde',
-    code: 'SUKARGO',
-    icon: TruckIcon,
-    tint: 'rgba(59,130,246,0.10)',
-    accent: '#1e40af'
-  }
-]
-
-// — Mutfak yuvarlakları (diğer sekmeler için)
-const cuisines = [
-  { name: 'Döner', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmBnmJaicoulwCtZzvmOmf7TvU_0VXb4LFqrUx5M7w9PsEJ9UsR--2qbK7W6pKxy1846YvjQ79PRySHOeP3VllZarW8aAMp0wn26cF1oi2cswxKHjjiDJAfjjaMVPDLcgxyMUG6XTPZiBeRN7GAzbwtmqhp8UwSLxaXbA44twnKvRIVmyp8imxGt6YXVIJL8Uh2VGuudfQUZEpEGTrw_G9yRInmWsX3o3w0WwzLQOrtsaFH6an_dRj1jCgRoTR1Xysr12cF9-E7wE' },
-  { name: 'Hamburger', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9vZ5U_rmdnihXfSV_HYzOFz1WOLcHQg70qqC9pzyyZ6Ljn1aOXRpocufkwGwlzpBn8BGYsNL7QOaxo-NO601w45CHNKgY8uDNO5lI4sgFjAJjOQ2JciOpTTjPgMtgD6LoIYu7-T3qQeCyuat5KmxH7ytG5UVk_XgdJ2N3ei_veQTrR_Vn8ADvlYPVam6aqvQ3Qf9rtIcF6IeyfAvrcPFANjyRD6ABJhcX9oKsianNELUcABJwfmYJLyefK9CKnygTlK-XtUoM2Ck' },
-  { name: 'Köfte', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBNI60rX9c1qozbTgNXUKnYkdvjpWZcYY00xbRM313R-0umeBI1gBWbGfCm7ieg2VdBQ9XWAtKfVsfVbc_i0RNWuTudcjbztTHBmwFCnila2jA2h9WLn-h1Cjg53eCTxAf9thfTld6yujDF4rx8XR6JE4do2RQjzBDnfDWhhTK0W3RA1ZIyK5GReGp5KYWUCqKARCiVEwevaCRLc271iL28fCD5D84gE7tgQNbTg2SStX8QQi0nb7GqAFKgeDafWITdP5eE8Oqr-Us' },
-  { name: 'Pizza', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB9WlbZ_pcm510og7O_SSatRWExeDyM4F3xDeT_j9o8wUf0ZzldK--9eEcbvEk_COV6RKe19hgPg5gAOGsjemT4I0qnzuw3SDCgauw44KXljTj8ytI2kWJu2LWxBU2YHBnNu6cOaZwZSdNaHd8jDrorbfprnKZ-oHyL10VCtKAqKr21M8IRTgQNlePR68SbKxAUkT6SGHazz7noQxdAqnCoNFdMQ2VjmPOa3bcdlTLxRiMn-MF0xogWfXhkuEpdQdx-7gStn914MFc' },
-  { name: 'Sushi', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuArr0OnneEVxGq5iEfORO34ZWNLLAwsymdIAvbGqamVr6GfVKm5z9Y3AgxPJrFKO1L_sGipNOlp9rVcaO4iH77G7L4YkXCnU7ZXRH_APOypB96Dl7bwgZ4DVpm8uvfBWBGyOdHmfX5V1ycBSkJiCnY4IyBje6e5gQnwnxUA4ftPjKMUyvQbb92dR4fbHSmlq4PuIjxZNHDnFtINOuY0ygoLNiSk5e_daW4cZQOYhK2rpjmSv92cDa3hqf24d-cxBfizUt6CbyJbjdw' },
-  { name: 'Uzak Doğu', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1avzWnI0aTt3O0CnVy643ruwUz9oAEvmJ13163bC4JIilndbZvFiz1l6Oekqq5VjXsrJq4fe2rglVDARD80675ZW1IEIa5n88GSX2nqS-Ix3aRUewtOzc21ZQxxJvo_uwue2JIHWun6J8gIE46v6MnuclEDSz8ZKKgYExb8VdCk0CdAMWHXcC8K-1HcbHau6YrVUpfjUCo38i5gdcdHyqvXElFPGOWJLKzeJPe4FSjkVpIFPBv2_g-pnsuH2_1AUfQRSXSyLDXuM' }
-]
-
-// — Ürün tipi
-interface ProductCard {
-  name: string
-  vendor: string
-  rating: number
-  reviews: string
-  eta: string
-  price: number
-  oldPrice: number | null
-  badge: { tone: 'popular' | 'discount'; label: string } | null
-  image: string
-}
-
-const products: ProductCard[] = [
-  {
-    name: 'Karışık Pizza L',
-    vendor: 'Pasaport Pizza',
-    rating: 4.8,
-    reviews: '200+',
-    eta: '25 dk',
-    price: 249,
-    oldPrice: null,
-    badge: { tone: 'popular', label: 'Popüler' },
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAUEqyehb-ItyB6HHlYvs_CxhTKa5zoJXj3bWyfq9A4q0OtPMHijoKBMcseokCv1Ebfnl_x4iPm8pCRYgnZE0bhnpxye4j7SbbNUV74FM9-otJ5jliO9RX3wyPS9G40L6P01HD14cfMsJSBrI7TQj-hyv_S5ONpQM3TuEb0e-0JvRiGjR17Mf_UeSUuhjyHWRcQ31VgYzUdOPjm09TbjyALp7BbUV8Mcq99odIrJu2GvqhEasAKnmzZbVjieuhvc558P_aqITPc2zE'
-  },
-  {
-    name: 'Sushi Dragon Roll',
-    vendor: 'Sushi Express',
-    rating: 4.9,
-    reviews: '150+',
-    eta: '30 dk',
-    price: 385,
-    oldPrice: null,
-    badge: null,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAC-Tin9cKbVhOQHT5l6JmoMDC2palscXK6nupdkMBaJRook-3HRkWNOi3GvB1FKIcJwjITI1QibNkFqF_1rE35Vz3IsMdIeo1ZR0Vkf8mYbdXdB65Fqvi8V0lcqkwSiIqJMes0SQDlnJ3oCuzXd-66hrokmNCy-U1s9GpwHAUWszGHHvbe403SD6CAQ5ew_-MnlF78VPJOj3X4KO5CJD35fxselONzuzDrXruY9eQ79pi6DZr8b60DQuuXA6akxPmXFaYmp6faZtA'
-  },
-  {
-    name: 'Double Cheeseburger',
-    vendor: 'Burger House',
-    rating: 4.7,
-    reviews: '500+',
-    eta: '20 dk',
-    price: 224,
-    oldPrice: 280,
-    badge: { tone: 'discount', label: '%20 İnd.' },
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAxRLIeFsoOuiLKL0HpvfJEGzcc6XbC-k2lSpBrlDwSZgFFalYOkx4MaIM0Mqg3LS79jVfpaVbUyJ1x6IrJNxW3nY1eIXT0OMotO5OjJGe4-on5VWnzJPTzcHHRCYBze0Sb4wQGjpVJAfMbo6gfA6OPD8IM92TDzeGmFWqi5z8vtZnIXT43ugSQ3gZ7ZQGvE-x8uNp-33X33cZofnT15QoaB26jFRSJDeGkr3AmOANaWFTKITQQfEi4XLomhgE8cjE2fsgBffudCX8'
-  },
-  {
-    name: 'BBQ Kaburga',
-    vendor: 'Smoke & Fire BBQ',
-    rating: 4.6,
-    reviews: '120+',
-    eta: '35 dk',
-    price: 450,
-    oldPrice: null,
-    badge: null,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCR0ffE9DDT4yb8unMbj4fcD-hqaauVXV-CK6HAuFE8LmwCn95s1YH1Rbc--zPNS4mdRYwAPwIjRUtptHed2PRPhqVquTgVJRD8kG_lZQElEYrUPBzw-2BIo7cxkhPaF0tuxPnCfzgPrw3rS6CkQk59c-MlRfpGe8-ZMcAKO7FkQeaTB7nH72ZWq9AIn0oIeLt4eMUsDiO_TU0FCANGfGkE2XeqkvgfO37ciTIxRwYZNETdNOvDMWDEDGbYVmhe5VSetsGcGXDF8QU'
-  },
-  {
-    name: 'Vegan Bowl',
-    vendor: 'Green Leaf Kitchen',
-    rating: 4.8,
-    reviews: '300+',
-    eta: '22 dk',
-    price: 195,
-    oldPrice: null,
-    badge: { tone: 'popular', label: 'Yeni' },
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDf6I7tZaaEf27Q25wUJ1vabCR16Pbe4Big2RPlLXmLPWK8SWNkZ9xOHYVYohnjM5xM-O1Al6CV0FwBX7IvOH0-K3_iF4Cft7EsINVybJlRPs04hnsnqsH_-Bo1gnwByhY4s79ngm4ziZsN1iainOOjoMtKuKNM4RAqMMZCotq1TkF9dpUev-0tGAHQ8O5VQfkhZ7i19XwjfcmbmLgeHLpmpRHke4c0LbtwjuvRvsObu43SrotoF2TGXcfpYK5_sOxzGYmUsl-zWfA'
-  }
-]
 
 // — Güven çubuğu
 const trustItems = [

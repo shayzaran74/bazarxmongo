@@ -97,6 +97,7 @@ const Repositories = [
 ];
 
 import { SettingsAdminController } from './presentation/settings-admin.controller';
+import { SettingsController } from './presentation/settings.controller';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { SettingsAdminController } from './presentation/settings-admin.controlle
     DynamicContentController,
     LegalController,
     SettingsAdminController,
+    SettingsController,
     BannersAdminController,
     DynamicContentAdminController,
     HelpAdminController,

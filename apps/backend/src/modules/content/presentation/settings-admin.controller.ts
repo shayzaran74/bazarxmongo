@@ -50,6 +50,9 @@ class UpdateHomepageSettingsDto {
 class BazarxGoCategoryDto {
   @IsString() title!: string;
   @IsString() image!: string;
+  @IsOptional() @IsString() desc?: string;
+  @IsOptional() @IsString() tag?: string;
+  @IsOptional() @IsString() href?: string;
   @IsOptional() @IsString() tint?: string;
   @IsOptional() @IsString() accent?: string;
 }
@@ -59,6 +62,7 @@ class BazarxGoCouponDto {
   @IsString() value!: string;
   @IsString() desc!: string;
   @IsString() code!: string;
+  @IsOptional() icon?: any;
   @IsOptional() @IsString() tint?: string;
   @IsOptional() @IsString() accent?: string;
 }
@@ -66,6 +70,11 @@ class BazarxGoCouponDto {
 class BazarxGoCuisineDto {
   @IsString() name!: string;
   @IsString() image!: string;
+}
+
+class BazarxGoProductBadgeDto {
+  @IsString() tone!: string;
+  @IsString() label!: string;
 }
 
 class BazarxGoProductDto {
@@ -77,6 +86,7 @@ class BazarxGoProductDto {
   @IsNumber() price!: number;
   @IsOptional() @IsNumber() oldPrice?: number;
   @IsString() image!: string;
+  @IsOptional() @ValidateNested() @Type(() => BazarxGoProductBadgeDto) badge?: BazarxGoProductBadgeDto;
 }
 
 class UpdateBazarxGoSettingsDto {
@@ -239,14 +249,15 @@ export class SettingsAdminController {
   ) {
     const key = 'bazarxGoSettings';
     const existing = await this.settingModel.findOne({ key }).lean();
+    
     const oldValue = (existing?.value ?? {}) as Record<string, unknown>;
     const merged   = { ...oldValue, ...(dto as Record<string, unknown>) };
 
     const newId = new Types.ObjectId().toString();
-    await this.settingModel.findOneAndUpdate(
+    const result = await this.settingModel.findOneAndUpdate(
       { key },
       { $set: { value: merged, updatedBy: admin.id }, $setOnInsert: { _id: newId, id: newId, key } },
-      { upsert: true, setDefaultsOnInsert: true },
+      { upsert: true, setDefaultsOnInsert: true, new: true },
     );
 
     await this.auditLog.log({
