@@ -96,9 +96,9 @@ export class EcosystemAdminController {
     ]);
 
     const trustScores = await Promise.all(memberVendors.map(mv => this.trustScoreRepo.findByVendorId(mv.id)));
-    const trustScoreMap = new Map(trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts]));
+    const trustScoreMap = new Map<string, any>(trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts]));
 
-    const companyMap = new Map(companies.map(c => [c.id, c]));
+    const companyMap = new Map<string, ICompany>(companies.map((c: any) => [c.id, c]));
     
     // Group member vendors by ecoId
     const membersByEcoId = new Map<string, any[]>();
@@ -193,12 +193,12 @@ export class EcosystemAdminController {
     // Batch fetch vendors
     const vendorIds = [...new Set(logs.map(l => l.vendorId).filter(Boolean))];
     const vendors = vendorIds.length ? await this.vendorModel.find({ id: { $in: vendorIds } }).lean().exec() : [];
-    const vendorMap = new Map(vendors.map(v => [v.id, v]));
+    const vendorMap = new Map<string, IVendor>(vendors.map((v: any) => [v.id, v]));
 
     // Batch fetch companies
     const companyIds = [...new Set(vendors.map(v => v.companyId).filter(Boolean))];
     const companies = companyIds.length ? await this.companyModel.find({ id: { $in: companyIds } }).lean().exec() : [];
-    const companyMap = new Map(companies.map(c => [c.id, c]));
+    const companyMap = new Map<string, ICompany>(companies.map((c: any) => [c.id, c]));
 
     // Batch fetch ecosystems
     const ecoIdsFromLogs = logs.map(l => l.ecosystemId).filter(Boolean) as string[];
@@ -206,7 +206,7 @@ export class EcosystemAdminController {
     const uniqueEcoIds = [...new Set([...ecoIdsFromLogs, ...ecoIdsFromVendors])];
     
     const ecosystems = await Promise.all(uniqueEcoIds.map(id => this.brandEcosystemRepo.findById(id)));
-    const ecoMap = new Map(ecosystems.filter(Boolean).map(e => [e!.id, e]));
+    const ecoMap = new Map<string, any>(ecosystems.filter(Boolean).map(e => [e!.id, e]));
 
     const result = logs.map(log => {
       let vendorBusinessName = 'SİSTEM';
