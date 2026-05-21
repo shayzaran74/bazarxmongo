@@ -8,6 +8,7 @@ import { GetWalletRequestsQuery } from '../application/queries/get-wallet-reques
 import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-transactions.query';
 import { ProcessWalletRequestCommand } from '../application/commands/process-wallet-request.command';
 import { ProcessWithdrawalCommand } from '../application/commands/process-withdrawal.command';
+import { WalletQueryDto, RejectWithdrawalDto } from './dto/wallet.dto';
 
 interface AuthenticatedUser {
   id: string;
@@ -31,14 +32,11 @@ export class WalletAdminController {
   @ApiOperation({ summary: 'Get all wallet requests' })
   @Get('requests')
   async getRequests(
-    @Query('page') page = '1',
-    @Query('limit') limit = '10',
-    @Query('status') status?: string,
-    @Query('user') userId?: string,
+    @Query() query: WalletQueryDto & { userId: string },
   ) {
-    if (!userId) throw new Error('userId (user query param) zorunludur');
+    if (!query.userId?.trim()) throw new BadRequestException('userId query param zorunludur');
     const data = await this.queryBus.execute(
-      new GetWalletRequestsQuery(userId, status, parseInt(page, 10) || 1, parseInt(limit, 10) || 10),
+      new GetWalletRequestsQuery(query.userId, query.accountType, query.page || 1, query.limit || 10),
     );
     return { success: true, data };
   }
@@ -54,24 +52,21 @@ export class WalletAdminController {
   @Post('requests/:id/reject')
   async rejectRequest(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectWithdrawalDto,
     @CurrentUser() admin: AuthenticatedUser,
   ) {
-    await this.commandBus.execute(new ProcessWalletRequestCommand(id, 'reject', admin.id, body.reason));
+    await this.commandBus.execute(new ProcessWalletRequestCommand(id, 'reject', admin.id, body.reason || ''));
     return { success: true, message: 'Talep reddedildi' };
   }
 
   @ApiOperation({ summary: 'Get all withdrawals' })
   @Get('withdrawals')
   async getWithdrawals(
-    @Query('page') page = '1',
-    @Query('limit') limit = '10',
-    @Query('status') status?: string,
-    @Query('user') userId?: string,
+    @Query() query: WalletQueryDto & { userId: string },
   ) {
-    if (!userId) throw new Error('userId (user query param) zorunludur');
+    if (!query.userId?.trim()) throw new BadRequestException('userId query param zorunludur');
     const data = await this.queryBus.execute(
-      new GetWithdrawalsQuery(userId, status, parseInt(page, 10) || 1, parseInt(limit, 10) || 10),
+      new GetWithdrawalsQuery(query.userId, query.accountType, query.page || 1, query.limit || 10),
     );
     return { success: true, data };
   }
@@ -87,23 +82,20 @@ export class WalletAdminController {
   @Post('withdrawals/:id/reject')
   async rejectWithdrawal(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectWithdrawalDto,
     @CurrentUser() admin: AuthenticatedUser,
   ) {
-    await this.commandBus.execute(new ProcessWithdrawalCommand(id, 'reject', admin.id, body.reason));
+    await this.commandBus.execute(new ProcessWithdrawalCommand(id, 'reject', admin.id, body.reason || ''));
     return { success: true, message: 'Çekim talebi reddedildi' };
   }
 
   @ApiOperation({ summary: 'Get transactions for a specific user (admin view)' })
   @Get('transactions')
   async getTransactions(
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
-    @Query('userId') userId?: string,
+    @Query() query: WalletQueryDto & { userId?: string },
   ) {
-    // Not: Dashboard tüm işlemleri görmek istediği için userId artık opsiyonel
     const data = await this.queryBus.execute(
-      new GetWalletTransactionsQuery(userId || '', undefined, parseInt(page, 10) || 1, parseInt(limit, 10) || 20),
+      new GetWalletTransactionsQuery(query.userId || '', undefined, query.page || 1, query.limit || 20),
     );
     return { success: true, data };
   }

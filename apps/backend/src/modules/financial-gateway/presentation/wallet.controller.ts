@@ -6,6 +6,7 @@ import { GetWalletTransactionsQuery } from '../application/queries/get-wallet-tr
 import { TopUpWalletCommand } from '../application/commands/top-up-wallet.command';
 import { RequestWithdrawalCommand } from '../application/commands/request-withdrawal.command';
 import { FinancialGatewayService } from '../financial-gateway.service';
+import { TopUpWalletDto, RequestWithdrawalDto, WalletQueryDto } from './dto/wallet.dto';
 
 interface AuthenticatedUser {
   id: string;
@@ -35,18 +36,15 @@ export class WalletController {
   @Get('transactions')
   async getTransactions(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('accountType') accountType?: string,
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
-    @Query('accountId') accountId?: string,
+    @Query() query: WalletQueryDto,
   ) {
     const data = await this.queryBus.execute(
       new GetWalletTransactionsQuery(
         user.id,
-        accountType,
-        parseInt(page, 10) || 1,
-        parseInt(limit, 10) || 20,
-        accountId,
+        query.accountType,
+        query.page || 1,
+        query.limit || 20,
+        query.accountId,
       ),
     );
     return { success: true, data };
@@ -56,15 +54,14 @@ export class WalletController {
   async getAccountTransactions(
     @CurrentUser() user: AuthenticatedUser,
     @Param('accountId') accountId: string,
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
+    @Query() query: Pick<WalletQueryDto, 'page' | 'limit'>,
   ) {
     const data = await this.queryBus.execute(
       new GetWalletTransactionsQuery(
         user.id,
         undefined,
-        parseInt(page, 10) || 1,
-        parseInt(limit, 10) || 20,
+        query.page || 1,
+        query.limit || 20,
         accountId,
       ),
     );
@@ -74,15 +71,14 @@ export class WalletController {
   @Get('ledger')
   async getLedger(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('page') page = '1',
-    @Query('limit') limit = '50',
+    @Query() query: Pick<WalletQueryDto, 'page' | 'limit'>,
   ) {
     const data = await this.queryBus.execute(
       new GetWalletTransactionsQuery(
         user.id,
         undefined,
-        parseInt(page, 10) || 1,
-        parseInt(limit, 10) || 50,
+        query.page || 1,
+        query.limit || 50,
         undefined,
       ),
     );
@@ -92,7 +88,7 @@ export class WalletController {
   @Post('topup')
   async topUp(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: { amount: number; paymentMethod: string },
+    @Body() dto: TopUpWalletDto,
   ) {
     const data = await this.commandBus.execute(
       new TopUpWalletCommand(user.id, dto.amount, dto.paymentMethod),
@@ -103,24 +99,23 @@ export class WalletController {
   @Post('withdraw')
   async withdraw(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: { amount: number; iban: string; accountHolder: string; bankName: string },
+    @Body() dto: RequestWithdrawalDto,
   ) {
     const data = await this.commandBus.execute(
       new RequestWithdrawalCommand(user.id, dto.amount, dto.iban, dto.accountHolder, dto.bankName),
     );
     return { success: true, data };
   }
-  
+
   @Get('gift-cards')
   async getGiftCards(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
+    @Query() query: Pick<WalletQueryDto, 'page' | 'limit'>,
   ) {
     const data = await this.financialGateway.listGiftCards({
       customerId: user.id,
-      page: parseInt(page, 10) || 1,
-      limit: parseInt(limit, 10) || 20,
+      page: query.page || 1,
+      limit: query.limit || 20,
     });
     return { success: true, data };
   }

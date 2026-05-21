@@ -1,21 +1,65 @@
+export interface WalletAccount {
+  id: string;
+  type: string;
+  balance: string;
+  availableBalance?: string;
+  blockedBalance?: string;
+  currency: string;
+}
+
+export interface WalletTopUpRequest {
+  id: string;
+  userId: string;
+  amount: string;
+  status: string;
+  paymentMethod?: string;
+  createdAt: string;
+}
+
+export interface WalletWithdrawalRequest {
+  id: string;
+  userId: string;
+  amount: string;
+  status: string;
+  iban?: string;
+  accountHolder?: string;
+  bankName?: string;
+  rejectionReason?: string;
+  processedAt?: string;
+  createdAt: string;
+}
+
+export interface WalletGiftCard {
+  id: string;
+  code: string;
+  initialValue: string;
+  currentValue: string;
+  status: string;
+  expiresAt?: string;
+  customerId?: string;
+  note?: string;
+  createdAt: string;
+}
+
 export interface Wallet {
   id?: string;
   userId?: string;
-  balance: number;
-  availableBalance?: number;
-  blockedBalance?: number;
+  balance: string;
+  availableBalance?: string;
+  blockedBalance?: string;
   currency: string;
   isActive?: boolean;
-  cards?: any[];
-  requests?: any[];
-  giftCards?: any[];
-  auctions?: any[];
+  accounts?: WalletAccount[];
+  cards?: WalletAccount[];
+  requests?: WalletTopUpRequest[];
+  giftCards?: WalletGiftCard[];
+  auctions?: string[];
 }
 
 export interface WalletTransaction {
   id: string;
   walletId: string;
-  amount: number;
+  amount: string;
   type: string;
   direction?: 'DEBIT' | 'CREDIT';
   status: string;
@@ -30,7 +74,7 @@ export interface WalletTransaction {
 export interface LedgerEntry {
   id: string;
   type: string;
-  amount: number;
+  amount: string;
   description: string;
   createdAt: string;
 }

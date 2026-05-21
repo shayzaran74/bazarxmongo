@@ -11,10 +11,10 @@ export class GetWalletBalanceHandler
   ) {}
 
   async execute(query: GetWalletBalanceQuery) {
-    const balance: any = await this.financialGateway.getBalance(
+    const balance = await this.financialGateway.getBalance(
       query.userId,
       query.accountType
-    );
+    ) as { balance: string; availableBalance: string; blockedBalance: string };
     return {
       balance: parseFloat(balance.balance),
       availableBalance: parseFloat(balance.availableBalance),
