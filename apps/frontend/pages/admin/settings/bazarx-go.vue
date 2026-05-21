@@ -349,12 +349,15 @@ const settings = ref({
   showCoupons: true,
   couponsTitle: 'İndirim Kuponların',
   couponsSubtitle: '3 aktif kupon · son 2 gün',
+  coupons: [],
   showCuisines: true,
   cuisinesTitle: 'Mutfaklar',
   cuisinesSubtitle: 'Damak tadına göre keşfet',
+  cuisines: [],
   showPersonalized: true,
   personalizedTitle: 'Sana Özel Seçimler',
-  personalizedSubtitle: 'Geçmişine göre hazırlandı'
+  personalizedSubtitle: 'Geçmişine göre hazırlandı',
+  personalizedProducts: []
 })
 
 const addCategory = () => {
@@ -391,8 +394,8 @@ const addPersonalizedProduct = () => {
   })
 }
 
-const removePersonalizedProduct = (index) => {
-  settings.value.personalizedProducts.splice(index, 1)
+const removePersonalizedProduct = (index: number) => {
+  settings.value.personalizedProducts?.splice(index, 1)
 }
 
 const saving = ref(false)
@@ -402,11 +405,16 @@ const { $api } = useApi()
 onMounted(async () => {
   try {
     const res = await $api('/api/v1/admin/settings/bazarx-go')
-    if (res?.data) {
-      settings.value = { ...settings.value, ...res.data }
+    if (res?.success && res?.data) {
+      // Object.assign ile mevcut reaktif nesneyi yerinde güncelle
+      // Spread ile yeniden atamak Vue 3'te iç içe reaktifliği bozabilir
+      Object.assign(settings.value, res.data)
+      console.log('[BazarX Go] Ayarlar yüklendi:', Object.keys(res.data as object))
+    } else {
+      console.warn('[BazarX Go] Sunucudan veri gelmedi, varsayılanlar kullanılıyor')
     }
   } catch (e) {
-    console.error('Ayarlar alınamadı:', e)
+    console.error('[BazarX Go] Ayarlar alınamadı:', e)
   }
 })
 
@@ -417,7 +425,11 @@ const saveSettings = async () => {
       method: 'PUT',
       body: settings.value
     })
-    $toast?.success?.('BazarX Go ayarları başarıyla kaydedildi')
+    if (res?.success) {
+      $toast?.success?.('BazarX Go ayarları başarıyla kaydedildi')
+    } else {
+      $toast?.error?.('Kayıt başarısız — sunucu hatası')
+    }
   } catch (e) {
     $toast?.error?.('Ayarlar kaydedilirken bir hata oluştu')
   } finally {
