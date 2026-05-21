@@ -180,61 +180,101 @@
 
       <!-- Main Content: Sidebar + Products -->
       <div class="flex flex-col lg:flex-row gap-6 items-start">
-        <!-- Category Sidebar -->
-        <aside
-          v-motion
-          :initial="{ opacity: 0, x: -24, filter: 'blur(10px)' }"
-          :visible-once="{ opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 600, delay: 200, ease: [0.25, 0.46, 0.45, 0.94] } }"
-          class="hidden lg:block w-72 sticky top-28 bg-white rounded-xl p-4 space-y-4 shadow-sm"
-        >
-          <!-- Categories -->
-          <div class="space-y-2">
-            <h4 class="text-xs font-bold text-black/40 uppercase tracking-wider px-2 py-1">Kategoriler</h4>
-            <nav class="space-y-1">
-              <a
-                v-for="(cat, i) in menuCategories"
-                :key="cat.name"
-                :href="`#${cat.id}`"
-                class="flex items-center gap-3 p-3 rounded-xl transition-all"
-                :class="activeCategory === cat.id
-                  ? 'bg-[var(--brand)] text-white shadow-sm'
-                  : 'hover:bg-[var(--surface)] text-black/60 hover:text-[var(--brand-deep)]'"
-                :style="{ transitionDelay: `${i * 30}ms` }"
+        <!-- Category Sidebar — tamamen gerçek veri, IntersectionObserver scroll-spy -->
+        <aside class="hidden lg:block w-64 shrink-0 sticky top-28 self-start space-y-3">
+
+          <!-- Özet kart -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.05]">
+            <p class="text-[10px] font-black text-black/30 uppercase tracking-widest mb-1">Menü Özeti</p>
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-3xl font-black text-[var(--ink)]">{{ filteredProducts.length }}</span>
+              <span class="text-sm text-black/40 font-bold">ürün</span>
+            </div>
+            <div class="flex items-center gap-3 mt-2 text-[11px] font-bold text-black/40">
+              <span>{{ menuCategories.length }} kategori</span>
+              <span>·</span>
+              <span v-if="realPriceRange.min > 0">
+                {{ formatPrice(realPriceRange.min) }} – {{ formatPrice(realPriceRange.max) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Kategori listesi -->
+          <div class="bg-white rounded-2xl shadow-sm border border-black/[0.05] overflow-hidden">
+            <div class="px-4 pt-4 pb-2">
+              <p class="text-[10px] font-black text-black/30 uppercase tracking-widest">Kategoriler</p>
+            </div>
+            <nav class="pb-3 space-y-0.5 px-2">
+              <!-- Tümü -->
+              <button
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left"
+                :class="activeCategory === '__all__'
+                  ? 'bg-[var(--brand-deep)] text-white shadow-sm'
+                  : 'hover:bg-[var(--surface)] text-black/60'"
+                @click="selectCategory('__all__')"
               >
-                <div class="w-8 h-8 rounded-lg grid place-items-center bg-black/5 group-hover:bg-white/20">
-                  <component :is="getCategoryIcon(cat.icon)" class="w-4 h-4" />
-                </div>
-                <span class="flex-1 font-medium text-sm">{{ cat.name }}</span>
-                <span v-if="cat.badge" class="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">{{ cat.badge }}</span>
-              </a>
+                <span class="text-lg leading-none">🍽️</span>
+                <span class="flex-1 font-bold text-sm">Tümü</span>
+                <span class="text-[11px] font-black px-2 py-0.5 rounded-lg"
+                  :class="activeCategory === '__all__' ? 'bg-white/20' : 'bg-black/5 text-black/40'">
+                  {{ filteredProducts.length }}
+                </span>
+              </button>
+
+              <!-- Dinamik kategoriler -->
+              <button
+                v-for="cat in menuCategories"
+                :key="cat.id"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left"
+                :class="activeCategory === cat.id
+                  ? 'bg-[var(--brand-deep)] text-white shadow-sm'
+                  : 'hover:bg-[var(--surface)] text-black/60'"
+                @click="selectCategory(cat.id)"
+              >
+                <span class="text-lg leading-none">{{ cat.emoji }}</span>
+                <span class="flex-1 font-bold text-sm leading-tight">{{ cat.name }}</span>
+                <span class="text-[11px] font-black px-2 py-0.5 rounded-lg shrink-0"
+                  :class="activeCategory === cat.id ? 'bg-white/20' : 'bg-black/5 text-black/40'">
+                  {{ cat.count }}
+                </span>
+              </button>
             </nav>
           </div>
 
-          <!-- Price Range -->
-          <div class="space-y-2 pt-4 border-t border-black/10">
-            <h4 class="text-xs font-bold text-black/40 uppercase tracking-wider px-2">Fiyat Aralığı</h4>
-            <div class="space-y-1">
-              <label v-for="range in priceRanges" :key="range" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface)] cursor-pointer transition-colors group">
-                <input class="rounded border-black/20 text-[var(--brand-deep)] focus:ring-[var(--brand)] w-4 h-4" type="checkbox" />
-                <span class="text-sm text-black/60 group-hover:text-[var(--ink)]">{{ range }}</span>
-              </label>
+          <!-- Fiyat filtresi (gerçek min-max'tan) -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.05] space-y-4">
+            <p class="text-[10px] font-black text-black/30 uppercase tracking-widest">Fiyat Filtresi</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="text-[9px] font-black text-black/30 uppercase tracking-widest block">Min (₺)</label>
+                <input v-model.number="priceMin" type="number" min="0"
+                  :placeholder="String(realPriceRange.min)"
+                  class="w-full bg-[var(--surface)] rounded-xl px-3 py-2 text-sm font-black focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-[9px] font-black text-black/30 uppercase tracking-widest block">Max (₺)</label>
+                <input v-model.number="priceMax" type="number" min="0"
+                  :placeholder="String(realPriceRange.max)"
+                  class="w-full bg-[var(--surface)] rounded-xl px-3 py-2 text-sm font-black focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all" />
+              </div>
             </div>
+            <div class="space-y-1">
+              <label class="text-[9px] font-black text-black/30 uppercase tracking-widest block">Sırala</label>
+              <select v-model="sortBy"
+                class="w-full bg-[var(--surface)] rounded-xl px-3 py-2 text-sm font-black focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all appearance-none">
+                <option value="default">Varsayılan</option>
+                <option value="price_asc">En Ucuz Önce</option>
+                <option value="price_desc">En Pahalı Önce</option>
+                <option value="name_asc">A → Z</option>
+              </select>
+            </div>
+            <button v-if="priceMin || priceMax || sortBy !== 'default'"
+              class="w-full text-[10px] font-black text-[var(--brand-deep)] hover:underline"
+              @click="priceMin = null; priceMax = null; sortBy = 'default'">
+              Filtreleri Temizle
+            </button>
           </div>
 
-          <!-- Popular Filters -->
-          <div class="space-y-2 pt-4 border-t border-black/10">
-            <h4 class="text-xs font-bold text-black/40 uppercase tracking-wider px-2">Popüler Filtreler</h4>
-            <div class="flex flex-wrap gap-2 px-2">
-              <button
-                v-for="filter in popularFilters"
-                :key="filter.label"
-                class="px-3 py-1.5 rounded-full border border-black/20 text-xs font-medium hover:border-[var(--brand)] hover:text-[var(--brand-deep)] transition-all flex items-center gap-1"
-              >
-                <component :is="filter.icon" class="w-4 h-4" />
-                {{ filter.label }}
-              </button>
-            </div>
-          </div>
         </aside>
 
         <!-- Product Display Area -->
@@ -314,26 +354,43 @@
             <button @click="resetFilters" class="text-[var(--brand-deep)] font-bold text-sm hover:underline">Filtreleri Temizle</button>
           </div>
 
-          <!-- Menu Sections -->
+          <!-- "Tümü" seçiliyken düz ürün grid -->
+          <div v-if="activeCategory === '__all__'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <article
+              v-for="(product, i) in filteredProducts"
+              :key="product.id"
+              @click="openProductModal(product)"
+              class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300 group cursor-pointer border border-black/5"
+              :style="{ transitionDelay: `${Math.min(i, 8) * 30}ms` }"
+            >
+              <div class="aspect-[16/9] w-full overflow-hidden">
+                <img :src="product.image" :alt="product.name"
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div class="p-4 space-y-1">
+                <p class="text-[10px] font-bold text-[var(--brand-deep)] uppercase tracking-widest">{{ product.categoryName }}</p>
+                <h4 class="font-bold text-[var(--ink)] text-sm leading-tight line-clamp-2">{{ product.name }}</h4>
+                <p class="font-black text-[var(--brand-deep)]">{{ formatPrice(product.price) }}</p>
+              </div>
+            </article>
+          </div>
+
+          <!-- Kategori bazlı bölümler -->
+          <template v-else>
           <section
             v-for="(category, catIndex) in menuCategories"
             :key="category.id"
             :id="category.id"
-            class="scroll-mt-28 space-y-4"
+            class="scroll-mt-32 space-y-4"
           >
-            <div class="flex items-center justify-between">
-              <h3 class="font-heading text-xl md:text-2xl font-bold text-[var(--ink)] border-l-4 border-[var(--brand)] pl-4">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">{{ category.emoji }}</span>
+              <h3 class="font-heading text-xl font-bold text-[var(--ink)]">
                 {{ category.name }}
-                <span class="text-black/40 text-base font-normal">({{ getProductsByCategory(category.id).length }} Ürün)</span>
               </h3>
-              <div class="relative w-full max-w-xs hidden md:block">
-                <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
-                <input
-                  class="w-full bg-[var(--surface)] border-none rounded-full py-2 pl-10 pr-4 text-sm"
-                  :placeholder="`${category.name} içinde ara...`"
-                  type="text"
-                />
-              </div>
+              <span class="px-2.5 py-0.5 bg-[var(--surface)] rounded-full text-[11px] font-black text-black/40">
+                {{ getProductsByCategory(category.id).length }}
+              </span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 gap-y-6">
@@ -370,6 +427,7 @@
               </article>
             </div>
           </section>
+          </template>
 
           <!-- Ad Banner -->
           <div
@@ -590,7 +648,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -639,13 +697,12 @@ const { vendor: vendorData, products: vendorProducts, fetchVendor, fetchProducts
 onMounted(async () => {
   await Promise.all([
     fetchVendor(),
-    // vendorId handler'da özel vendorId filtresini tetikler (RESTAURANT exclusion bypass)
     fetchProducts({ limit: 100, vendorId: restaurantId })
   ])
-  
-  if (menuCategories.value.length > 0) {
-    activeCategory.value = menuCategories.value[0].id
-  }
+  // Başlangıçta "Tümü" seçili
+  activeCategory.value = '__all__'
+  await nextTick()
+  initScrollSpy()
 })
 
 // Search & Filtering
@@ -695,20 +752,8 @@ const restaurant = computed<RestaurantDetail>(() => {
   }
 })
 
-// Coupons (Keep mock for now or fetch if available)
-const coupons = [
-  {
-    title: '200 TL İndirim',
-    subtitle: 'Kupon Kodu: ILKYEMEK200'
-  },
-  {
-    title: "Arby's İkilim 210 TL!",
-    subtitle: 'Seçili ürünlerde özel fiyat'
-  }
-]
-
-// Price ranges
-const priceRanges = ['0 TL - 150 TL', '150 TL - 300 TL', '300 TL+']
+// Coupons — gerçek API entegrasyonuna hazır (şimdilik boş)
+const coupons: { title: string; subtitle: string }[] = []
 
 // Modal Selection State
 const showProductModal = ref(false)
@@ -937,11 +982,7 @@ const priceMax    = ref<number | null>(null)
 const sortBy      = ref<'default' | 'price_asc' | 'price_desc' | 'name_asc'>('default')
 const showFilters = ref(false)
 
-const popularFilters = [
-  { label: 'Ücretsiz Teslimat', icon: TruckIcon },
-  { label: '4.5+ Puan',        icon: StarFilled },
-  { label: 'İndirimli',        icon: FireIcon },
-]
+// popularFilters sidebar'dan kaldırıldı — fiyat/sort sidebar'a taşındı
 
 // Dynamic products and categories
 const products = computed(() => {
@@ -989,22 +1030,107 @@ const resetFilters = () => {
   sortBy.value          = 'default'
 }
 
-const menuCategories = computed(() => {
-  const catsMap: Record<string, any> = {}
-  filteredProducts.value.forEach(p => {
-    if (!catsMap[p.categoryId]) {
-      catsMap[p.categoryId] = {
-        id: p.categoryId,
-        name: p.categoryName,
-        icon: 'stars',
-        badge: null
-      }
-    }
-  })
-  return Object.values(catsMap)
+// ── Kategori emoji eşleşmesi (kategori adına göre otomatik) ──────────────
+const CATEGORY_EMOJI_MAP: { keywords: string[]; emoji: string }[] = [
+  { keywords: ['burger', 'hamburger'],               emoji: '🍔' },
+  { keywords: ['pizza'],                             emoji: '🍕' },
+  { keywords: ['döner', 'doner', 'kebap', 'kebab'],  emoji: '🌯' },
+  { keywords: ['tavuk', 'chicken', 'kanat'],         emoji: '🍗' },
+  { keywords: ['tatlı', 'tatli', 'dessert', 'pasta', 'waffle', 'cheesecake'], emoji: '🍰' },
+  { keywords: ['kahve', 'coffee', 'espresso'],       emoji: '☕' },
+  { keywords: ['içecek', 'icecek', 'drink', 'smoothie', 'limonata'], emoji: '🥤' },
+  { keywords: ['salata', 'salad', 'vejetaryen'],     emoji: '🥗' },
+  { keywords: ['dondurma', 'ice cream'],             emoji: '🍦' },
+  { keywords: ['makarna', 'pasta', 'noodle'],        emoji: '🍝' },
+  { keywords: ['et', 'steak', 'biftek', 'ızgara', 'izgara'], emoji: '🥩' },
+  { keywords: ['deniz', 'balik', 'balık', 'seafood'],emoji: '🐟' },
+  { keywords: ['meze', 'aperatif', 'başlangıç'],    emoji: '🫙' },
+  { keywords: ['çorba', 'corba', 'soup'],            emoji: '🥣' },
+  { keywords: ['pide', 'lahmacun', 'fırın'],         emoji: '🫓' },
+  { keywords: ['sandviç', 'sandwich', 'wrap'],       emoji: '🥪' },
+]
+
+const getCategoryEmoji = (name: string): string => {
+  const lower = name.toLowerCase()
+  for (const { keywords, emoji } of CATEGORY_EMOJI_MAP) {
+    if (keywords.some(k => lower.includes(k))) return emoji
+  }
+  return '🍽️'
+}
+
+// Gerçek fiyat aralığı (tüm products üzerinden)
+const realPriceRange = computed(() => {
+  const prices = products.value.map(p => Number(p.price) || 0).filter(p => p > 0)
+  if (prices.length === 0) return { min: 0, max: 0 }
+  return { min: Math.min(...prices), max: Math.max(...prices) }
 })
 
-// Helper function to get products by category
+const formatPrice = (v: number): string =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(v)
+
+// Kategoriler — gerçek ürün verisiyle, count ve emoji dahil
+const menuCategories = computed(() => {
+  const catsMap: Record<string, { id: string; name: string; emoji: string; count: number }> = {}
+  // Tüm products'tan (filtre uygulanmamış) kategori listesi
+  products.value.forEach(p => {
+    if (!catsMap[p.categoryId]) {
+      catsMap[p.categoryId] = {
+        id:    p.categoryId,
+        name:  p.categoryName,
+        emoji: getCategoryEmoji(p.categoryName),
+        count: 0,
+      }
+    }
+    // filteredProducts'ta bu ürün varsa sayacı artır
+    if (filteredProducts.value.some(fp => fp.id === p.id)) {
+      catsMap[p.categoryId].count++
+    }
+  })
+  return Object.values(catsMap).filter(c => c.count > 0)
+})
+
+// Kategori seçimi — '__all__' tümünü gösterir, diğerleri scroll + highlight
+const selectCategory = (categoryId: string) => {
+  activeCategory.value = categoryId
+  if (categoryId === '__all__') return
+  const el = document.getElementById(categoryId)
+  if (el) {
+    const offset = 120 // sticky header yüksekliği
+    const top = el.getBoundingClientRect().top + window.scrollY - offset
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+}
+
+// IntersectionObserver — scroll sırasında aktif kategoriyi otomatik güncelle
+let observer: IntersectionObserver | null = null
+
+const initScrollSpy = () => {
+  if (!import.meta.client) return
+  observer?.disconnect()
+  observer = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          activeCategory.value = entry.target.id
+          break
+        }
+      }
+    },
+    { rootMargin: '-20% 0px -70% 0px', threshold: 0 },
+  )
+  menuCategories.value.forEach(cat => {
+    const el = document.getElementById(cat.id)
+    if (el) observer!.observe(el)
+  })
+}
+
+// Filtrelenmiş ürünler değişince scroll-spy'ı yeniden başlat
+watch(menuCategories, async () => {
+  await nextTick()
+  initScrollSpy()
+}, { flush: 'post' })
+
+// Kategori bölümleri için ürün listesi
 const getProductsByCategory = (categoryId: string) => {
   return filteredProducts.value.filter(p => p.categoryId === categoryId)
 }
@@ -1013,32 +1139,11 @@ const scrollToMenuSearch = () => {
   const el = document.querySelector('input[placeholder="Menü içinde ara..."]')
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    // @ts-ignore
-    el.focus()
+    ;(el as HTMLInputElement).focus()
   }
 }
 
-// Icon helper for categories
-const getCategoryIcon = (iconName: string) => {
-  switch (iconName) {
-    case 'stars': return SparklesIcon
-    case 'favorite': return HeartIcon
-    case 'lunch_dining': return FireIcon
-    case 'fastfood': return ShoppingBagIcon
-    case 'cake': return FireIcon
-    case 'local_drink': return ShoppingBagIcon
-    default: return SparklesIcon
-  }
-}
-
-// Scroll to category on click
-const scrollToCategory = (categoryId: string) => {
-  activeCategory.value = categoryId
-  const element = document.getElementById(categoryId)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
-  }
-}
+onUnmounted(() => observer?.disconnect())
 
 useHead({
   title: `${restaurant.value.name} - BazarX Go`,
