@@ -14,6 +14,36 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { ReturnService } from '../application/services/return.service';
+import { ReturnReasonType } from '../domain/enums/return-reason-type.enum';
+import { IsString, IsArray, IsEnum, ValidateNested, IsOptional, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ReturnItemDto {
+  @IsString()
+  orderItemId!: string;
+
+  @IsNumber()
+  quantity!: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class CreateReturnRequestDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReturnItemDto)
+  items!: ReturnItemDto[];
+
+  @IsString()
+  reason!: string;
+
+  @IsEnum(ReturnReasonType)
+  reasonType!: ReturnReasonType;
+}
+
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -24,13 +54,13 @@ export class ReturnController {
   @HttpCode(HttpStatus.CREATED)
   async createReturn(
     @Param('id') orderId: string,
-    @Body() dto: Record<string, any>,
+    @Body() dto: CreateReturnRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.returnService.createReturn(user.id, {
       ...dto,
       orderId,
-    } as any);
+    });
     return { success: true, data: result };
   }
 
