@@ -3,13 +3,14 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { IUserLevel } from '@barterborsa/shared-persistence';
 
 import { UserLevel as UserLevelModel } from '@barterborsa/shared-persistence/schemas/backend/userLevel.schema';
 import { IUserLevelRepository } from '../../domain/repositories/user-level.repository.interface';
 
 @Injectable()
 export class MongoUserLevelRepository implements IUserLevelRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<IUserLevel>;
 
   constructor() {
     this.model = UserLevelModel;

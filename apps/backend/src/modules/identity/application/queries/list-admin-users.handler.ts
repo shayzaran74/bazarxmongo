@@ -3,7 +3,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IUser, IUserProfile, IVendor, UserStatusType, UserRoleType } from '@barterborsa/shared-persistence';
+import { IUser, IUserProfile, IVendor, UserStatusType, UserRoleType, ICompany } from '@barterborsa/shared-persistence';
 import { ListAdminUsersQuery } from './list-admin-users.query';
 
 interface UserFilter {
@@ -19,7 +19,7 @@ export class ListAdminUsersHandler implements IQueryHandler<ListAdminUsersQuery>
     @InjectModel('User') private readonly userModel: Model<IUser>,
     @InjectModel('UserProfile') private readonly profileModel: Model<IUserProfile>,
     @InjectModel('Vendor') private readonly vendorModel: Model<IVendor>,
-    @InjectModel('Company') private readonly companyModel: Model<any>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
   ) {}
 
   async execute(query: ListAdminUsersQuery) {

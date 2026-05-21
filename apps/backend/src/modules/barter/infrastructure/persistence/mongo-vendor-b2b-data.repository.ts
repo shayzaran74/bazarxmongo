@@ -9,7 +9,7 @@ import { IVendorB2BDataRepository } from '../../domain/repositories/vendor-b2b-d
 
 @Injectable()
 export class MongoVendorB2BDataRepository implements IVendorB2BDataRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<Document>;
 
   constructor() {
     this.model = VendorB2BDataModel;

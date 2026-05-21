@@ -215,15 +215,15 @@ export class VendorInventoryController {
           }
 
           successCount++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           failedCount++;
-          errors.push(`${row['Başlık'] || 'Bilinmeyen'}: ${err.message}`);
+          errors.push(`${row['Başlık'] || 'Bilinmeyen'}: ${(err instanceof Error ? err.message : String(err))}`);
         }
       }
 
       return { success: true, results: { success: successCount, failed: failedCount, errors } };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) };
     }
   }
 
@@ -368,7 +368,7 @@ export class VendorInventoryController {
         successCount++;
       } catch (err: unknown) {
         failedCount++;
-        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        const msg = err instanceof Error ? (err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err)) : 'Bilinmeyen hata';
         this.logger.error(`Import failed for ${String(raw['title'] ?? 'Bilinmeyen')}: ${msg}`);
         errors.push(`${String(raw['title'] ?? 'Bilinmeyen')}: ${msg}`);
       }

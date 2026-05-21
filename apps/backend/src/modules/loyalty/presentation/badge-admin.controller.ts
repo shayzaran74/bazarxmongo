@@ -12,8 +12,8 @@ import { IBadgeRule, IListing } from '@barterborsa/shared-persistence';
 @Controller('admin/badge-rules')
 export class BadgeAdminController {
   constructor(
-    @InjectModel('BadgeRule') private readonly badgeRuleModel: Model<any>,
-    @InjectModel('Listing') private readonly listingModel: Model<any>,
+    @InjectModel('BadgeRule') private readonly badgeRuleModel: Model<IBadgeRule>,
+    @InjectModel('Listing') private readonly listingModel: Model<IListing>,
   ) {}
 
   @ApiOperation({ summary: 'List all badge rules' })

@@ -3,33 +3,34 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { ISurplusCategory } from '@barterborsa/shared-persistence';
 import { SurplusCategory as SurplusCategoryModel } from '@barterborsa/shared-persistence/schemas/backend/surplusCategory.schema';
 import { ICategoryRepository } from '../../domain/repositories/category.repository.interface';
 
 @Injectable()
 export class MongoCategoryRepository implements ICategoryRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<ISurplusCategory>;
 
   constructor() {
     this.model = SurplusCategoryModel;
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<ISurplusCategory | null> {
     const doc = await this.model.findOne({ id }).exec();
     return doc ? doc.toObject() : null;
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<ISurplusCategory[]> {
     const docs = await this.model.find({}).exec();
     return docs.map(doc => doc.toObject());
   }
 
-  async findRootCategories(): Promise<any[]> {
+  async findRootCategories(): Promise<ISurplusCategory[]> {
     const docs = await this.model.find({ parentId: null }).exec();
     return docs.map(doc => doc.toObject());
   }
 
-  async findWithChildren(parentId: string | null): Promise<any[]> {
+  async findWithChildren(parentId: string | null): Promise<ISurplusCategory[]> {
     const docs = await this.model.find({ parentId }).exec();
     return docs.map(doc => doc.toObject());
   }

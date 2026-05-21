@@ -1,3 +1,4 @@
+import { ICompany, IVendorProfile, IUser, IUserProfile, IVendorCategory, ICategory, IListing } from '@barterborsa/shared-persistence';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Logger, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -12,13 +13,13 @@ export class ListAdminVendorsHandler
 
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    @InjectModel('Company') private readonly companyModel: Model<any>,
-    @InjectModel('VendorProfile') private readonly vendorProfileModel: Model<any>,
-    @InjectModel('User') private readonly userModel: Model<any>,
-    @InjectModel('UserProfile') private readonly userProfileModel: Model<any>,
-    @InjectModel('VendorCategory') private readonly vendorCategoryModel: Model<any>,
-    @InjectModel('Category') private readonly categoryModel: Model<any>,
-    @InjectModel('Listing') private readonly listingModel: Model<any>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('VendorProfile') private readonly vendorProfileModel: Model<IVendorProfile>,
+    @InjectModel('User') private readonly userModel: Model<IUser>,
+    @InjectModel('UserProfile') private readonly userProfileModel: Model<IUserProfile>,
+    @InjectModel('VendorCategory') private readonly vendorCategoryModel: Model<IVendorCategory>,
+    @InjectModel('Category') private readonly categoryModel: Model<ICategory>,
+    @InjectModel('Listing') private readonly listingModel: Model<IListing>,
   ) {}
 
   async execute(query: ListAdminVendorsQuery) {
@@ -34,7 +35,7 @@ export class ListAdminVendorsHandler
 
     const vendorIds = result.items.map(v => v.id);
     const companyIds = result.items.map(v => v.companyId).filter(Boolean);
-    const userEmails = result.items.map(v => v.userId).filter(Boolean);
+    const userEmails = result.items.map(v => v?.userId).filter(Boolean);
 
     // parallel fetches
     const [
@@ -63,9 +64,9 @@ export class ListAdminVendorsHandler
       : [];
 
     const companyMap = new Map(companies.map(c => [c.id, c]));
-    const vendorProfileMap = new Map(vendorProfiles.map(p => [p.vendorId || p.userId, p]));
+    const vendorProfileMap = new Map(vendorProfiles.map(p => [p.vendorId, p]));
     const userMap = new Map(users.map(u => [u.email, u]));
-    const userProfileMap = new Map(userProfiles.map(p => [p.userId, p]));
+    const userProfileMap = new Map(userProfiles.map(p => [p?.userId, p]));
     const listingsCountMap = new Map(listingsCounts.map(item => [item._id, item.count]));
     const categoryMap = new Map((categories as any[]).map((cat: any) => [cat.id || cat._id?.toString(), cat]));
 
@@ -86,9 +87,9 @@ export class ListAdminVendorsHandler
       const p = v.getProps ? v.getProps() : v;
       const vid = (p as any).id || v.id;
       const company = companyMap.get((p as any).companyId);
-      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get((p as any).userId);
-      const user = userMap.get((p as any).userId);
-      const uProfile = userProfileMap.get((p as any).userId);
+      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get((p as any)?.userId);
+      const user = userMap.get((p as any)?.userId);
+      const uProfile = userProfileMap.get((p as any)?.userId);
       
       const userObj = user ? {
         id: user.id || (user as any)._id?.toString(),

@@ -20,8 +20,8 @@ export class UserRegisteredNotificationHandler {
       try {
         await this.mailService.sendVerificationCode(event.email, event.verificationCode);
         this.logger.log(`Verification email sent to: ${event.email}`);
-      } catch (error: any) {
-        this.logger.error(`Failed to send verification email to ${event.email}: ${error.message}`);
+      } catch (error: unknown) {
+        this.logger.error(`Failed to send verification email to ${event.email}: ${(error instanceof Error ? error.message : String(error))}`);
       }
     } else {
       this.logger.warn(`No verification code found in event for ${event.email}`);

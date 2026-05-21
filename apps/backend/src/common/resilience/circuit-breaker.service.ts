@@ -47,9 +47,9 @@ export class CircuitBreakerService {
 
     try {
       return await breaker.fire(fn) as T;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (opts.fallbackResponse !== undefined) {
-        this.logger.warn(`Circuit breaker '${name}' fallback döndü: ${error.message}`);
+        this.logger.warn(`Circuit breaker '${name}' fallback döndü: ${error instanceof Error ? error.message : String(error)}`);
         return opts.fallbackResponse as T;
       }
       throw error;

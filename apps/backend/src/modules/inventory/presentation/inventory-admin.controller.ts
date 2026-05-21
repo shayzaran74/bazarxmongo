@@ -175,17 +175,17 @@ export class InventoryAdminController {
           }
 
           successCount++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           failedCount++;
           console.error('[ExcelImport Error]:', err);
-          errors.push(`${row['Başlık'] || 'Bilinmeyen'}: ${err.message}`);
+          errors.push(`${row['Başlık'] || 'Bilinmeyen'}: ${(err instanceof Error ? err.message : String(err))}`);
         }
       }
 
       return { success: true, results: { success: successCount, failed: failedCount, errors } };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ExcelImport] Genel Hata:', error);
-      return { success: false, error: 'Excel verisi işlenirken bir hata oluştu: ' + error.message };
+      return { success: false, error: 'Excel verisi işlenirken bir hata oluştu: ' + (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) };
     }
   }
 

@@ -3,12 +3,13 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { IUser } from '@barterborsa/shared-persistence';
 import { User as UserModel } from '@barterborsa/shared-persistence';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 
 @Injectable()
 export class MongoUserRepository implements IUserRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<IUser>;
 
   constructor() {
     this.model = UserModel;

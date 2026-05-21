@@ -14,7 +14,7 @@ export class MongoLotteryRepository
   extends BaseMongoRepository<Lottery, LotteryDocument>
   implements ILotteryRepository
 {
-  private readonly ticketModel: Model<any>;
+  private readonly ticketModel: Model<ILotteryTicket>;
 
   constructor() {
     const model: Model<LotteryDocument> = LotteryModel;
@@ -22,7 +22,7 @@ export class MongoLotteryRepository
       toDomain: LotteryMapper.prototype.toDomain.bind(LotteryMapper.prototype),
       toPersistence: LotteryMapper.prototype.toPersistence.bind(LotteryMapper.prototype),
     });
-    this.ticketModel = LotteryTicketModel;
+    this.ticketModel = LotteryTicketModel as unknown as typeof this.ticketModel;
   }
 
   async findByOwnerId(ownerId: string): Promise<Lottery[]> {

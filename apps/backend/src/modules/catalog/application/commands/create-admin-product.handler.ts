@@ -58,8 +58,8 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
         }
 
         break;
-      } catch (error: any) {
-        if (error.code === 11000 && error.message?.includes('slug')) {
+      } catch (error: unknown) {
+        if ((error as { code?: number; message?: string }).code === 11000 && String((error as { message?: string }).message ?? '').includes('slug')) {
           attempts++;
           if (attempts === maxAttempts) throw error;
         } else {

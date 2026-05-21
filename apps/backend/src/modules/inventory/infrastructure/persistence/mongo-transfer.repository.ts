@@ -3,14 +3,15 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { ITransfer, ITransferItem } from '@barterborsa/shared-persistence';
 import { Transfer as TransferModel } from '@barterborsa/shared-persistence/schemas/backend/transfer.schema';
 import { TransferItem as TransferItemModel } from '@barterborsa/shared-persistence/schemas/backend/transferItem.schema';
 import { ITransferRepository } from '../../domain/repositories/transfer.repository.interface';
 
 @Injectable()
 export class MongoTransferRepository implements ITransferRepository {
-  private readonly model: Model<any>;
-  private readonly itemModel: Model<any>;
+  private readonly model: Model<ITransfer>;
+  private readonly itemModel: Model<ITransferItem>;
 
   constructor() {
     this.model = TransferModel;

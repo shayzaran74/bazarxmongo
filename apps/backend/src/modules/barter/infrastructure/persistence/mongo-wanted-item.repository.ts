@@ -3,12 +3,13 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { IWantedItem } from '@barterborsa/shared-persistence';
 import { WantedItem as WantedItemModel } from '@barterborsa/shared-persistence/schemas/backend/wantedItem.schema';
 import { IWantedItemRepository, WantedItemDocument } from '../../domain/repositories/wanted-item.repository.interface';
 
 @Injectable()
 export class MongoWantedItemRepository implements IWantedItemRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<IWantedItem>;
 
   constructor() {
     this.model = WantedItemModel;
@@ -36,7 +37,7 @@ export class MongoWantedItemRepository implements IWantedItemRepository {
     const docs = await this.model.find({ userId, isActive: true })
       .sort({ createdAt: -1 })
       .exec();
-    return docs.map(doc => doc.toObject() as WantedItemDocument);
+    return docs.map(doc => doc.toObject() as unknown as WantedItemDocument);
   }
 
   async create(data: {

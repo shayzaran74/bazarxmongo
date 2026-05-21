@@ -83,8 +83,8 @@ export class LogsAdminController {
         data: paginated,
         pagination: { total, page, limit }
       };
-    } catch (error: any) {
-      return { success: false, message: 'Arşivler listelenemedi', error: error.message };
+    } catch (error: unknown) {
+      return { success: false, message: 'Arşivler listelenemedi', error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 

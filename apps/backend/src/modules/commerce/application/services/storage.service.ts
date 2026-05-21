@@ -41,8 +41,8 @@ export class StorageService {
         await this.client.makeBucket(this.bucket, 'eu-central-1');
         this.logger.log(`Bucket oluşturuldu: ${this.bucket}`);
       }
-    } catch (err: any) {
-      this.logger.warn(`Bucket kontrol hatası: ${err.message}`);
+    } catch (err: unknown) {
+      this.logger.warn(`Bucket kontrol hatası: ${(err instanceof Error ? (err instanceof Error ? (err instanceof Error ? (err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err)) : String(err)) : String(err)) : String(err))}`);
     }
   }
 
@@ -79,8 +79,8 @@ export class StorageService {
         stream.on('end', () => resolve(Buffer.concat(chunks)));
         stream.on('error', reject);
       });
-    } catch (err: any) {
-      if (err.code === 'NoSuchKey') return null;
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === 'NoSuchKey') return null;
       throw err;
     }
   }

@@ -3,13 +3,14 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { ICoupon, IEscrowCoupon } from '@barterborsa/shared-persistence';
 import { Coupon as CouponModel } from '@barterborsa/shared-persistence/schemas/backend/coupon.schema';
 import { EscrowCoupon as EscrowCouponModel } from '@barterborsa/shared-persistence/schemas/backend/escrowCoupon.schema';
 import { ICouponRepository, IEscrowCouponRepository } from '../../domain/repositories/coupon.repository.interface';
 
 @Injectable()
 export class MongoCouponRepository implements ICouponRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<ICoupon>;
 
   constructor() {
     this.model = CouponModel;
@@ -23,7 +24,7 @@ export class MongoCouponRepository implements ICouponRepository {
 
 @Injectable()
 export class MongoEscrowCouponRepository implements IEscrowCouponRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<IEscrowCoupon>;
 
   constructor() {
     this.model = EscrowCouponModel;

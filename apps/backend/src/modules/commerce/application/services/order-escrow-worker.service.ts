@@ -60,8 +60,8 @@ export class OrderEscrowWorker {
         } else {
           this.logger.error(`Sipariş ${order.getProps().orderNumber.value} release başarısız: ${result.error || 'Bilinmeyen hata'}`);
         }
-      } catch (error: any) {
-        this.logger.error(`Sipariş ${order.getProps().orderNumber.value} işlenirken hata oluştu: ${error.message}`);
+      } catch (error: unknown) {
+        this.logger.error(`Sipariş ${order.getProps().orderNumber.value} işlenirken hata oluştu: ${(error instanceof Error ? error.message : String(error))}`);
       }
     }
 

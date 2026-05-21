@@ -80,9 +80,9 @@ export class VendorRegistrationService {
       await this.userRepo.update(userId, { role: 'VENDOR' });
 
       return { success: true, data: { id: vendorId, slug } };
-    } catch (error: any) {
-      this.logger.error('Vendor Atomic Application Error', error.stack);
-      return { success: false, error: 'Kayıt sırasında bir hata oluştu: ' + (error.message || 'Bilinmeyen hata') };
+    } catch (error: unknown) {
+      this.logger.error('Vendor Atomic Application Error', error instanceof Error ? error.stack : String(error));
+      return { success: false, error: 'Kayıt sırasında bir hata oluştu: ' + ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Bilinmeyen hata') };
     }
   }
 

@@ -25,8 +25,8 @@ export class BulkDeleteAdminProductsHandler implements ICommandHandler<BulkDelet
         await Listing.deleteMany({ catalogProductId: id }).exec();
         await CatalogProduct.deleteOne({ id }).exec();
         successCount++;
-      } catch (e: any) {
-        this.logger.warn(`Ürün silinemedi: ${id} — ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.warn(`Ürün silinemedi: ${id} — ${(e instanceof Error ? e.message : String(e))}`);
         failedIds.push(id);
       }
     }

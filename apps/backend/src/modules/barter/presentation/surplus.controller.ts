@@ -1,3 +1,4 @@
+import { ISurplusCategory, ICompany } from '@barterborsa/shared-persistence';
 // apps/backend/src/modules/barter/presentation/surplus.controller.ts
 
 import {
@@ -52,8 +53,8 @@ export class SurplusController {
     private readonly commandBus: CommandBus,
     @Inject('ISurplusItemRepository') private readonly surplusRepository: ISurplusItemRepository,
     @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
-    @InjectModel('SurplusCategory') private readonly surplusCategoryModel: Model<any>,
-    @InjectModel('Company') private readonly companyModel: Model<any>,
+    @InjectModel('SurplusCategory') private readonly surplusCategoryModel: Model<ISurplusCategory>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
   ) {}
 
   // ─── Kategoriler ──────────────────────────────────────────────────────────

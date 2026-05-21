@@ -1,3 +1,4 @@
+import { IVendor, ICompany, IListing, IEcosystemAuditLog } from '@barterborsa/shared-persistence';
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -20,10 +21,10 @@ export class EcosystemAdminController {
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
-    @InjectModel('Vendor') private readonly vendorModel: Model<any>,
-    @InjectModel('Company') private readonly companyModel: Model<any>,
-    @InjectModel('Listing') private readonly listingModel: Model<any>,
-    @InjectModel('EcosystemAuditLog') private readonly ecosystemAuditLogModel: Model<any>,
+    @InjectModel('Vendor') private readonly vendorModel: Model<IVendor>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('Listing') private readonly listingModel: Model<IListing>,
+    @InjectModel('EcosystemAuditLog') private readonly ecosystemAuditLogModel: Model<IEcosystemAuditLog>,
   ) {}
 
   @ApiOperation({ summary: 'Tüm ekosistemleri getir (Admin)' })

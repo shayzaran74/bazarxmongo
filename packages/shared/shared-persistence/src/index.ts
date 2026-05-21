@@ -162,4 +162,9 @@ export { CatalogProduct, ICatalogProduct, CatalogProductSchema } from './schemas
 export { BuyboxHistory, IBuyboxHistory, BuyboxHistorySchema } from './schemas/backend/buyboxHistory.schema';
 export { HomeQuadCard, IHomeQuadCard, HomeQuadCardSchema } from './schemas/backend/homeQuadCard.schema';
 export { HomeQuadCardItem, IHomeQuadCardItem, HomeQuadCardItemSchema } from './schemas/backend/homeQuadCardItem.schema';
-export * from './mongodb/misc/marketing.repository';
+export * from './mongodb/misc/marketing.repository';export { SurplusCategory, ISurplusCategory, SurplusCategorySchema } from './schemas/backend/surplusCategory.schema';
+export { WantedItem, IWantedItem, WantedItemSchema } from './schemas/backend/wantedItem.schema';
+export { Transfer, ITransfer, TransferSchema } from './schemas/backend/transfer.schema';
+export { TransferItem, ITransferItem, TransferItemSchema } from './schemas/backend/transferItem.schema';
+
+export { EscrowCoupon, IEscrowCoupon, EscrowCouponSchema } from './schemas/backend/escrowCoupon.schema';

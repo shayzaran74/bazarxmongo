@@ -163,8 +163,8 @@ const Handlers = [
           const logger = new Logger('IdentityEventBus');
           try {
             await rabbitMQ.publish('identity.events', topic, data);
-          } catch (err: any) {
-            logger.error(`Event publish failed [${topic}]: ${err.message}`);
+          } catch (err: unknown) {
+            logger.error(`Event publish failed [${topic}]: ${(err instanceof Error ? err.message : String(err))}`);
           }
         },
       }),

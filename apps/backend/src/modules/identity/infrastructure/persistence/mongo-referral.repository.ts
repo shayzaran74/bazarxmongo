@@ -3,12 +3,13 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { IReferral } from '@barterborsa/shared-persistence';
 import { Referral as ReferralModel } from '@barterborsa/shared-persistence';
 import { IReferralRepository } from '../../domain/repositories/referral.repository.interface';
 
 @Injectable()
 export class MongoReferralRepository implements IReferralRepository {
-  private readonly model: Model<any>;
+  private readonly model: Model<IReferral>;
 
   constructor() {
     this.model = ReferralModel;

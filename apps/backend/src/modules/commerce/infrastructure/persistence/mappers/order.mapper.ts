@@ -250,7 +250,7 @@ export class OrderMapper {
                 }
               }
             }
-          } catch (e: any) {
+          } catch (e: unknown) {
             // ignore
           }
         }
