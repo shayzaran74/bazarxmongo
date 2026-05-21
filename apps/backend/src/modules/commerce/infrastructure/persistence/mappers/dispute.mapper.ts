@@ -8,9 +8,24 @@ export interface DisputeDocument extends IDispute {
   _id?: string;
 }
 
+export interface DisputeDto {
+  id: string;
+  orderId: string;
+  userId: string;
+  vendorId: string;
+  reason: string;
+  description: string | null;
+  status: string;
+  evidenceUrls: string[];
+  adminNote: string | null;
+  resolvedAt: Date | null;
+  resolutionType: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class DisputeMapper {
-  public static toDomain(doc: DisputeDocument): any {
-    // Prisma-style Dispute object — simple data container
+  public static toDomain(doc: DisputeDocument): DisputeDto {
     return {
       id: doc.id,
       orderId: doc.orderId,
@@ -28,7 +43,7 @@ export class DisputeMapper {
     };
   }
 
-  public static toPersistence(domain: any): Record<string, unknown> {
+  public static toPersistence(domain: DisputeDto): Record<string, unknown> {
     return {
       _id: domain.id,
       id: domain.id,

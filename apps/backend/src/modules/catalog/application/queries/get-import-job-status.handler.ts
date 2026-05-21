@@ -3,7 +3,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetImportJobStatusQuery } from './get-import-job-status.query';
-import { ImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
+import { ImportJob, IImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
 import { NotFoundException } from '@nestjs/common';
 
 @QueryHandler(GetImportJobStatusQuery)
@@ -28,7 +28,7 @@ export class GetImportJobStatusHandler implements IQueryHandler<GetImportJobStat
 
     return {
       jobId: job.id,
-      status: (job as any).status,
+      status: (job as IImportJob).status,
       progress: {
         percent: progressPercent,
         processed: job.processedRows,
@@ -36,13 +36,13 @@ export class GetImportJobStatusHandler implements IQueryHandler<GetImportJobStat
         created: job.createdRows,
         failed: job.failedRows,
       },
-      errors: (job.errors as any) ?? [],
+      errors: (job.errors as unknown as string[]) ?? [],
       timing: {
         startedAt: job.startedAt,
         completedAt: job.completedAt,
         elapsedSeconds,
       },
-      isDone: (job as any).status === 'COMPLETED' || (job as any).status === 'FAILED',
+      isDone: (job as IImportJob).status === 'COMPLETED' || (job as IImportJob).status === 'FAILED',
     };
   }
 }

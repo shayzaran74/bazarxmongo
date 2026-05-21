@@ -24,7 +24,7 @@ export class RegisterBarterHandler implements ICommandHandler<RegisterBarterComm
     }
 
     // Vendor tier'ı güncelle — barter erişimi aç
-    await this.vendorRepository.update(vendor.id, { barterEnabled: true } as any);
+    await this.vendorRepository.update(vendor.id, { barterEnabled: true });
 
     return {
       success: true,

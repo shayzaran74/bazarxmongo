@@ -2,6 +2,13 @@
 
 import { Entity } from '@barterborsa/shared-core';
 
+export interface OrderItemVariantInfo {
+  variantId?: string;
+  sku?: string;
+  attributes?: Record<string, string | number>;
+  [key: string]: unknown;
+}
+
 export interface OrderItemProps {
   orderId: string;
   listingId: string;
@@ -10,7 +17,7 @@ export interface OrderItemProps {
   totalAmount: number;
   productName: string;
   productImages: string[];
-  variantInfo?: any;
+  variantInfo?: OrderItemVariantInfo;
 }
 
 export class OrderItem extends Entity<OrderItemProps> {
@@ -28,10 +35,10 @@ export class OrderItem extends Entity<OrderItemProps> {
     price: number,
     productName: string,
     productImages: string[],
-    variantInfo?: any
+    variantInfo?: OrderItemVariantInfo
   ): OrderItem {
     return new OrderItem({
-      orderId: '', // Set by aggregate root later
+      orderId: '',
       listingId,
       quantity,
       price,
@@ -45,4 +52,14 @@ export class OrderItem extends Entity<OrderItemProps> {
   public setOrderId(orderId: string): void {
     this.props.orderId = orderId;
   }
+
+  get id(): string { return this._id; }
+  get orderId(): string { return this.props.orderId; }
+  get listingId(): string { return this.props.listingId; }
+  get quantity(): number { return this.props.quantity; }
+  get price(): number { return this.props.price; }
+  get totalAmount(): number { return this.props.totalAmount; }
+  get productName(): string { return this.props.productName; }
+  get productImages(): string[] { return this.props.productImages; }
+  get variantInfo(): OrderItemVariantInfo | undefined { return this.props.variantInfo; }
 }

@@ -4,6 +4,16 @@ import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '@barterborsa/shared-security';
 import { TOKEN_BLACKLIST_TTL_MS } from '@barterborsa/shared-core';
 
+export interface TokenPayload {
+  sub: string;
+  email: string;
+  role?: string;
+  platform?: string;
+  jti: string;
+  iat?: number;
+  exp?: number;
+}
+
 @Injectable()
 export class TokenService {
   private readonly accessSecret: string;
@@ -32,7 +42,7 @@ export class TokenService {
       platform: user.platform,
       jti: crypto.randomUUID()
     };
-    
+
     return this.jwtService.sign(payload, {
       secret: this.accessSecret,
       expiresIn: '15m'
@@ -45,18 +55,18 @@ export class TokenService {
       email: user.email,
       jti: crypto.randomUUID()
     };
-    
+
     return this.jwtService.sign(payload, {
       secret: this.refreshSecret,
       expiresIn: '7d'
     });
   }
 
-  async verifyRefreshToken(token: string): Promise<any> {
+  async verifyRefreshToken(token: string): Promise<TokenPayload> {
     try {
       const payload = this.jwtService.verify(token, {
         secret: this.refreshSecret
-      });
+      }) as TokenPayload;
 
       if (payload.jti) {
         const isBlacklisted = await this.isTokenBlacklisted(payload.jti);
@@ -82,9 +92,9 @@ export class TokenService {
 
   async revokeRefreshToken(token: string): Promise<void> {
     try {
-      const payload = this.jwtService.decode(token) as any;
+      const payload = this.jwtService.decode(token) as TokenPayload | null;
       if (payload && payload.jti) {
-        await this.blacklistToken(payload.jti, Math.floor(TOKEN_BLACKLIST_TTL_MS / 1000)); // TOKEN_BLACKLIST_TTL_MS in ms, needs seconds
+        await this.blacklistToken(payload.jti, Math.floor(TOKEN_BLACKLIST_TTL_MS / 1000));
       }
     } catch (e) {
       // Ignore decode errors

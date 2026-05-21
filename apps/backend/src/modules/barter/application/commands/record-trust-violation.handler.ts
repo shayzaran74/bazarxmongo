@@ -7,6 +7,7 @@ import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { RecordTrustViolationCommand } from './record-trust-violation.command';
 import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
 import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
+import { Types } from 'mongoose';
 
 @CommandHandler(RecordTrustViolationCommand)
 export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustViolationCommand> {
@@ -24,19 +25,20 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
     let trustScore = await this.trustScoreRepository.findByVendorId(vendorId);
 
     if (!trustScore) {
-      // TrustScore yoksa oluştur
       trustScore = {
         id: 'trust-' + Date.now(),
         vendorId,
-        score: 100,
-        tradingPerformance: 100,
-        xpLoyalty: 100,
-        compliance: 100,
+        score: Types.Decimal128.fromString('100'),
+        tradingPerformance: Types.Decimal128.fromString('100'),
+        xpLoyalty: Types.Decimal128.fromString('100'),
+        compliance: Types.Decimal128.fromString('100'),
         level: 'GOOD',
         lastCalculatedAt: new Date(),
         isFrozen: false,
         violationCount: 0,
         inactiveDays: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
     }
 
@@ -60,8 +62,8 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
       this.logger.warn('3. İhlal — Hesap donduruldu', { vendorId, violationType });
     }
 
-    const newScore      = Math.max(0, (trustScore.score || 100) - compliancePenalty);
-    const newCompliance = Math.max(0, (trustScore.compliance || 100) - compliancePenalty);
+    const newScore      = Math.max(0, Number(trustScore.score?.toString() ?? 100) - compliancePenalty);
+    const newCompliance = Math.max(0, Number(trustScore.compliance?.toString() ?? 100) - compliancePenalty);
 
     await this.trustScoreRepository.updateScore(vendorId, {
       score: newScore,
@@ -74,10 +76,7 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
     if (freeze) {
       const vendor = await this.vendorRepository.findById(vendorId);
       if (vendor) {
-        // Vendor'ı askıya al
-        await this.vendorRepository.update(vendorId, {
-          status: 'SUSPENDED',
-        } as any);
+        await this.vendorRepository.update(vendorId, { status: 'SUSPENDED' });
       }
     }
 

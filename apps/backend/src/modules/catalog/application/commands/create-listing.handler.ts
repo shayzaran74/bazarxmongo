@@ -11,6 +11,11 @@ import { Price } from '../../domain/value-objects/price.vo';
 import { NotFoundException, DomainException, isErr } from '@barterborsa/shared-core';
 import { Inject } from '@nestjs/common';
 
+interface CatalogProductCreateDto {
+  categoryId?: string;
+  attributes?: { name: string; value: string }[];
+}
+
 @CommandHandler(CreateListingCommand)
 export class CreateListingHandler implements ICommandHandler<CreateListingCommand> {
   constructor(
@@ -18,10 +23,6 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
     private readonly listingRepository: IListingRepository,
     @Inject('ICatalogProductRepository')
     private readonly productRepository: ICatalogProductRepository,
-    // Note: Vendor check should ideally happen through a service or inter-module query
-    // Here we assume the vendor module provides ICatalogVendorService or similar in a real scenario
-    // For this implementation, we will perform the check in the controller or assume valid for now
-    // to maintain module boundaries.
   ) {}
 
   async execute(command: CreateListingCommand): Promise<string> {
@@ -31,14 +32,15 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
     let catalogProductId = dto.catalogProductId;
 
     if (!catalogProductId) {
+      const ext = dto as unknown as CatalogProductCreateDto;
       // Eğer catalogProductId yoksa, yeni bir Katalog Ürünü oluşturalım
       const newProduct = CatalogProduct.create({
         name: dto.title,
         slug: Slug.fromText(dto.title),
         brand: 'Bilinmeyen',
         description: dto.description || '',
-        categoryId: (dto as any).categoryId || 'other',
-        attributes: (dto as any).attributes || {}
+        categoryId: ext.categoryId || 'other',
+        attributes: ext.attributes ?? []
       });
 
       await this.productRepository.save(newProduct);

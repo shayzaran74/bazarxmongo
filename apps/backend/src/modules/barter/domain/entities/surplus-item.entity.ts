@@ -20,6 +20,9 @@ export interface SurplusItemProps {
   tradeModes?:       unknown;
   technicalSpecs?:   unknown;
   images?:           unknown;
+  // Master Plan v4.3 §4.4 — Batch Matching Engine teklif tercihleri
+  matchPreference?:  'FULL_ONLY' | 'PARTIAL_ACCEPT' | 'PARTIAL_CASH_DIFF';
+  estimatedValue?:   number;
   location?:         string;
   city?:             PilotCity;
   status:            SurplusStatus;
@@ -29,6 +32,9 @@ export interface SurplusItemProps {
   lastReactivatedAt?: Date;
   createdAt:         Date;
   updatedAt:         Date;
+  // Ecosystem listing
+  ecosystemId?:      string;
+  allowOnlineResale?: boolean;
 }
 
 export class SurplusItem extends AggregateRoot<SurplusItemProps> {

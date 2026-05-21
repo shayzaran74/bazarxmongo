@@ -241,4 +241,6 @@ export class Order extends AggregateRoot<OrderProps> {
   get deliveryType(): DeliveryType { return this.props.deliveryType; }
   get vendorId(): string { return this.props.vendorId; }
   get userId(): string { return this.props.userId; }
+  get items(): OrderItem[] { return this.props.items ?? []; }
+  get escrowHoldId(): string | undefined { return this.props.escrowHoldId; }
 }

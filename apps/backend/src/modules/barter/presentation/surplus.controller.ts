@@ -22,7 +22,7 @@ import { RejectSurplusCommand } from '../application/commands/reject-surplus.com
 import { ReactivateSurplusCommand } from '../application/commands/reactivate-surplus.command';
 import { PilotCity } from '../domain/enums/pilot-city.enum';
 import { SurplusStatus } from '../domain/enums/surplus-status.enum';
-import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
+import { ISurplusItemRepository, SurplusItemUpdateData } from '../domain/repositories/surplus-item.repository.interface';
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import {
   SurplusCreateDto,
@@ -228,9 +228,9 @@ export class SurplusController {
     if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
     
     if (item.companyId) {
-      const company = (await this.companyModel.findOne({ id: item.companyId }).lean()) as any;
+      const company = (await this.companyModel.findOne({ id: item.companyId }).lean()) as { id: string; name?: string } | null;
       if (company) {
-        item.company = { id: company.id, name: company.name };
+        item.company = { id: company.id, name: company.name ?? '' };
       }
     }
     
@@ -258,7 +258,7 @@ export class SurplusController {
       throw new NotFoundException('Surplus ürün bulunamadı');
     }
 
-    const updateData: Record<string, unknown> = { status: SurplusStatus.PENDING_APPROVAL };
+    const updateData: Partial<SurplusItemUpdateData> = { status: SurplusStatus.PENDING_APPROVAL };
     if (body.title        !== undefined) updateData.title       = body.title;
     if (body.description  !== undefined) updateData.description = body.description;
     if (body.quantity     !== undefined) updateData.quantity    = body.quantity;
@@ -270,7 +270,7 @@ export class SurplusController {
     if (body.tradeModes   !== undefined) updateData.tradeModes  = body.tradeModes;
     if (body.technicalSpecs !== undefined) updateData.technicalSpecs = body.technicalSpecs;
 
-    const updated = await this.surplusRepository.update(id, updateData as any);
+    const updated = await this.surplusRepository.update(id, updateData);
     return { success: true, data: updated };
   }
 
@@ -325,7 +325,7 @@ export class SurplusController {
       return this.commandBus.execute(new ApproveSurplusCommand(id, user.id));
     }
 
-    const updated = await this.surplusRepository.update(id, { status: finalStatus } as any);
+    const updated = await this.surplusRepository.update(id, { status: finalStatus });
     return { success: true, data: updated };
   }
 

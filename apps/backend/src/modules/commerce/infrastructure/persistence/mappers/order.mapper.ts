@@ -2,14 +2,35 @@
 // OrderMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { IOrder } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
+import { IOrderItem } from '@barterborsa/shared-persistence/schemas/backend/order-item.schema';
 import { Order, OrderProps } from '../../../domain/entities/order.entity';
 import * as mongoose from 'mongoose';
 import { OrderItem } from '../../../domain/entities/order-item.entity';
 import { OrderStatus } from '../../../domain/enums/order-status.enum';
 import { DeliveryType } from '../../../domain/enums/delivery-type.enum';
 import { OrderNumber } from '../../../domain/value-objects/order-number.vo';
-import { ShippingAddress } from '../../../domain/value-objects/shipping-address.vo';
+import { ShippingAddress, ShippingAddressProps } from '../../../domain/value-objects/shipping-address.vo';
 import { OrderTotal } from '../../../domain/value-objects/order-total.vo';
+
+// Mongoose Decimal128 veya ham number değerini güvenli şekilde number'a çevirir
+function decimalToNumber(val: unknown): number {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'object' && '$numberDecimal' in (val as Record<string, unknown>)) {
+    return Number((val as { $numberDecimal: string }).$numberDecimal);
+  }
+  return Number(val);
+}
+
+interface OrderItemResponse {
+  listingId: string;
+  productImage?: string;
+  productImages?: string[];
+}
+
+interface PopulatableOrder {
+  items?: OrderItemResponse[];
+  orderItems?: OrderItemResponse[];
+}
 
 export interface OrderDocument extends IOrder {
   _id?: string;
@@ -17,18 +38,9 @@ export interface OrderDocument extends IOrder {
 
 export class OrderMapper {
   public static toDomain(doc: OrderDocument): Order {
-    const items: OrderItem[] = (doc.items || []).map((item: any) => {
-      const price = item.price
-        ? typeof item.price === 'object' && '$numberDecimal' in item.price
-          ? Number(item.price.$numberDecimal)
-          : Number(item.price)
-        : 0;
-
-      const totalAmount = item.totalAmount
-        ? typeof item.totalAmount === 'object' && '$numberDecimal' in item.totalAmount
-          ? Number(item.totalAmount.$numberDecimal)
-          : Number(item.totalAmount)
-        : 0;
+    const items: OrderItem[] = (doc.items || []).map((item: IOrderItem) => {
+      const price = decimalToNumber(item.price);
+      const totalAmount = decimalToNumber(item.totalAmount);
 
       return OrderItem.fromPersistence(
         {
@@ -41,44 +53,20 @@ export class OrderMapper {
           productImages: item.productImages || [],
           variantInfo: item.variantInfo,
         },
-        item.id || `item-${item.listingId}`
+        (item as { id?: string }).id ?? `item-${item.listingId}`,
       );
     });
 
-    const shippingAddressResult = ShippingAddress.fromJson(doc.shippingAddress);
+    const shippingAddressResult = ShippingAddress.fromJson(doc.shippingAddress as unknown as ShippingAddressProps);
     const billingAddressResult = doc.billingAddress
-      ? ShippingAddress.fromJson(doc.billingAddress)
-      : ShippingAddress.fromJson(doc.shippingAddress);
+      ? ShippingAddress.fromJson(doc.billingAddress as unknown as ShippingAddressProps)
+      : ShippingAddress.fromJson(doc.shippingAddress as unknown as ShippingAddressProps);
 
-    const totalAmount = doc.totalAmount
-      ? typeof doc.totalAmount === 'object' && '$numberDecimal' in doc.totalAmount
-        ? Number((doc.totalAmount as any).$numberDecimal)
-        : Number(doc.totalAmount)
-      : 0;
-
-    const shippingCost = doc.shippingCost
-      ? typeof doc.shippingCost === 'object' && '$numberDecimal' in doc.shippingCost
-        ? Number((doc.shippingCost as any).$numberDecimal)
-        : Number(doc.shippingCost)
-      : 0;
-
-    const discountAmount = doc.discountAmount
-      ? typeof doc.discountAmount === 'object' && '$numberDecimal' in doc.discountAmount
-        ? Number((doc.discountAmount as any).$numberDecimal)
-        : Number(doc.discountAmount)
-      : 0;
-
-    const paidWithXP = doc.paidWithXP
-      ? typeof doc.paidWithXP === 'object' && '$numberDecimal' in doc.paidWithXP
-        ? Number((doc.paidWithXP as any).$numberDecimal)
-        : Number(doc.paidWithXP)
-      : 0;
-
-    const paidWithCash = doc.paidWithCash
-      ? typeof doc.paidWithCash === 'object' && '$numberDecimal' in doc.paidWithCash
-        ? Number((doc.paidWithCash as any).$numberDecimal)
-        : Number(doc.paidWithCash)
-      : 0;
+    const totalAmount = decimalToNumber(doc.totalAmount);
+    const shippingCost = decimalToNumber(doc.shippingCost);
+    const discountAmount = decimalToNumber(doc.discountAmount);
+    const paidWithXP = decimalToNumber(doc.paidWithXP);
+    const paidWithCash = decimalToNumber(doc.paidWithCash);
 
     const props: OrderProps = {
       userId: doc.userId,
@@ -112,12 +100,10 @@ export class OrderMapper {
     };
 
     const domainOrder = Order.fromPersistence(props, doc.id);
-    if (doc.createdAt) {
-      (domainOrder as any)._createdAt = new Date(doc.createdAt);
-    }
-    if (doc.updatedAt) {
-      (domainOrder as any)._updatedAt = new Date(doc.updatedAt);
-    }
+    // persistence'dan yeniden oluşturulurken DB'deki gerçek zaman damgaları geri yüklenir
+    const mutableTimestamps = domainOrder as unknown as { _createdAt: Date; _updatedAt: Date };
+    if (doc.createdAt) mutableTimestamps._createdAt = new Date(doc.createdAt);
+    if (doc.updatedAt) mutableTimestamps._updatedAt = new Date(doc.updatedAt);
     return domainOrder;
   }
 
@@ -222,18 +208,18 @@ export class OrderMapper {
     };
   }
 
-  public static async populateImages(response: any): Promise<any> {
+  public static async populateImages<T extends PopulatableOrder | PopulatableOrder[]>(response: T): Promise<T> {
     if (!response) return response;
     const isArray = Array.isArray(response);
-    const orders = isArray ? response : [response];
+    const orders: PopulatableOrder[] = isArray ? (response as PopulatableOrder[]) : [response as PopulatableOrder];
 
     for (const order of orders) {
       if (!order) continue;
-      const items = order.items || order.orderItems || [];
+      const items: OrderItemResponse[] = order.items || order.orderItems || [];
       for (const item of items) {
         if (!item.productImage || !item.productImages || item.productImages.length === 0) {
           try {
-            let db: any = null;
+            let db: mongoose.mongo.Db | null = null;
             for (const conn of mongoose.connections) {
               if (conn.readyState === 1 && conn.db) {
                 db = conn.db;

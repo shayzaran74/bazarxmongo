@@ -9,12 +9,23 @@ import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/
 import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
+interface ListingDoc {
+  vendorId?: string;
+  ecosystemId?: string;
+  availableFrom?: Date;
+  availableTo?: Date;
+  availableQuantity?: number;
+  stock?: number;
+  status?: string;
+  [key: string]: unknown;
+}
+
 @CommandHandler(UpdateListingCommand)
 export class UpdateListingHandler implements ICommandHandler<UpdateListingCommand> {
   async execute(command: UpdateListingCommand) {
     const { userId, userRole, id, dto } = command;
 
-    const listing = await Listing.findOne({ id }).exec();
+    const listing = await Listing.findOne({ id }).exec() as unknown as ListingDoc | null;
     if (!listing) throw new NotFoundException('İlan bulunamadı');
 
     const isAdmin = Array.isArray(userRole)
@@ -23,7 +34,7 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
 
     if (!isAdmin) {
       const vendor = await Vendor.findOne({ userId }).exec();
-      if (!vendor || (listing as any).vendorId !== vendor.id) {
+      if (!vendor || listing.vendorId !== vendor.id) {
         throw new ForbiddenException('Bu ilanı güncelleme yetkiniz yok');
       }
     }
@@ -63,23 +74,23 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
     if (dto.maxOrderQtyPerDealer !== undefined) updateData.maxOrderQtyPerDealer = Number(dto.maxOrderQtyPerDealer);
 
     // Ekosistem listing'inde maxOrderQtyPerDealer null/undefined olamaz (§4.2)
-    const willBeEcosystem = (updateData.ecosystemId ?? (listing as any).ecosystemId);
-    const willBeMaxQty = (updateData.maxOrderQtyPerDealer ?? (listing as any).maxOrderQtyPerDealer);
+    const willBeEcosystem = (updateData.ecosystemId ?? listing.ecosystemId) as string | undefined;
+    const willBeMaxQty = (updateData.maxOrderQtyPerDealer ?? listing.maxOrderQtyPerDealer) as number | undefined;
     if (willBeEcosystem && (willBeMaxQty === undefined || willBeMaxQty === null)) {
       throw new ForbiddenException('ECOSYSTEM_LISTING_REQUIRES_MAX_ORDER_QTY_PER_DEALER');
     }
     // Tarih aralığı kontrolü
-    const fromVal = (updateData.availableFrom ?? (listing as any).availableFrom) as Date | undefined | null;
-    const toVal = (updateData.availableTo ?? (listing as any).availableTo) as Date | undefined | null;
+    const fromVal = (updateData.availableFrom ?? listing.availableFrom) as Date | undefined | null;
+    const toVal = (updateData.availableTo ?? listing.availableTo) as Date | undefined | null;
     if (fromVal && toVal && fromVal >= toVal) {
       throw new ForbiddenException('AVAILABLE_FROM_MUST_BE_BEFORE_AVAILABLE_TO');
     }
 
     if (dto.stock !== undefined) {
       const newStock = Number(dto.stock);
-      const stockDiff = newStock - listing.stock;
+      const stockDiff = newStock - (listing.stock ?? 0);
       updateData.stock = newStock;
-      updateData.availableQuantity = Number((listing as any).availableQuantity || 0) + stockDiff;
+      updateData.availableQuantity = Number(listing.availableQuantity || 0) + stockDiff;
       if (Number(updateData.availableQuantity) > 0 && listing.status === 'OUT_OF_STOCK') {
         updateData.status = 'ACTIVE';
       }

@@ -73,8 +73,7 @@ export class TrustScoreCalculatorService {
     const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) return 50;
 
-    const props = vendor.getProps();
-    const companyId = (props as any).companyId;
+    const companyId = vendor.companyId;
 
     if (!companyId) return 80;
 
@@ -93,7 +92,7 @@ export class TrustScoreCalculatorService {
     let score = Math.round(completionRate * 100);
 
     const existingScore = await this.trustScoreRepo.findByVendorId(vendorId);
-    const inactiveDays = (existingScore as any)?.inactiveDays ?? 0;
+    const inactiveDays = existingScore?.inactiveDays ?? 0;
 
     if (inactiveDays >= INACTIVITY_THRESHOLD_DAYS) {
       const months  = Math.floor(inactiveDays / 30);
@@ -108,12 +107,11 @@ export class TrustScoreCalculatorService {
     const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) return 50;
 
-    const props = vendor.getProps();
-    const userId = (props as any).userId;
+    const userId = vendor.userId;
     if (!userId) return 50;
 
     const userLevel = await this.userLevelRepo.findByUserId(userId);
-    const currentXp = (userLevel as any)?.currentXp ?? 0;
+    const currentXp = userLevel?.currentXp ?? 0;
 
     if (currentXp <= 0) {
       return 50;
@@ -122,7 +120,7 @@ export class TrustScoreCalculatorService {
     const score = Math.min(100, Math.round((currentXp / 500) * 100));
 
     const existingScore = await this.trustScoreRepo.findByVendorId(vendorId);
-    const currentLoyalty = (existingScore as any)?.xpLoyalty ?? 100;
+    const currentLoyalty = Number(existingScore?.xpLoyalty ?? 100);
 
     if (currentXp === 0) {
       return Math.max(0, currentLoyalty - LOW_XP_PENALTY_PER_MONTH);
@@ -136,7 +134,7 @@ export class TrustScoreCalculatorService {
 
     if (!score) return 100;
 
-    const violations = (score as any).violationCount ?? 0;
+    const violations = score.violationCount ?? 0;
     let complianceScore = 100;
 
     if (violations >= 3) {

@@ -47,7 +47,7 @@ export class GetCategoryTreeHandler implements IQueryHandler<GetCategoryTreeQuer
         id: cat.id,
         name: cat.name,
         slug: cat.slug.value,
-        icon: (cat as any).props.icon,
+        icon: cat.icon,
         parentId: cat.parentId,
         children: []
       });

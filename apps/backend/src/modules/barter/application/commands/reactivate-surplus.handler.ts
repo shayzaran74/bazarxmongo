@@ -35,7 +35,7 @@ export class ReactivateSurplusHandler implements ICommandHandler<ReactivateSurpl
     await this.repository.update(command.surplusId, {
       status: SurplusStatus.PENDING_APPROVAL,
       quantity: command.newQuantity,
-    } as any);
+    });
 
     await this.auditLog.log({
       actorId:      command.userId,

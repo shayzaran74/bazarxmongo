@@ -9,6 +9,16 @@ import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { populateDynamicBadges } from '../../helpers/badge-evaluator.helper';
 
+interface ProductJson {
+  id?: string;
+  name?: string;
+  slug?: string;
+  brands?: Array<{ id: string; name: string }>;
+  media?: Array<{ url?: string }>;
+  listings?: Array<{ id?: string; vendorId?: string; price?: number; stock?: number; sku?: string; vendor?: unknown }>;
+  [key: string]: unknown;
+}
+
 @QueryHandler(GetCatalogProductBySlugQuery)
 export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogProductBySlugQuery> {
   async execute(query: GetCatalogProductBySlugQuery) {
@@ -27,18 +37,18 @@ export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogP
 
     if (!rawProduct) return null;
 
-    const product = rawProduct.toJSON() as any;
+    const product = rawProduct.toJSON() as ProductJson;
     const listing = product.listings?.[0] ?? null;
 
     let userTier = 'CORE';
     if (listing?.vendorId) {
       const vendor = await Vendor.findOne({ id: listing.vendorId }).lean().exec();
       if (vendor) {
-        userTier = vendor.tier || 'CORE';
+        userTier = (vendor as { tier?: string }).tier || 'CORE';
       }
     }
 
-    const result = {
+    const result: Record<string, unknown> = {
       ...product,
       Brand: product.brands?.[0] ?? null,
       Vendor: listing?.vendor ?? null,
@@ -47,7 +57,7 @@ export class GetCatalogProductBySlugHandler implements IQueryHandler<GetCatalogP
       stock: listing?.stock ?? 0,
       sku: listing?.sku ?? '',
       image: product.media?.[0]?.url ?? null,
-      images: product.media?.map((m: any) => m.url) ?? [],
+      images: product.media?.map((m: { url?: string }) => m.url) ?? [],
       userTier
     };
 

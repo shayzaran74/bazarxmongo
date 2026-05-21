@@ -80,7 +80,7 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
 
       session['props'].status = SwapSessionStatus.CANCELLED;
       session['props'].collateralStatus = 'REFUNDED';
-      (session['props'] as any).collateralForfeitedAt = new Date();
+      session['props'].collateralForfeitedAt = new Date();
       await this.sessionRepository.save(session);
     }
 

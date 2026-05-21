@@ -2,7 +2,7 @@
 // ListingMapper — Prisma → Mongoose (ADR-005 Faz 2a)
 
 import { IListing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
-import { Listing, ListingProps, DealerVisibility } from '../../../domain/entities/listing.entity';
+import { Listing, ListingProps, DealerVisibility, ProductVariant } from '../../../domain/entities/listing.entity';
 import { Slug } from '../../../domain/value-objects/slug.vo';
 import { Price } from '../../../domain/value-objects/price.vo';
 import { ListingStatus } from '../../../domain/enums/listing-status.enum';
@@ -59,7 +59,7 @@ export class ListingMapper {
       isLotteryEnabled: doc.isLotteryEnabled,
       ecosystemId: doc.ecosystemId ?? undefined,
       commissionRate: doc.commissionRate ? Number(doc.commissionRate.toString()) : undefined,
-      variants: doc.variants as Record<string, unknown> | undefined,
+      variants: (doc.variants as unknown as ProductVariant[] | undefined) ?? undefined,
       metadata: doc.metadata as Record<string, unknown> | undefined,
       availableQuantity: doc.availableQuantity,
       reservedQuantity: doc.reservedQuantity,

@@ -16,6 +16,7 @@ export interface SwapSessionProps {
   collateralStatus: string;
   collateralLockedAt?: Date;
   collateralReleasedAt?: Date;
+  collateralForfeitedAt?: Date;
   status: SwapSessionStatus;
   fromCollateralHoldId?: string;
   toCollateralHoldId?: string;

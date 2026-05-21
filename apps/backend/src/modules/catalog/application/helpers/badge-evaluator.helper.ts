@@ -1,6 +1,29 @@
 import { BadgeRule } from '@barterborsa/shared-persistence/schemas/backend/badgeRule.schema';
 
-export async function populateDynamicBadges(items: any[]) {
+interface BadgeCondition {
+  AND?: BadgeCondition[];
+  OR?: BadgeCondition[];
+  field?: string;
+  operator?: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'contains';
+  value?: unknown;
+}
+
+interface BadgeDisplay {
+  text: string;
+  style: {
+    backgroundColor: string;
+    color: string;
+  };
+}
+
+interface DynamicBadges {
+  topLeft: BadgeDisplay | null;
+  topRight: BadgeDisplay | null;
+  bottomLeft: BadgeDisplay | null;
+  bottomRight: BadgeDisplay | null;
+}
+
+export async function populateDynamicBadges(items: Record<string, unknown>[]) {
   if (!items || items.length === 0) return items;
 
   try {
@@ -28,7 +51,7 @@ export async function populateDynamicBadges(items: any[]) {
 
     // 2. Evaluate rules for each item
     for (const item of items) {
-      const badges: any = {
+      const badges: DynamicBadges = {
         topLeft: null,
         topRight: null,
         bottomLeft: null,
@@ -36,11 +59,11 @@ export async function populateDynamicBadges(items: any[]) {
       };
 
       for (const rule of activeRules) {
-        if (evaluateCondition(item, rule.conditionJson)) {
+        if (evaluateCondition(item, rule.conditionJson as BadgeCondition)) {
           const posKey = positionMap[rule.position];
           if (posKey) {
             const textVal = rule.displayText?.tr || rule.displayText?.en || rule.displayText || '';
-            badges[posKey] = {
+            badges[posKey as keyof DynamicBadges] = {
               text: textVal,
               style: {
                 backgroundColor: rule.backgroundColor || '#6366f1',
@@ -69,16 +92,16 @@ export async function populateDynamicBadges(items: any[]) {
   return items;
 }
 
-function evaluateCondition(listing: any, condition: any): boolean {
+function evaluateCondition(listing: Record<string, unknown>, condition: BadgeCondition): boolean {
   if (!condition) return true;
 
   // Logical AND
   if (condition.AND && Array.isArray(condition.AND)) {
-    return condition.AND.every((cond: any) => evaluateCondition(listing, cond));
+    return condition.AND.every((cond: BadgeCondition) => evaluateCondition(listing, cond));
   }
   // Logical OR
   if (condition.OR && Array.isArray(condition.OR)) {
-    return condition.OR.some((cond: any) => evaluateCondition(listing, cond));
+    return condition.OR.some((cond: BadgeCondition) => evaluateCondition(listing, cond));
   }
 
   const { field, operator, value } = condition;
@@ -88,8 +111,8 @@ function evaluateCondition(listing: any, condition: any): boolean {
   let listingValue = listing[field];
   
   // If undefined, try under catalogProduct
-  if (listingValue === undefined && listing.catalogProduct) {
-    listingValue = listing.catalogProduct[field];
+  if (listingValue === undefined && listing.catalogProduct && typeof listing.catalogProduct === 'object') {
+    listingValue = (listing.catalogProduct as Record<string, unknown>)[field];
   }
 
   let val = value;
@@ -117,13 +140,13 @@ function evaluateCondition(listing: any, condition: any): boolean {
     case 'ne':
       return lVal !== val;
     case 'gt':
-      return lVal > val;
+      return (lVal as number) > (val as number);
     case 'gte':
-      return lVal >= val;
+      return (lVal as number) >= (val as number);
     case 'lt':
-      return lVal < val;
+      return (lVal as number) < (val as number);
     case 'lte':
-      return lVal <= val;
+      return (lVal as number) <= (val as number);
     case 'in':
       return Array.isArray(val) ? val.includes(lVal) : [val].includes(lVal);
     case 'nin':

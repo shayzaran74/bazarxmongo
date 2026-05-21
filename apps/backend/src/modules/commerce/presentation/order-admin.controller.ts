@@ -16,6 +16,13 @@ import { BulkUpdateOrderStatusDto } from '../application/dtos/bulk-update-order-
 import { CancelOrderAdminDto } from '../application/dtos/cancel-order-admin.dto';
 import { IOrderRepository } from '../domain/repositories/order.repository.interface';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
+import { Model } from 'mongoose';
+import { IOrder } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
+
+interface ReleaseFundsResult {
+  success: boolean;
+  error?: string;
+}
 
 interface AuthenticatedUser {
   id: string;
@@ -130,7 +137,7 @@ export class OrderAdminController {
   @ApiOperation({ summary: 'Onay bekleyen hak edişleri listele' })
   @Get('payouts/pending')
   async getPendingPayouts() {
-    const orderModel = (this.orderRepo as any).model;
+    const orderModel = (this.orderRepo as unknown as { model: Model<IOrder> }).model;
     const docs = await orderModel.find({ escrowStatus: 'HELD' }).lean().exec();
 
     const formattedOrders = [];
@@ -155,7 +162,7 @@ export class OrderAdminController {
         }
         
         orderItems.push({
-          id: item.id || `item-${item.listingId}`,
+          id: (item as { id?: string }).id ?? `item-${item.listingId}`,
           price: item.price ? (typeof item.price === 'object' && '$numberDecimal' in item.price ? Number(item.price.$numberDecimal) : Number(item.price)) : 0,
           quantity: item.quantity || 1,
           Product: {
@@ -200,7 +207,7 @@ export class OrderAdminController {
     }
 
     const idempotencyKey = `release-order-${order.id}-${props.orderNumber?.value || order.id}-manual`;
-    const result: any = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
+    const result: ReleaseFundsResult = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
 
     if (!result.success) {
       throw new BadRequestException(result.error || 'Hak ediş serbest bırakılamadı');

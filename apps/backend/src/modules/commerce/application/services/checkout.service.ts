@@ -121,11 +121,11 @@ export class CheckoutService {
         const catProductId = g.listing.catalogProductId;
         let images: string[] = [];
         try {
-          const db = (mongoose.connection as any).db;
+          const db = mongoose.connection.db;
           if (db) {
-            const mediaDocs = await db.collection('product_media').find({ productId: catProductId }).toArray();
+            const mediaDocs = await db.collection('product_media').find({ productId: catProductId }).toArray() as { url?: string }[];
             if (mediaDocs && mediaDocs.length > 0) {
-              images = mediaDocs.map((m: any) => m.url).filter(Boolean);
+              images = mediaDocs.map((m) => m.url).filter((url): url is string => Boolean(url));
             }
           }
         } catch (e) {
@@ -138,7 +138,7 @@ export class CheckoutService {
           lProps.price.amount,
           lProps.title,
           images,
-          g.item.getProps().variantId,
+          { variantId: g.item.getProps().variantId },
         );
       }));
 

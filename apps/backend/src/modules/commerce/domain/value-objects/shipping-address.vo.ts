@@ -36,11 +36,11 @@ export class ShippingAddress extends ValueObject<ShippingAddressProps> {
     return lines.join(', ');
   }
 
-  public toJson(): any {
+  public toJson(): ShippingAddressProps {
     return { ...this.props };
   }
 
-  public static fromJson(json: any): ShippingAddress {
+  public static fromJson(json: ShippingAddressProps): ShippingAddress {
     return new ShippingAddress(json);
   }
 }

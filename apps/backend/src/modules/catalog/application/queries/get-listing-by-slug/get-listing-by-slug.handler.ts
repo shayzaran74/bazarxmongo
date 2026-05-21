@@ -8,6 +8,14 @@ import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/
 import { AnonymizerService } from '../../../../barterborsa/application/services/anonymizer.service';
 import { populateDynamicBadges } from '../../helpers/badge-evaluator.helper';
 
+interface ListingLean {
+  id?: string;
+  vendorId?: string;
+  ecosystemId?: string;
+  catalogProductId?: string;
+  [key: string]: unknown;
+}
+
 @QueryHandler(GetListingBySlugQuery)
 export class GetListingBySlugHandler implements IQueryHandler<GetListingBySlugQuery> {
   constructor(private readonly anonymizer: AnonymizerService) {}
@@ -15,7 +23,7 @@ export class GetListingBySlugHandler implements IQueryHandler<GetListingBySlugQu
   async execute(query: GetListingBySlugQuery) {
     const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.slug) || /^c[^\s-]{8,}$/i.test(query.slug);
 
-    const listing = await Listing.findOne(isId ? { id: query.slug } : { slug: query.slug }).lean().exec();
+    const listing = await Listing.findOne(isId ? { id: query.slug } : { slug: query.slug }).lean().exec() as ListingLean | null;
     if (!listing) return null;
 
     const cp = listing.catalogProductId
@@ -23,22 +31,22 @@ export class GetListingBySlugHandler implements IQueryHandler<GetListingBySlugQu
       : null;
 
     // Master Plan v4.3 §4.4 + §5.3 — Ekosistem listing'lerinde vendor kimliği gizli
-    const isEcosystemListing = Boolean((listing as any).ecosystemId);
+    const isEcosystemListing = Boolean(listing.ecosystemId);
     let vendor: unknown = null;
     let anonymousVendorId: string | undefined;
 
-    if ((listing as any).vendorId) {
+    if (listing.vendorId) {
       if (isEcosystemListing) {
-        anonymousVendorId = this.anonymizer.anonymize((listing as any).vendorId as string, 'vendor');
+        anonymousVendorId = this.anonymizer.anonymize(listing.vendorId as string, 'vendor');
         // Ekosistem listing'lerde gerçek vendor verisini expose etmiyoruz
       } else {
-        vendor = await Vendor.findOne({ id: (listing as any).vendorId }).lean().exec();
+        vendor = await Vendor.findOne({ id: listing.vendorId }).lean().exec();
       }
     }
 
     const sanitized: Record<string, unknown> = { ...listing, catalogProduct: cp, vendor };
-    sanitized.userTier = (vendor as any)?.tier || 'CORE';
-    
+    sanitized.userTier = (vendor as { tier?: string })?.tier || 'CORE';
+
     if (isEcosystemListing) {
       delete sanitized.vendorId;
       sanitized.anonymousVendorId = anonymousVendorId;

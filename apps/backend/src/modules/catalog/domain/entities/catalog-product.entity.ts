@@ -5,13 +5,22 @@ import { Slug } from '../value-objects/slug.vo';
 import { GTIN } from '../value-objects/gtin.vo';
 import { Rating } from '../value-objects/rating.vo';
 
+export interface ProductSpec {
+  [key: string]: string | number | boolean;
+}
+
+export interface ProductAttribute {
+  name: string;
+  value: string;
+}
+
 export interface CatalogProductProps {
   name: string;
   slug: Slug;
   gtin?: GTIN;
   brand: string;
   description: string;
-  specs?: any;
+  specs?: ProductSpec;
   categoryId?: string;
   modelId?: string;
   productTypeId?: string;
@@ -20,7 +29,7 @@ export interface CatalogProductProps {
   isFlashSale: boolean;
   isSpecialOffer: boolean;
   status: string;
-  attributes?: any;
+  attributes?: ProductAttribute[];
   metadata?: Record<string, unknown>;
 }
 
@@ -35,9 +44,10 @@ export class CatalogProduct extends AggregateRoot<CatalogProductProps> {
 
   public static create(props: Omit<CatalogProductProps, 'rating' | 'isFeatured' | 'isFlashSale' | 'isSpecialOffer' | 'status'>): CatalogProduct {
     const ratingResult = Rating.create(0);
+    const fallbackRating = Object.assign(Object.create(null), { props: { value: 0 } }) as Rating;
     return new CatalogProduct({
       ...props,
-      rating: ratingResult.success ? ratingResult.data : (null as any),
+      rating: ratingResult.success ? ratingResult.data : fallbackRating,
       isFeatured: false,
       isFlashSale: false,
       isSpecialOffer: false,

@@ -47,4 +47,5 @@ export class Category extends AggregateRoot<CategoryProps> {
   get name(): string { return this.props.name; }
   get slug(): Slug { return this.props.slug; }
   get parentId(): string | undefined { return this.props.parentId; }
+  get icon(): string | undefined { return this.props.icon; }
 }

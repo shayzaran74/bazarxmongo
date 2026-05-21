@@ -3,7 +3,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateUserRoleCommand } from './update-user-role.command';
-import { IUserRepository } from '../../domain/repositories/user.repository.interface';
+import { IUserRepository, UserIdentity } from '../../domain/repositories/user.repository.interface';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 
 const ASSIGNABLE_ROLES = new Set(['USER', 'VENDOR', 'ADMIN', 'SUPER_ADMIN']);
@@ -26,7 +26,7 @@ export class UpdateUserRoleHandler implements ICommandHandler<UpdateUserRoleComm
     const admin = await this.userRepo.findById(adminId);
     if (!admin) throw new NotFoundException('Admin bulunamadı');
 
-    if (normalizedRole === 'SUPER_ADMIN' && (admin as any).role !== 'SUPER_ADMIN') {
+    if (normalizedRole === 'SUPER_ADMIN' && (admin as UserIdentity).role !== 'SUPER_ADMIN') {
       throw new ForbiddenException('SUPER_ADMIN rolü yalnızca başka bir SUPER_ADMIN tarafından atanabilir');
     }
 
@@ -44,7 +44,7 @@ export class UpdateUserRoleHandler implements ICommandHandler<UpdateUserRoleComm
       action:       'USER_ROLE_CHANGED',
       resourceType: 'User',
       resourceId:   userId,
-      oldValue:     { role: (user as any).role },
+      oldValue:     { role: (user as UserIdentity).role },
       newValue:     { role: normalizedRole },
     });
 

@@ -7,12 +7,14 @@ import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
+interface ListingDoc { vendorId?: string; [key: string]: unknown; }
+
 @CommandHandler(DeleteListingCommand)
 export class DeleteListingHandler implements ICommandHandler<DeleteListingCommand> {
   async execute(command: DeleteListingCommand) {
     const { userId, userRole, id } = command;
 
-    const listing = await Listing.findOne({ id }).exec();
+    const listing = await Listing.findOne({ id }).exec() as unknown as ListingDoc | null;
     if (!listing) throw new NotFoundException('İlan bulunamadı');
 
     const isAdmin = Array.isArray(userRole)
@@ -21,7 +23,7 @@ export class DeleteListingHandler implements ICommandHandler<DeleteListingComman
 
     if (!isAdmin) {
       const vendor = await Vendor.findOne({ userId }).exec();
-      if (!vendor || (listing as any).vendorId !== vendor.id) {
+      if (!vendor || listing.vendorId !== vendor.id) {
         throw new ForbiddenException('Bu ilanı silme yetkiniz yok');
       }
     }

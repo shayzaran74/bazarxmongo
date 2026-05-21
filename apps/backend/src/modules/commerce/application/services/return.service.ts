@@ -23,6 +23,11 @@ export interface ReturnApprovalResult {
   error?: string;
 }
 
+export interface RefundResult {
+  refundId?: string;
+  holdId?: string;
+}
+
 @Injectable()
 export class ReturnService {
   private readonly logger = new Logger(ReturnService.name);
@@ -63,11 +68,11 @@ export class ReturnService {
       throw new Error('Bu sipariş için aktif iade talebi zaten mevcut');
     }
 
-    // Toplam iade tutarını hesapla (number-based, Decimal yerine)
+    // Toplam iade tutarını hesapla
     let totalRefund = 0;
-    const orderItems = (order as any).orderItems ?? [];
+    const orderItems = order.items;
     const returnItems = dto.items.map(item => {
-      const orderItem = orderItems.find((oi: any) => oi.id === item.orderItemId);
+      const orderItem = orderItems.find(oi => oi.id === item.orderItemId);
       if (!orderItem) {
         throw new Error(`OrderItem not found: ${item.orderItemId}`);
       }
@@ -137,13 +142,13 @@ export class ReturnService {
     await this.returnRepo.save(entity);
 
     const order = await this.orderRepo.findById(entity.orderId);
-    const holdId = (order as any)?.escrowHoldId ?? `return-refund-${returnId}`;
+    const holdId = order?.escrowHoldId ?? `return-refund-${returnId}`;
     const idempotencyKey = `return-approve-${returnId}-${Date.now()}`;
 
     let refundId: string | undefined;
     try {
       const refundResult = await this.financialGateway.refundFunds(holdId, idempotencyKey);
-      refundId = (refundResult as any)?.refundId ?? (refundResult as any)?.holdId ?? idempotencyKey;
+      refundId = (refundResult as RefundResult)?.refundId ?? (refundResult as RefundResult)?.holdId ?? idempotencyKey;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
       this.logger.error('Refund çağrısı başarısız', { returnId, holdId, error: msg });
@@ -208,7 +213,7 @@ export class ReturnService {
     if (decision === 'APPROVE') {
       entity.approve();
       const order = await this.orderRepo.findById(entity.orderId);
-      const holdId = (order as any)?.escrowHoldId ?? `return-refund-${returnId}`;
+      const holdId = order?.escrowHoldId ?? `return-refund-${returnId}`;
       try {
         await this.financialGateway.refundFunds(holdId, `admin-arbitrate-${returnId}`);
       } catch { /* log but continue */ }

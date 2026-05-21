@@ -1,9 +1,32 @@
+// apps/backend/src/modules/commerce/presentation/payment.controller.ts
+
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { TopUpWalletCommand } from '../../financial-gateway/application/commands/top-up-wallet.command';
+
+export interface SubscribeDto {
+  planId?: string;
+  paymentMethod?: string;
+}
+
+export interface CreditCardProcessDto {
+  orderNumber?: string;
+  amount: number;
+  cardToken?: string;
+}
+
+export interface BankTransferConfirmDto {
+  amount: number;
+  referenceNumber?: string;
+}
+
+export interface EftConfirmDto {
+  amount: number;
+  senderAccount?: string;
+}
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -14,7 +37,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Subscribe to premium', description: 'Premium üyelik aboneliği başlatır.' })
   @Post('premium/subscribe')
-  async subscribe(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
+  async subscribe(@CurrentUser() user: AuthenticatedUser, @Body() dto: SubscribeDto) {
     return {
       success: true,
       message: 'Abonelik işlemi başlatıldı.',
@@ -28,8 +51,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Process credit card payment', description: 'Kredi kartı ödemesini işler.' })
   @Post('credit-card/process')
-  async processCreditCard(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
-    // If it's a wallet top-up (no orderNumber)
+  async processCreditCard(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreditCardProcessDto) {
     if (!dto.orderNumber) {
       await this.commandBus.execute(
         new TopUpWalletCommand(user.id, Number(dto.amount), 'CREDIT_CARD')
@@ -49,8 +71,8 @@ export class PaymentController {
 
   @UseGuards(JwtAuthGuard)
   @Post('bank-transfer/confirm')
-  async confirmBankTransfer(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
-    
+  async confirmBankTransfer(@CurrentUser() user: AuthenticatedUser, @Body() dto: BankTransferConfirmDto) {
+
     await this.commandBus.execute(
       new TopUpWalletCommand(user.id, Number(dto.amount), 'BANK_TRANSFER')
     );
@@ -64,7 +86,7 @@ export class PaymentController {
 
   @UseGuards(JwtAuthGuard)
   @Post('eft/confirm')
-  async confirmEft(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
+  async confirmEft(@CurrentUser() user: AuthenticatedUser, @Body() dto: EftConfirmDto) {
 
     await this.commandBus.execute(
       new TopUpWalletCommand(user.id, Number(dto.amount), 'EFT')

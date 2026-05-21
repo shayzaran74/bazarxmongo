@@ -20,7 +20,7 @@ export class BrandMapper {
       icon: doc.icon ?? undefined,
       image: doc.image ?? undefined,
       description: doc.description ?? undefined,
-      status: (doc as any).status as BrandStatus ?? BrandStatus.PENDING,
+      status: (doc as BrandDocument).status as BrandStatus ?? BrandStatus.PENDING,
       isOfficial: doc.isOfficial,
       isPopular: doc.isPopular,
       order: doc.order,

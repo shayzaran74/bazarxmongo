@@ -87,7 +87,7 @@ export class WantedItemsController {
   @HttpCode(HttpStatus.OK)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     const item = await this.wantedItemRepo.findById(id);
-    if (!item || (item as any).userId !== user.id) throw new NotFoundException('Aranan ürün bulunamadı');
+    if (!item || item.getProps().userId !== user.id) throw new NotFoundException('Aranan ürün bulunamadı');
 
     await this.wantedItemRepo.softDelete(id);
     return { success: true };

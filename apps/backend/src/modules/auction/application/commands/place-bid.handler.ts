@@ -10,7 +10,7 @@ import { FinancialGatewayService } from '../../../financial-gateway/financial-ga
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 
 interface WalletBalance {
-  balanceTL: string | number;
+  balance: string | number;
 }
 
 const VALID_PARTICIPATION_STATUSES = ['DEPOSIT_HELD', 'APPROVED', 'ACTIVE'] as const;
@@ -37,7 +37,7 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     // Cüzdan bakiyesi kontrolü
     const wallet = (await this.financialGateway.getWallet(command.userId)) as WalletBalance;
-    const balance = Number(wallet.balanceTL);
+    const balance = Number(wallet.balance);
     if (balance < amount) {
       throw new DomainException(`Yetersiz bakiye. Mevcut: ${balance} TL, Teklif: ${amount} TL`);
     }
@@ -62,11 +62,11 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
     );
 
     // 3. Önceki teklif sahibinin parasını iade et (eğer varsa)
-    const prevBidHoldId = (previousBid as any)?.holdId;
+    const prevBidHoldId = (previousBid as { holdId?: string })?.holdId;
     if (prevBidHoldId) {
       await this.financialGateway.releaseFunds(
         prevBidHoldId,
-        `release-bid-${(previousBid as any).id}`,
+        `release-bid-${(previousBid as { id?: string }).id}`,
       );
     }
 
@@ -90,7 +90,7 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
       newValue: {
         amount: command.amount,
         bidId: bid.id,
-        holdId: (bid.getProps() as any).holdId,
+        holdId: bid.getProps().holdId,
       },
     });
 

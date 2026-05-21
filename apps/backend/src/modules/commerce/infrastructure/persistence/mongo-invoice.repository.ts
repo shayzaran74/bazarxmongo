@@ -51,7 +51,7 @@ export class MongoInvoiceRepository implements IInvoiceRepository {
 
   async save(invoice: Invoice): Promise<void> {
     const props = invoice.getProps();
-    const doc = InvoiceMapper.toPersistence(invoice) as any;
+    const doc = InvoiceMapper.toPersistence(invoice);
 
     await this.model.findOneAndUpdate(
       { id: invoice.id },

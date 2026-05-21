@@ -16,6 +16,7 @@ import { TRADE_OFFER_DEFAULT_TTL_MS } from '@barterborsa/shared-core';
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import { ITradeOfferRepository } from '../domain/repositories/trade-offer.repository.interface';
 import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
+import { SurplusItem } from '../domain/entities/surplus-item.entity';
 
 interface AuthenticatedUser { id: string; role: string; }
 
@@ -120,9 +121,9 @@ export class OffersController {
     if (body.surplusItemId) {
       const surplus = await this.surplusItemRepository.findById(body.surplusItemId);
       // SurplusItem domain entity'sinde allowOnlineResale yansıtılmışsa kontrol et
-      const surplusProps = (surplus as any)?.getProps?.();
-      const ecosystemListing = surplusProps?.ecosystemId as string | undefined;
-      const allowResale = surplusProps?.allowOnlineResale as boolean | undefined;
+      const surplusProps = (surplus as SurplusItem | null)?.getProps?.() ?? {} as { ecosystemId?: string; allowOnlineResale?: boolean };
+      const ecosystemListing = surplusProps?.ecosystemId;
+      const allowResale = surplusProps?.allowOnlineResale;
       if (ecosystemListing && allowResale === false) {
         throw new ForbiddenException({
           code: 'ONLINE_RESALE_NOT_ALLOWED',
@@ -183,7 +184,7 @@ export class OffersController {
     const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7));
     const counter = await this.tradeOfferRepository.create({
       fromCompanyId:  vendor.company.id,
-      toCompanyId:    original.fromCompanyId,
+      toCompanyId:    original.fromCompanyId ?? '',
       status:         'PENDING',
       cashAmount:     body.cashAmount ?? 0,
       cashDirection:  body.cashDirection ?? 'TO_RECEIVER',
@@ -193,7 +194,7 @@ export class OffersController {
       counterOfferId: originalOfferId,
       initiatorId:    user.id,
       initiatorType:  'VENDOR',
-      receiverId:     original.fromCompanyId,
+      receiverId:     original.fromCompanyId ?? '',
       receiverType:   'VENDOR',
       expiresAt,
     });
