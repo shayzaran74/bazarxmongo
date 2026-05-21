@@ -71,7 +71,8 @@ export class ListAdminVendorsHandler
     const categoryMap = new Map(categories.map((cat) => [cat.id || cat._id?.toString(), cat]));
 
     // group categories by vendor
-    const vendorCategoriesMap = new Map<string, any[]>();
+    type VendorCategoryDto = { id?: string; category: { name: string } | null };
+    const vendorCategoriesMap = new Map<string, VendorCategoryDto[]>();
     for (const vc of vendorCategories) {
       const cat = categoryMap.get(vc.categoryId);
       if (!vendorCategoriesMap.has(vc.vendorId)) {
@@ -83,8 +84,8 @@ export class ListAdminVendorsHandler
       });
     }
 
-    const items = result.items.map((v: any) => {
-      const p = (v.getProps ? v.getProps() : v) as import('@barterborsa/shared-persistence').IVendor;
+    const items = result.items.map((v) => {
+      const p = (v.getProps ? v.getProps() : v) as unknown as import('@barterborsa/shared-persistence').IVendor;
       const vid = p.id || v.id;
       const company = companyMap.get(p.companyId);
       const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get(p.userId);
