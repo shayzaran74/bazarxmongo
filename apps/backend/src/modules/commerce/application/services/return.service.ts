@@ -138,21 +138,24 @@ export class ReturnService {
       return { success: false, error: 'Onay süresi doldu' };
     }
 
-    entity.approve();
-    await this.returnRepo.save(entity);
-
+    // Önce finansal iade — başarısız olursa entity kaydedilmez
     const order = await this.orderRepo.findById(entity.orderId);
     const holdId = order?.escrowHoldId ?? `return-refund-${returnId}`;
     const idempotencyKey = `return-approve-${returnId}-${Date.now()}`;
 
-    let refundId: string | undefined;
+    let refundId: string;
     try {
       const refundResult = await this.financialGateway.refundFunds(holdId, idempotencyKey);
       refundId = (refundResult as RefundResult)?.refundId ?? (refundResult as RefundResult)?.holdId ?? idempotencyKey;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      this.logger.error('Refund çağrısı başarısız', { returnId, holdId, error: msg });
+      this.logger.error('Refund çağrısı başarısız — iade onaylanamadı', { returnId, holdId, error: msg });
+      return { success: false, error: 'Finansal iade işlemi başarısız. Lütfen tekrar deneyin.' };
     }
+
+    // Refund başarılı → entity durumunu güncelle ve kaydet
+    entity.approve();
+    await this.returnRepo.save(entity);
 
     try {
       await this.orderRepo.updateStatus(entity.orderId, 'REFUNDED');
@@ -211,12 +214,17 @@ export class ReturnService {
     entity.escalateToAdmin();
 
     if (decision === 'APPROVE') {
-      entity.approve();
       const order = await this.orderRepo.findById(entity.orderId);
       const holdId = order?.escrowHoldId ?? `return-refund-${returnId}`;
       try {
         await this.financialGateway.refundFunds(holdId, `admin-arbitrate-${returnId}`);
-      } catch { /* log but continue */ }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        this.logger.error('Admin arbitration refund başarısız — işlem iptal edildi', { returnId, holdId, error: msg });
+        throw new Error('Finansal iade işlemi başarısız. Tahkim iptal edildi.');
+      }
+      // Refund başarılı → onay durumuna geç
+      entity.approve();
     } else {
       entity.reject();
     }

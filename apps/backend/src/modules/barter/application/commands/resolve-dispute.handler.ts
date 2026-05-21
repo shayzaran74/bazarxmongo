@@ -33,56 +33,43 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
 
     const idempotencyBase = `resolve-${command.sessionId}-${Date.now()}`;
 
-    // İhtilaf durumunu güncelle
-    // Not: MongoDB'de updateMany ile tek seferde tüm alanlar güncellenir
-    // resolveDispute'ta swapSessionId ile sınırlı olduğumuz için ilk document'i bulup güncelleriz
+    // Önce finansal operasyonlar — başarısız olursa dispute "çözümlendi" olarak işaretlenmez
+    if (command.result === 'SELLER_WINS' || command.result === 'RELEASE_ALL') {
+      await this.executeCollateralOps([
+        props.fromCollateralHoldId
+          ? () => this.financialGateway.releaseFunds(props.fromCollateralHoldId!, `${idempotencyBase}-from`)
+          : null,
+        props.toCollateralHoldId
+          ? () => this.financialGateway.releaseFunds(props.toCollateralHoldId!, `${idempotencyBase}-to`)
+          : null,
+      ], command.sessionId, 'release');
+
+      session['props'].status = SwapSessionStatus.COMPLETED;
+      session['props'].collateralStatus = 'RELEASED';
+      session['props'].collateralReleasedAt = new Date();
+    } else if (command.result === 'BUYER_WINS' || command.result === 'REFUND_ALL') {
+      await this.executeCollateralOps([
+        props.fromCollateralHoldId
+          ? () => this.financialGateway.refundFunds(props.fromCollateralHoldId!, `${idempotencyBase}-from-ref`)
+          : null,
+        props.toCollateralHoldId
+          ? () => this.financialGateway.refundFunds(props.toCollateralHoldId!, `${idempotencyBase}-to-ref`)
+          : null,
+      ], command.sessionId, 'refund');
+
+      session['props'].status = SwapSessionStatus.CANCELLED;
+      session['props'].collateralStatus = 'REFUNDED';
+      session['props'].collateralForfeitedAt = new Date();
+    }
+
+    // Finansal operasyonlar başarılı → dispute ve session güncellenir
     await this.disputeRepository.updateResolved(command.sessionId, {
       resolvedAt: new Date(),
       resolvedById: command.adminId,
       resolutionNote: command.adminNote,
     });
 
-    if (command.result === 'SELLER_WINS' || command.result === 'RELEASE_ALL') {
-      if (props.fromCollateralHoldId) {
-        try {
-          await this.financialGateway.releaseFunds(props.fromCollateralHoldId, `${idempotencyBase}-from`);
-        } catch (err) {
-          this.logger.error('From collateral release failed', err);
-        }
-      }
-      if (props.toCollateralHoldId) {
-        try {
-          await this.financialGateway.releaseFunds(props.toCollateralHoldId, `${idempotencyBase}-to`);
-        } catch (err) {
-          this.logger.error('To collateral release failed', err);
-        }
-      }
-
-      session['props'].status = SwapSessionStatus.COMPLETED;
-      session['props'].collateralStatus = 'RELEASED';
-      session['props'].collateralReleasedAt = new Date();
-      await this.sessionRepository.save(session);
-    } else if (command.result === 'BUYER_WINS' || command.result === 'REFUND_ALL') {
-      if (props.fromCollateralHoldId) {
-        try {
-          await this.financialGateway.refundFunds(props.fromCollateralHoldId, `${idempotencyBase}-from-ref`);
-        } catch (err) {
-          this.logger.error('From collateral refund failed', err);
-        }
-      }
-      if (props.toCollateralHoldId) {
-        try {
-          await this.financialGateway.refundFunds(props.toCollateralHoldId, `${idempotencyBase}-to-ref`);
-        } catch (err) {
-          this.logger.error('To collateral refund failed', err);
-        }
-      }
-
-      session['props'].status = SwapSessionStatus.CANCELLED;
-      session['props'].collateralStatus = 'REFUNDED';
-      session['props'].collateralForfeitedAt = new Date();
-      await this.sessionRepository.save(session);
-    }
+    await this.sessionRepository.save(session);
 
     await this.auditLog.log({
       actorId: command.adminId,
@@ -93,5 +80,33 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
     });
 
     return { success: true };
+  }
+
+  // Teminat işlemlerini çalıştırır; herhangi biri başarısız olursa BadRequestException fırlatır
+  private async executeCollateralOps(
+    ops: Array<(() => Promise<unknown>) | null>,
+    sessionId: string,
+    opType: 'release' | 'refund',
+  ): Promise<void> {
+    const failures: string[] = [];
+
+    for (let i = 0; i < ops.length; i++) {
+      const op = ops[i];
+      if (!op) continue;
+      try {
+        await op();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Collateral ${opType} [${i}] başarısız`, { sessionId, error: msg });
+        failures.push(`op-${i}: ${msg}`);
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new BadRequestException(
+        `Teminat ${opType === 'release' ? 'serbest bırakma' : 'iade'} işlemi başarısız. ` +
+        `İşlem iptal edildi, session DISPUTED kaldı. Detay: ${failures.join(' | ')}`,
+      );
+    }
   }
 }
