@@ -145,6 +145,13 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
     this._updatedAt = new Date();
   }
 
+  public forfeitCollateral(): void {
+    // Teminat iade edildi — BUYER_WINS / REFUND_ALL ihtilaf çözümünde kullanılır
+    this.props.collateralStatus = 'REFUNDED';
+    this.props.collateralForfeitedAt = new Date();
+    this._updatedAt = new Date();
+  }
+
   public cancel(): void {
     this.transitionTo(SwapSessionStatus.CANCELLED);
     this.props.cancelledAt = new Date();

@@ -44,9 +44,8 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
           : null,
       ], command.sessionId, 'release');
 
-      session['props'].status = SwapSessionStatus.COMPLETED;
-      session['props'].collateralStatus = 'RELEASED';
-      session['props'].collateralReleasedAt = new Date();
+      session.complete();
+      session.releaseCollateral();
     } else if (command.result === 'BUYER_WINS' || command.result === 'REFUND_ALL') {
       await this.executeCollateralOps([
         props.fromCollateralHoldId
@@ -57,9 +56,8 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
           : null,
       ], command.sessionId, 'refund');
 
-      session['props'].status = SwapSessionStatus.CANCELLED;
-      session['props'].collateralStatus = 'REFUNDED';
-      session['props'].collateralForfeitedAt = new Date();
+      session.cancel();
+      session.forfeitCollateral();
     }
 
     // Finansal operasyonlar başarılı → dispute ve session güncellenir

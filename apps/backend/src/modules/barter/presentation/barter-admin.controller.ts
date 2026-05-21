@@ -1,6 +1,6 @@
 // apps/backend/src/modules/barter/presentation/barter-admin.controller.ts
 
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { Inject } from '@nestjs/common';
@@ -31,6 +31,8 @@ interface SurplusCategoryDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/barter')
 export class BarterAdminController {
+  private readonly logger = new Logger(BarterAdminController.name);
+
   constructor(
     @Inject('ITradeOfferRepository') private readonly tradeOfferRepo: ITradeOfferRepository,
     @Inject('IWantedItemRepository') private readonly wantedItemRepo: IWantedItemRepository,
@@ -127,23 +129,22 @@ export class BarterAdminController {
     const vendors = await this.vendorRepo.findByBarterEnabled(true);
 
     const data = await Promise.all(
-      vendors.map(async (v: any) => {
+      vendors.map(async (v) => {
         let wallet = null;
         try {
-          const walletRes: any = await this.financialGateway.getWallet(v.userId);
-          if (walletRes && walletRes.success) {
-            wallet = walletRes.data;
-          } else if (walletRes && !walletRes.success) {
-            wallet = walletRes;
+          const walletRes = await this.financialGateway.getWallet(v.userId);
+          if (walletRes) {
+            wallet = walletRes.success ? walletRes.data : walletRes;
           }
-        } catch (e) {
-          // ignore grpc errors
+        } catch (e: unknown) {
+          this.logger.warn('gRPC cüzdan sorgusu başarısız', { userId: v.userId, error: e instanceof Error ? e.message : String(e) });
         }
 
         return {
-          ...v,
-          name: v.company?.name || v.user?.email || '?',
-          email: v.user?.email,
+          id: v.id,
+          userId: v.userId,
+          name: (v as { company?: { name?: string }; user?: { email?: string } }).company?.name || (v as { user?: { email?: string } }).user?.email || '?',
+          email: (v as { user?: { email?: string } }).user?.email,
           wallet: wallet || { barterBalance: 0, barterCreditLimit: 0 },
         };
       }),
