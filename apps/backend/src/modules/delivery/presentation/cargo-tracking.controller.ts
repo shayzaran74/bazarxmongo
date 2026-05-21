@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/delivery/presentation/cargo-tracking.controller.ts
 
 import {
@@ -40,14 +41,14 @@ export class CargoTrackingController {
   async createShipment(
     @Param('id') orderId: string,
     @Body() body: { provider: CargoProvider; trackingNumber: string },
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
       const result = await this.cargoTrackingService.createShipment({
         orderId,
         provider: body.provider,
         trackingNumber: body.trackingNumber,
-        vendorId: req.user.vendorId,
+        vendorId: user.vendorId!,
       });
       return { success: true, data: result };
     } catch (err: unknown) {
@@ -92,8 +93,9 @@ export class AdminCargoController {
   constructor(private readonly cargoTrackingService: CargoTrackingService) {}
 
   @Get()
-  async listAll(@Request() req: any) {
+  async listAll(@CurrentUser() user: AuthenticatedUser) {
     // TODO: Tüm cargo shipments'ı listele (admin)
     return { success: true, data: { items: [], total: 0 } };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

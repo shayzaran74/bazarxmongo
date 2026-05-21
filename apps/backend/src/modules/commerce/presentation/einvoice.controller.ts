@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/commerce/presentation/einvoice.controller.ts
 
 import {
@@ -23,7 +24,7 @@ export class EInvoiceController {
    * Satıcının e-faturalarını listele
    */
   @Get()
-  async listInvoices(@Request() req: any) {
+  async listInvoices(@CurrentUser() user: AuthenticatedUser) {
     return { success: true, data: { items: [], total: 0 } };
   }
 
@@ -32,7 +33,7 @@ export class EInvoiceController {
    * e-Fatura XML indir
    */
   @Get(':id/download/xml')
-  async downloadXml(@Param('id') id: string, @Request() req: any) {
+  async downloadXml(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     // TODO: MinIO'dan XML indirme URL'i üret
     return { success: true, data: { downloadUrl: null } };
   }
@@ -48,7 +49,7 @@ export class OrderEInvoiceController {
    * Siparişin e-fatura bilgilerini getir
    */
   @Get()
-  async getOrderEInvoice(@Param('id') orderId: string, @Request() req: any) {
+  async getOrderEInvoice(@Param('id') orderId: string, @CurrentUser() user: AuthenticatedUser) {
     const einvoice = await this.einvoiceGenerator.getEInvoice(orderId);
     return { success: true, data: einvoice };
   }
@@ -64,7 +65,7 @@ export class AdminEInvoiceController {
    * Tüm e-faturaları listele (admin)
    */
   @Get()
-  async listAll(@Request() req: any) {
+  async listAll(@CurrentUser() user: AuthenticatedUser) {
     return { success: true, data: { items: [], total: 0 } };
   }
 
@@ -74,8 +75,9 @@ export class AdminEInvoiceController {
    */
   @Post(':id/resend')
   @HttpCode(HttpStatus.OK)
-  async resendEInvoice(@Param('id') id: string, @Request() req: any) {
+  async resendEInvoice(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     await this.einvoiceGenerator.resendEInvoice(id);
     return { success: true };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

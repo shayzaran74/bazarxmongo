@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/vendor/presentation/early-payment.controller.ts
 
 import {
@@ -24,8 +25,8 @@ export class EarlyPaymentController {
    * Satıcının erken ödeme eligibility kontrolü
    */
   @Get('eligible')
-  async checkEligibility(@Request() req: any) {
-    const result = await this.earlyPaymentService.checkEligibility(req.user.vendorId);
+  async checkEligibility(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.earlyPaymentService.checkEligibility(user.vendorId!);
     return { success: true, data: result };
   }
 
@@ -35,9 +36,9 @@ export class EarlyPaymentController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createRequest(@Request() req: any, @Body() body: CreateEarlyPaymentDto) {
+  async createRequest(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateEarlyPaymentDto) {
     try {
-      const result = await this.earlyPaymentService.createRequest(req.user.vendorId, body);
+      const result = await this.earlyPaymentService.createRequest(user.vendorId!, body);
       return { success: true, data: result };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
@@ -50,7 +51,7 @@ export class EarlyPaymentController {
    * Satıcının erken ödeme talepleri listesi
    */
   @Get()
-  async listRequests(@Request() req: any) {
+  async listRequests(@CurrentUser() user: AuthenticatedUser) {
     return { success: true, data: { items: [], total: 0 } };
   }
 }
@@ -65,7 +66,7 @@ export class AdminEarlyPaymentController {
    * Tüm erken ödeme taleplerini listele
    */
   @Get()
-  async listAll(@Request() req: any) {
+  async listAll(@CurrentUser() user: AuthenticatedUser) {
     return { success: true, data: { items: [], total: 0 } };
   }
 
@@ -78,11 +79,11 @@ export class AdminEarlyPaymentController {
   async approveRequest(
     @Param('id') id: string,
     @Body() body: { payeeAccountId: string },
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.earlyPaymentService.approveRequest(
       id,
-      req.user.id,
+      user.id,
       body.payeeAccountId,
     );
     return result;
@@ -97,13 +98,14 @@ export class AdminEarlyPaymentController {
   async rejectRequest(
     @Param('id') id: string,
     @Body() body: { reason: string },
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.earlyPaymentService.rejectRequest(
       id,
-      req.user.id,
+      user.id,
       body.reason,
     );
     return result;
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

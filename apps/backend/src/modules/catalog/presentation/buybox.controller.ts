@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/catalog/presentation/buybox.controller.ts
 
 import {
@@ -21,7 +22,7 @@ export class BuyboxController {
    * Ürünün tüm satıcı tekliflerini ve buybox durumlarını listele
    */
   @Get()
-  async getProductOffers(@Param('id') productId: string, @Request() req: any) {
+  async getProductOffers(@Param('id') productId: string, @CurrentUser() user: AuthenticatedUser) {
     const winners = await this.buyboxCalculator.calculateProductBuybox(productId);
     return { success: true, data: winners };
   }
@@ -48,7 +49,7 @@ export class ListingBuyboxController {
    * Belirli bir listing'in buybox durumunu getir
    */
   @Get()
-  async getListingBuyboxStatus(@Param('id') listingId: string, @Request() req: any) {
+  async getListingBuyboxStatus(@Param('id') listingId: string, @CurrentUser() user: AuthenticatedUser) {
     // TODO: ListingRepository'den listing'i çek, productId'yi bul, buybox hesapla
     return { success: true, data: { listingId, isBuyboxWinner: false, score: 0 } };
   }
@@ -64,7 +65,7 @@ export class AdminBuyboxController {
    * Admin buybox'ı manuel yeniden hesaplatır
    */
   @Post(':productId/recalculate')
-  async recalculateBuybox(@Param('productId') productId: string, @Request() req: any) {
+  async recalculateBuybox(@Param('productId') productId: string, @CurrentUser() user: AuthenticatedUser) {
     const winners = await this.buyboxCalculator.calculateProductBuybox(productId);
     return {
       success: true,
@@ -76,3 +77,4 @@ export class AdminBuyboxController {
     };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

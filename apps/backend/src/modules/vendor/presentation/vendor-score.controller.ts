@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/vendor/presentation/vendor-score.controller.ts
 // VendorScoreController — Satıcı puanı ve ihlal yönetimi
 
@@ -8,6 +9,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Body,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
@@ -25,8 +27,8 @@ export class VendorScoreController {
    * Satıcının kendi score'unu getir
    */
   @Get('me/score')
-  async getMyScore(@Request() req: any) {
-    const vendorId = req.user.vendorId;
+  async getMyScore(@CurrentUser() user: AuthenticatedUser) {
+    const vendorId = user.vendorId!;
     if (!vendorId) {
       throw new HttpException('Satıcı profili bulunamadı', HttpStatus.NOT_FOUND);
     }
@@ -44,8 +46,8 @@ export class VendorScoreController {
    * Satıcının aktif ihlallerini getir
    */
   @Get('me/violations')
-  async getMyViolations(@Request() req: any) {
-    const vendorId = req.user.vendorId;
+  async getMyViolations(@CurrentUser() user: AuthenticatedUser) {
+    const vendorId = user.vendorId!;
     if (!vendorId) {
       throw new HttpException('Satıcı profili bulunamadı', HttpStatus.NOT_FOUND);
     }
@@ -84,9 +86,10 @@ export class VendorScoreController {
   @Post('admin/vendors/:id/violations')
   async addVendorViolation(
     @Param('id') vendorId: string,
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: Record<string, any>,
   ) {
-    const { type, description, relatedEntityId, relatedEntityType, severity, penaltyScore } = req.body;
+    const { type, description, relatedEntityId, relatedEntityType, severity, penaltyScore } = body;
 
     if (!type || !description) {
       throw new HttpException('type ve description zorunludur', HttpStatus.BAD_REQUEST);
@@ -130,3 +133,4 @@ export class VendorScoreController {
     return { success: true, data: score };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

@@ -1,3 +1,4 @@
+import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/commerce/presentation/return.controller.ts
 
 import {
@@ -24,9 +25,9 @@ export class ReturnController {
   async createReturn(
     @Param('id') orderId: string,
     @Body() dto: Record<string, any>,
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.returnService.createReturn(req.user.id, {
+    const result = await this.returnService.createReturn(user.id, {
       ...dto,
       orderId,
     } as any);
@@ -40,8 +41,8 @@ export class ReturnController {
 
   @Post('orders/:id/return/approve')
   @HttpCode(HttpStatus.OK)
-  async approveReturn(@Param('id') orderId: string, @Request() req: any) {
-    const result = await this.returnService.approveReturn(orderId, req.user.vendorId);
+  async approveReturn(@Param('id') orderId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.returnService.approveReturn(orderId, user.vendorId!);
     return result;
   }
 
@@ -50,11 +51,11 @@ export class ReturnController {
   async rejectReturn(
     @Param('id') orderId: string,
     @Body() body: { reason: string },
-    @Request() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.returnService.rejectReturn(
       orderId,
-      req.user.vendorId,
+      user.vendorId!,
       body.reason,
     );
     return result;
@@ -62,7 +63,8 @@ export class ReturnController {
 
   @Post('orders/:id/return/cancel')
   @HttpCode(HttpStatus.OK)
-  async cancelReturn(@Param('id') orderId: string, @Request() req: any) {
+  async cancelReturn(@Param('id') orderId: string, @CurrentUser() user: AuthenticatedUser) {
     return { success: false, error: 'Not implemented' };
   }
 }
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }
