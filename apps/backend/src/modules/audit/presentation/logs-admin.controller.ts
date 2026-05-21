@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Inject, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Public } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
@@ -11,6 +11,7 @@ import * as Minio from 'minio';
 @ApiBearerAuth()
 @Controller('admin/logs')
 export class LogsAdminController {
+  private readonly logger = new Logger(LogsAdminController.name);
   private minioClient: Minio.Client;
   private readonly bucketName: string;
 
@@ -62,8 +63,8 @@ export class LogsAdminController {
               });
             }
           }
-        } catch (e) {
-          console.error(`Bucket tarama hatası (${bucket}):`, e);
+        } catch (e: unknown) {
+          this.logger.warn(`Bucket tarama hatası (${bucket})`, { error: e instanceof Error ? e.message : String(e) });
         }
       }
 
@@ -118,7 +119,9 @@ export class LogsAdminController {
               lastArchived = obj.lastModified;
             }
           }
-        } catch (e) {}
+        } catch (e: unknown) {
+          this.logger.warn(`İstatistik bucket tarama hatası (${bucket})`, { error: e instanceof Error ? e.message : String(e) });
+        }
       }
 
       return {

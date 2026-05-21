@@ -1,6 +1,6 @@
 // apps/backend/src/modules/identity/profile.controller.ts
 
-import { Controller, Get, Post, Put, Patch, Body, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, UseGuards, Req, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -20,6 +20,8 @@ import {
 @Controller('user/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
+  private readonly logger = new Logger(ProfileController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
@@ -42,15 +44,14 @@ export class ProfileController {
   @Get('stats')
   async getStats(@Req() req: { user: { id: string } }) {
     const userId = req.user.id;
-    console.log('ProfileController [getStats]: Fetching stats for user:', userId);
+    this.logger.debug('İstatistik sorgusu başlatıldı', { userId });
 
     try {
-      console.log('ProfileController [getStats]: Running countDocuments and find...');
       const [orderCount, completedOrders] = await Promise.all([
         this.orderModel.countDocuments({ userId }),
         this.orderModel.find({ userId, status: 'COMPLETED' }, { totalAmount: 1 }).lean(),
       ]);
-      console.log('ProfileController [getStats]: Success! orderCount:', orderCount, 'completedOrders:', completedOrders.length);
+      this.logger.debug('İstatistik sorgusu tamamlandı', { userId, orderCount, completedCount: completedOrders.length });
 
       const totalSpent = completedOrders.reduce(
         (sum, o) => sum + parseFloat(o.totalAmount.toString()),
@@ -61,8 +62,8 @@ export class ProfileController {
         success: true,
         data: { stats: { orderCount, totalSpent } },
       };
-    } catch (error) {
-      console.error('ProfileController [getStats]: Error querying orders:', error);
+    } catch (error: unknown) {
+      this.logger.error('İstatistik sorgusu başarısız', { userId, error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }

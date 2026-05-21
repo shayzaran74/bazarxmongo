@@ -128,8 +128,8 @@ export class CheckoutService {
               images = mediaDocs.map((m) => m.url).filter((url): url is string => Boolean(url));
             }
           }
-        } catch (e) {
-          // ignore
+        } catch (e: unknown) {
+          this.logger.debug('Ürün medyası alınamadı, devam ediliyor', { error: e instanceof Error ? e.message : String(e) });
         }
 
         return OrderItem.create(
