@@ -16,7 +16,7 @@ export class MongoCouponRepository implements ICouponRepository {
     this.model = CouponModel;
   }
 
-  async findByCode(code: string): Promise<any | null> {
+  async findByCode(code: string): Promise<ICoupon | null> {
     const doc = await this.model.findOne({ code }).exec();
     return doc ? doc.toObject() : null;
   }
@@ -30,12 +30,12 @@ export class MongoEscrowCouponRepository implements IEscrowCouponRepository {
     this.model = EscrowCouponModel;
   }
 
-  async findByCartId(cartId: string): Promise<any[]> {
+  async findByCartId(cartId: string): Promise<IEscrowCoupon[]> {
     const docs = await this.model.find({ cartId, isActive: true }).sort({ appliedAt: -1 }).exec();
     return docs.map(doc => doc.toObject());
   }
 
-  async findByCartIdAndCode(cartId: string, code: string): Promise<any | null> {
+  async findByCartIdAndCode(cartId: string, code: string): Promise<IEscrowCoupon | null> {
     const doc = await this.model.findOne({ cartId, code, isActive: true }).exec();
     return doc ? doc.toObject() : null;
   }
@@ -48,7 +48,7 @@ export class MongoEscrowCouponRepository implements IEscrowCouponRepository {
     percentage?: number;
     minAmount?: number;
     expiresAt?: Date;
-  }): Promise<any> {
+  }): Promise<IEscrowCoupon> {
     const id = 'ec-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const doc = await this.model.create({
       id,
@@ -64,7 +64,7 @@ export class MongoEscrowCouponRepository implements IEscrowCouponRepository {
     await this.model.deleteOne({ id }).exec();
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<IEscrowCoupon | null> {
     const doc = await this.model.findOne({ id }).exec();
     return doc ? doc.toObject() : null;
   }
