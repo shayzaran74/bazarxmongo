@@ -3,16 +3,17 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { IVendorB2BData } from '@barterborsa/shared-persistence';
 
 import { VendorB2BData as VendorB2BDataModel } from '@barterborsa/shared-persistence/schemas/backend/vendor-b2b-data.schema';
 import { IVendorB2BDataRepository } from '../../domain/repositories/vendor-b2b-data.repository.interface';
 
 @Injectable()
 export class MongoVendorB2BDataRepository implements IVendorB2BDataRepository {
-  private readonly model: Model<Document>;
+  private readonly model: Model<IVendorB2BData>;
 
   constructor() {
-    this.model = VendorB2BDataModel;
+    this.model = VendorB2BDataModel as unknown as typeof this.model;
   }
 
   async updateFirstTransaction(vendorIds: string[]): Promise<void> {
@@ -22,7 +23,7 @@ export class MongoVendorB2BDataRepository implements IVendorB2BDataRepository {
     ).exec();
   }
 
-  async findByVendorId(vendorId: string): Promise<any | null> {
+  async findByVendorId(vendorId: string): Promise<IVendorB2BData | null> {
     const doc = await this.model.findOne({ vendorId }).exec();
     return doc ? doc.toObject() : null;
   }
