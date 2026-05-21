@@ -28,7 +28,7 @@ import {
 } from '@barterborsa/shared-persistence';
 
 const d128 = (v: number | string): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 function extractError(error: unknown): string {
   return error instanceof Error ? error.message : 'Bilinmeyen hata oluştu.';
@@ -299,12 +299,12 @@ export class WalletGrpcController {
             );
             await this.walletModel.updateOne(
               { userId: request.userId },
-              { $inc: { balanceTL: d128(-parseFloat(request.amount.toString())) } },
+              { $inc: { balanceTL: d128(new Decimal(request.amount.toString()).negated().toFixed(2)) } },
               { session },
             );
             await this.accountModel.updateOne(
               { userId: request.userId, type: 'MAIN' },
-              { $inc: { balance: d128(-parseFloat(request.amount.toString())), blockedBalance: d128(-parseFloat(request.amount.toString())) } },
+              { $inc: { balance: d128(new Decimal(request.amount.toString()).negated().toFixed(2)), blockedBalance: d128(new Decimal(request.amount.toString()).negated().toFixed(2)) } },
               { session },
             );
             await this.txModel.updateMany(
@@ -320,7 +320,7 @@ export class WalletGrpcController {
             );
             await this.accountModel.updateOne(
               { userId: request.userId, type: 'MAIN' },
-              { $inc: { availableBalance: d128(parseFloat(request.amount.toString())), blockedBalance: d128(-parseFloat(request.amount.toString())) } },
+              { $inc: { availableBalance: d128(new Decimal(request.amount.toString()).toFixed(2)), blockedBalance: d128(new Decimal(request.amount.toString()).negated().toFixed(2)) } },
               { session },
             );
             await this.txModel.updateMany(

@@ -3,13 +3,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
+import { Decimal } from 'decimal.js';
 import { IWallet } from '@barterborsa/shared-persistence';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository.interface';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { WalletMapper } from './mappers/wallet.mapper';
 
-const d128 = (n: number): Types.Decimal128 =>
-  Types.Decimal128.fromString(n.toFixed(2));
+const d128 = (n: number | string): Types.Decimal128 =>
+  Types.Decimal128.fromString(new Decimal(n).toFixed(2));
 
 @Injectable()
 export class MongoWalletRepository implements IWalletRepository {
@@ -54,8 +55,12 @@ export class MongoWalletRepository implements IWalletRepository {
         }
 
         // Fark bazlı atomik güncelleme — eş zamanlı yazma güvenliği
-        const diff = (a: Types.Decimal128, b: Types.Decimal128) =>
-          d128(parseFloat(a.toString()) - parseFloat(b.toString()));
+        // Decimal.js ile float math güvenliği
+        const diff = (a: Types.Decimal128, b: Types.Decimal128) => {
+          const aDec = new Decimal(a.toString());
+          const bDec = new Decimal(b.toString());
+          return d128(aDec.minus(bDec).toFixed(2));
+        };
 
         await this.walletModel.updateOne(
           { userId: entity.userId },
@@ -63,7 +68,7 @@ export class MongoWalletRepository implements IWalletRepository {
             $inc: {
               balanceTL:           diff(persistence.balanceTL!, current.balanceTL),
               barterBalance:       diff(persistence.barterBalance!, current.barterBalance),
-              xpPoints:            entity.xpPoints - current.xpPoints,
+              xpPoints:            entity.xpPoints - (current.xpPoints ?? 0),
               xpAdsBalance:        diff(persistence.xpAdsBalance!, current.xpAdsBalance),
               xpTradeBalance:      diff(persistence.xpTradeBalance!, current.xpTradeBalance),
               xpCommissionBalance: diff(persistence.xpCommissionBalance!, current.xpCommissionBalance),

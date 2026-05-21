@@ -1,6 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 
-export const EscrowStatus = ['PENDING','FUNDED','HELD','RELEASED','REFUNDED','DISPUTED'] as const;
+export const EscrowStatus = ['PENDING','FUNDED','HELD','RELEASED','REFUNDED','DISPUTED','CANCELLED'] as const;
 export type EscrowStatusType = typeof EscrowStatus[number];
 
 export interface IEscrow {

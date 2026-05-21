@@ -3,7 +3,8 @@
 // ADR-005 §0.5: Decimal128 + Money API zorunlu, transaction ile birlikte
 
 import { Injectable, ConflictException } from '@nestjs/common';
-import { Model, Connection } from 'mongoose';
+import { Model, Connection, Types } from 'mongoose';
+import { Decimal } from 'decimal.js';
 import { Wallet, IWallet } from '../../schemas/financial/wallet.schema';
 import { Account, IAccount } from '../../schemas/financial/account.schema';
 import { AccountTransaction, IAccountTransaction, TransactionType, TransactionTypeType } from '../../schemas/financial/accountTransaction.schema';
@@ -13,7 +14,6 @@ import { GeneralLedger, IGeneralLedger } from '../../schemas/financial/generalLe
 import { CommissionRecord, ICommissionRecord, CommissionStatus, CommissionType, CommissionTypeType } from '../../schemas/financial/commissionRecord.schema';
 import { UserLedgerEntry, IUserLedgerEntry } from '../../schemas/financial/userLedgerEntry.schema';
 import { Payment, IPayment, PaymentStatus } from '../../schemas/financial/payment.schema';
-import { Types } from 'mongoose';
 
 // Money API kullanımı için Decimal128 wrapper
 // NOT: Money sınıfı shared-core/math/decimal.ts'te tanımlı
@@ -107,15 +107,15 @@ export class AccountRepository {
         if (!account) return null;
 
         // Atomic hold: decrease available, increase blocked
-        const balanceNum = parseFloat(account.availableBalance.toString());
-        const amountNum = parseFloat(amount.toString());
-        if (balanceNum < amountNum) return null;
+        const balanceNum = new Decimal(account.availableBalance.toString());
+        const amountNum = new Decimal(amount.toString());
+        if (balanceNum.lt(amountNum)) return null;
 
         await Account.updateOne(
           { _id: accountId },
           {
             $inc: {
-              availableBalance: Types.Decimal128.fromString((-amountNum).toFixed(2)),
+              availableBalance: Types.Decimal128.fromString(amountNum.negated().toFixed(2)),
               blockedBalance: amount,
             },
             $set: { isDirty: true, updatedAt: new Date() },
@@ -156,7 +156,7 @@ export class AccountRepository {
           {
             $inc: {
               availableBalance: hold.amount,
-              blockedBalance: Types.Decimal128.fromString((-parseFloat(hold.amount.toString())).toFixed(2)),
+              blockedBalance: Types.Decimal128.fromString(new Decimal(hold.amount.toString()).negated().toFixed(2)),
             },
             $set: { isDirty: true, updatedAt: new Date() },
           },

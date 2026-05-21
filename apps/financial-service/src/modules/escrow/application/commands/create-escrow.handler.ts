@@ -15,7 +15,7 @@ import {
 } from '@barterborsa/shared-persistence';
 
 const d128 = (v: string | number): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 @CommandHandler(CreateEscrowCommand)
 export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand, Escrow> {
@@ -85,7 +85,7 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
         await this.escrowModel.create(
           [{
             _id: newId, id: newId, orderId, buyerId, sellerId,
-            amount: amountD128, status: 'FUNDED',
+            amount: amountD128, status: 'HELD',
             releasedAmount: d128(0),
             createdAt: new Date(), updatedAt: new Date(),
           }],
@@ -117,6 +117,7 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
         ]);
 
         result = Escrow.create({ orderId, buyerId, sellerId, amount: amountDec });
+        result.fund(); // Entity durumunu PENDING -> HELD yaparak DB ile eşitle
       });
     } finally {
       await session.endSession();

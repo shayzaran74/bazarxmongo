@@ -5,6 +5,7 @@ import { Decimal } from 'decimal.js';
 
 export type EscrowStatus =
   | 'PENDING'
+  | 'FUNDED'
   | 'HELD'
   | 'RELEASED'
   | 'REFUNDED'
