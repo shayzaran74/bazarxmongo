@@ -14,6 +14,7 @@ import { Model } from 'mongoose';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { IVendor } from '@barterborsa/shared-persistence';
+import { Vendor as VendorModel } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { IsString, IsOptional, IsNumber, IsBoolean, IsArray } from 'class-validator';
 
 export class CreateVendorProductDto {
@@ -134,7 +135,6 @@ export class VendorProductController {
 
     if (!file) throw new BadRequestException('Lütfen bir dosya yükleyin.');
 
-    const { Vendor: VendorModel } = require('@barterborsa/shared-persistence/schemas/backend/vendor.schema') as typeof import('@barterborsa/shared-persistence/schemas/backend/vendor.schema');
     const vendorDoc = await VendorModel.findOne({ userId: user.id }).lean().exec() as IVendor | null;
     if (!vendorDoc) throw new BadRequestException('Satıcı hesabı bulunamadı');
 

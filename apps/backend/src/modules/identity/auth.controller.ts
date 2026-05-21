@@ -49,9 +49,9 @@ export class AuthController {
     
     // Eğer ID bir email ise (örn: seller1@barterborsa.com), DB'den gerçek ObjectId'yi bulalım
     if (userId && userId.includes('@')) {
-      const user = await this.userModel.findOne({ email: userId });
-      if (user) {
-        userId = user._id.toString();
+      const foundUser = await this.userModel.findOne({ email: userId });
+      if (foundUser && foundUser._id) {
+        userId = foundUser._id.toString();
         console.log('AuthController.me - Resolved email to userId:', userId);
       }
     }
