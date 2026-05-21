@@ -79,25 +79,61 @@ export class EcosystemAdminController {
   async getEcosystems(): Promise<{ success: boolean; ecosystems: EcosystemDto[] }> {
     const ecosystems = await this.brandEcosystemRepo.findAll();
     
-    const result = [];
-    for (const eco of ecosystems) {
-      // Find owner vendor and company name
-      const ownerVendor = await this.vendorRepo.findById(eco.ownerId);
+    const ecoIds = ecosystems.map(e => e.id);
+    const ownerIds = ecosystems.map(e => e.ownerId).filter(Boolean);
+
+    const [ownerVendors, memberVendors] = await Promise.all([
+      ownerIds.length ? this.vendorModel.find({ id: { $in: ownerIds } }).lean().exec() : [],
+      ecoIds.length ? this.vendorModel.find({ ecosystemId: { $in: ecoIds } }).lean().exec() : []
+    ]);
+
+    const allVendorIds = [...new Set([...ownerVendors.map(v => v.id), ...memberVendors.map(v => v.id)])];
+    const allCompanyIds = [...new Set([...ownerVendors.map(v => v.companyId), ...memberVendors.map(v => v.companyId)])];
+
+    const [companies, activeListings] = await Promise.all([
+      allCompanyIds.length ? this.companyModel.find({ id: { $in: allCompanyIds } }).lean().exec() : [],
+      allVendorIds.length ? this.listingModel.find({ vendorId: { $in: allVendorIds }, status: 'ACTIVE' }).lean().exec() : []
+    ]);
+
+    const trustScores = await Promise.all(memberVendors.map(mv => this.trustScoreRepo.findByVendorId(mv.id)));
+    const trustScoreMap = new Map(trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts]));
+
+    const companyMap = new Map(companies.map(c => [c.id, c]));
+    
+    // Group member vendors by ecoId
+    const membersByEcoId = new Map<string, any[]>();
+    memberVendors.forEach(mv => {
+      if (!membersByEcoId.has(mv.ecosystemId!)) membersByEcoId.set(mv.ecosystemId!, []);
+      membersByEcoId.get(mv.ecosystemId!)!.push(mv);
+    });
+
+    // Group listings by vendorId
+    const listingsByVendorId = new Map<string, any[]>();
+    activeListings.forEach(l => {
+      if (!listingsByVendorId.has(l.vendorId)) listingsByVendorId.set(l.vendorId, []);
+      listingsByVendorId.get(l.vendorId)!.push(l);
+    });
+    
+    // Log counts
+    const logCountsAgg = await this.ecosystemAuditLogModel.aggregate([
+      { $match: { ecosystemId: { $in: ecoIds }, severity: { $ne: 'INFO' } } },
+      { $group: { _id: '$ecosystemId', count: { $sum: 1 } } }
+    ]).exec();
+    const logCountsMap = new Map(logCountsAgg.map(agg => [agg._id, agg.count]));
+
+    const result = ecosystems.map(eco => {
+      const ownerVendor = ownerVendors.find(v => v.id === eco.ownerId);
       let ownerBusinessName = 'İsimsiz Fabrika';
       if (ownerVendor) {
-        const ownerCompany = await this.companyModel.findOne({ id: ownerVendor.companyId }).lean().exec();
-        if (ownerCompany) {
-          ownerBusinessName = ownerCompany.name || 'İsimsiz Fabrika';
-        }
+        const ownerCompany = companyMap.get(ownerVendor.companyId);
+        if (ownerCompany) ownerBusinessName = ownerCompany.name || 'İsimsiz Fabrika';
       }
-      
-      // Find members (vendors with ecosystemId = eco.id)
-      const memberVendors = await this.vendorModel.find({ ecosystemId: eco.id }).lean().exec();
+
       const membersList = [];
-      
-      for (const mv of memberVendors) {
-        const mvCompany = await this.companyModel.findOne({ id: mv.companyId }).lean().exec();
-        const tsRecord = await this.trustScoreRepo.findByVendorId(mv.id);
+      const ecoMembers = membersByEcoId.get(eco.id) || [];
+      for (const mv of ecoMembers) {
+        const mvCompany = companyMap.get(mv.companyId);
+        const tsRecord = trustScoreMap.get(mv.id);
         membersList.push({
           id: mv.id,
           businessName: mvCompany?.name || 'İsimsiz İşletme',
@@ -105,29 +141,24 @@ export class EcosystemAdminController {
           trustScore: tsRecord ? Number(tsRecord.score) : 100
         });
       }
-      
-      // Calculate active listings and stocks
-      const relevantVendorIds = [eco.ownerId, ...memberVendors.map(mv => mv.id)];
-      const activeListings = await this.listingModel.find({
-        vendorId: { $in: relevantVendorIds },
-        status: 'ACTIVE'
-      }).lean().exec();
-      
+
+      const relevantVendorIds = [eco.ownerId, ...ecoMembers.map(mv => mv.id)];
       let totalStok = 0;
       let totalValue = 0;
-      for (const listing of activeListings) {
-        const stockVal = listing.stock || 0;
-        const priceVal = listing.price ? Number(listing.price.toString()) : 0;
-        totalStok += stockVal;
-        totalValue += stockVal * priceVal;
+      let listingCount = 0;
+      
+      for (const vid of relevantVendorIds) {
+        const vListings = listingsByVendorId.get(vid) || [];
+        listingCount += vListings.length;
+        for (const listing of vListings) {
+          const stockVal = listing.stock || 0;
+          const priceVal = listing.price ? Number(listing.price.toString()) : 0;
+          totalStok += stockVal;
+          totalValue += stockVal * priceVal;
+        }
       }
-      
-      const logCount = await this.ecosystemAuditLogModel.countDocuments({
-        ecosystemId: eco.id,
-        severity: { $ne: 'INFO' }
-      }).exec();
-      
-      result.push({
+
+      return {
         id: eco.id,
         name: eco.name,
         slug: eco.slug,
@@ -144,14 +175,14 @@ export class EcosystemAdminController {
         stats: {
           totalValue,
           totalStok,
-          memberCount: memberVendors.length,
-          listingCount: activeListings.length,
-          logCount
+          memberCount: ecoMembers.length,
+          listingCount,
+          logCount: logCountsMap.get(eco.id) || 0
         },
         Members: membersList
-      });
-    }
-    
+      };
+    });
+
     return { success: true, ecosystems: result };
   }
 
@@ -159,34 +190,49 @@ export class EcosystemAdminController {
   @Get('logs')
   async getAuditLogs(): Promise<{ success: boolean; logs: EcosystemAuditLogDto[] }> {
     const logs = await this.ecosystemAuditLogModel.find().sort({ createdAt: -1 }).limit(100).lean().exec();
+    // Batch fetch vendors
+    const vendorIds = [...new Set(logs.map(l => l.vendorId).filter(Boolean))];
+    const vendors = vendorIds.length ? await this.vendorModel.find({ id: { $in: vendorIds } }).lean().exec() : [];
+    const vendorMap = new Map(vendors.map(v => [v.id, v]));
+
+    // Batch fetch companies
+    const companyIds = [...new Set(vendors.map(v => v.companyId).filter(Boolean))];
+    const companies = companyIds.length ? await this.companyModel.find({ id: { $in: companyIds } }).lean().exec() : [];
+    const companyMap = new Map(companies.map(c => [c.id, c]));
+
+    // Batch fetch ecosystems
+    const ecoIdsFromLogs = logs.map(l => l.ecosystemId).filter(Boolean) as string[];
+    const ecoIdsFromVendors = vendors.map(v => v.ecosystemId).filter(Boolean) as string[];
+    const uniqueEcoIds = [...new Set([...ecoIdsFromLogs, ...ecoIdsFromVendors])];
     
-    const result = [];
-    for (const log of logs) {
-      // Find vendor business name
+    const ecosystems = await Promise.all(uniqueEcoIds.map(id => this.brandEcosystemRepo.findById(id)));
+    const ecoMap = new Map(ecosystems.filter(Boolean).map(e => [e!.id, e]));
+
+    const result = logs.map(log => {
       let vendorBusinessName = 'SİSTEM';
       let vendorEcosystemId = null;
+      
       if (log.vendorId) {
-        const vendor = await this.vendorModel.findOne({ id: log.vendorId }).lean().exec();
+        const vendor = vendorMap.get(log.vendorId);
         if (vendor) {
           vendorEcosystemId = vendor.ecosystemId;
-          const company = await this.companyModel.findOne({ id: vendor.companyId }).lean().exec();
+          const company = companyMap.get(vendor.companyId);
           if (company) {
             vendorBusinessName = company.name || 'İsimsiz Satıcı';
           }
         }
       }
-      
-      // Find ecosystem name
+
       let ecosystemName = 'GENEL HAVUZ';
       const ecoId = log.ecosystemId || vendorEcosystemId;
       if (ecoId) {
-        const eco = await this.brandEcosystemRepo.findById(ecoId);
+        const eco = ecoMap.get(ecoId);
         if (eco) {
           ecosystemName = eco.name || 'İsimsiz Ekosistem';
         }
       }
-      
-      result.push({
+
+      return {
         id: log.id,
         ecosystemId: log.ecosystemId,
         vendorId: log.vendorId,
@@ -200,9 +246,9 @@ export class EcosystemAdminController {
         Ecosystem: {
           name: ecosystemName
         }
-      });
-    }
-    
+      };
+    });
+
     return { success: true, logs: result };
   }
 
