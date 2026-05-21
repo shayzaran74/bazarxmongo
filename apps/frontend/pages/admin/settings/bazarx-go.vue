@@ -341,61 +341,62 @@ import { ref, onMounted } from 'vue'
 definePageMeta({ layout: 'admin', middleware: 'super-admin' })
 useHead({ title: 'BazarX Go Ayarları - Admin' })
 
+interface CategoryItem   { title: string; image: string; desc?: string; tag?: string; href?: string; tint?: string; accent?: string }
+interface CouponItem     { label: string; value: string; desc?: string; code?: string; tint?: string; accent?: string }
+interface CuisineItem    { name: string; image: string }
+interface PersonalizedProduct { name: string; vendor: string; rating: number; reviews: string; eta: string; price: number; image: string }
+
 const settings = ref({
   showCategories: true,
   categoriesTitle: 'Kategoriler',
   categoriesSubtitle: 'İhtiyacın olan her şey, tek tıkla',
-  categories: [],
+  categories: [] as CategoryItem[],
   showCoupons: true,
   couponsTitle: 'İndirim Kuponların',
   couponsSubtitle: '3 aktif kupon · son 2 gün',
-  coupons: [],
+  coupons: [] as CouponItem[],
   showCuisines: true,
   cuisinesTitle: 'Mutfaklar',
   cuisinesSubtitle: 'Damak tadına göre keşfet',
-  cuisines: [],
+  cuisines: [] as CuisineItem[],
   showPersonalized: true,
   personalizedTitle: 'Sana Özel Seçimler',
   personalizedSubtitle: 'Geçmişine göre hazırlandı',
-  personalizedProducts: []
+  personalizedProducts: [] as PersonalizedProduct[]
 })
 
 const addCategory = () => {
-  if (!settings.value.categories) settings.value.categories = []
   settings.value.categories.push({ title: '', image: '', tint: '#FEF3F2', accent: '#B42318' })
 }
 
-const removeCategory = (index) => {
+const removeCategory = (index: number) => {
   settings.value.categories.splice(index, 1)
 }
 
 const addCoupon = () => {
-  if (!settings.value.coupons) settings.value.coupons = []
   settings.value.coupons.push({ label: '', value: '', desc: '', code: '', tint: 'rgba(0,109,61,0.08)', accent: '#006D3D' })
 }
 
-const removeCoupon = (index) => {
+const removeCoupon = (index: number) => {
   settings.value.coupons.splice(index, 1)
 }
 
 const addCuisine = () => {
-  if (!settings.value.cuisines) settings.value.cuisines = []
   settings.value.cuisines.push({ name: '', image: '' })
 }
 
-const removeCuisine = (index) => {
+const removeCuisine = (index: number) => {
   settings.value.cuisines.splice(index, 1)
 }
 
 const addPersonalizedProduct = () => {
-  if (!settings.value.personalizedProducts) settings.value.personalizedProducts = []
   settings.value.personalizedProducts.push({
     name: '', vendor: '', rating: 4.5, reviews: '1k', eta: '30 dk', price: 0, image: ''
   })
 }
 
 const removePersonalizedProduct = (index: number) => {
-  settings.value.personalizedProducts?.splice(index, 1)
+  settings.value.personalizedProducts.splice(index, 1)
 }
 
 const saving = ref(false)
@@ -406,8 +407,6 @@ onMounted(async () => {
   try {
     const res = await $api('/api/v1/admin/settings/bazarx-go')
     if (res?.success && res?.data) {
-      // Object.assign ile mevcut reaktif nesneyi yerinde güncelle
-      // Spread ile yeniden atamak Vue 3'te iç içe reaktifliği bozabilir
       Object.assign(settings.value, res.data)
       console.log('[BazarX Go] Ayarlar yüklendi:', Object.keys(res.data as object))
     } else {
@@ -437,3 +436,4 @@ const saveSettings = async () => {
   }
 }
 </script>
+
