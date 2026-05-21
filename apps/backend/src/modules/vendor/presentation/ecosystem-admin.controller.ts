@@ -101,14 +101,14 @@ export class EcosystemAdminController {
     const companyMap = new Map<string, ICompany>(companies.map(c => [c.id, c] as [string, ICompany]));
     
     // Group member vendors by ecoId
-    const membersByEcoId = new Map<string, any[]>();
+    const membersByEcoId = new Map<string, import('@barterborsa/shared-persistence').IVendor[]>( );
     memberVendors.forEach(mv => {
       if (!membersByEcoId.has(mv.ecosystemId!)) membersByEcoId.set(mv.ecosystemId!, []);
       membersByEcoId.get(mv.ecosystemId!)!.push(mv);
     });
 
     // Group listings by vendorId
-    const listingsByVendorId = new Map<string, any[]>();
+    const listingsByVendorId = new Map<string, IListing[]>( );
     activeListings.forEach(l => {
       if (!listingsByVendorId.has(l.vendorId)) listingsByVendorId.set(l.vendorId, []);
       listingsByVendorId.get(l.vendorId)!.push(l);

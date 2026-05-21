@@ -1,12 +1,14 @@
 // apps/backend/src/modules/commerce/domain/repositories/coupon.repository.interface.ts
 
+import { ICoupon, IEscrowCoupon } from '@barterborsa/shared-persistence';
+
 export interface ICouponRepository {
-  findByCode(code: string): Promise<any | null>;
+  findByCode(code: string): Promise<ICoupon | null>;
 }
 
 export interface IEscrowCouponRepository {
-  findByCartId(cartId: string): Promise<any[]>;
-  findByCartIdAndCode(cartId: string, code: string): Promise<any | null>;
+  findByCartId(cartId: string): Promise<IEscrowCoupon[]>;
+  findByCartIdAndCode(cartId: string, code: string): Promise<IEscrowCoupon | null>;
   create(data: {
     cartId: string;
     userId: string;
@@ -15,7 +17,7 @@ export interface IEscrowCouponRepository {
     percentage?: number;
     minAmount?: number;
     expiresAt?: Date;
-  }): Promise<any>;
+  }): Promise<IEscrowCoupon>;
   delete(id: string): Promise<void>;
-  findById(id: string): Promise<any | null>;
+  findById(id: string): Promise<IEscrowCoupon | null>;
 }

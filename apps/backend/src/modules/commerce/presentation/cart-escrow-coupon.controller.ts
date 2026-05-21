@@ -68,10 +68,10 @@ export class CartEscrowCouponController {
       cartId: cart.id,
       userId: user.id,
       code: dto.code,
-      discount: (coupon as any).discountAmount || 0,
-      percentage: (coupon as any).discountPercentage,
-      minAmount: (coupon as any).minOrderAmount,
-      expiresAt: (coupon as any).expiresAt,
+      discount: coupon.discountAmount || 0,
+      percentage: coupon.discountPercentage,
+      minAmount: coupon.minOrderAmount,
+      expiresAt: coupon.expiresAt,
     });
 
     return {
@@ -90,7 +90,7 @@ export class CartEscrowCouponController {
   ) {
     const coupon = await this.escrowCouponRepo.findById(id);
 
-    if (!coupon || (coupon as any).userId !== user.id) {
+    if (!coupon || coupon.userId !== user.id) {
       throw new BadRequestException('Kupon bulunamadı');
     }
 
