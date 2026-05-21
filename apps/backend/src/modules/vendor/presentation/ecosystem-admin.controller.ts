@@ -98,7 +98,7 @@ export class EcosystemAdminController {
     const trustScores = await Promise.all(memberVendors.map(mv => this.trustScoreRepo.findByVendorId(mv.id)));
     const trustScoreMap = new Map<string, any>(trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts]));
 
-    const companyMap = new Map<string, ICompany>(companies.map((c: any) => [c.id, c]));
+    const companyMap = new Map<string, ICompany>(companies.map(c => [c.id, c] as [string, ICompany]));
     
     // Group member vendors by ecoId
     const membersByEcoId = new Map<string, any[]>();
@@ -193,12 +193,12 @@ export class EcosystemAdminController {
     // Batch fetch vendors
     const vendorIds = [...new Set(logs.map(l => l.vendorId).filter(Boolean))];
     const vendors = vendorIds.length ? await this.vendorModel.find({ id: { $in: vendorIds } }).lean().exec() : [];
-    const vendorMap = new Map<string, IVendor>(vendors.map((v: any) => [v.id, v]));
+    const vendorMap = new Map<string, IVendor>(vendors.map(v => [v.id, v] as [string, IVendor]));
 
     // Batch fetch companies
     const companyIds = [...new Set(vendors.map(v => v.companyId).filter(Boolean))];
     const companies = companyIds.length ? await this.companyModel.find({ id: { $in: companyIds } }).lean().exec() : [];
-    const companyMap = new Map<string, ICompany>(companies.map((c: any) => [c.id, c]));
+    const companyMap = new Map<string, ICompany>(companies.map(c => [c.id, c] as [string, ICompany]));
 
     // Batch fetch ecosystems
     const ecoIdsFromLogs = logs.map(l => l.ecosystemId).filter(Boolean) as string[];
