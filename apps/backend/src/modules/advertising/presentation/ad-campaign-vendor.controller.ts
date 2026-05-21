@@ -11,6 +11,7 @@ import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { GetVendorCampaignsQuery } from '../application/queries/get-vendor-campaigns.query';
 import { CreateAdCampaignCommand } from '../application/commands/create-ad-campaign.command';
+import { CreateAdCampaignDto } from '../application/dtos/create-ad-campaign.dto';
 
 @ApiTags('Ad Campaigns')
 @ApiBearerAuth()
@@ -44,8 +45,8 @@ export class AdCampaignVendorController {
   })
   @ApiResponse({ status: 201, description: 'Kampanya başarıyla oluşturuldu.' })
   @Post()
-  async createCampaign(@CurrentUser() user: AuthenticatedUser, @Body() dto: Record<string, any>) {
-    return this.commandBus.execute(new CreateAdCampaignCommand(user.id, dto as any));
+  async createCampaign(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateAdCampaignDto) {
+    return this.commandBus.execute(new CreateAdCampaignCommand(user.id, dto));
   }
 }
 

@@ -13,6 +13,44 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsArray } from 'class-validator';
+
+export class CreateVendorProductDto {
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @IsNumber()
+  price!: number;
+
+  @IsNumber()
+  stock!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  catalogProductId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productImages?: string[];
+}
+
 import { CreateVendorProductCommand } from '../application/commands/create-vendor-product.command';
 import { UpdateVendorProductCommand } from '../application/commands/update-vendor-product.command';
 import { DeleteVendorProductCommand } from '../application/commands/delete-vendor-product.command';
@@ -153,8 +191,8 @@ export class VendorProductController {
 
   @ApiOperation({ summary: 'Yeni ürün/listing oluştur' })
   @Post()
-  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: Record<string, any>) {
-    return this.commandBus.execute(new CreateVendorProductCommand(user.id, body as any));
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateVendorProductDto) {
+    return this.commandBus.execute(new CreateVendorProductCommand(user.id, body));
   }
 
   @ApiOperation({ summary: 'Ürün güncelle' })
