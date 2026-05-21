@@ -40,7 +40,7 @@ export class EcosystemAdminController {
       if (ownerVendor) {
         const ownerCompany = await this.companyModel.findOne({ id: ownerVendor.companyId }).lean().exec();
         if (ownerCompany) {
-          ownerBusinessName = (ownerCompany as any).name || 'İsimsiz Fabrika';
+          ownerBusinessName = ownerCompany.name || 'İsimsiz Fabrika';
         }
       }
       
@@ -53,7 +53,7 @@ export class EcosystemAdminController {
         const tsRecord = await this.trustScoreRepo.findByVendorId(mv.id);
         membersList.push({
           id: mv.id,
-          businessName: (mvCompany as any)?.name || 'İsimsiz İşletme',
+          businessName: mvCompany?.name || 'İsimsiz İşletme',
           tier: mv.tier || 'CORE',
           trustScore: tsRecord ? Number(tsRecord.score) : 100
         });
@@ -121,10 +121,10 @@ export class EcosystemAdminController {
       if (log.vendorId) {
         const vendor = await this.vendorModel.findOne({ id: log.vendorId }).lean().exec();
         if (vendor) {
-          vendorEcosystemId = (vendor as any).ecosystemId;
-          const company = await this.companyModel.findOne({ id: (vendor as any).companyId }).lean().exec();
+          vendorEcosystemId = vendor.ecosystemId;
+          const company = await this.companyModel.findOne({ id: vendor.companyId }).lean().exec();
           if (company) {
-            vendorBusinessName = (company as any).name || 'İsimsiz Satıcı';
+            vendorBusinessName = company.name || 'İsimsiz Satıcı';
           }
         }
       }
@@ -187,7 +187,7 @@ export class EcosystemAdminController {
     
     // Log trust score override
     await this.auditLogRepo.create({
-      ecosystemId: (vendor as any).ecosystemId || 'SYSTEM',
+      ecosystemId: vendor.ecosystemId || 'SYSTEM',
       vendorId: vendorId,
       action: 'TRUST_SCORE_OVERRIDE',
       severity: 'WARN',
@@ -212,11 +212,11 @@ export class EcosystemAdminController {
     if (!memberVendor) {
       throw new NotFoundException('Üye bayi bulunamadı');
     }
-    if (!(memberVendor as any).ecosystemId) {
+    if (!memberVendor.ecosystemId) {
       throw new BadRequestException('Bu bayi herhangi bir ekosisteme üye değil');
     }
     
-    const ecosystemId = (memberVendor as any).ecosystemId;
+    const ecosystemId = memberVendor.ecosystemId;
     
     // Set ecosystemId to null/undefined
     await this.vendorModel.updateOne({ id: memberVendorId }, { $unset: { ecosystemId: "" } }).exec();
