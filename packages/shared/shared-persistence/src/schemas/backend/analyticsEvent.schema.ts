@@ -20,7 +20,7 @@ export interface IAnalyticsEvent {
   path?: string;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Schema.Types.Mixed;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

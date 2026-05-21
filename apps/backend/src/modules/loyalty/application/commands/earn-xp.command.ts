@@ -8,6 +8,6 @@ export class EarnXpCommand extends Command {
     public readonly sourceType: XpSourceType,
     public readonly referenceId?: string,
     public readonly referenceType?: string,
-    public readonly metadata?: any
+    public readonly metadata?: Record<string, unknown>
   ) { super(); }
 }

@@ -9,7 +9,7 @@ export class CreateNotificationCommand extends Command {
     public readonly title: string,
     public readonly message: string,
     public readonly link?: string,
-    public readonly metadata?: any
+    public readonly metadata?: Record<string, unknown>
   ) {
     super();
   }

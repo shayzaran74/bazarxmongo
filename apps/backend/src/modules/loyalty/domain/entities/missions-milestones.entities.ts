@@ -11,7 +11,7 @@ export interface MissionProps {
   xpReward: number;
   rewardType?: string;
   isActive: boolean;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export class Mission extends AggregateRoot<MissionProps> {

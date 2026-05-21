@@ -29,7 +29,7 @@ export interface InvoiceProps {
   issuedAt: Date;
   dueAt?: Date;
   notes?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   items: InvoiceItemProps[];
 }
 

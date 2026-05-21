@@ -11,7 +11,7 @@ export interface ChatMessageProps {
   isRead: boolean;
   readAt?: Date;
   readById?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

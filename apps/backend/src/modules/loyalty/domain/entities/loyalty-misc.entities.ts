@@ -10,7 +10,7 @@ export interface XpTransactionProps {
   description?: string;
   referenceId?: string;
   referenceType?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

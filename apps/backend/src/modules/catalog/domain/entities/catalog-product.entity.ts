@@ -21,7 +21,7 @@ export interface CatalogProductProps {
   isSpecialOffer: boolean;
   status: string;
   attributes?: any;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export class CatalogProduct extends AggregateRoot<CatalogProductProps> {

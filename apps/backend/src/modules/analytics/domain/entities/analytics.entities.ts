@@ -20,7 +20,7 @@ export interface AnalyticsEventProps {
   referrer?: string;
   intent?: string;
   eventSource?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -36,7 +36,7 @@ export interface ProductActivityProps {
   userId?: string;
   listingId?: string;
   catalogProductId?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

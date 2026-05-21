@@ -9,7 +9,7 @@ export interface NotificationProps {
   message: string;
   link?: string;
   isRead: boolean;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -24,7 +24,7 @@ export class Notification extends AggregateRoot<NotificationProps> {
     title: string,
     message: string,
     link?: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Notification {
     return new Notification({
       userId,

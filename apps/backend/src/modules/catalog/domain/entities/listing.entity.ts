@@ -43,7 +43,7 @@ export interface ListingProps {
   ecosystemId?: string;
   commissionRate?: number;
   variants?: any;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   availableQuantity: number;
   reservedQuantity: number;
   // Master Plan v4.3 §4.2 — Fabrika ekosistemi ürün gamı kontrolleri
