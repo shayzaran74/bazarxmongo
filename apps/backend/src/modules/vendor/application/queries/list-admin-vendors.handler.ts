@@ -84,13 +84,12 @@ export class ListAdminVendorsHandler
       });
     }
 
-    const items = result.items.map((v) => {
-      const p = (v.getProps ? v.getProps() : v) as unknown as import('@barterborsa/shared-persistence').IVendor;
-      const vid = p.id || v.id;
-      const company = companyMap.get(p.companyId);
-      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get(p.userId);
-      const user = userMap.get(p.userId);
-      const uProfile = userProfileMap.get(p.userId);
+    const items = result.items.map((v: import('../../domain/entities/vendor.entity').Vendor) => {
+      const vid = v.id;
+      const company = companyMap.get(v.companyId);
+      const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get(v.userId);
+      const user = userMap.get(v.userId);
+      const uProfile = userProfileMap.get(v.userId);
       
       const userObj = user ? {
         id: user.id || user._id?.toString(),
@@ -123,10 +122,10 @@ export class ListAdminVendorsHandler
 
       return {
         id:         vid,
-        status:     p.status || v.status,
-        tier:       p.tier || v.tier,
-        vendorType: p.vendorType || v.vendorType,
-        slug:       p.slug || v.slug,
+        status:     v.status,
+        tier:       v.tier,
+        vendorType: v.vendorType,
+        slug:       v.slug?.value || '',
         company:    company ? { name: company.name } : null,
         profile:    profileObj,
         user:       userObj,
