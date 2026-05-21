@@ -1,6 +1,6 @@
 // apps/backend/src/modules/auction/lottery-admin.controller.ts
 
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Delete, Query, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, UseGuards, Delete, Query, Inject, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
@@ -11,7 +11,15 @@ import { CreateLotteryDto } from './application/dtos/create-lottery.dto';
 import { UpdateLotteryDto } from './application/dtos/update-lottery.dto';
 import { LotteryStatus } from './domain/enums/lottery-status.enum';
 import { ILotteryRepository } from './domain/repositories/lottery.repository.interface';
-import { Lottery } from './domain/entities/lottery.entity';
+import { Lottery, LotteryProps } from './domain/entities/lottery.entity';
+
+// Mongoose Decimal128 değerlerini unwrap eden yardımcı
+type MongoDecimalLike = { $numberDecimal: string };
+function unwrapDecimal(val: number | MongoDecimalLike | undefined): number | string | undefined {
+  if (val === undefined) return undefined;
+  if (typeof val === 'object' && val !== null) return val.$numberDecimal;
+  return Number(val?.toString() ?? 0);
+}
 
 interface AuthenticatedUser {
   id: string;
@@ -57,8 +65,8 @@ export class LotteryAdminController {
       return {
         id: l.id,
         ...props,
-        ticketPrice: (props as any).ticketPrice?.$numberDecimal ?? props.ticketPrice,
-        prizeValue: (props as any).prizeValue?.$numberDecimal ?? props.prizeValue,
+        ticketPrice: unwrapDecimal(props.ticketPrice as number | MongoDecimalLike),
+        prizeValue: unwrapDecimal(props.prizeValue as number | MongoDecimalLike | undefined),
       };
     });
 
@@ -73,17 +81,17 @@ export class LotteryAdminController {
   ) {
     const now = new Date();
     const id = 'lottery-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    const props = {
+    const props: LotteryProps = {
       title: dto.title,
       prizeDescription: dto.prizeDescription ?? '',
-      ticketPrice: dto.ticketPrice as any,
+      ticketPrice: dto.ticketPrice,
       totalTickets: dto.totalTickets,
       maxTicketsPerUser: dto.maxTicketsPerUser,
       ticketDigits: dto.ticketDigits,
       numbersPerTicket: dto.numbersPerTicket,
       startTime: now,
       endTime: new Date(dto.endTime),
-      prizeValue: dto.prizeValue as any,
+      prizeValue: dto.prizeValue,
       status: LotteryStatus.ACTIVE,
       ownerId: user.id,
       listingId: dto.listingId,
@@ -113,19 +121,20 @@ export class LotteryAdminController {
     @Body() dto: UpdateLotteryDto,
   ) {
     const lottery = await this.lotteryRepository.findById(id);
-    if (!lottery) throw new Error('Çekiliş bulunamadı');
+    if (!lottery) throw new NotFoundException('Çekiliş bulunamadı');
 
-    const props = lottery.getProps();
-    if (dto.title !== undefined) (props as any).title = dto.title;
-    if (dto.prizeDescription !== undefined) (props as any).prizeDescription = dto.prizeDescription;
-    if (dto.ticketPrice !== undefined) (props as any).ticketPrice = dto.ticketPrice;
-    if (dto.totalTickets !== undefined) (props as any).totalTickets = dto.totalTickets;
-    if (dto.maxTicketsPerUser !== undefined) (props as any).maxTicketsPerUser = dto.maxTicketsPerUser;
-    if (dto.startTime !== undefined) (props as any).startTime = new Date(dto.startTime);
-    if (dto.endTime !== undefined) (props as any).endTime = new Date(dto.endTime);
-    if (dto.status !== undefined) (props as any).status = dto.status;
-    if (dto.prizeValue !== undefined) (props as any).prizeValue = dto.prizeValue;
-    if (dto.imageUrl !== undefined) (props as any).imageUrl = dto.imageUrl;
+    lottery.updateProps({
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.prizeDescription !== undefined ? { prizeDescription: dto.prizeDescription } : {}),
+      ...(dto.ticketPrice !== undefined ? { ticketPrice: dto.ticketPrice } : {}),
+      ...(dto.totalTickets !== undefined ? { totalTickets: dto.totalTickets } : {}),
+      ...(dto.maxTicketsPerUser !== undefined ? { maxTicketsPerUser: dto.maxTicketsPerUser } : {}),
+      ...(dto.startTime !== undefined ? { startTime: new Date(dto.startTime) } : {}),
+      ...(dto.endTime !== undefined ? { endTime: new Date(dto.endTime) } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
+      ...(dto.prizeValue !== undefined ? { prizeValue: dto.prizeValue } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+    });
 
     await this.lotteryRepository.save(lottery);
 
@@ -151,7 +160,7 @@ export class LotteryAdminController {
   @Delete(':id')
   async deleteLottery(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const lottery = await this.lotteryRepository.findById(id);
-    if (!lottery) throw new Error('Çekiliş bulunamadı');
+    if (!lottery) throw new NotFoundException('Çekiliş bulunamadı');
 
     await this.lotteryRepository.delete(id);
 

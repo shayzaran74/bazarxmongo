@@ -84,11 +84,13 @@ export class AuctionCloseScheduler implements OnApplicationBootstrap, OnModuleDe
     await this.auctionRepository.updateManyParticipations(auctionId, '__none__', 'LOST');
 
     // Kaybedenlerin teminatlarını iade et
-    const losers = participations.filter(
-      (p: any) => p.userId !== winnerId && p.holdId !== null,
+    type ParticipationRecord = { id: string; userId: string; status: string; holdId?: string };
+    const losers = (participations as ParticipationRecord[]).filter(
+      (p) => p.userId !== winnerId && p.holdId != null,
     );
 
     for (const p of losers) {
+      if (!p.holdId) continue;
       try {
         await this.financialGateway.refundFunds(
           p.holdId,

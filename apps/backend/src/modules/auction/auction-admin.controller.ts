@@ -12,7 +12,7 @@ import { AdvanceWinnerCommand } from './application/commands/advance-winner.comm
 import { AuctionStatus } from './domain/enums/auction-status.enum';
 import { IAuctionRepository } from './domain/repositories/auction.repository.interface';
 import { IListingRepository } from '../catalog/domain/repositories/listing.repository.interface';
-import { Auction } from './domain/entities/auction.entity';
+import { Auction, AuctionProps } from './domain/entities/auction.entity';
 
 interface AuthenticatedUser {
   id: string;
@@ -74,13 +74,13 @@ export class AuctionAdminController {
 
     const now = new Date();
     const id = 'auction-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    const props = {
+    const props: AuctionProps = {
       listingId: listing.id,
       userId: user.id,
-      startingPrice: dto.startPrice as any,
-      currentPrice: dto.startPrice as any,
-      minBidIncrement: (dto.minBidIncrement ?? 1) as any,
-      participationDeposit: dto.participationDeposit as any,
+      startingPrice: dto.startPrice,
+      currentPrice: dto.startPrice,
+      minBidIncrement: dto.minBidIncrement ?? 1,
+      participationDeposit: dto.participationDeposit,
       startTime: dto.startTime ? new Date(dto.startTime) : now,
       endTime: new Date(dto.endTime),
       status: AuctionStatus.ACTIVE,
@@ -97,7 +97,7 @@ export class AuctionAdminController {
       title: dto.title ?? listingProps.title,
       description: dto.description ?? listingProps.description,
       isAuctionEnabled: true,
-    } as any);
+    });
 
     await this.auditLog.log({
       actorId: user.id,
@@ -122,24 +122,26 @@ export class AuctionAdminController {
     const auction = await this.auctionRepository.findById(id);
     if (!auction) throw new BadRequestException('Açık artırma bulunamadı');
 
-    const props = auction.getProps();
-    if (dto.startPrice !== undefined) (props as any).startingPrice = dto.startPrice;
-    if (dto.minBidIncrement !== undefined) (props as any).minBidIncrement = dto.minBidIncrement;
-    if (dto.participationDeposit !== undefined) (props as any).participationDeposit = dto.participationDeposit;
-    if (dto.startTime !== undefined) (props as any).startTime = new Date(dto.startTime);
-    if (dto.endTime !== undefined) (props as any).endTime = new Date(dto.endTime);
-    if (dto.status !== undefined) (props as any).status = dto.status;
+    auction.updateProps({
+      ...(dto.startPrice !== undefined ? { startingPrice: dto.startPrice } : {}),
+      ...(dto.minBidIncrement !== undefined ? { minBidIncrement: dto.minBidIncrement } : {}),
+      ...(dto.participationDeposit !== undefined ? { participationDeposit: dto.participationDeposit } : {}),
+      ...(dto.startTime !== undefined ? { startTime: new Date(dto.startTime) } : {}),
+      ...(dto.endTime !== undefined ? { endTime: new Date(dto.endTime) } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
+    });
 
     await this.auctionRepository.save(auction);
 
     // Listing alanlarını sadece sağlanan değerlerle güncelle
+    const listingId = auction.getProps().listingId;
     if (dto.title !== undefined || dto.description !== undefined) {
-      const listing = await this.listingRepository.findById(props.listingId);
+      const listing = await this.listingRepository.findById(listingId);
       if (listing) {
-        await this.listingRepository.updateListing(props.listingId, {
+        await this.listingRepository.updateListing(listingId, {
           ...(dto.title !== undefined ? { title: dto.title } : {}),
           ...(dto.description !== undefined ? { description: dto.description } : {}),
-        } as any);
+        });
       }
     }
 
@@ -180,6 +182,14 @@ export class AuctionAdminController {
     const participation = await this.auctionRepository.findParticipationById(id);
     if (!participation) throw new BadRequestException('Katılım bulunamadı');
 
+    // Yetkilendirme kontrolü — admin bu auction'ın sahibi mi?
+    const auction = await this.auctionRepository.findById(participation.auctionId);
+    if (!auction) throw new BadRequestException('Açık artırma bulunamadı');
+    const auctionProps = auction.getProps();
+    if (auctionProps.userId !== admin.id && admin.role !== 'SUPER_ADMIN') {
+      throw new BadRequestException('Bu açık artırmayı yönetme yetkiniz yok');
+    }
+
     if (!['DEPOSIT_HELD', 'PENDING'].includes(participation.status)) {
       throw new BadRequestException('Bu katılım onaylanamaz: geçersiz durum');
     }
@@ -206,6 +216,14 @@ export class AuctionAdminController {
   ) {
     const participation = await this.auctionRepository.findParticipationById(id);
     if (!participation) throw new BadRequestException('Katılım bulunamadı');
+
+    // Yetkilendirme kontrolü
+    const auction = await this.auctionRepository.findById(participation.auctionId);
+    if (!auction) throw new BadRequestException('Açık artırma bulunamadı');
+    const auctionProps = auction.getProps();
+    if (auctionProps.userId !== admin.id && admin.role !== 'SUPER_ADMIN') {
+      throw new BadRequestException('Bu açık artırmayı yönetme yetkiniz yok');
+    }
 
     await this.auctionRepository.updateParticipationStatus(id, 'REJECTED');
 

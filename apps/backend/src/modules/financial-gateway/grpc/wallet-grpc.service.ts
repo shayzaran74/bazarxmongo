@@ -1,25 +1,47 @@
 import { Injectable, OnModuleInit, Inject, Logger } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
 import { firstValueFrom, timeout, catchError } from 'rxjs';
 import { DomainException } from '@barterborsa/shared-core';
 import { CircuitBreakerService } from '../../../common/resilience/circuit-breaker.service';
 
+export interface GrpcSuccessResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface WalletDataResponse {
+  balance: string;
+  currency: string;
+  [key: string]: unknown;
+}
+
+export interface TransactionsResponse {
+  transactions: unknown[];
+  total: number;
+}
+
+export interface PaginatedResponse {
+  items: unknown[];
+  total: number;
+}
+
 interface FinancialService {
-  getWallet(data: { userId: string }): any;
-  getBalance(data: { userId: string; accountType: string }): any;
+  getWallet(data: { userId: string }): Observable<WalletDataResponse>;
+  getBalance(data: { userId: string; accountType: string }): Observable<WalletDataResponse>;
   getTransactions(data: {
     userId: string;
     accountType?: string;
     page?: number;
     limit?: number;
     accountId?: string;
-  }): any;
+  }): Observable<TransactionsResponse>;
   topUpWallet(data: {
     userId: string;
     amount: string;
     paymentMethod: string;
     idempotencyKey: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
   requestWithdrawal(data: {
     userId: string;
     amount: string;
@@ -27,51 +49,51 @@ interface FinancialService {
     accountHolder: string;
     bankName: string;
     idempotencyKey: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
   getWithdrawals(data: {
     userId?: string;
     status?: string;
     page?: number;
     limit?: number;
-  }): any;
+  }): Observable<PaginatedResponse>;
   getWalletRequests(data: {
     userId?: string;
     status?: string;
     page?: number;
     limit?: number;
-  }): any;
+  }): Observable<PaginatedResponse>;
   processWalletRequest(data: {
     requestId: string;
     action: string;
     adminId: string;
     reason?: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
   processWithdrawal(data: {
     withdrawalId: string;
     action: string;
     adminId: string;
     reason?: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
   createGiftCard(data: {
     code: string;
     amount: string;
     expiresAt?: string;
     customerId?: string;
     note?: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
   listGiftCards(data: {
     customerId?: string;
     page?: number;
     limit?: number;
-  }): any;
-  getGiftCard(data: { id: string }): any;
+  }): Observable<PaginatedResponse>;
+  getGiftCard(data: { id: string }): Observable<WalletDataResponse>;
   transferBetweenAccounts(data: {
     userId: string;
     fromAccountType: string;
     toAccountType: string;
     amount: string;
     note?: string;
-  }): any;
+  }): Observable<GrpcSuccessResponse>;
 }
 
 @Injectable()
@@ -145,7 +167,7 @@ export class WalletGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'wallet.topUpWallet',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: GrpcSuccessResponse = await firstValueFrom(
           this.financialService.topUpWallet({ userId, amount, paymentMethod, idempotencyKey }),
         );
         if (!response.success) {
@@ -168,7 +190,7 @@ export class WalletGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'wallet.requestWithdrawal',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: GrpcSuccessResponse = await firstValueFrom(
           this.financialService.requestWithdrawal(data),
         );
         if (!response.success) {
@@ -181,30 +203,32 @@ export class WalletGrpcService implements OnModuleInit {
   }
 
   async getWithdrawals(
-    userId?: string,
+    userId: string,
     status?: string,
     page: number = 1,
     limit: number = 20,
   ) {
+    if (!userId) throw new Error('userId zorunludur');
     return this.circuitBreaker.execute(
       'wallet.getWithdrawals',
       async () => firstValueFrom(
-        this.financialService.getWithdrawals({ userId: userId || '', status: status || '', page, limit }),
+        this.financialService.getWithdrawals({ userId, status: status || '', page, limit }),
       ),
       { fallbackResponse: { items: [], total: 0 } },
     );
   }
 
   async getWalletRequests(
-    userId?: string,
+    userId: string,
     status?: string,
     page: number = 1,
     limit: number = 10,
   ) {
+    if (!userId) throw new Error('userId zorunludur');
     return this.circuitBreaker.execute(
       'wallet.getWalletRequests',
       async () => firstValueFrom(
-        this.financialService.getWalletRequests({ userId: userId || '', status: status || '', page, limit }),
+        this.financialService.getWalletRequests({ userId, status: status || '', page, limit }),
       ),
       { fallbackResponse: { items: [], total: 0 } },
     );
@@ -219,7 +243,7 @@ export class WalletGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'wallet.processWalletRequest',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: GrpcSuccessResponse = await firstValueFrom(
           this.financialService.processWalletRequest(data),
         );
         if (!response.success) {
@@ -239,7 +263,7 @@ export class WalletGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'wallet.processWithdrawal',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: GrpcSuccessResponse = await firstValueFrom(
           this.financialService.processWithdrawal(data),
         );
         if (!response.success) {
@@ -260,7 +284,7 @@ export class WalletGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'wallet.createGiftCard',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: GrpcSuccessResponse = await firstValueFrom(
           this.financialService.createGiftCard(data),
         );
         if (!response.success) {
@@ -271,7 +295,8 @@ export class WalletGrpcService implements OnModuleInit {
     );
   }
 
-  async listGiftCards(data: { customerId?: string; page?: number; limit?: number }) {
+  async listGiftCards(data: { customerId: string; page?: number; limit?: number }) {
+    if (!data.customerId) throw new Error('customerId zorunludur');
     return this.circuitBreaker.execute(
       'wallet.listGiftCards',
       async () => firstValueFrom(this.financialService.listGiftCards(data)),

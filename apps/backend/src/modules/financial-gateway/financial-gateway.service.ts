@@ -65,7 +65,7 @@ export class FinancialGatewayService {
   }
 
   async getWithdrawals(
-    userId?: string,
+    userId: string,
     status?: string,
     page: number = 1,
     limit: number = 20
@@ -74,7 +74,7 @@ export class FinancialGatewayService {
   }
 
   async getWalletRequests(
-    userId?: string,
+    userId: string,
     status?: string,
     page: number = 1,
     limit: number = 10
@@ -111,7 +111,7 @@ export class FinancialGatewayService {
   }
 
   async listGiftCards(data: {
-    customerId?: string;
+    customerId: string;
     page?: number;
     limit?: number;
   }) {

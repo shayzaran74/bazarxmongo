@@ -32,6 +32,7 @@ export class GiftCardAdminController {
     @Query('limit') limit = '10',
     @Query('user') customerId?: string,
   ) {
+    if (!customerId) throw new Error('customerId (user query param) zorunludur');
     const data: any = await this.financialGateway.listGiftCards({
       customerId,
       page: parseInt(page, 10),

@@ -36,8 +36,21 @@ export class AuthService {
     if (!result.success) throw new UnauthorizedException(result.error.message);
 
     const user = result.data;
+
+    // Sadece eski/şüpheli session'ları temizle — 30 günden eski veya aynı cihazda olmayanlar
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await this.sessionModel.deleteMany({
+      userId: user.id,
+      $or: [
+        { lastActiveAt: { $lt: thirtyDaysAgo } },
+        { createdAt: { $lt: thirtyDaysAgo } },
+      ],
+    });
+
     const tokens = await this.generateUserTokens(user);
 
+    // Session oluşturma fire-and-forget — session storage down olsa bile token ver
+    // Kullanıcı sonraki isteklerde auth başarısız olursa tekrar login yapmalı
     this.createSession(user.id, tokens.refreshToken, userAgent, ipAddress).catch(err => {
       this.logger.error(`Session creation failed for user ${user.id}: ${err.message}`);
     });

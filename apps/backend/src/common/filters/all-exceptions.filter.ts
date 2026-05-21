@@ -23,12 +23,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: any = 'Internal server error';
+    let message: string | string[] = 'Internal server error';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = (res as any).message || exception.message;
+      message = typeof res === 'object' && res !== null && 'message' in res
+        ? (res as { message: string | string[] }).message
+        : exception.message;
     } else if (exception instanceof DomainException) {
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;
@@ -41,8 +43,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (status >= 400 && status < 500) {
       this.logger.warn(`${logMessage} — ${Array.isArray(message) ? message[0] : message}`);
     } else {
-      const errorStack = exception instanceof Error ? exception.stack : JSON.stringify(exception);
-      this.logger.error(logMessage, errorStack);
+      // Production'da stack trace loglanmaz — sadece mesaj
+      const errorMessage = exception instanceof Error ? exception.message : String(exception);
+      this.logger.error(`${logMessage} — ${errorMessage}`);
     }
 
     response.status(status).json({

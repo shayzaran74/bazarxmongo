@@ -20,6 +20,7 @@ export class GetWalletRequestsHandler
   constructor(private readonly financialGateway: FinancialGatewayService) {}
 
   async execute(query: GetWalletRequestsQuery) {
+    if (!query.userId) throw new Error('userId zorunludur');
     const result = (await this.financialGateway.getWalletRequests(
       query.userId,
       query.status,

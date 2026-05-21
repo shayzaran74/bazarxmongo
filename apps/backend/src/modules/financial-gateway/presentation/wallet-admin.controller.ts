@@ -36,6 +36,7 @@ export class WalletAdminController {
     @Query('status') status?: string,
     @Query('user') userId?: string,
   ) {
+    if (!userId) throw new Error('userId (user query param) zorunludur');
     const data = await this.queryBus.execute(
       new GetWalletRequestsQuery(userId, status, parseInt(page, 10) || 1, parseInt(limit, 10) || 10),
     );
@@ -68,6 +69,7 @@ export class WalletAdminController {
     @Query('status') status?: string,
     @Query('user') userId?: string,
   ) {
+    if (!userId) throw new Error('userId (user query param) zorunludur');
     const data = await this.queryBus.execute(
       new GetWithdrawalsQuery(userId, status, parseInt(page, 10) || 1, parseInt(limit, 10) || 10),
     );
