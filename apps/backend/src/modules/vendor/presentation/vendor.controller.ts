@@ -16,6 +16,7 @@ import { GetVendorBySlugQuery } from '../application/queries/get-vendor-by-slug.
 import { GetVendorProductsQuery } from '../application/queries/get-vendor-products.query';
 import { GetVendorDashboardQuery } from '../application/queries/get-vendor-dashboard.query';
 import { GetVendorProfileQuery } from '../application/queries/get-vendor-profile.query';
+import { UpdateVendorProfileCommand } from '../application/commands/update-vendor-profile.command';
 import { GetVendorOrdersQuery } from '../application/queries/get-vendor-orders.query';
 import { GetVendorPendingOrderCountQuery } from '../application/queries/get-vendor-pending-order-count.query';
 import { GetVendorTransfersQuery } from '../application/queries/get-vendor-transfers.query';
@@ -158,6 +159,19 @@ export class VendorController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.queryBus.execute(new GetVendorProfileQuery(user.id));
+    return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Vendor profili güncelle (tüm alanlar)' })
+  @Patch('profile/me')
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const data = await this.commandBus.execute(new UpdateVendorProfileCommand(user.id, body));
     return { success: true, data };
   }
 

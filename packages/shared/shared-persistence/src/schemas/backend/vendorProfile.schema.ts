@@ -1,3 +1,5 @@
+// packages/shared/shared-persistence/src/schemas/backend/vendorProfile.schema.ts
+
 import { Schema, model, Types } from 'mongoose';
 
 export interface IVendorProfile {
@@ -18,29 +20,66 @@ export interface IVendorProfile {
   deliveryRadius?: number;
   minOrderAmount?: Types.Decimal128;
   avgPrepTimeMinutes?: number;
+  // İletişim
+  phone?: string;
+  whatsapp?: string;
+  website?: string;
+  // Adres
+  address?: string;
+  zipCode?: string;
+  country?: string;
+  // Banka bilgileri
+  bankName?: string;
+  bankAccountName?: string;
+  bankIban?: string;
+  // Reklam & Vitrin ayarları
+  adProductIdLeft?: string;
+  adProductIdRight?: string;
+  showAd?: boolean;
+  showFlashSales?: boolean;
+  flashProductIds?: string[];
   // Geofencing koordinatları (BazarX-GO §10)
   lat?: number;
   lng?: number;
 }
 
 export const VendorProfileSchema = new Schema<IVendorProfile>({
-  _id: { type: String },
-  id: { type: String, required: true },
-  vendorId: { type: String, alias: 'vendor_id' },
-  storeName: { type: String, alias: 'store_name' },
-  description: { type: String },
-  logo: { type: String },
-  banner: { type: String },
-  supportEmail: { type: String, alias: 'support_email' },
-  isFeatured: { type: Boolean, default: false, alias: 'is_featured' },
-  featuredUntil: { type: Date, alias: 'featured_until' },
-  city: { type: String },
-  district: { type: String },
-  openingHours: { type: Schema.Types.Mixed, alias: 'opening_hours' },
-  cuisineType: { type: String, alias: 'cuisine_type' },
-  deliveryRadius: { type: Number, alias: 'delivery_radius' },
-  minOrderAmount:    { type: Types.Decimal128, alias: 'min_order_amount' },
-  avgPrepTimeMinutes:{ type: Number, alias: 'avg_prep_time_minutes' },
+  _id:               { type: String },
+  id:                { type: String, required: true },
+  vendorId:          { type: String },
+  storeName:         { type: String },
+  description:       { type: String },
+  logo:              { type: String },
+  banner:            { type: String },
+  supportEmail:      { type: String },
+  isFeatured:        { type: Boolean, default: false },
+  featuredUntil:     { type: Date },
+  city:              { type: String },
+  district:          { type: String },
+  openingHours:      { type: Schema.Types.Mixed },
+  cuisineType:       { type: String },
+  deliveryRadius:    { type: Number },
+  minOrderAmount:    { type: Types.Decimal128 },
+  avgPrepTimeMinutes:{ type: Number },
+  // İletişim
+  phone:             { type: String },
+  whatsapp:          { type: String },
+  website:           { type: String },
+  // Adres
+  address:           { type: String },
+  zipCode:           { type: String },
+  country:           { type: String, default: 'Türkiye' },
+  // Banka
+  bankName:          { type: String },
+  bankAccountName:   { type: String },
+  bankIban:          { type: String },
+  // Vitrin
+  adProductIdLeft:   { type: String },
+  adProductIdRight:  { type: String },
+  showAd:            { type: Boolean, default: false },
+  showFlashSales:    { type: Boolean, default: false },
+  flashProductIds:   { type: [String], default: [] },
+  // Geofencing
   lat:               { type: Number },
   lng:               { type: Number },
 }, {
@@ -48,8 +87,8 @@ export const VendorProfileSchema = new Schema<IVendorProfile>({
   collection: 'vendor_profiles',
 });
 
-// Composite index
+VendorProfileSchema.index({ vendorId: 1 }, { unique: true });
 VendorProfileSchema.index({ city: 1 });
-VendorProfileSchema.index({ lat: 1, lng: 1 }); // geofence query
+VendorProfileSchema.index({ lat: 1, lng: 1 });
 
 export const VendorProfile = model<IVendorProfile>('VendorProfile', VendorProfileSchema);

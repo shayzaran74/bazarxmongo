@@ -55,6 +55,7 @@ import { GetVendorBySlugHandler } from './application/queries/get-vendor-by-slug
 import { GetVendorProductsHandler } from './application/queries/get-vendor-products.handler';
 import { GetVendorDashboardHandler } from './application/queries/get-vendor-dashboard.handler';
 import { GetVendorProfileHandler } from './application/queries/get-vendor-profile.handler';
+import { UpdateVendorProfileHandler } from './application/commands/update-vendor-profile.handler';
 import { ListVendorProductsHandler } from './application/queries/list-vendor-products.handler';
 import { GetMyEcosystemHandler } from './application/queries/get-my-ecosystem.handler';
 import { GetEcosystemAuditLogsHandler } from './application/queries/get-ecosystem-audit-logs.handler';
@@ -132,6 +133,7 @@ const QueryHandlers = [
   GetVendorProductsHandler,
   GetVendorDashboardHandler,
   GetVendorProfileHandler,
+  UpdateVendorProfileHandler,
   ListVendorProductsHandler,
   GetMyEcosystemHandler,
   GetEcosystemAuditLogsHandler,
