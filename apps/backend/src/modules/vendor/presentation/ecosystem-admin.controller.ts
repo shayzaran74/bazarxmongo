@@ -29,7 +29,7 @@ export class EcosystemAdminController {
 
   @ApiOperation({ summary: 'Tüm ekosistemleri getir (Admin)' })
   @Get()
-  async getEcosystems() {
+  async getEcosystems(): Promise<{ success: boolean; ecosystems: any[] }> {
     const ecosystems = await this.brandEcosystemRepo.findAll();
     
     const result = [];
@@ -110,7 +110,7 @@ export class EcosystemAdminController {
 
   @ApiOperation({ summary: 'Tüm ekosistem denetim loglarını getir (Admin)' })
   @Get('logs')
-  async getAuditLogs() {
+  async getAuditLogs(): Promise<{ success: boolean; logs: any[] }> {
     const logs = await this.ecosystemAuditLogModel.find().sort({ createdAt: -1 }).limit(100).lean().exec();
     
     const result = [];
