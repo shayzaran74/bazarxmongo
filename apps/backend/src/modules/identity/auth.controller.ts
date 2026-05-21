@@ -23,6 +23,10 @@ import {
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
+import { CurrentUser } from '@barterborsa/shared-nest';
+import { IUser } from '@barterborsa/shared-persistence';
+
+export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -32,16 +36,16 @@ export class AuthController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly authService: AuthService,
-    @InjectModel('User') private readonly userModel: Model<any>
+    @InjectModel('User') private readonly userModel: Model<IUser>
   ) {}
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile', description: 'Oturum açmış kullanıcının bilgilerini döner.' })
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
   @Get('me')
-  async me(@Req() req: Record<string, any>) {
-    console.log('AuthController.me called, user:', req.user);
-    let userId = req.user.id;
+  async me(@CurrentUser() user: AuthenticatedUser) {
+    console.log('AuthController.me called, user:', user);
+    let userId = user.id;
     
     // Eğer ID bir email ise (örn: seller1@barterborsa.com), DB'den gerçek ObjectId'yi bulalım
     if (userId && userId.includes('@')) {
