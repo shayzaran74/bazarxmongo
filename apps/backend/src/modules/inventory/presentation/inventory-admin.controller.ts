@@ -127,7 +127,7 @@ export class InventoryAdminController {
               gtin: barcode || undefined,
               categoryId,
               status: 'ACTIVE',
-            })) as any;
+            })) as unknown as typeof product;
           }
 
           // 4. Medya

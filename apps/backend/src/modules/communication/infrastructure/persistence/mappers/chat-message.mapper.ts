@@ -3,7 +3,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { IChatMessage } from '@barterborsa/shared-persistence/schemas/backend/chatMessage.schema';
-import { ChatMessage } from '../../../domain/entities/chat-message.entity';
+import { ChatMessage, ChatMessageProps } from '../../../domain/entities/chat-message.entity';
+import { ChatMessageType } from '../../../domain/enums/chat-message-type.enum';
 
 export interface ChatMessageDocument extends IChatMessage {
   _id?: string;
@@ -12,17 +13,18 @@ export interface ChatMessageDocument extends IChatMessage {
 @Injectable()
 export class ChatMessageMapper {
   static toDomain(doc: ChatMessageDocument): ChatMessage {
-    return (ChatMessage as any).createFrom({
+    const props: ChatMessageProps = {
       roomId: doc.roomId,
       senderId: doc.senderId ?? undefined,
       content: doc.content,
-      type: (doc.metadata as any)?.type ?? 'TEXT',
+      type: (doc.metadata as unknown as Record<string, unknown> | null | undefined)?.type as ChatMessageType ?? ChatMessageType.TEXT,
       isRead: doc.isRead ?? false,
       readAt: doc.readAt ?? undefined,
       readById: doc.readById ?? undefined,
       metadata: doc.metadata as unknown as Record<string, unknown> | undefined,
       createdAt: doc.createdAt,
-    }, doc.id);
+    };
+    return ChatMessage.createFrom(props, doc.id);
   }
 
   static toPersistence(domain: ChatMessage): Record<string, unknown> {

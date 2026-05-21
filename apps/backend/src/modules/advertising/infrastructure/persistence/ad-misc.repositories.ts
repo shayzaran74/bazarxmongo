@@ -5,7 +5,7 @@ import { AdSlot } from '@barterborsa/shared-persistence/schemas/backend/adSlot.s
 import { SideAd } from '@barterborsa/shared-persistence/schemas/backend/sideAd.schema';
 import { AdCampaignMetric } from '@barterborsa/shared-persistence/schemas/backend/adCampaignMetric.schema';
 import { IAdSlotRepository, IAdCampaignMetricRepository, ISideAdRepository } from '../../domain/repositories/ad-misc.repositories.interface';
-import { AdSlot as AdSlotEntity, AdCampaignMetric as AdMetricEntity, SideAd as SideAdEntity } from '../../domain/entities/ad-misc.entities';
+import { AdSlot as AdSlotEntity, AdCampaignMetric as AdMetricEntity, SideAd as SideAdEntity, AdSlotProps } from '../../domain/entities/ad-misc.entities';
 import { AdSlotType } from '../../domain/enums/advertising.enums';
 
 @Injectable()
@@ -18,8 +18,8 @@ export class MongoAdSlotRepository implements IAdSlotRepository {
     await AdSlot.updateOne({ id: e.id.toString() }, { $set: d }, { upsert: true }).exec();
   }
   async findByType(slotType: AdSlotType, platform: string) {
-    const r = await AdSlot.findOne({ slotType: slotType as any, platform: platform as any }).exec();
-    return r ? (AdSlotEntity as any).create(r, r.id) : null;
+    const r = await AdSlot.findOne({ slotType, platform }).exec();
+    return r ? AdSlotEntity.create(r as unknown as Omit<AdSlotProps, 'createdAt'>, r.id) : null;
   }
 }
 
@@ -27,11 +27,33 @@ export class MongoAdSlotRepository implements IAdSlotRepository {
 export class MongoSideAdRepository implements ISideAdRepository {
   async findById(id: string) {
     const r = await SideAd.findOne({ id }).exec();
-    return r ? (SideAdEntity as any).create(r, r.id) : null;
+    return r ? SideAdEntity.create({
+      side: r.side,
+      title: r.title,
+      subtitle: r.subtitle,
+      image: r.image,
+      emoji: r.emoji,
+      link: r.link,
+      order: r.order ?? 0,
+      ecosystems: [],
+      category: r.category,
+      isActive: r.isActive,
+    }, r.id) : null;
   }
   async findAllActive() {
     const rs = await SideAd.find({ isActive: true }).sort({ order: 'asc' }).exec();
-    return rs.map((r: { id: string; side?: string; title?: string; subtitle?: string; image?: string; emoji?: string; link?: string; order?: number; category?: string; isActive: boolean }) => (SideAdEntity as any).create(r, r.id));
+    return rs.map((r) => SideAdEntity.create({
+      side: r.side ?? '',
+      title: r.title ?? '',
+      subtitle: r.subtitle,
+      image: r.image,
+      emoji: r.emoji,
+      link: r.link,
+      order: r.order ?? 0,
+      ecosystems: [],
+      category: r.category,
+      isActive: r.isActive,
+    }, r.id));
   }
   async save(e: SideAdEntity) {
     const d = { ...e.getProps(), id: e.id.toString() };
@@ -52,6 +74,14 @@ export class MongoAdCampaignMetricRepository implements IAdCampaignMetricReposit
       adCampaignId: campaignId,
       date: { $gte: startDate, $lte: endDate },
     }).sort({ date: 'asc' }).exec();
-    return rs.map((r: { id: string; ctr: any; spend: any; toObject(): object }) => (AdMetricEntity as any).create({ ...r.toObject(), ctr: Number(r.ctr), spend: Number(r.spend) }, r.id));
+    return rs.map((r) => AdMetricEntity.create({
+      adCampaignId: r.adCampaignId,
+      date: r.date,
+      impressions: r.impressions,
+      clicks: r.clicks,
+      ctr: Number(r.ctr),
+      spend: Number(r.spend),
+      sales: r.sales,
+    }, r.id));
   }
 }

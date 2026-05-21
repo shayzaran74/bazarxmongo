@@ -3,29 +3,48 @@
 import { HomeQuadCard } from '../../../domain/entities/home-quad-card.entity';
 import { HomeQuadCardItem } from '../../../domain/entities/home-quad-card-item.entity';
 
+export interface HomeQuadCardItemRaw {
+  id?: string;
+  title?: string;
+  subtitle?: string;
+  image?: string;
+  link?: string;
+  productId?: string;
+  order?: number;
+}
+
+export interface HomeQuadCardRaw {
+  id?: string;
+  title?: string;
+  order?: number;
+  isActive?: boolean;
+  platform?: string;
+  items?: HomeQuadCardItemRaw[];
+}
+
 export class HomeQuadCardMapper {
-  static toDomain(raw: any): HomeQuadCard {
-    const items: HomeQuadCardItem[] = (raw.items || []).map((item: any) =>
+  static toDomain(raw: HomeQuadCardRaw): HomeQuadCard {
+    const items: HomeQuadCardItem[] = (raw.items || []).map((item: HomeQuadCardItemRaw) =>
       HomeQuadCardItem.create({
-        title: item.title,
-        image: item.image,
+        title: item.title ?? '',
+        image: item.image ?? '',
         link: item.link,
         productId: item.productId,
-        order: item.order,
-        quadCardId: raw.id,
-      }, item.id)
+        order: item.order ?? 0,
+        quadCardId: raw.id ?? '',
+      }, item.id || '')
     );
 
     return HomeQuadCard.create({
-      title: raw.title,
-      order: raw.order,
-      isActive: raw.isActive,
-      platform: raw.platform,
+      title: raw.title ?? '',
+      order: raw.order ?? 0,
+      isActive: raw.isActive ?? true,
+      platform: raw.platform ?? '',
       items,
-    }, raw.id);
+    }, raw.id || '');
   }
 
-  static toPersistence(domain: HomeQuadCard): any {
+  static toPersistence(domain: HomeQuadCard): Record<string, unknown> {
     const props = domain.getProps();
     return {
       id: domain.id.toString(),
@@ -33,10 +52,10 @@ export class HomeQuadCardMapper {
       order: props.order,
       isActive: props.isActive,
       platform: props.platform,
-      items: (props.items || []).map((item: any) => {
-        const itemProps = typeof item.getProps === 'function' ? item.getProps() : item;
+      items: (props.items || []).map((item: HomeQuadCardItem | Record<string, unknown>) => {
+        const itemProps = typeof item.getProps === 'function' ? item.getProps() : item as Record<string, unknown>;
         return {
-          id: item.id,
+          id: (item as { id?: string }).id,
           title: itemProps.title,
           subtitle: itemProps.subtitle,
           image: itemProps.image,

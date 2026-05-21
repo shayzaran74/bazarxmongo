@@ -3,8 +3,9 @@
 
 import { Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { IAdCampaign } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
-import { AdCampaign } from '../../../domain/entities/ad-campaign.entity';
+import { IAdCampaign, AdCampaignStatus, AdType } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
+import { AdCampaign, AdCampaignProps } from '../../../domain/entities/ad-campaign.entity';
+import { AdStatus, AdType as DomainAdType, BillingModel, PricingModel, TargetRole } from '../../../domain/enums/advertising.enums';
 
 export interface AdCampaignDocument extends IAdCampaign {
   _id?: string;
@@ -13,31 +14,40 @@ export interface AdCampaignDocument extends IAdCampaign {
 @Injectable()
 export class AdCampaignMapper {
   static toDomain(doc: AdCampaignDocument): AdCampaign {
-    return (AdCampaign as any).createFrom({
+    const props: AdCampaignProps = {
       name: doc.name,
       vendorId: doc.vendorId ?? undefined,
       creatorId: doc.creatorId ?? undefined,
       budget: Number(doc.budget) || 0,
       remainingBudget: Number(doc.remainingBudget) || 0,
       bidAmount: Number(doc.bidAmount) || 0,
+      billingModel: BillingModel.PREPAID,
+      pricingModel: PricingModel.CPC,
+      adStatus: (doc.adStatus as AdStatus) ?? AdStatus.PENDING,
+      adType: (doc.adType as DomainAdType) ?? DomainAdType.BANNER,
+      platform: '',
       startDate: doc.startDate,
       endDate: doc.endDate,
       imageUrl: doc.imageUrl ?? undefined,
       linkUrl: doc.linkUrl ?? undefined,
+      targetCategories: [],
+      targetKeywords: [],
+      targetRole: TargetRole.ALL,
+      targetCities: [],
+      targetDistricts: [],
+      targetSlots: [],
       targetUrl: doc.targetUrl ?? undefined,
-      mediaUrl: doc.mediaUrl ?? undefined,
-      adStatus: doc.adStatus as any,
-      adType: doc.adType as any,
-      platform: doc.platform ?? undefined,
       qualityScore: Number(doc.qualityScore) || 0,
       historicCTR: Number(doc.historicCTR) || 0,
       maxBidPerClick: doc.maxBidPerClick ? Number(doc.maxBidPerClick) : undefined,
       maxBidPerMille: doc.maxBidPerMille ? Number(doc.maxBidPerMille) : undefined,
+      mediaUrl: doc.mediaUrl ?? undefined,
+      negativeKeywords: [],
       rejectionReason: doc.rejectionReason ?? undefined,
-      metadata: doc.metadata as unknown as Record<string, unknown> | undefined,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
-    }, doc.id);
+    };
+    return AdCampaign.create(props as Omit<AdCampaignProps, 'createdAt' | 'updatedAt' | 'adStatus' | 'remainingBudget' | 'qualityScore' | 'historicCTR'>, doc.id);
   }
 
   static toPersistence(domain: AdCampaign): Record<string, unknown> {

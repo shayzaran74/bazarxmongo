@@ -43,14 +43,14 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Create purchase order' })
   @Post()
-  async createPurchaseOrder(@Body() body: Record<string, any>, @CurrentUser() user: AuthenticatedUser) {
+  async createPurchaseOrder(@Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
-    const { supplierName, items } = body;
+    const { supplierName, items } = body as { supplierName?: string; items?: Array<{ listingId: string; quantity: number; unitPrice: number }> };
 
     const orderId = 'po-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    const totalAmount = items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+    const totalAmount = (items ?? []).reduce((sum: number, item: { unitPrice: number; quantity: number }) => sum + (item.unitPrice * item.quantity), 0);
 
     const order = await PurchaseOrder.create({
       id: orderId,
@@ -60,7 +60,7 @@ export class PurchaseOrderController {
       totalAmount,
     });
 
-    for (const item of items) {
+    for (const item of (items ?? [])) {
       const itemId = 'poi-' + Date.now() + '-' + Math.random().toString(36).substring(7);
       await PurchaseOrderItem.create({
         id: itemId,
@@ -86,7 +86,7 @@ export class PurchaseOrderController {
     if (!order) return { success: false, message: 'Order not found' };
     if (order.status === 'Received') return { success: false, message: 'Order already received' };
 
-    for (const item of (order as any).items || []) {
+    for (const item of (order as { items?: Array<{ listingId: string; quantity: number }> }).items || []) {
       await Listing.updateOne(
         { id: item.listingId },
         { $inc: { stock: item.quantity } }

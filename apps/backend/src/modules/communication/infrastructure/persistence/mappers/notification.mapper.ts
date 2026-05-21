@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { INotification } from '@barterborsa/shared-persistence/schemas/backend/notification.schema';
-import { Notification } from '../../../domain/entities/notification.entity';
+import { Notification, NotificationProps } from '../../../domain/entities/notification.entity';
 
 export interface NotificationDocument extends INotification {
   _id?: string;
@@ -12,16 +12,17 @@ export interface NotificationDocument extends INotification {
 @Injectable()
 export class NotificationMapper {
   static toDomain(doc: NotificationDocument): Notification {
-    return (Notification as any).createFrom({
+    const props: NotificationProps = {
       userId: doc.userId,
-      type: (doc.metadata as any)?.type ?? doc.type ?? 'SYSTEM',
+      type: (doc.metadata as unknown as Record<string, unknown> | null | undefined)?.type as string ?? doc.type ?? 'SYSTEM',
       title: doc.title,
       message: doc.message,
       link: doc.link ?? undefined,
       isRead: doc.isRead ?? false,
       metadata: doc.metadata as unknown as Record<string, unknown> | undefined,
       createdAt: doc.createdAt,
-    }, doc.id);
+    };
+    return Notification.createFrom(props, doc.id);
   }
 
   static toPersistence(domain: Notification): Record<string, unknown> {

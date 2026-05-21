@@ -86,11 +86,11 @@ export class UpdateAdminProductHandler implements ICommandHandler<UpdateAdminPro
     }
 
     try {
-      const manager = this.cacheManager as any;
+      const manager = this.cacheManager as unknown as Record<string, (...args: unknown[]) => unknown>;
       if (typeof manager.reset === 'function') {
-        await manager.reset();
+        await (manager.reset() as Promise<void>);
       } else if (typeof manager.clear === 'function') {
-        await manager.clear();
+        await (manager.clear() as Promise<void>);
       }
       await manager.del('category-tree');
     } catch (e) {

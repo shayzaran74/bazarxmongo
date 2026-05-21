@@ -10,8 +10,8 @@ import { DomainException } from '@barterborsa/shared-core';
 import { FinancialGatewayService } from '../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../audit/application/audit-log.service';
 import { LotteryParticipateDto } from './lottery-participate.dto';
-import { ILotteryRepository } from './domain/repositories/lottery.repository.interface';
-import { ILotteryTicket } from './domain/repositories/lottery.repository.interface';
+import { ILotteryRepository, ILotteryTicket } from './domain/repositories/lottery.repository.interface';
+import { Lottery } from './domain/entities/lottery.entity';
 import { IListingRepository } from '../catalog/domain/repositories/listing.repository.interface';
 import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
 import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
@@ -81,7 +81,7 @@ export class LotteryController {
     const lotteries = await Promise.all(
       lotteryIds.map(id => this.lotteryRepository.findById(id))
     );
-    const activeLotteries = lotteries.filter(Boolean);
+    const activeLotteries = lotteries.filter((l): l is Lottery => l !== null);
     const populated = await this.populateProducts(activeLotteries);
     return { success: true, data: populated };
   }
@@ -203,19 +203,14 @@ export class LotteryController {
     );
   }
 
-  private async populateProducts(lotteries: any[]): Promise<any[]> {
+  private async populateProducts(lotteries: Lottery[]): Promise<Record<string, unknown>[]> {
     if (!lotteries || lotteries.length === 0) return [];
 
-    const listingIds = lotteries.map(l => {
-      if (l.getProps) {
-        return l.getProps().listingId;
-      }
-      return l.listingId;
-    }).filter(Boolean);
+    const listingIds = lotteries.map(l => l.getProps().listingId).filter(Boolean) as string[];
 
     if (listingIds.length === 0) {
       return lotteries.map(l => {
-        const raw = l.toJSON ? l.toJSON() : (l.getProps ? { id: l.id, ...l.getProps() } : l);
+        const raw = { id: l.id, ...l.getProps() } as Record<string, unknown>;
         return { ...raw, Product: null };
       });
     }
@@ -225,8 +220,8 @@ export class LotteryController {
       if (lst.getProps) {
         return lst.getProps().catalogProductId;
       }
-      return (lst as any).catalogProductId;
-    }).filter(Boolean);
+      return (lst as unknown as Record<string, unknown>).catalogProductId as string | undefined;
+    }).filter(Boolean) as string[];
 
     const products = catalogProductIds.length > 0
       ? await CatalogProduct.find({ id: { $in: catalogProductIds } }).lean()
@@ -237,24 +232,22 @@ export class LotteryController {
       : [];
 
     return lotteries.map(l => {
-      const raw = l.toJSON ? l.toJSON() : (l.getProps ? { id: l.id, ...l.getProps() } : l);
-      
-      // Convert Decimal128 objects to numbers/strings
-      if (raw.ticketPrice && raw.ticketPrice.$numberDecimal !== undefined) {
-        raw.ticketPrice = raw.ticketPrice.$numberDecimal;
-      }
-      if (raw.prizeValue && raw.prizeValue.$numberDecimal !== undefined) {
-        raw.prizeValue = raw.prizeValue.$numberDecimal;
-      }
+      const raw = { id: l.id, ...l.getProps() } as Record<string, unknown>;
 
-      const listingId = l.getProps ? l.getProps().listingId : l.listingId;
+      // Convert Decimal128 objects to numbers/strings
+      const tp = raw.ticketPrice as { $numberDecimal?: string } | null | undefined;
+      const pv = raw.prizeValue as { $numberDecimal?: string } | null | undefined;
+      if (tp?.$numberDecimal !== undefined) raw.ticketPrice = tp.$numberDecimal;
+      if (pv?.$numberDecimal !== undefined) raw.prizeValue = pv.$numberDecimal;
+
+      const listingId = l.getProps().listingId;
 
       const listing = listings.find(lst => lst.id === listingId);
       if (!listing) {
         return { ...raw, Product: null };
       }
 
-      const catalogProductId = listing.getProps ? listing.getProps().catalogProductId : (listing as any).catalogProductId;
+      const catalogProductId = listing.getProps ? listing.getProps().catalogProductId : (listing as { catalogProductId?: string }).catalogProductId;
       const product = products.find(p => p.id === catalogProductId);
       if (!product) {
         return { ...raw, Product: null };

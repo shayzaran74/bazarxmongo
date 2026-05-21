@@ -23,11 +23,15 @@ export class GoogleOAuthController {
   @ApiResponse({ status: 302, description: 'Başarılı girişte frontend success sayfasına, hatada login sayfasına yönlendirir.' })
   @Get('callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthRedirect(@Req() req: Record<string, any>, @Res() res: any) {
-    const user = req.user;
-    const userAgent = req.headers['user-agent'];
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const result = await this.authService.googleLogin(user, userAgent, ipAddress);
+  async googleAuthRedirect(@Req() req: Record<string, unknown>, @Res() res: { redirect(url: string): void }) {
+    const user = req.user as { email: string; googleId: string; firstName?: string; lastName?: string } | undefined;
+    const userAgent = (req.headers as Record<string, string | undefined>)?.['user-agent'];
+    const ip = req.connection as { remoteAddress?: string } | null | undefined;
+    const ipAddress = (req as { ip?: string }).ip || ip?.remoteAddress || '';
+    if (!user?.email || !user?.googleId) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://192.168.1.102:3000'}/auth/login?error=invalid_user`);
+    }
+    const result = await this.authService.googleLogin(user, userAgent ?? '', ipAddress);
     
     // Frontend'e tokenları ve kullanıcı bilgilerini gönder
     const frontendUrl = process.env.FRONTEND_URL || 'http://192.168.1.102:3000';

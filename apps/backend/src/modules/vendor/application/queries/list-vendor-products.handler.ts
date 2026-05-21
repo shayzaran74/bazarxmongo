@@ -3,8 +3,20 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Logger, NotFoundException, Inject } from '@nestjs/common';
 import { ListVendorProductsQuery } from './list-vendor-products.query';
-import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
+import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
+import { Listing } from '../../../catalog/domain/entities/listing.entity';
+
+interface ListingItemResponse {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  stock: number;
+  status: string;
+  images: string[];
+  [key: string]: unknown;
+}
 
 @QueryHandler(ListVendorProductsQuery)
 export class ListVendorProductsHandler
@@ -24,8 +36,7 @@ export class ListVendorProductsHandler
     const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const searchFilter: Record<string, unknown> = {};
     if (search) {
@@ -43,11 +54,19 @@ export class ListVendorProductsHandler
     });
 
     return {
-      items: result.items.map((l: any) => {
-        const props = l.getProps ? l.getProps() : l;
+      items: result.items.map((l: Listing): ListingItemResponse => {
+        const props = l.getProps();
+        const images = (props.metadata && typeof props.metadata === 'object' && 'images' in (props.metadata as object))
+          ? ((props.metadata as Record<string, unknown>).images as string[] | undefined)?.slice(0, 1) || []
+          : [];
         return {
-          ...props,
-          images: (props as any).images?.slice(0, 1) || [],
+          id: l.id,
+          title: props.title,
+          description: props.description,
+          price: props.price.toValue(),
+          stock: props.stock,
+          status: props.status,
+          images,
         };
       }),
       pagination: {

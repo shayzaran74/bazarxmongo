@@ -2,14 +2,45 @@
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { ListVendorsQuery } from './list-vendors.query';
-import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
-import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
-import { User } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
+import { Vendor, IVendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
+import { Company, ICompany } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { User, IUser } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
+
+interface VendorListItem {
+  id: string;
+  slug: string;
+  tier: string;
+  status: string;
+  vendorType?: string;
+  userId: string;
+  companyId?: string;
+  businessName: string;
+  email: string;
+  phone?: string | null;
+  productCount: number;
+  isFeatured: boolean;
+  profile: {
+    storeName: string;
+    city?: string | null;
+    imageUrl?: string | null;
+    isFeatured: boolean;
+    description: string;
+    cuisineType: string;
+    rating: number;
+  };
+}
+
+interface VendorListResult {
+  items: VendorListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 @QueryHandler(ListVendorsQuery)
-export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
+export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, VendorListResult> {
 
-  async execute(query: ListVendorsQuery): Promise<any> {
+  async execute(query: ListVendorsQuery): Promise<VendorListResult> {
     const { params } = query;
     const page  = Number(params.page  || 1);
     const limit = Number(params.limit || 10);
@@ -29,9 +60,9 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
       Vendor.countDocuments(filter).exec(),
     ]);
 
-    const companyIds = [...new Set(vendors.map((v: any) => v.companyId).filter(Boolean))];
-    const userEmails = [...new Set(vendors.map((v: any) => v.userId).filter(Boolean))];
-    const vendorIds  = vendors.map((v: any) => v.id);
+    const companyIds = [...new Set(vendors.map(v => v.companyId).filter(Boolean))] as string[];
+    const userEmails = [...new Set(vendors.map(v => v.userId).filter(Boolean))] as string[];
+    const vendorIds  = vendors.map(v => v.id);
 
     const [companies, users, profiles] = await Promise.all([
       companyIds.length ? Company.find({ id: { $in: companyIds } }).lean().exec() : [],
@@ -39,15 +70,15 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
       vendorIds.length  ? require('mongoose').model('VendorProfile').find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
     ]);
 
-    const companyMap = new Map((companies as any[]).map(c => [c.id, c]));
-    const userMap    = new Map((users as any[]).map(u => [u.email, u]));
-    const profileMap = new Map((profiles as any[]).map(p => [p.vendorId, p]));
+    const companyMap = new Map<string, ICompany>(companies.map(c => [(c as ICompany).id, c as ICompany] as [string, ICompany]));
+    const userMap    = new Map<string, IUser>(users.map(u => [(u as IUser).email, u as IUser] as [string, IUser]));
+    const profileMap = new Map((profiles as { vendorId: string }[]).map(p => [p.vendorId, p]));
 
-    const items = vendors.map((v: any) => {
+    const items = vendors.map((v: IVendor) => {
       const company = companyMap.get(v.companyId);
       const user    = userMap.get(v.userId);
-      const profile = profileMap.get(v.id);
-      
+      const profile = profileMap.get(v.id) as { storeName?: string; city?: string; logo?: string; description?: string; cuisineType?: string } | undefined;
+
       return {
         id:          v.id,
         slug:        v.slug,
@@ -56,16 +87,16 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
         vendorType:  v.vendorType,
         userId:      v.userId,
         companyId:   v.companyId,
-        businessName: profile?.storeName || company?.name || 'İsimsiz İşletme',
-        email:       user?.email || v.userId,
-        phone:       user?.phoneNumber || null,
+        businessName: profile?.storeName || (company as ICompany)?.name || 'İsimsiz İşletme',
+        email:       (user as IUser)?.email || v.userId,
+        phone:       (user as IUser)?.phoneNumber || null,
         productCount: 0,
-        isFeatured:  v.isFeatured || false,
+        isFeatured:  false,
         profile: {
-          storeName: profile?.storeName || company?.name || v.slug || 'İsimsiz İşletme',
-          city: profile?.city || v.city || null,
-          imageUrl: profile?.logo || v.logo || null,
-          isFeatured: v.isFeatured || false,
+          storeName: profile?.storeName || (company as ICompany)?.name || v.slug || 'İsimsiz İşletme',
+          city: profile?.city || null,
+          imageUrl: profile?.logo || null,
+          isFeatured: false,
           description: profile?.description || '',
           cuisineType: profile?.cuisineType || '',
           rating: 5,

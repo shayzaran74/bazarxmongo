@@ -3,6 +3,16 @@ import { FinancialGatewayService } from '../../financial-gateway.service';
 import { GetWithdrawalsQuery } from './get-withdrawals.query';
 import { User } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
 
+interface WithdrawalItem {
+  userId: string;
+  [key: string]: unknown;
+}
+
+interface PaginatedWithdrawalResult {
+  items: WithdrawalItem[];
+  total: number;
+}
+
 @QueryHandler(GetWithdrawalsQuery)
 export class GetWithdrawalsHandler
   implements IQueryHandler<GetWithdrawalsQuery> {
@@ -15,17 +25,17 @@ export class GetWithdrawalsHandler
       query.status,
       query.page,
       query.limit
-    )) as any;
+    )) as PaginatedWithdrawalResult;
 
     if (result && result.items && result.items.length > 0) {
-      const userIds = [...new Set(result.items.map((item: any) => item.userId))];
-      const users = await User.find({ id: { $in: userIds as string[] } })
+      const userIds = [...new Set(result.items.map((item: WithdrawalItem) => item.userId))];
+      const users = await User.find({ id: { $in: userIds } })
         .select('id email')
         .lean();
 
-      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      const userMap = new Map(users.map((u: { id: string; email?: string }) => [u.id, u]));
 
-      result.items = result.items.map((item: any) => ({
+      result.items = result.items.map((item: WithdrawalItem) => ({
         ...item,
         user: userMap.get(item.userId) || { id: item.userId, email: 'Bilinmeyen Kullanıcı' },
       }));

@@ -221,13 +221,27 @@ export type CheckoutAddress = CheckoutNewAddress & {
   isDefault?: boolean;
 };
 
-export type DemandMatch = any;
-export type CartMergeItem = any;
-export type CheckoutPaymentPayload = any;
-export type CheckoutPaymentIntentResponse = any;
-export type CheckoutWalletPaymentResponse = any;
-export type CheckoutCoupon = any;
-export type CheckoutLoyaltyStatus = any;
-export type CheckoutLegalDoc = any;
-export type CheckoutSettings = any;
-export type CheckoutEscrowCoupon = any;
+export interface DemandMatch {
+  _id?: string;
+  id: string;
+  buyerItemId: string;
+  sellerItemId?: string;
+  surplusItemId?: string;
+  score: number;
+  status: 'PENDING' | 'CONTACTED' | 'REJECTED' | 'MATCHED';
+  notes?: string;
+  actionAt?: Date;
+  actionBy?: string;
+  rejectionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+export type CartMergeItem = import('./dtos/commerce/cart.dto').CartItem;
+export type CheckoutPaymentPayload = import('./dtos/commerce/checkout.dto').CheckoutPaymentPayload;
+export type CheckoutPaymentIntentResponse = import('./dtos/commerce/checkout.dto').CheckoutPaymentIntentResponse;
+export type CheckoutWalletPaymentResponse = import('./dtos/commerce/checkout.dto').CheckoutWalletPaymentResponse;
+export type CheckoutCoupon = import('./dtos/commerce/checkout.dto').CheckoutCoupon;
+export type CheckoutLoyaltyStatus = import('./dtos/commerce/checkout.dto').CheckoutLoyaltyStatus;
+export type CheckoutLegalDoc = import('./dtos/commerce/checkout.dto').CheckoutLegalDoc;
+export type CheckoutSettings = import('./dtos/commerce/checkout.dto').CheckoutSettings;
+export type CheckoutEscrowCoupon = import('./dtos/commerce/checkout.dto').CheckoutEscrowCoupon;

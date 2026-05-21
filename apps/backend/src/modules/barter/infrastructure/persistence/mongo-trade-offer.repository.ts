@@ -7,7 +7,7 @@ import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/bas
 import { TradeOffer as TradeOfferModel, ITradeOffer } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
 import { TradeOfferItem, TradeOfferItemSchema } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
 import { TradeOfferMapper, TradeOfferDocument } from './mappers/trade-offer.mapper';
-import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
+import { ITradeOfferRepository, TradeOfferWithRelations, CreateTradeOfferData } from '../../domain/repositories/trade-offer.repository.interface';
 import { TradeOffer } from '../../domain/entities/trade-offer.entity';
 
 @Injectable()
@@ -49,45 +49,30 @@ export class MongoTradeOfferRepository
     return { items: docs.map(doc => this.mapper.toDomain(doc)), total };
   }
 
-  async findByIdWithRelations(id: string): Promise<any | null> {
+  async findByIdWithRelations(id: string): Promise<TradeOfferWithRelations | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as unknown as TradeOfferWithRelations) : null;
   }
 
   async updateStatus(id: string, status: string): Promise<void> {
     await this.model.updateOne({ id }, { $set: { status } }).exec();
   }
 
-  async create(data: {
-    fromCompanyId: string;
-    toCompanyId: string;
-    status: string;
-    cashAmount?: number;
-    cashDirection?: string;
-    cashCurrency?: string;
-    message?: string;
-    initiatorId: string;
-    initiatorType: string;
-    receiverId: string;
-    receiverType: string;
-    expiresAt: Date;
-    parentOfferId?: string;
-    counterOfferId?: string;
-  }): Promise<any> {
-    const id = 'offer-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    const doc = await this.model.create({ id, ...data });
-    return doc.toObject();
-  }
-
   async delete(id: string): Promise<void> {
     await this.model.deleteOne({ id }).exec();
   }
 
-  async findWithFilters(filter: Record<string, unknown>, skip: number, take: number): Promise<{ items: any[]; total: number }> {
+  async create(data: CreateTradeOfferData): Promise<TradeOffer> {
+    const { randomUUID } = await import('crypto');
+    const doc = await this.model.create({ id: randomUUID(), ...data, createdAt: new Date() });
+    return this.mapper.toDomain(doc);
+  }
+
+  async findWithFilters(filter: Record<string, unknown>, skip: number, take: number): Promise<{ items: TradeOffer[]; total: number }> {
     const [docs, total] = await Promise.all([
       this.model.find(filter, {}, { skip, limit: take }).sort({ createdAt: -1 }).exec(),
       this.model.countDocuments(filter),
     ]);
-    return { items: docs.map(doc => doc.toObject()), total };
+    return { items: docs.map(doc => this.mapper.toDomain(doc)), total };
   }
 }

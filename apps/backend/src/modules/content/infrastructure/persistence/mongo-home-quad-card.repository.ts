@@ -7,7 +7,11 @@ import { HomeQuadCard as HomeQuadCardModel, IHomeQuadCard } from '@barterborsa/s
 import { HomeQuadCardItem as HomeQuadCardItemModel } from '@barterborsa/shared-persistence/schemas/backend/homeQuadCardItem.schema';
 import { HomeQuadCard } from '../../domain/entities/home-quad-card.entity';
 import { IHomeQuadCardRepository } from '../../domain/repositories/home-quad-card.repository.interface';
-import { HomeQuadCardMapper } from './mappers/home-quad-card.mapper';
+import { HomeQuadCardMapper, HomeQuadCardRaw, HomeQuadCardItemRaw } from './mappers/home-quad-card.mapper';
+
+interface HomeQuadCardItemDoc extends Document {
+  _id?: string;
+}
 
 @Injectable()
 export class MongoHomeQuadCardRepository implements IHomeQuadCardRepository {
@@ -17,40 +21,40 @@ export class MongoHomeQuadCardRepository implements IHomeQuadCardRepository {
     this.model = HomeQuadCardModel;
   }
 
-  private toDomain(doc: any): HomeQuadCard {
-    return HomeQuadCardMapper.toDomain(doc);
+  private toDomain(doc: Record<string, unknown> & { items?: HomeQuadCardItemRaw[] }): HomeQuadCard {
+    return HomeQuadCardMapper.toDomain(doc as HomeQuadCardRaw);
   }
 
   async findById(id: string): Promise<HomeQuadCard | null> {
     const doc = await this.model.findOne({ id }).lean().exec();
     if (!doc) return null;
     const items = await HomeQuadCardItemModel.find({ quadCardId: id }).sort({ order: 1 }).lean().exec();
-    (doc as any).items = items;
-    return this.toDomain(doc);
+    const docWithItems = { ...(doc as Record<string, unknown>), items };
+    return this.toDomain(docWithItems as Record<string, unknown> & { items: HomeQuadCardItemRaw[] });
   }
 
   async findAll(): Promise<HomeQuadCard[]> {
     const docs = await this.model.find({}).lean().exec();
     if (docs.length === 0) return [];
-    
-    const cardIds = docs.map((d: any) => d.id || d._id?.toString());
+
+    const cardIds = docs.map((d) => d.id || d._id?.toString());
     const allItems = await HomeQuadCardItemModel.find({
       quadCardId: { $in: cardIds }
     }).sort({ order: 1 }).lean().exec();
 
-    const itemsMap = new Map<string, any[]>();
+    const itemsMap = new Map<string, HomeQuadCardItemRaw[]>();
     for (const item of allItems) {
       const cardId = item.quadCardId;
       if (!itemsMap.has(cardId)) {
         itemsMap.set(cardId, []);
       }
-      itemsMap.get(cardId)!.push(item);
+      itemsMap.get(cardId)!.push(item as unknown as HomeQuadCardItemRaw);
     }
 
-    return docs.map((doc: any) => {
+    return docs.map((doc) => {
       const docId = doc.id || doc._id?.toString();
-      doc.items = itemsMap.get(docId) || [];
-      return this.toDomain(doc);
+      const docWithItems = { ...(doc as Record<string, unknown>), items: itemsMap.get(docId) || [] };
+      return this.toDomain(docWithItems as Record<string, unknown> & { items: HomeQuadCardItemRaw[] });
     });
   }
 
@@ -83,24 +87,24 @@ export class MongoHomeQuadCardRepository implements IHomeQuadCardRepository {
 
     if (docs.length === 0) return [];
 
-    const cardIds = docs.map((d: any) => d.id || d._id?.toString());
+    const cardIds = docs.map((d) => d.id || d._id?.toString());
     const allItems = await HomeQuadCardItemModel.find({
       quadCardId: { $in: cardIds }
     }).sort({ order: 1 }).lean().exec();
 
-    const itemsMap = new Map<string, any[]>();
+    const itemsMap = new Map<string, HomeQuadCardItemRaw[]>();
     for (const item of allItems) {
       const cardId = item.quadCardId;
       if (!itemsMap.has(cardId)) {
         itemsMap.set(cardId, []);
       }
-      itemsMap.get(cardId)!.push(item);
+      itemsMap.get(cardId)!.push(item as unknown as HomeQuadCardItemRaw);
     }
 
-    return docs.map((doc: any) => {
+    return docs.map((doc) => {
       const docId = doc.id || doc._id?.toString();
-      doc.items = itemsMap.get(docId) || [];
-      return this.toDomain(doc);
+      const docWithItems = { ...(doc as Record<string, unknown>), items: itemsMap.get(docId) || [] };
+      return this.toDomain(docWithItems as Record<string, unknown> & { items: HomeQuadCardItemRaw[] });
     });
   }
 }

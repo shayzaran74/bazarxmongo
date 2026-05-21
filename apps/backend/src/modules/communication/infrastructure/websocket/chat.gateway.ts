@@ -17,6 +17,10 @@ import { SendMessageCommand } from '../../application/commands/send-message.comm
 import { SendMessageDto } from '../../application/dtos/send-message.dto';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
+interface ExtendedSocket extends Socket {
+  userId?: string;
+}
+
 const WS_CORS_ORIGIN = process.env.WS_CORS_ORIGIN || '*';
 
 @WebSocketGateway({
@@ -53,7 +57,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      (client as any).userId = userId;
+      (client as ExtendedSocket).userId = userId;
       client.join(`user:${userId}`);
       this.logger.log(`Client connected: ${client.id}, user: ${userId}`);
     } catch (err) {
@@ -71,7 +75,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() roomId: string
   ) {
-    const userId = (client as any).userId;
+    const userId = (client as ExtendedSocket).userId;
     // Check if user is participant (can be done via query or repository)
     // For now we assume they can join if they know the ID (add security later)
     client.join(`chat:${roomId}`);
@@ -83,12 +87,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SendMessageDto & { roomId: string }
   ) {
-    const userId = (client as any).userId;
+    const userId = (client as ExtendedSocket).userId;
 
     const result = await this.commandBus.execute(
       new SendMessageCommand(
         data.roomId,
-        userId,
+        userId ?? null,
         data.content,
         data.type || ChatMessageType.TEXT
       )
@@ -114,7 +118,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: string; isTyping: boolean }
   ) {
-    const userId = (client as any).userId;
+    const userId = (client as ExtendedSocket).userId;
     client.to(`chat:${data.roomId}`).emit('user:typing', {
       userId,
       isTyping: data.isTyping,
@@ -124,7 +128,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Bildirimi belirli bir kullanıcıya veya tüm kullanıcılara WebSocket üzerinden gönderir.
    */
-  sendNotification(userId: string, notification: any) {
+  sendNotification(userId: string, notification: Record<string, unknown>) {
     if (!userId || userId === '') {
       // Tüm bağlı kullanıcılara gönder (Broadcast)
       this.server.emit('notification', notification);

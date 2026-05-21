@@ -6,9 +6,10 @@ import { Model } from 'mongoose';
 import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
 import { Auction as AuctionModel, IAuction, AuctionBid as AuctionBidModel, IAuctionBid, AuctionParticipation as AuctionParticipationModel, IAuctionParticipation } from '@barterborsa/shared-persistence';
 import { AuctionMapper, AuctionDocument } from './mappers/auction.mapper';
-import { IAuctionRepository } from '../../domain/repositories/auction.repository.interface';
+import { IAuctionRepository, AuctionWinnerData, AuctionRefundResult } from '../../domain/repositories/auction.repository.interface';
 import { Auction } from '../../domain/entities/auction.entity';
 import { AuctionBid } from '../../domain/entities/auction-bid.entity';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class MongoAuctionRepository
@@ -59,7 +60,7 @@ export class MongoAuctionRepository
     await this.bidModel.create(data);
   }
 
-  async findBidsByAuctionId(auctionId: string, limit = 50): Promise<AuctionBid[]> {
+  async findBidsByAuctionId(auctionId: string, limit = 50): Promise<{ id: string; auctionId: string; userId: string; amount: number; holdId?: string; createdAt: Date }[]> {
     const docs = await this.bidModel
       .find({ auctionId })
       .sort({ createdAt: -1 })
@@ -69,15 +70,15 @@ export class MongoAuctionRepository
       id: doc.id,
       auctionId: doc.auctionId,
       userId: doc.userId,
-      amount: doc.amount,
+      amount: Number(doc.amount),
       holdId: doc.holdId,
       createdAt: doc.createdAt,
-    })) as any;
+    }));
   }
 
-  async findParticipation(auctionId: string, userId: string): Promise<any | null> {
+  async findParticipation(auctionId: string, userId: string): Promise<{ id: string; auctionId: string; userId: string; status: string; holdId?: string; createdAt: Date } | null> {
     const doc = await this.participationModel.findOne({ auctionId, userId }).exec();
-    return doc ? { id: doc.id, auctionId: doc.auctionId, userId: doc.userId, status: doc.status, holdId: doc.holdId } : null;
+    return doc ? { id: doc.id, auctionId: doc.auctionId, userId: doc.userId, status: doc.status, holdId: doc.holdId, createdAt: doc.createdAt } : null;
   }
 
   async updateAuctionStatus(auctionId: string, status: string, winnerId?: string): Promise<void> {
@@ -119,10 +120,17 @@ export class MongoAuctionRepository
     return { ...doc.toObject(), bids, participations };
   }
 
-  async findWinnersByAuctionId(auctionId: string): Promise<any[]> {
+  async findWinnersByAuctionId(auctionId: string): Promise<AuctionWinnerData[]> {
     const { AuctionWinner } = await import('@barterborsa/shared-persistence');
     const docs = await AuctionWinner.find({ auctionId }).sort({ position: -1 }).exec();
-    return docs;
+    return docs.map(doc => ({
+      id: doc.id as string,
+      auctionId: doc.auctionId,
+      userId: doc.userId,
+      position: doc.position,
+      amount: doc.amount ?? Types.Decimal128.fromString('0'),
+      createdAt: doc.createdAt,
+    }));
   }
 
   async createWinner(data: { auctionId: string; userId: string; position: number; amount: number }): Promise<void> {
@@ -138,8 +146,8 @@ export class MongoAuctionRepository
     await this.participationModel.updateMany({ auctionId, userId }, { $set: { status } }).exec();
   }
 
-  async refundParticipation(participationId: string): Promise<any | null> {
+  async refundParticipation(participationId: string): Promise<AuctionRefundResult | null> {
     const doc = await this.participationModel.findOne({ id: participationId }).exec();
-    return doc ? { id: doc.id, holdId: doc.holdId, userId: doc.userId } : null;
+    return doc ? { id: doc.id, holdId: doc.holdId, status: doc.status } : null;
   }
 }

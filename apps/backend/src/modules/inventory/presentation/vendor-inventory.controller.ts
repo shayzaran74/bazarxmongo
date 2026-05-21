@@ -63,13 +63,13 @@ export class VendorInventoryController {
       .populate('catalogProductId')
       .lean();
 
-    const exportData = listings.map((l: any) => ({
+    const exportData = listings.map((l: Record<string, unknown>) => ({
       'ID': l.id,
       'Ürün Adı': l.title,
       'SKU': l.sku || '-',
       'Stok': Number(l.stock),
       'Fiyat': Number(l.price),
-      'Kategori': (l as any).catalogProductId?.categoryId || '-',
+      'Kategori': (l.catalogProductId as Record<string, unknown> | undefined)?.categoryId || '-',
       'Durum': l.status,
     }));
 
@@ -174,12 +174,11 @@ export class VendorInventoryController {
               id: pid,
               name: rawName,
               slug,
-              categoryId: category.id,
+              categoryId: category?.id,
               status: 'ACTIVE',
               brand: row['Marka'] || 'Genel',
               description: rawName,
-            })) as any;
-          }
+            })) as unknown as typeof catalogProduct;
 
           if (images.length > 0) {
             await ProductMedia.deleteMany({ productId: catalogProduct!.id }).exec();
@@ -193,6 +192,7 @@ export class VendorInventoryController {
               });
             }
           }
+          } // close if (!catalogProduct)
 
           const existingListing = await Listing.findOne({ vendorId: vendor.id, sku: barcode || undefined }).lean();
 
@@ -232,10 +232,11 @@ export class VendorInventoryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('import-trendyol')
   async importTrendyol(
-    @Body('products') products: Record<string, unknown>[],
-    @Body('defaultStock') defaultStock: number | undefined,
+    @Body() body: Record<string, unknown>,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    const products = body.products as Record<string, unknown>[] | undefined;
+    const defaultStock = body.defaultStock as number | undefined;
     if (!Array.isArray(products) || products.length === 0) {
       throw new BadRequestException('products dizisi boş olamaz');
     }
@@ -279,7 +280,7 @@ export class VendorInventoryController {
         const activeParts = categoryParts.slice(0, 4);
 
         let lastCategoryId: string | null = null;
-        let lastCategory: any = null;
+        let lastCategory: Record<string, unknown> | null = null;
 
         for (const partName of activeParts) {
           const partSlug = this.slugify(partName);
@@ -293,17 +294,17 @@ export class VendorInventoryController {
               isActive: true,
               name: partName,
               parentId: lastCategoryId
-            });
+            }).then(d => d.toObject()) as Record<string, unknown>;
           } else {
             lastCategory = existingCat;
           }
-          lastCategoryId = lastCategory.id;
+          lastCategoryId = lastCategory?.id as string | null;
         }
 
         const category = lastCategory;
 
         const attrs = raw['attributes'] as Record<string, unknown> | null | undefined;
-        const specs: any = { ...(attrs ?? {}) };
+        const specs: Record<string, unknown> = { ...(attrs ?? {}) };
         if (platformInfo) specs['_platformInfo'] = platformInfo;
 
         let catalogProduct = await CatalogProduct.findOne({ slug }).lean();
@@ -314,13 +315,13 @@ export class VendorInventoryController {
             id: pid,
             name: title,
             slug,
-            categoryId: category.id,
+            categoryId: category?.id,
             status: 'ACTIVE',
             isFeatured: true,
             brand,
             description,
             specs,
-          })) as any;
+          })) as unknown as typeof catalogProduct;
         } else {
           await CatalogProduct.updateOne({ id: catalogProduct.id }, { $set: { name: title, description, specs } }).exec();
         }

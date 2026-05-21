@@ -30,7 +30,7 @@ export class DispatchCourierHandler implements ICommandHandler<DispatchCourierCo
     const order = await this.orderRepository.findById(orderId);
     if (!order) throw new NotFoundException('Sipariş bulunamadı.');
 
-    const vendor = await Vendor.findOne({ userId, id: (order as any).vendorId })
+    const vendor = await Vendor.findOne({ userId, id: (order as { vendorId?: string }).vendorId })
       .select('id vendorType companyId')
       .exec();
     if (!vendor) throw new ForbiddenException('Bu sipariş üzerinde işlem yetkiniz yok.');
@@ -46,7 +46,8 @@ export class DispatchCourierHandler implements ICommandHandler<DispatchCourierCo
       throw new BadRequestException('Sipariş kuryeye ancak READY veya AWAITING_PICKUP durumlarında verilebilir.');
     }
 
-    const shippingAddress = (order as any).props.shippingAddress as any;
+    const orderProps = order.getProps ? order.getProps() as unknown as { props?: { shippingAddress?: { addressLine1?: string; firstName?: string; phone?: string } }; shippingAddress?: { addressLine1?: string; firstName?: string; phone?: string } } : order as unknown as { props?: { shippingAddress?: { addressLine1?: string; firstName?: string; phone?: string } }; shippingAddress?: { addressLine1?: string; firstName?: string; phone?: string } };
+    const shippingAddress = (orderProps.props ?? orderProps).shippingAddress;
 
     let dispatch = await this.dispatchRepo.findByOrderId(orderId);
     if (!dispatch) {

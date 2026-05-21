@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { IChatRoom, StorageTierType } from '@barterborsa/shared-persistence/schemas/backend/chatRoom.schema';
 import { ChatRoom } from '../../../domain/entities/chat-room.entity';
+import { ChatRoomStatus } from '../../../domain/enums/chat-room-status.enum';
 
 export interface ChatRoomDocument extends IChatRoom {
   _id?: string;
@@ -16,7 +17,7 @@ export class ChatRoomMapper {
     return ChatRoom.createFrom({
       orderId: doc.orderId ?? undefined,
       tradeOfferId: doc.tradeOfferId ?? undefined,
-      status: (doc as any).status ?? 'ACTIVE',
+      status: (doc as { status?: string }).status as ChatRoomStatus ?? ChatRoomStatus.ACTIVE,
       participantIds: doc.participantIds ?? [],
       isArchived: doc.isArchived ?? false,
       archivedAt: doc.archivedAt ?? undefined,
