@@ -10,6 +10,53 @@ import { MongoEcosystemAuditLogRepository } from '../infrastructure/persistence/
 import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
 import { ITrustScoreRepository } from '../domain/repositories/trust-score.repository.interface';
 
+export type EcosystemMemberDto = {
+  id: string;
+  businessName: string;
+  tier: string;
+  trustScore: number;
+};
+
+export type EcosystemDto = {
+  id: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  status?: string;
+  internalCommRate: number;
+  isBlindPool: boolean;
+  logoUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  Owner: {
+    businessName: string;
+  };
+  stats: {
+    totalValue: number;
+    totalStok: number;
+    memberCount: number;
+    listingCount: number;
+    logCount: number;
+  };
+  Members: EcosystemMemberDto[];
+};
+
+export type EcosystemAuditLogDto = {
+  id: string;
+  ecosystemId?: string;
+  vendorId?: string;
+  action: string;
+  severity: string;
+  details?: Record<string, unknown>;
+  createdAt?: Date;
+  Vendor: {
+    businessName: string;
+  };
+  Ecosystem: {
+    name: string;
+  };
+};
+
 @ApiTags('Ecosystem Admin')
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
@@ -29,7 +76,7 @@ export class EcosystemAdminController {
 
   @ApiOperation({ summary: 'Tüm ekosistemleri getir (Admin)' })
   @Get()
-  async getEcosystems(): Promise<{ success: boolean; ecosystems: any[] }> {
+  async getEcosystems(): Promise<{ success: boolean; ecosystems: EcosystemDto[] }> {
     const ecosystems = await this.brandEcosystemRepo.findAll();
     
     const result = [];
@@ -110,7 +157,7 @@ export class EcosystemAdminController {
 
   @ApiOperation({ summary: 'Tüm ekosistem denetim loglarını getir (Admin)' })
   @Get('logs')
-  async getAuditLogs(): Promise<{ success: boolean; logs: any[] }> {
+  async getAuditLogs(): Promise<{ success: boolean; logs: EcosystemAuditLogDto[] }> {
     const logs = await this.ecosystemAuditLogModel.find().sort({ createdAt: -1 }).limit(100).lean().exec();
     
     const result = [];
