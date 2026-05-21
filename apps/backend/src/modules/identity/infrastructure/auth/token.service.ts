@@ -23,14 +23,23 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService
   ) {
-    this.accessSecret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET!;
-    this.refreshSecret = process.env.JWT_REFRESH_SECRET!;
+    this.accessSecret  = process.env.JWT_ACCESS_SECRET ?? '';
+    this.refreshSecret = process.env.JWT_REFRESH_SECRET ?? '';
 
-    if (!this.accessSecret) {
-      throw new Error('JWT_SECRET (or JWT_ACCESS_SECRET) is required but not defined in environment variables');
+    TokenService.validateSecret('JWT_ACCESS_SECRET', this.accessSecret);
+    TokenService.validateSecret('JWT_REFRESH_SECRET', this.refreshSecret);
+  }
+
+  private static validateSecret(name: string, value: string): void {
+    if (!value) {
+      throw new Error(`${name} tanımlı değil. Uygulama başlatılamaz.`);
     }
-    if (!this.refreshSecret) {
-      throw new Error('JWT_REFRESH_SECRET is required but not defined in environment variables');
+    if (value.length < 32) {
+      throw new Error(`${name} en az 32 karakter olmalıdır (mevcut: ${value.length}). Güçlü bir secret kullanın.`);
+    }
+    const commonWeak = ['secret', 'password', 'changeme', '123456', 'jwt_secret', 'your-secret'];
+    if (commonWeak.some(w => value.toLowerCase().includes(w))) {
+      throw new Error(`${name} zayıf veya varsayılan bir değer içeriyor. Lütfen güçlü, rastgele bir secret kullanın.`);
     }
   }
 
