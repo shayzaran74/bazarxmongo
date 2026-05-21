@@ -1,5 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { FinancialGatewayService } from '../../financial-gateway.service';
 import { TopUpWalletCommand } from './top-up-wallet.command';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
@@ -16,7 +17,7 @@ export class TopUpWalletHandler
 
   async execute(command: TopUpWalletCommand) {
     const { userId, amount, paymentMethod } = command;
-    const idempotencyKey = `topup-${userId}-${Date.now()}`;
+    const idempotencyKey = `topup-${userId}-${randomUUID()}`;
 
     await this.financialGateway.topUpWallet(
       userId,

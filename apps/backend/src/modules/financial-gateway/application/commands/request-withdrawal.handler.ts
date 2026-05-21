@@ -1,5 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { FinancialGatewayService } from '../../financial-gateway.service';
 import { RequestWithdrawalCommand } from './request-withdrawal.command';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
@@ -16,7 +17,7 @@ export class RequestWithdrawalHandler
 
   async execute(command: RequestWithdrawalCommand) {
     const { userId, amount, iban, accountHolder, bankName } = command;
-    const idempotencyKey = `withdrawal-${userId}-${Date.now()}`;
+    const idempotencyKey = `withdrawal-${userId}-${randomUUID()}`;
 
     const result = await this.financialGateway.requestWithdrawal({
       userId,
