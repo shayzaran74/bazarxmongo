@@ -2,6 +2,7 @@
 // CatalogProduct repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
+import { safeRegexFilter } from '../../../../common/utils/regex.utils';
 import { Model } from 'mongoose';
 import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
 import { CatalogProduct as CatalogProductModel, ICatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
@@ -45,10 +46,13 @@ export class MongoCatalogProductRepository
     if (params.categoryId) filter.categoryId = params.categoryId;
     if (params.brand) filter.brand = params.brand;
     if (params.searchTerm) {
-      filter.$or = [
-        { name: { $regex: params.searchTerm, $options: 'i' } },
-        { description: { $regex: params.searchTerm, $options: 'i' } },
-      ];
+      const regex = safeRegexFilter(params.searchTerm);
+      if (regex) {
+        filter.$or = [
+          { name: regex },
+          { description: regex },
+        ];
+      }
     }
 
     const [docs, total] = await Promise.all([

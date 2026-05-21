@@ -1,5 +1,6 @@
-import { ISurplusCategory, ICompany } from '@barterborsa/shared-persistence';
 // apps/backend/src/modules/barter/presentation/surplus.controller.ts
+import { ISurplusCategory, ICompany } from '@barterborsa/shared-persistence';
+import { safeRegexFilter } from '../../../common/utils/regex.utils';
 
 import {
   Controller, Get, Post, Delete, Patch,
@@ -144,7 +145,10 @@ export class SurplusController {
     if (query.companyId)  filter.companyId = query.companyId;
     if (query.categoryId) filter.category  = query.categoryId;
     if (query.city)       filter.city      = query.city;
-    if (query.q)          filter.title     = { $regex: query.q, $options: 'i' };
+    if (query.q) {
+      const regex = safeRegexFilter(query.q);
+      if (regex) filter.title = regex;
+    }
 
     const result = await this.surplusRepository.findWithFilters(filter, skip, limit);
     

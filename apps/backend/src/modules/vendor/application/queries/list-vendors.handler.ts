@@ -1,6 +1,7 @@
 // apps/backend/src/modules/vendor/application/queries/list-vendors.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { safeRegexFilter } from '../../../../common/utils/regex.utils';
 import { ListVendorsQuery } from './list-vendors.query';
 import { Vendor, IVendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { Company, ICompany } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
@@ -50,10 +51,10 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, Vendo
     if (params.status)     filter.status     = params.status.toUpperCase();
     if (params.tier)       filter.tier       = params.tier.toUpperCase();
     if (params.vendorType) filter.vendorType = params.vendorType;
-    if (params.search)     filter.$or = [
-      { slug: { $regex: params.search, $options: 'i' } },
-      { userId: { $regex: params.search, $options: 'i' } },
-    ];
+    if (params.search) {
+      const regex = safeRegexFilter(params.search);
+      if (regex) filter.$or = [{ slug: regex }];
+    }
 
     const [vendors, total] = await Promise.all([
       Vendor.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).lean().exec(),
