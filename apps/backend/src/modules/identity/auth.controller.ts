@@ -2,19 +2,17 @@ import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get, UseGu
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { Response } from 'express';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBody, 
-  ApiBearerAuth 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth
 } from '@nestjs/swagger';
-import { 
-  RegisterUserDto, 
-  RegisterUserCommand, 
-  ForgotPasswordCommand, 
+import {
+  RegisterUserDto,
+  RegisterUserCommand,
+  ForgotPasswordCommand,
   ResetPasswordCommand,
   ForgotPasswordDto,
   ResetPasswordDto,
@@ -24,7 +22,6 @@ import { LoginUserInput } from '@barterborsa/shared-types';
 import { AuthService } from './infrastructure/auth/auth.service';
 import { Public } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { IUser } from '@barterborsa/shared-persistence';
 
 export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }
 
@@ -36,7 +33,6 @@ export class AuthController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly authService: AuthService,
-    @InjectModel('User') private readonly userModel: Model<IUser>
   ) {}
 
   @ApiBearerAuth()
@@ -44,19 +40,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
   @Get('me')
   async me(@CurrentUser() user: AuthenticatedUser) {
-    console.log('AuthController.me called, user:', user);
-    let userId = user.id;
-    
-    // Eğer ID bir email ise (örn: seller1@barterborsa.com), DB'den gerçek ObjectId'yi bulalım
-    if (userId && userId.includes('@')) {
-      const foundUser = await this.userModel.findOne({ email: userId });
-      if (foundUser && foundUser._id) {
-        userId = foundUser._id.toString();
-        console.log('AuthController.me - Resolved email to userId:', userId);
-      }
-    }
-    
-    return this.queryBus.execute(new GetUserQuery(userId));
+    return this.queryBus.execute(new GetUserQuery(user.id));
   }
 
   @Public()
@@ -231,6 +215,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @ApiOperation({ summary: 'Reset password', description: 'Şifre sıfırlama işlemini tamamlar.' })
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({ status: 200, description: 'Şifre başarıyla sıfırlandı.' })
@@ -248,6 +233,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Verify email with code', description: 'E-posta doğrulama kodunu kontrol eder.' })
   @Post('verify-email')
   async verifyEmail(@Body() body: { email: string; code: string }) {

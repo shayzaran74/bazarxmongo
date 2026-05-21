@@ -13,7 +13,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { VendorScoreService, VendorScoreVO, ViolationVO } from '../application/services/vendor-score.service';
 import { VendorViolationType } from '../domain/enums/vendor-violation-type.enum';
 
@@ -60,6 +60,8 @@ export class VendorScoreController {
    * GET /admin/vendors/:id/score
    * Admin: belirli satıcının score'unu getir
    */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/vendors/:id/score')
   async getVendorScore(@Param('id') vendorId: string) {
     const score = await this.vendorScoreService.getVendorScore(vendorId);
@@ -73,6 +75,8 @@ export class VendorScoreController {
    * GET /admin/vendors/:id/violations
    * Admin: belirli satıcının ihlallerini getir
    */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/vendors/:id/violations')
   async getVendorViolations(@Param('id') vendorId: string) {
     const violations = await this.vendorScoreService.getVendorViolations(vendorId);
@@ -83,6 +87,8 @@ export class VendorScoreController {
    * POST /admin/vendors/:id/violations
    * Admin: satıcıya ihlal ekle
    */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/vendors/:id/violations')
   async addVendorViolation(
     @Param('id') vendorId: string,
@@ -117,6 +123,8 @@ export class VendorScoreController {
    * POST /admin/violations/:id/deactivate
    * Admin: ihlali pasif yap (affetme)
    */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/violations/:id/deactivate')
   async deactivateViolation(@Param('id') violationId: string) {
     await this.vendorScoreService.deactivateViolation(violationId);
@@ -127,6 +135,8 @@ export class VendorScoreController {
    * POST /vendors/:id/score/recalculate
    * Admin veya sistem: score'u yeniden hesapla
    */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(':id/score/recalculate')
   async recalculateScore(@Param('id') vendorId: string) {
     const score = await this.vendorScoreService.recalculateScore(vendorId);

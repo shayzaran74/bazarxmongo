@@ -1,31 +1,36 @@
 // apps/backend/src/modules/commerce/presentation/payment.controller.ts
 
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { IsNumber, IsPositive, Max, IsOptional, IsString } from 'class-validator';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { TopUpWalletCommand } from '../../financial-gateway/application/commands/top-up-wallet.command';
 
-export interface SubscribeDto {
-  planId?: string;
-  paymentMethod?: string;
+// Maksimum tekli yükleme limiti (₺) — iş kuralına göre ayarlanmalı
+const MAX_TOPUP_AMOUNT = 50_000;
+
+export class SubscribeDto {
+  @IsOptional() @IsString() planId?: string;
+  @IsOptional() @IsString() paymentMethod?: string;
 }
 
-export interface CreditCardProcessDto {
-  orderNumber?: string;
-  amount: number;
-  cardToken?: string;
+export class CreditCardProcessDto {
+  @IsOptional() @IsString() orderNumber?: string;
+  @IsNumber() @IsPositive() @Max(MAX_TOPUP_AMOUNT) amount!: number;
+  @IsOptional() @IsString() cardToken?: string;
 }
 
-export interface BankTransferConfirmDto {
-  amount: number;
-  referenceNumber?: string;
+export class BankTransferConfirmDto {
+  @IsNumber() @IsPositive() @Max(MAX_TOPUP_AMOUNT) amount!: number;
+  @IsOptional() @IsString() referenceNumber?: string;
 }
 
-export interface EftConfirmDto {
-  amount: number;
-  senderAccount?: string;
+export class EftConfirmDto {
+  @IsNumber() @IsPositive() @Max(MAX_TOPUP_AMOUNT) amount!: number;
+  @IsOptional() @IsString() senderAccount?: string;
 }
 
 @ApiTags('Payments')
@@ -62,9 +67,9 @@ export class PaymentController {
       success: true,
       message: 'Ödeme işlemi başarıyla tamamlandı.',
       data: {
-        status: 'SUCCESS',
-        transactionId: 'txn_' + Math.random().toString(36).substring(2, 11),
-        requires3DS: false
+        status: 'PENDING_GATEWAY',
+        transactionId: 'txn_' + randomUUID(),
+        requires3DS: true
       }
     };
   }
