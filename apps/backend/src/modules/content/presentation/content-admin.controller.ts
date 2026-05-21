@@ -4,6 +4,7 @@ import {
   Controller, Post, Get, Put, Delete,
   Body, Param, UseGuards, NotFoundException,
 } from '@nestjs/common';
+import { IsString, IsOptional, IsBoolean, MaxLength } from 'class-validator';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
@@ -21,6 +22,33 @@ import { CreateAnnouncementCommand }   from '../application/commands/create-anno
 import { CreatePolicyCommand }         from '../application/commands/create-policy.command';
 import { CreateDynamicContentCommand } from '../application/commands/create-dynamic-content.command';
 import { UpsertSeoMetadataCommand }    from '../application/commands/upsert-seo-metadata.command';
+class UpdateHelpCategoryDto {
+  @IsOptional() @IsString() @MaxLength(200) title?: string;
+  @IsOptional() @IsString() @MaxLength(200) slug?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+class UpdateHelpArticleDto {
+  @IsOptional() @IsString() @MaxLength(500) title?: string;
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+class UpdateAnnouncementDto {
+  @IsOptional() @IsString() @MaxLength(300) title?: string;
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsString() endDate?: string;
+}
+class UpdatePolicyDto {
+  @IsOptional() @IsString() @MaxLength(300) title?: string;
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+class UpdateDynamicContentDto {
+  @IsOptional() @IsString() @MaxLength(300) title?: string;
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
 import { CreateQuadCardDto }           from '../application/dtos/create-quad-card.dto';
 import { UpdateQuadCardsDto }          from '../application/dtos/update-quad-cards.dto';
 import { CreateHelpCategoryDto, CreateHelpArticleDto } from '../application/dtos/create-help.dtos';
@@ -101,7 +129,7 @@ export class ContentAdminController {
   }
 
   @Put('help/categories/:id')
-  async updateHelpCategory(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+  async updateHelpCategory(@Param('id') id: string, @Body() body: UpdateHelpCategoryDto) {
     const upd: Record<string, unknown> = {};
     if (body.title    !== undefined) upd.title    = body.title;
     if (body.slug     !== undefined) upd.slug     = body.slug;
@@ -122,7 +150,7 @@ export class ContentAdminController {
   }
 
   @Put('help/articles/:id')
-  async updateHelpArticle(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+  async updateHelpArticle(@Param('id') id: string, @Body() body: UpdateHelpArticleDto) {
     const article = await this.helpArticleModel.findOne({ id }).lean();
     if (!article) throw new NotFoundException('Makale bulunamadı');
     const upd: Record<string, unknown> = {};
@@ -145,7 +173,7 @@ export class ContentAdminController {
   }
 
   @Put('announcements/:id')
-  async updateAnnouncement(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+  async updateAnnouncement(@Param('id') id: string, @Body() body: UpdateAnnouncementDto) {
     const upd: Record<string, unknown> = {};
     if (body.title    !== undefined) upd.title    = body.title;
     if (body.content  !== undefined) upd.content  = body.content;
@@ -167,7 +195,7 @@ export class ContentAdminController {
   }
 
   @Put('policies/:id')
-  async updatePolicy(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+  async updatePolicy(@Param('id') id: string, @Body() body: UpdatePolicyDto) {
     const upd: Record<string, unknown> = {};
     if (body.title    !== undefined) upd.title    = body.title;
     if (body.content  !== undefined) upd.content  = body.content;
@@ -188,7 +216,7 @@ export class ContentAdminController {
   }
 
   @Put('dynamic/:id')
-  async updateDynamicContent(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+  async updateDynamicContent(@Param('id') id: string, @Body() body: UpdateDynamicContentDto) {
     const upd: Record<string, unknown> = {};
     if (body.title    !== undefined) upd.title    = body.title;
     if (body.content  !== undefined) upd.content  = body.content;

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsObject, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsIn, Min, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
@@ -23,6 +23,41 @@ import { CreateAdminProductCommand }      from '../application/commands/create-a
 import { QueueImportProductsCommand }     from '../application/commands/queue-import-products.command';
 
 interface AuthenticatedUser { id: string; role: string }
+
+class CreateAdminProductDto {
+  @IsString() @MaxLength(500) name!: string;
+  @IsOptional() @IsString() @MaxLength(500) slug?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() brand?: string;
+  @IsOptional() @IsString() categoryId?: string;
+  @IsOptional() @IsNumber() @Min(0) price?: number;
+  @IsOptional() @IsNumber() @Min(0) stock?: number;
+  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
+  @IsOptional() @IsObject() specs?: Record<string, unknown>;
+  @IsOptional() @IsBoolean() isFeatured?: boolean;
+}
+
+class UpdateAdminProductDto {
+  @IsOptional() @IsString() @MaxLength(500) name?: string;
+  @IsOptional() @IsString() @MaxLength(500) slug?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() brand?: string;
+  @IsOptional() @IsString() categoryId?: string;
+  @IsOptional() @IsNumber() @Min(0) price?: number;
+  @IsOptional() @IsNumber() @Min(0) stock?: number;
+  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
+  @IsOptional() @IsObject() specs?: Record<string, unknown>;
+  @IsOptional() @IsBoolean() isFeatured?: boolean;
+  @IsOptional() @IsBoolean() isSpecialOffer?: boolean;
+  @IsOptional() @IsBoolean() isFlashSale?: boolean;
+}
+
+class BulkUpdateProductDto {
+  @IsArray() @IsString({ each: true }) ids!: string[];
+  @IsObject() updates!: UpdateAdminProductDto;
+}
 
 function cleanTrendyolTitle(raw: string): string {
   const s = (raw ?? '').trim();
@@ -130,7 +165,7 @@ export class ProductAdminController {
     return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id, dto.vendorType || 'COMMERCE'));
   }
 
-  @Post() createProduct(@Body() data: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) { return this.commandBus.execute(new CreateAdminProductCommand(data, user.id)); }
+  @Post() createProduct(@Body() data: CreateAdminProductDto, @CurrentUser() user: AuthenticatedUser) { return this.commandBus.execute(new CreateAdminProductCommand(data, user.id)); }
 
   @Get()
   async getProducts(@Query('page') page = 1, @Query('limit') limit = 50, @Query('q') search?: string, @Query('status') status?: string, @Query('categoryId') categoryId?: string, @Query('vendorId') vendorId?: string, @Query('vendorOnly') vendorOnly?: string) {
@@ -147,10 +182,10 @@ export class ProductAdminController {
   }
 
   @Put('bulk-update')
-  async bulkUpdate(@Body() body: { ids: string[]; updates: Record<string, unknown> }) {
+  async bulkUpdate(@Body() body: BulkUpdateProductDto) {
     if (!Array.isArray(body.ids) || !body.ids.length) throw new BadRequestException('ids alanı boş bir dizi olamaz');
-    return this.commandBus.execute(new BulkUpdateAdminProductsCommand(body.ids, body.updates));
+    return this.commandBus.execute(new BulkUpdateAdminProductsCommand(body.ids, body.updates as Record<string, unknown>));
   }
 
-  @Put(':id') updateProduct(@Param('id') id: string, @Body() data: Record<string, unknown>) { return this.commandBus.execute(new UpdateAdminProductCommand(id, data)); }
+  @Put(':id') updateProduct(@Param('id') id: string, @Body() data: UpdateAdminProductDto) { return this.commandBus.execute(new UpdateAdminProductCommand(id, data as Record<string, unknown>)); }
 }

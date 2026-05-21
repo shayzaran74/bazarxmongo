@@ -1,6 +1,19 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Query, Patch } from '@nestjs/common';
+import { IsString, IsOptional, IsArray, IsNumber, IsPositive, IsInt, Min, ValidateNested, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
+
+class PurchaseOrderItemDto {
+  @IsString() listingId!: string;
+  @IsInt() @Min(1) quantity!: number;
+  @IsNumber() @IsPositive() unitPrice!: number;
+}
+
+class CreatePurchaseOrderDto {
+  @IsOptional() @IsString() @MaxLength(200) supplierName?: string;
+  @IsArray() @ValidateNested({ each: true }) @Type(() => PurchaseOrderItemDto) items!: PurchaseOrderItemDto[];
+}
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { PurchaseOrder } from '@barterborsa/shared-persistence/schemas/backend/purchaseOrder.schema';
@@ -43,11 +56,11 @@ export class PurchaseOrderController {
 
   @ApiOperation({ summary: 'Create purchase order' })
   @Post()
-  async createPurchaseOrder(@Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) {
+  async createPurchaseOrder(@Body() body: CreatePurchaseOrderDto, @CurrentUser() user: AuthenticatedUser) {
     const vendor = await Vendor.findOne({ userId: user.id }).select('id').exec();
     if (!vendor) return { success: false, message: 'Vendor not found' };
 
-    const { supplierName, items } = body as { supplierName?: string; items?: Array<{ listingId: string; quantity: number; unitPrice: number }> };
+    const { supplierName, items } = body;
 
     const orderId = 'po-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const totalAmount = (items ?? []).reduce((sum: number, item: { unitPrice: number; quantity: number }) => sum + (item.unitPrice * item.quantity), 0);

@@ -1,10 +1,31 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { IsString, IsOptional, MinLength, MaxLength, IsIn } from 'class-validator';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { ListAdminBrandsQuery } from '../application/queries/list-admin-brands/list-admin-brands.query';
 import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
+
+class CreateBrandDto {
+  @IsString() @MinLength(1) @MaxLength(200) name!: string;
+  @IsOptional() @IsString() @MaxLength(200) slug?: string;
+  @IsOptional() @IsString() logo?: string;
+  @IsOptional() @IsString() @MaxLength(500) description?: string;
+  @IsOptional() @IsString() @IsIn(['PENDING', 'APPROVED', 'REJECTED']) status?: string;
+  @IsOptional() @IsString() website?: string;
+  @IsOptional() @IsString() country?: string;
+}
+
+class UpdateBrandDto {
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(200) name?: string;
+  @IsOptional() @IsString() @MaxLength(200) slug?: string;
+  @IsOptional() @IsString() logo?: string;
+  @IsOptional() @IsString() @MaxLength(500) description?: string;
+  @IsOptional() @IsString() @IsIn(['PENDING', 'APPROVED', 'REJECTED']) status?: string;
+  @IsOptional() @IsString() website?: string;
+  @IsOptional() @IsString() country?: string;
+}
 
 interface AuthenticatedUser {
   id: string;
@@ -45,7 +66,7 @@ export class BrandAdminController {
 
   @ApiOperation({ summary: 'Create brand' })
   @Post()
-  async createBrand(@Body() data: Record<string, any>) {
+  async createBrand(@Body() data: CreateBrandDto) {
     const mongoose = require('mongoose');
     const id = new mongoose.Types.ObjectId().toString();
     const brand = await Brand.create({ ...data, id, _id: id });
@@ -88,13 +109,13 @@ export class BrandAdminController {
 
   @ApiOperation({ summary: 'Update brand' })
   @Put(':id')
-  async updateBrand(@Param('id') id: string, @Body() data: Record<string, any>) {
+  async updateBrand(@Param('id') id: string, @Body() data: UpdateBrandDto) {
     const mongoose = require('mongoose');
     const filter = mongoose.Types.ObjectId.isValid(id)
       ? { $or: [{ id }, { _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
       : { id };
 
-    const payload = { ...data };
+    const payload = { ...(data as Record<string, unknown>) };
     delete payload._id;
 
     const result = await Brand.collection.findOneAndUpdate(

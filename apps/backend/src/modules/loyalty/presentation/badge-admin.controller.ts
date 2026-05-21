@@ -1,9 +1,35 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, NotFoundException } from '@nestjs/common';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, IsObject, MinLength } from 'class-validator';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { IBadgeRule, IListing } from '@barterborsa/shared-persistence';
+import { escapeRegExp } from '../../../common/utils/regex.utils';
+
+class CreateBadgeRuleDto {
+  @IsString() @MinLength(1) code!: string;
+  @IsString() @MinLength(1) displayText!: string;
+  @IsOptional() @IsString() position?: string;
+  @IsOptional() @IsNumber() priority?: number;
+  @IsOptional() @IsString() backgroundColor?: string;
+  @IsOptional() @IsString() textColor?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) targetEcosystem?: string[];
+  @IsOptional() @IsObject() conditionJson?: Record<string, unknown>;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+class UpdateBadgeRuleDto {
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() displayText?: string;
+  @IsOptional() @IsString() position?: string;
+  @IsOptional() @IsNumber() priority?: number;
+  @IsOptional() @IsString() backgroundColor?: string;
+  @IsOptional() @IsString() textColor?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) targetEcosystem?: string[];
+  @IsOptional() @IsObject() conditionJson?: Record<string, unknown>;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
 
 @ApiTags('Badge Admin')
 @ApiBearerAuth()
@@ -25,7 +51,7 @@ export class BadgeAdminController {
 
   @ApiOperation({ summary: 'Create a new badge rule' })
   @Post()
-  async createBadgeRule(@Body() body: Record<string, any>) {
+  async createBadgeRule(@Body() body: CreateBadgeRuleDto) {
     const id = 'badgerule-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const rule = await this.badgeRuleModel.create({
       _id: id,
@@ -72,17 +98,16 @@ export class BadgeAdminController {
 
   @ApiOperation({ summary: 'Update an existing badge rule' })
   @Put(':id')
-  async updateBadgeRule(@Param('id') id: string, @Body() body: Record<string, any>) {
+  async updateBadgeRule(@Param('id') id: string, @Body() body: UpdateBadgeRuleDto) {
     const rule = await this.badgeRuleModel.findOne({ id }).exec();
     if (!rule) {
       throw new NotFoundException('Kural bulunamadı');
     }
-    
-    const upd: any = {};
+
+    const src = body as Record<string, unknown>;
+    const upd: Record<string, unknown> = {};
     for (const key of ['code', 'displayText', 'position', 'priority', 'backgroundColor', 'textColor', 'targetEcosystem', 'conditionJson', 'isActive']) {
-      if (body[key] !== undefined) {
-        upd[key] = body[key];
-      }
+      if (src[key] !== undefined) upd[key] = src[key];
     }
     
     const updated = await this.badgeRuleModel.findOneAndUpdate(
@@ -105,15 +130,23 @@ export class BadgeAdminController {
   }
 }
 
-function buildMongoQuery(condition: any): any {
+interface BadgeConditionJson {
+  AND?: BadgeConditionJson[]
+  OR?: BadgeConditionJson[]
+  field?: string
+  operator?: string
+  value?: unknown
+}
+
+function buildMongoQuery(condition: BadgeConditionJson): Record<string, unknown> {
   if (!condition) return {};
 
   // Logical operator (AND/OR)
   if (condition.AND && Array.isArray(condition.AND)) {
-    return { $and: condition.AND.map((cond: any) => buildMongoQuery(cond)) };
+    return { $and: condition.AND.map((cond) => buildMongoQuery(cond)) };
   }
   if (condition.OR && Array.isArray(condition.OR)) {
-    return { $or: condition.OR.map((cond: any) => buildMongoQuery(cond)) };
+    return { $or: condition.OR.map((cond) => buildMongoQuery(cond)) };
   }
 
   // Simple field-operator-value match
@@ -141,7 +174,7 @@ function buildMongoQuery(condition: any): any {
     case 'nin':
       return { [field]: { $nin: Array.isArray(mappedValue) ? mappedValue : [mappedValue] } };
     case 'contains':
-      return { [field]: { $regex: mappedValue, $options: 'i' } };
+      return { [field]: { $regex: escapeRegExp(String(mappedValue ?? '')), $options: 'i' } };
     default:
       return { [field]: mappedValue };
   }
