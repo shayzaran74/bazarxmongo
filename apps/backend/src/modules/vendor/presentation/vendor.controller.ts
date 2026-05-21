@@ -1,6 +1,6 @@
 // apps/backend/src/modules/vendor/presentation/vendor.controller.ts
 
-import { Controller, Post, Body, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, Query, UseGuards, Delete } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   ApiTags, ApiOperation, ApiResponse, ApiBearerAuth,
@@ -275,6 +275,30 @@ export class VendorController {
     console.log('Fetching public vendor:', idOrSlug);
     const data = await this.queryBus.execute(new GetVendorBySlugQuery(idOrSlug));
     return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Satıcıyı takip ediyor mu?' })
+  @Get(':idOrSlug/is-following')
+  async isFollowing(@Param('idOrSlug') idOrSlug: string) {
+    // TODO: Gerçek takip mantığı eklenecek
+    return { success: true, data: { isFollowing: false } };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Satıcıyı takip et' })
+  @Post(':idOrSlug/follow')
+  async follow(@Param('idOrSlug') idOrSlug: string) {
+    // TODO: Gerçek takip mantığı eklenecek
+    return { success: true, message: 'Satıcı takip edildi' };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Satıcıyı takibi bırak' })
+  @Delete(':idOrSlug/follow')
+  async unfollow(@Param('idOrSlug') idOrSlug: string) {
+    // TODO: Gerçek takip mantığı eklenecek
+    return { success: true, message: 'Takip bırakıldı' };
   }
 
   @Public()

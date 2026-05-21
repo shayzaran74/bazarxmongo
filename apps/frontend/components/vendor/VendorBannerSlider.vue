@@ -96,7 +96,7 @@ const autoPlayInterval = ref(null)
 const loading = ref(true)
 
 const fetchBanners = async () => {
-    if (!props.vendorId) return
+    if (!props.vendorId || props.vendorId === 'undefined') return
     loading.value = true
     try {
         const data = await $api(`/api/vendor-banners/public/${props.vendorId}`)

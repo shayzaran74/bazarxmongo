@@ -45,17 +45,45 @@ export class GetVendorProductsHandler implements IQueryHandler<GetVendorProducts
     }
 
     const result = filtered.slice(0, Number(limit));
+    const listingIds = result.map((l: any) => (l.getProps ? l.getProps().id : l.id) || l.id);
+    const catalogProductIds = result.map((l: any) => l.getProps ? l.getProps().catalogProductId : l.catalogProductId).filter(Boolean);
+
+    const mongoose = require('mongoose');
+    const [listingImages, productMedia] = await Promise.all([
+      listingIds.length ? mongoose.model('ListingImage').find({ listingId: { $in: listingIds } }).lean().exec() : [],
+      catalogProductIds.length ? mongoose.model('ProductMedia').find({ productId: { $in: catalogProductIds }, type: 'IMAGE' }).lean().exec() : [],
+    ]);
+
+    const listingImageMap = new Map();
+    listingImages.forEach((img: any) => {
+      if (!listingImageMap.has(img.listingId) || img.order < listingImageMap.get(img.listingId).order) {
+        listingImageMap.set(img.listingId, img);
+      }
+    });
+
+    const productMediaMap = new Map();
+    productMedia.forEach((media: any) => {
+      if (!productMediaMap.has(media.productId) || media.order < productMediaMap.get(media.productId).order) {
+        productMediaMap.set(media.productId, media);
+      }
+    });
 
     return result.map((l: any) => {
       const p = l.getProps ? l.getProps() : l;
+      const id = (p as any).id || l.id;
+      const catalogProductId = (p as any).catalogProductId;
+      
+      const lImage = listingImageMap.get(id);
+      const cMedia = productMediaMap.get(catalogProductId);
+      
       return {
-        id:         (p as any).id || l.id,
+        id:         id,
         name:       (p as any).title,
         sku:        (p as any).sku,
         price:      Number((p as any).price ?? 0),
         stock:      (p as any).stock,
         status:     (p as any).status,
-        image:      null,
+        image:      lImage?.url || cMedia?.url || null,
         Category:   null,
       };
     });

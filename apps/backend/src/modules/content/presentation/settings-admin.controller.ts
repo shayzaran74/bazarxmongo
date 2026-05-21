@@ -47,7 +47,59 @@ class UpdateHomepageSettingsDto {
   @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ShippingTierDto) shippingTiers?: ShippingTierDto[];
 }
 
-interface AuthenticatedUser { id: string; role: string }
+class BazarxGoCategoryDto {
+  @IsString() title!: string;
+  @IsString() image!: string;
+  @IsOptional() @IsString() tint?: string;
+  @IsOptional() @IsString() accent?: string;
+}
+
+class BazarxGoCouponDto {
+  @IsString() label!: string;
+  @IsString() value!: string;
+  @IsString() desc!: string;
+  @IsString() code!: string;
+  @IsOptional() @IsString() tint?: string;
+  @IsOptional() @IsString() accent?: string;
+}
+
+class BazarxGoCuisineDto {
+  @IsString() name!: string;
+  @IsString() image!: string;
+}
+
+class BazarxGoProductDto {
+  @IsString() name!: string;
+  @IsString() vendor!: string;
+  @IsNumber() rating!: number;
+  @IsString() reviews!: string;
+  @IsString() eta!: string;
+  @IsNumber() price!: number;
+  @IsOptional() @IsNumber() oldPrice?: number;
+  @IsString() image!: string;
+}
+
+class UpdateBazarxGoSettingsDto {
+  @IsOptional() @IsBoolean() showCategories?: boolean;
+  @IsOptional() @IsString() categoriesTitle?: string;
+  @IsOptional() @IsString() categoriesSubtitle?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => BazarxGoCategoryDto) categories?: BazarxGoCategoryDto[];
+
+  @IsOptional() @IsBoolean() showCoupons?: boolean;
+  @IsOptional() @IsString() couponsTitle?: string;
+  @IsOptional() @IsString() couponsSubtitle?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => BazarxGoCouponDto) coupons?: BazarxGoCouponDto[];
+
+  @IsOptional() @IsBoolean() showCuisines?: boolean;
+  @IsOptional() @IsString() cuisinesTitle?: string;
+  @IsOptional() @IsString() cuisinesSubtitle?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => BazarxGoCuisineDto) cuisines?: BazarxGoCuisineDto[];
+
+  @IsOptional() @IsBoolean() showPersonalized?: boolean;
+  @IsOptional() @IsString() personalizedTitle?: string;
+  @IsOptional() @IsString() personalizedSubtitle?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => BazarxGoProductDto) personalizedProducts?: BazarxGoProductDto[];
+}
 
 const DEFAULTS: Record<string, unknown> = {
   maintenanceMode: false, allowRegistration: true, defaultCommissionRate: 10,
@@ -60,6 +112,21 @@ const HOMEPAGE_DEFAULTS: Record<string, unknown> = {
   showPersonalizedProducts: true, showPerformance: true, showVendors: true,
   showRestaurants: true, showBrands: true, showNewsletter: true,
   autoApproveListings: 'none', autoApproveOffers: 'none', shippingTiers: [],
+};
+
+const BAZARX_GO_DEFAULTS: Record<string, unknown> = {
+  showCategories: true,
+  categoriesTitle: 'Kategoriler',
+  categoriesSubtitle: 'İhtiyacın olan her şey, tek tıkla',
+  showCoupons: true,
+  couponsTitle: 'İndirim Kuponların',
+  couponsSubtitle: '3 aktif kupon · son 2 gün',
+  showCuisines: true,
+  cuisinesTitle: 'Mutfaklar',
+  cuisinesSubtitle: 'Damak tadına göre keşfet',
+  showPersonalized: true,
+  personalizedTitle: 'Sana Özel Seçimler',
+  personalizedSubtitle: 'Geçmişine göre hazırlandı',
 };
 
 @ApiTags('Settings Admin')
@@ -153,4 +220,43 @@ export class SettingsAdminController {
 
     return { success: true, message: 'Ana sayfa ayarları güncellendi', data: merged };
   }
+
+  @ApiOperation({ summary: 'BazarX Go ayarlarını getir' })
+  @Get('bazarx-go')
+  async getBazarxGoSettings() {
+    const key = 'bazarxGoSettings';
+    const row = await this.settingModel.findOne({ key }).lean();
+    const saved = (row?.value ?? {}) as Record<string, unknown>;
+    return { success: true, data: { ...BAZARX_GO_DEFAULTS, ...saved } };
+  }
+
+  @ApiOperation({ summary: 'BazarX Go ayarlarını güncelle' })
+  @ApiBody({ type: UpdateBazarxGoSettingsDto })
+  @Put('bazarx-go')
+  async updateBazarxGoSettings(
+    @Body() dto: UpdateBazarxGoSettingsDto,
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    const key = 'bazarxGoSettings';
+    const existing = await this.settingModel.findOne({ key }).lean();
+    const oldValue = (existing?.value ?? {}) as Record<string, unknown>;
+    const merged   = { ...oldValue, ...(dto as Record<string, unknown>) };
+
+    const newId = new Types.ObjectId().toString();
+    await this.settingModel.findOneAndUpdate(
+      { key },
+      { $set: { value: merged, updatedBy: admin.id }, $setOnInsert: { _id: newId, id: newId, key } },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
+
+    await this.auditLog.log({
+      actorId: admin.id, action: 'BAZARX_GO_SETTINGS_UPDATED',
+      resourceType: 'SystemSetting', resourceId: key,
+      oldValue, newValue: merged,
+    });
+
+    return { success: true, message: 'BazarX Go ayarları güncellendi', data: merged };
+  }
 }
+
+export interface AuthenticatedUser { id: string; role: string }

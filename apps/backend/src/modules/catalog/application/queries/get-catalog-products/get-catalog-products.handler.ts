@@ -71,8 +71,21 @@ export class GetCatalogProductsHandler implements IQueryHandler<GetCatalogProduc
     if (isFeatured === true) filter.isFeatured = true;
     if (isSpecialOffer === true) filter.isSpecialOffer = true;
     if (isFlashSale === true) filter.isFlashSale = true;
+    
     if (query.filters.vendorId) {
-      filter.vendorId = query.filters.vendorId;
+      const vendorListings = await Listing.find({ vendorId: query.filters.vendorId }).select('catalogProductId').lean().exec();
+      const vendorCatalogIds = vendorListings.map((l: { catalogProductId?: string }) => l.catalogProductId).filter(Boolean);
+      filter.id = { $in: vendorCatalogIds };
+    } else if (excludeVendorTypes && excludeVendorTypes.length > 0) {
+      const excludedVendors = await Vendor.find({ vendorType: { $in: excludeVendorTypes } }).select('id').lean().exec();
+      const excludedIds = excludedVendors.map((v: { id?: string }) => v.id).filter(Boolean);
+      if (excludedIds.length > 0) {
+        const excludedListings = await Listing.find({ vendorId: { $in: excludedIds } }).select('catalogProductId').lean().exec();
+        const excludedCatalogIds = excludedListings.map((l: { catalogProductId?: string }) => l.catalogProductId).filter(Boolean);
+        if (excludedCatalogIds.length > 0) {
+          filter.id = { $nin: excludedCatalogIds };
+        }
+      }
     }
 
     const [rawItems, total] = await Promise.all([
@@ -85,8 +98,8 @@ export class GetCatalogProductsHandler implements IQueryHandler<GetCatalogProduc
       CatalogProduct.countDocuments(filter).exec(),
     ]);
 
-    const productIds = rawItems.map((cp: any) => cp.id).filter(Boolean);
-    const categoryIds = [...new Set(rawItems.map((cp: any) => cp.categoryId).filter(Boolean))];
+    const productIds = rawItems.map((cp: { id?: string }) => cp.id).filter(Boolean);
+    const categoryIds = [...new Set(rawItems.map((cp: { categoryId?: string }) => cp.categoryId).filter(Boolean))];
     
     const [categories, mediaDocs, listings] = await Promise.all([
       Category.find({ id: { $in: categoryIds } }).lean().exec(),
@@ -94,35 +107,70 @@ export class GetCatalogProductsHandler implements IQueryHandler<GetCatalogProduc
       Listing.find({ catalogProductId: { $in: productIds } }).lean().exec()
     ]);
 
-    const vendorIds = [...new Set(listings.map((l: any) => l.vendorId).filter(Boolean))];
+    const vendorIds = [...new Set(listings.map((l: { vendorId?: string }) => l.vendorId).filter(Boolean))];
     const vendors = vendorIds.length 
       ? await Vendor.find({ id: { $in: vendorIds } }).lean().exec()
       : [];
-    const vendorMap: Record<string, any> = {};
-    for (const v of vendors) vendorMap[v.id] = v;
+    const vendorMap: Record<string, Record<string, unknown>> = {};
+    for (const v of vendors as Record<string, unknown>[]) {
+      if (v.id) vendorMap[v.id as string] = v;
+    }
     
-    const categoryMap: Record<string, any> = {};
-    for (const cat of categories) categoryMap[cat.id] = cat;
+    const categoryMap: Record<string, Record<string, unknown>> = {};
+    for (const cat of categories as Record<string, unknown>[]) {
+      if (cat.id) categoryMap[cat.id as string] = cat;
+    }
     
     const mediaUrlsMap: Record<string, string[]> = {};
-    for (const m of mediaDocs) {
-      if (!mediaUrlsMap[m.productId]) mediaUrlsMap[m.productId] = [];
-      mediaUrlsMap[m.productId].push(m.url);
+    for (const m of mediaDocs as Record<string, unknown>[]) {
+      const productId = m.productId as string;
+      if (productId) {
+        if (!mediaUrlsMap[productId]) mediaUrlsMap[productId] = [];
+        mediaUrlsMap[productId].push(m.url as string);
+      }
     }
     
-    const listingMap: Record<string, any[]> = {};
-    for (const l of listings) {
-      if (!listingMap[l.catalogProductId]) listingMap[l.catalogProductId] = [];
-      listingMap[l.catalogProductId].push(l);
+    interface RawItem {
+      id: string;
+      categoryId?: string;
+      rating?: unknown;
+      brand?: string;
+      brands?: unknown[];
+      isFeatured?: boolean;
+      isSpecialOffer?: boolean;
+      isFlashSale?: boolean;
+      [key: string]: unknown;
+    }
+    
+    interface RawListing {
+      id: string;
+      vendorId: string;
+      catalogProductId: string;
+      price?: unknown;
+      stock?: number;
+      sku?: string;
+      [key: string]: unknown;
     }
 
-    const items = rawItems.map((item: any) => {
-      const listing = listingMap[item.id]?.[0] ?? null;
+    const listingMap: Record<string, RawListing[]> = {};
+    for (const l of listings as unknown as RawListing[]) {
+      if (l.catalogProductId) {
+        if (!listingMap[l.catalogProductId]) listingMap[l.catalogProductId] = [];
+        listingMap[l.catalogProductId].push(l);
+      }
+    }
+
+    const items = rawItems.map((item: RawItem) => {
+      const vendorListings = listingMap[item.id] ?? [];
+      const listing = query.filters.vendorId 
+        ? (vendorListings.find((l: RawListing) => l.vendorId === query.filters.vendorId) ?? null)
+        : (vendorListings[0] ?? null);
+
       return {
         ...item,
         rating: Number(item.rating) || 0,
         Brand: item.brands?.[0] || (item.brand ? { name: item.brand } : null),
-        Category: categoryMap[item.categoryId] ?? null,
+        Category: item.categoryId ? (categoryMap[item.categoryId] ?? null) : null,
         image: mediaUrlsMap[item.id]?.[0] ?? null,
         images: mediaUrlsMap[item.id] ?? [],
         price: listing ? Number(listing.price) : 0,

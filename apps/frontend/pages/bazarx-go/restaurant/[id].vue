@@ -440,15 +440,19 @@
             <div class="z-10 text-white space-y-2">
               <p class="font-heading text-2xl md:text-3xl font-black tracking-tight">Hemen Sipariş Ver!</p>
               <p class="text-white/80">İlk siparişe özel 200 TL indirim fırsatını kaçırma.</p>
-              <button class="bg-white text-[var(--brand-deep)] px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all mt-4">
+              <button 
+                @click="scrollToMenuSearch"
+                class="bg-white text-[var(--brand-deep)] px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all mt-4"
+              >
                 Siparişi Tamamla
               </button>
             </div>
             <div class="z-10 relative hidden md:block">
               <img
-                class="w-64 h-64 object-contain drop-shadow-2xl"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhiwC4xByDFl6tpphzRT69_6rI5HopeEGqA1LA3kPrR6ap3Fd9ijUYRhfUUXCHxTkf2qnhu0pzxEKCevvoa1j8XmOcQr3IRkJ376_5BRpX4dS_yo6YrdihlCVa6fZu0H0ohg6lcl2RC572vv_q3b30F0otlRi8if4S9Gev06jmP7LUM-hUL-r11qzxhl7DPDy1vQbqHM384TLcVQJ46pPz5DMEWm3rUvka2XKegt4SgOuNgZzcmWQPOMr2Jv9-S5ja_k_HWitJPGE"
-                alt="Premium Burger"
+                v-if="filteredProducts.length > 0 || restaurant.image"
+                class="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full drop-shadow-2xl border-4 border-white/20 shadow-inner"
+                :src="filteredProducts[0]?.image || restaurant.image"
+                :alt="restaurant.name"
               />
             </div>
           </div>

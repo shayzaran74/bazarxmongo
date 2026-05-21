@@ -82,6 +82,7 @@ import VendorProfileFlashSales from '~/components/vendor/profile/VendorProfileFl
 import VendorProfileProductGrid from '~/components/vendor/profile/VendorProfileProductGrid.vue'
 import UserReviewStats from '~/components/trade/UserReviewStats.vue'
 import UserReviewList from '~/components/trade/UserReviewList.vue'
+import AdvancedSearch from '~/components/product/AdvancedSearch.vue'
 
 const route = useRoute()
 const cartStore = useCartStore()
@@ -95,7 +96,7 @@ const {
 } = useVendorProfile()
 
 const addToCart = async (product: any) => {
-  const res = await cartStore.addToCart(product.id.toString(), 1)
+  const res = await cartStore.addToCart(product.id.toString(), 1, undefined, undefined, product.id.toString())
   if (res.success) {
     toast.success(`${product.name} sepete eklendi!`)
   }

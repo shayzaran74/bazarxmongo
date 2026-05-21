@@ -34,7 +34,7 @@ export class UpdateVendorProfileHandler implements ICommandHandler<UpdateVendorP
     const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor bulunamadı');
 
-    const vendorProps = vendor.getProps() as Record<string, unknown>;
+    const vendorProps = vendor.getProps() as unknown as Record<string, unknown>;
     const vendorId    = (vendorProps.id as string) ?? vendor.id;
 
     // Sadece izin verilen alanları filtrele
@@ -64,10 +64,10 @@ export class UpdateVendorProfileHandler implements ICommandHandler<UpdateVendorP
     this.logger.log('Vendor profil güncellendi', { vendorId, fields: Object.keys(updateFields) });
 
     return {
+      ...result,
       id:        vendorId,
       vendorType:vendorProps.vendorType,
       status:    vendorProps.status,
-      ...result,
     };
   }
 }

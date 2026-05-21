@@ -127,7 +127,7 @@ const fetchVendors = async () => {
       query: { limit: 10, status: 'APPROVED', isFeatured: true }
     }) as ApiResponse<Vendor[]>
     if (data.success && data.data) {
-      vendors.value = data.data
+      vendors.value = (data.data as any).items || data.data
     }
   } catch (error) {
     console.error('Fetch vendors error:', error)

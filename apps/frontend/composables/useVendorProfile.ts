@@ -30,6 +30,7 @@ export const useVendorProfile = () => {
     const hasMore = computed(() => products.value.length < totalProducts.value)
 
     const fetchVendor = async () => {
+        if (!route.params.id || route.params.id === 'undefined') return
         loading.value = true
         try {
             console.log('Calling fetchVendor for:', route.params.id);
@@ -51,6 +52,7 @@ export const useVendorProfile = () => {
     }
 
     const fetchProducts = async (params: Record<string, unknown> = {}, append = false) => {
+        if (!route.params.id || route.params.id === 'undefined') return
         productsLoading.value = true
         try {
             const queryParams: Record<string, unknown> = { vendorId: route.params.id, ...params }
@@ -87,6 +89,7 @@ export const useVendorProfile = () => {
     }
 
     const followVendor = async () => {
+        if (!route.params.id || route.params.id === 'undefined') return
         if (!authStore.isLoggedIn) {
             toast.info('Takip etmek için giriş yapmalısınız')
             return router.push('/login')
@@ -109,6 +112,7 @@ export const useVendorProfile = () => {
     }
 
     const checkFollowStatus = async () => {
+        if (!route.params.id || route.params.id === 'undefined') return
         if (!authStore.isLoggedIn) return
         try {
             const res = await vendorService.checkFollowStatus(route.params.id as string)

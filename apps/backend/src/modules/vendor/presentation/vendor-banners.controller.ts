@@ -10,7 +10,7 @@ import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
   ApiParam, ApiBody,
 } from '@nestjs/swagger';
-import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles, Public } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { ListVendorBannersQuery } from '../application/queries/list-vendor-banners.query';
 import { CreateBannerCommand } from '../application/commands/create-banner.command';
@@ -24,8 +24,6 @@ interface AuthenticatedUser {
 
 @ApiTags('Vendor Content')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 @Controller('vendor-banners')
 export class VendorBannersController {
   constructor(
@@ -33,7 +31,18 @@ export class VendorBannersController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  @ApiOperation({ summary: 'Satıcının bannerlarını listele' })
+  @Public()
+  @ApiOperation({ summary: 'Satıcıya ait bannerları listele (Genel/Public)' })
+  @ApiResponse({ status: 200 })
+  @Get('public/:vendorId')
+  async getPublicBanners(@Param('vendorId') vendorId: string) {
+    const data = await this.queryBus.execute(new ListVendorBannersQuery(vendorId));
+    return { success: true, data };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Satıcının kendi bannerlarını listele' })
   @ApiResponse({ status: 200 })
   @Get()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
@@ -41,6 +50,8 @@ export class VendorBannersController {
     return { success: true, data };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Yeni banner oluştur' })
   @ApiBody({
     schema: {
@@ -74,6 +85,8 @@ export class VendorBannersController {
     return this.commandBus.execute(new CreateBannerCommand(user.id, body));
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Banner güncelle' })
   @ApiParam({ name: 'id' })
   @Put(':id')
@@ -93,6 +106,8 @@ export class VendorBannersController {
     return this.commandBus.execute(new UpdateBannerCommand(user.id, id, body));
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Banner sil' })
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: 204 })

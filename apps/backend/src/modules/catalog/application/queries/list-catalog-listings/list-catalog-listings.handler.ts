@@ -210,6 +210,7 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
         isFeatured:    l.isFeatured    ?? false,
         isFlashSale:   l.isFlashSale   ?? false,
         isSpecialOffer:l.isSpecialOffer ?? false,
+        image:   mediaMap[l.catalogProductId as string]?.[0] || null,
         images:  mediaMap[l.catalogProductId as string] || [],
         category:catalogProducts[l.catalogProductId as string]?.categoryId || null,
         city:    vendorCityMap[l.vendorId as string] || '',

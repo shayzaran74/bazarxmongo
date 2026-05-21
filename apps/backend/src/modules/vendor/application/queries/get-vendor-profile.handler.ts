@@ -19,7 +19,7 @@ export class GetVendorProfileHandler implements IQueryHandler<GetVendorProfileQu
     const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) return null;
 
-    const vendorProps = vendor.getProps() as Record<string, unknown>;
+    const vendorProps = vendor.getProps() as unknown as Record<string, unknown>;
     const vendorId    = (vendorProps.id as string) ?? vendor.id;
 
     const profile = await this.profileModel.findOne({ vendorId }).lean();

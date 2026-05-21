@@ -31,18 +31,23 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
 
     const companyIds = [...new Set(vendors.map((v: any) => v.companyId).filter(Boolean))];
     const userEmails = [...new Set(vendors.map((v: any) => v.userId).filter(Boolean))];
+    const vendorIds  = vendors.map((v: any) => v.id);
 
-    const [companies, users] = await Promise.all([
+    const [companies, users, profiles] = await Promise.all([
       companyIds.length ? Company.find({ id: { $in: companyIds } }).lean().exec() : [],
       userEmails.length ? User.find({ email: { $in: userEmails } }).lean().exec() : [],
+      vendorIds.length  ? require('mongoose').model('VendorProfile').find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
     ]);
 
     const companyMap = new Map((companies as any[]).map(c => [c.id, c]));
     const userMap    = new Map((users as any[]).map(u => [u.email, u]));
+    const profileMap = new Map((profiles as any[]).map(p => [p.vendorId, p]));
 
     const items = vendors.map((v: any) => {
       const company = companyMap.get(v.companyId);
       const user    = userMap.get(v.userId);
+      const profile = profileMap.get(v.id);
+      
       return {
         id:          v.id,
         slug:        v.slug,
@@ -51,16 +56,19 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery> {
         vendorType:  v.vendorType,
         userId:      v.userId,
         companyId:   v.companyId,
-        businessName: company?.name || 'İsimsiz İşletme',
+        businessName: profile?.storeName || company?.name || 'İsimsiz İşletme',
         email:       user?.email || v.userId,
         phone:       user?.phoneNumber || null,
         productCount: 0,
         isFeatured:  v.isFeatured || false,
         profile: {
-          storeName: company?.name || v.slug || 'İsimsiz İşletme',
-          city: v.city || null,
-          imageUrl: v.logo || null,
+          storeName: profile?.storeName || company?.name || v.slug || 'İsimsiz İşletme',
+          city: profile?.city || v.city || null,
+          imageUrl: profile?.logo || v.logo || null,
           isFeatured: v.isFeatured || false,
+          description: profile?.description || '',
+          cuisineType: profile?.cuisineType || '',
+          rating: 5,
         },
       };
     });

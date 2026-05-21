@@ -111,6 +111,7 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
             { label: 'Ticari Takas', to: '/admin/settings/anasayfaticaritakas' },
             { label: 'BazarX', to: '/admin/settings/anasayfabazarx' },
             { label: 'Barter Borsa', to: '/admin/settings/anasayfabarterborsa' },
+            { label: 'BazarX Go', to: '/admin/settings/bazarx-go' },
             { label: 'Yan Reklamlar', to: '/admin/settings/side-ads' }
           ]
         },
