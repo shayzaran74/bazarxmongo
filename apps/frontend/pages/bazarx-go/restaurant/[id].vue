@@ -738,17 +738,18 @@ const restaurant = computed<RestaurantDetail>(() => {
   }
   
   const p = v.profile
+  const name = p?.storeName || v.company?.name || v.slug || 'İsimsiz Restoran'
   return {
-    id: v.id,
-    name: p?.storeName || 'İsimsiz Restoran',
-    cuisine: p?.cuisineType || 'Genel Mutfak',
-    rating: p?.rating || 0,
-    eta: p?.avgPrepTime ? `${p.avgPrepTime} dk` : '30-40 dk',
-    distance: '1.2km', 
+    id:       v.id,
+    name,
+    cuisine:  p?.cuisineType || 'Genel Mutfak',
+    rating:   p?.rating || 0,
+    eta:      p?.avgPrepTime ? `${p.avgPrepTime} dk` : '30-40 dk',
+    distance: '1.2km',
     minOrder: p?.minOrderAmount ? `₺${p.minOrderAmount} Min.` : '₺0 Min.',
-    image: p?.imageUrl || 'https://placehold.co/600x400?text=' + encodeURIComponent(p?.storeName || 'Restoran'),
-    sponsored: p?.isFeatured || false,
-    verified: true
+    image:    p?.logo || p?.banner || `https://placehold.co/600x400?text=${encodeURIComponent(name)}`,
+    sponsored:p?.isFeatured || false,
+    verified: true,
   }
 })
 

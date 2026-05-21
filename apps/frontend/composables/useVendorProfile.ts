@@ -65,7 +65,8 @@ export const useVendorProfile = () => {
                 if (val !== undefined && val !== null && val !== '') cleanParams[key] = val
             })
             cleanParams.page = page.value
-            cleanParams.limit = limit.value
+            // Gelen params'taki limit'e öncelik ver (restaurant sayfası limit:100 geçer)
+            cleanParams.limit = (queryParams.limit as number) || limit.value
 
             const response = await vendorService.getVendorProducts(route.params.id as string, cleanParams)
             if (response.success && response.data) {

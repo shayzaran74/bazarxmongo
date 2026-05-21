@@ -28,17 +28,16 @@ export class GetVendorBySlugHandler implements IQueryHandler<GetVendorBySlugQuer
       status: vendor.status,
       vendorType: vendor.vendorType,
       profile: vendor.profile ? {
-        storeName: vendor.profile.storeName,
-        description: vendor.profile.description,
-        city: vendor.profile.city,
-        cuisineType: vendor.profile.cuisineType,
-        rating: vendor.profile.rating,
-        reviewCount: vendor.profile.reviewCount,
-        avgPrepTime: vendor.profile.avgPrepTimeMinutes,
+        storeName:      vendor.profile.storeName,
+        description:    vendor.profile.description,
+        city:           vendor.profile.city,
+        cuisineType:    vendor.profile.cuisineType,
+        avgPrepTime:    vendor.profile.avgPrepTimeMinutes,
         minOrderAmount: vendor.profile.minOrderAmount,
         deliveryRadius: vendor.profile.deliveryRadius,
-        isFeatured: vendor.profile.isFeatured,
-        imageUrl: vendor.profile.imageUrl,
+        isFeatured:     vendor.profile.isFeatured,
+        logo:           vendor.profile.logo,    // VendorProfile entity'sinde logo (imageUrl değil)
+        banner:         vendor.profile.banner,
       } : null,
     };
   }
