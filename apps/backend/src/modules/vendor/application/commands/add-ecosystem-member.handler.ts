@@ -1,8 +1,8 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
 import { AddEcosystemMemberCommand } from './add-ecosystem-member.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
+import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 
 @CommandHandler(AddEcosystemMemberCommand)
@@ -11,6 +11,7 @@ export class AddEcosystemMemberHandler
 
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
   ) {}
 
@@ -18,8 +19,12 @@ export class AddEcosystemMemberHandler
     const { userId, memberVendorId } = command;
 
     const vendor = await this.vendorRepo.findByUserId(userId);
-    if (!vendor?.ecosystemId) {
-      throw new NotFoundException('No ecosystem owned by this vendor');
+    if (!vendor) throw new NotFoundException('Satıcı profiliniz bulunamadı.');
+
+    // Sadece ekosistemin sahibi (ownerId) üye ekleyebilir
+    const ecosystem = await this.ecosystemRepo.findByOwnerId(vendor.id);
+    if (!ecosystem) {
+      throw new ForbiddenException('Bu kullanıcıya ait bir ekosistem bulunamadı. Sadece ekosistem kurucusu üye ekleyebilir.');
     }
 
     const memberVendor = await this.vendorRepo.findById(memberVendorId);
@@ -35,10 +40,10 @@ export class AddEcosystemMemberHandler
       throw new BadRequestException('Bu bayi zaten bir ekosisteme üye');
     }
 
-    await this.vendorRepo.update(memberVendorId, { ecosystemId: vendor.ecosystemId });
+    await this.vendorRepo.update(memberVendorId, { ecosystemId: ecosystem.id });
 
     await this.auditLogRepo.create({
-      ecosystemId: vendor.ecosystemId,
+      ecosystemId: ecosystem.id,
       vendorId: memberVendorId,
       action: 'MEMBER_ADDED',
       severity: 'HIGH',

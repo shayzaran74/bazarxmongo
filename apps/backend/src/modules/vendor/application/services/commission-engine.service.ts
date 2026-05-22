@@ -84,16 +84,21 @@ export class CommissionEngineService {
     }
 
     if (isGroupTransaction) {
-      // BrandEcosystem'ten owner veya member kontrolü
       let groupRate = tierVO.getGroupCommissionRate();
-      const ecosystems = await this.ecosystemRepo.findAll();
-      const ecosystem = ecosystems.find((e: { ownerId?: string; memberIds?: string[] }) =>
-        e.ownerId === vendorId ||
-        (e.memberIds && e.memberIds.includes(vendorId))
-      );
-      if (ecosystem) {
-        const eco = ecosystem as unknown as { internalCommRate?: { toString(): string } };
-        groupRate = Number(eco.internalCommRate?.toString() ?? groupRate);
+      // Vendor'ın ecosystemId'si üzerinden doğrudan ekosistemi bul
+      // (memberIds array yerine her vendor'da ecosystemId field'ı kullanılıyor)
+      const vendorEcosystemId = vendorProps.ecosystemId as string | undefined;
+      if (vendorEcosystemId) {
+        const ecosystem = await this.ecosystemRepo.findById(vendorEcosystemId);
+        if (ecosystem?.internalCommRate) {
+          groupRate = Number(ecosystem.internalCommRate.toString());
+        }
+      } else {
+        // Owner ise kendi ekosistemi bulunur
+        const ownedEcosystem = await this.ecosystemRepo.findByOwnerId(vendorId);
+        if (ownedEcosystem?.internalCommRate) {
+          groupRate = Number(ownedEcosystem.internalCommRate.toString());
+        }
       }
 
       const commission = amount.mul(groupRate).div(100).toDecimalPlaces(2);

@@ -1,4 +1,5 @@
 import { IVendor, ICompany, IListing, IEcosystemAuditLog, IBrandEcosystem, ITrustScore } from '@barterborsa/shared-persistence';
+import { scoreToLevel } from '../../../barter/domain/trust-level.constants';
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -131,7 +132,7 @@ export class EcosystemAdminController {
         if (ownerCompany) ownerBusinessName = ownerCompany.name || 'İsimsiz Fabrika';
       }
 
-      const membersList = [];
+      const membersList: EcosystemMemberDto[] = [];
       const ecoMembers = membersByEcoId.get(eco.id) || [];
       for (const mv of ecoMembers) {
         const mvCompany = companyMap.get(mv.companyId);
@@ -273,7 +274,6 @@ export class EcosystemAdminController {
     const oldScore = oldRecord ? Number(oldRecord.score) : 100;
     
     // Save/update score
-    const { scoreToLevel } = require('../../../barter/domain/trust-level.constants');
     await this.trustScoreRepo.upsert(vendorId, {
       score:              newScore,
       tradingPerformance: oldRecord ? Number(oldRecord.tradingPerformance) : 100,
@@ -287,7 +287,7 @@ export class EcosystemAdminController {
       ecosystemId: vendor.ecosystemId || 'SYSTEM',
       vendorId: vendorId,
       action: 'TRUST_SCORE_OVERRIDE',
-      severity: 'WARN',
+      severity: 'HIGH',
       details: {
         oldScore,
         newScore,

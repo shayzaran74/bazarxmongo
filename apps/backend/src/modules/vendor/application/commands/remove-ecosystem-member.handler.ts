@@ -4,7 +4,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { RemoveEcosystemMemberCommand } from './remove-ecosystem-member.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
+import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 
 @CommandHandler(RemoveEcosystemMemberCommand)
@@ -13,6 +13,7 @@ export class RemoveEcosystemMemberHandler
 
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
+    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
   ) {}
 
@@ -20,15 +21,18 @@ export class RemoveEcosystemMemberHandler
     const { userId, memberVendorId } = command;
 
     const callerVendor = await this.vendorRepo.findByUserId(userId);
-    const memberVendor = await this.vendorRepo.findById(memberVendorId);
+    if (!callerVendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
 
+    const memberVendor = await this.vendorRepo.findById(memberVendorId);
     if (!memberVendor) throw new NotFoundException('Üye bayi bulunamadı');
     if (!memberVendor.ecosystemId) {
       throw new BadRequestException('Bu bayi herhangi bir ekosisteme üye değil');
     }
 
-    if (callerVendor && callerVendor.ecosystemId !== memberVendor.ecosystemId) {
-      throw new ForbiddenException('Bu ekosistemden üye çıkarma yetkiniz yok');
+    // Yalnızca ekosistem sahibi üye çıkarabilir
+    const ecosystem = await this.ecosystemRepo.findByOwnerId(callerVendor.id);
+    if (!ecosystem || ecosystem.id !== memberVendor.ecosystemId) {
+      throw new ForbiddenException('Bu ekosistemden üye çıkarma yetkiniz yok. Sadece ekosistem kurucusu üye çıkarabilir.');
     }
 
     const ecosystemId = memberVendor.ecosystemId;

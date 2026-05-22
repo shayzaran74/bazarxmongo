@@ -4,7 +4,6 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateEcosystemSettingsCommand } from './update-ecosystem-settings.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 
@@ -22,22 +21,22 @@ export class UpdateEcosystemSettingsHandler
     const { userId, settings } = command;
 
     const vendor = await this.vendorRepo.findByUserId(userId);
-    if (!vendor?.ecosystemId) {
-      throw new NotFoundException('Bu kullanıcıya ait bir ekosistem bulunamadı');
-    }
+    if (!vendor) throw new NotFoundException('Satıcı profiliniz bulunamadı.');
 
-    if (vendor.userId !== userId) {
-      throw new ForbiddenException('Ekosistem ayarlarını yalnızca sahibi güncelleyebilir');
+    // Yalnızca ekosistemin sahibi (ownerId) ayarları güncelleyebilir
+    const ecosystem = await this.ecosystemRepo.findByOwnerId(vendor.id);
+    if (!ecosystem) {
+      throw new ForbiddenException('Ekosistem ayarlarını yalnızca sahibi güncelleyebilir. Bu hesaba ait bir ekosistem bulunamadı.');
     }
 
     const updateData: Record<string, unknown> = {};
     if (settings.isBlindPool !== undefined) updateData.isBlindPool = settings.isBlindPool;
     if (settings.internalCommRate !== undefined) updateData.internalCommRate = settings.internalCommRate;
 
-    const updated = await this.ecosystemRepo.update(vendor.ecosystemId, updateData as { isBlindPool?: boolean; internalCommRate?: number });
+    const updated = await this.ecosystemRepo.update(ecosystem.id, updateData as { isBlindPool?: boolean; internalCommRate?: number });
 
     await this.auditLogRepo.create({
-      ecosystemId: vendor.ecosystemId,
+      ecosystemId: ecosystem.id,
       vendorId: vendor.id,
       action: 'SETTINGS_UPDATED',
       severity: 'HIGH',
