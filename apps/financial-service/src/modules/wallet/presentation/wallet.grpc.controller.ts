@@ -436,9 +436,19 @@ export class WalletGrpcController {
           }
 
           const amt = d128(amount.toFixed(2));
+          const negAmt = d128(amount.negated().toFixed(2));
+          // Account ve Wallet bakiyelerini birlikte güncelle (drift önleme)
           await Promise.all([
-            this.accountModel.updateOne({ _id: fromAccount._id ?? fromAccount.id }, { $inc: { balance: d128(-amount.toNumber()), availableBalance: d128(-amount.toNumber()) } }, { session }),
+            this.accountModel.updateOne({ _id: fromAccount._id ?? fromAccount.id }, { $inc: { balance: negAmt, availableBalance: negAmt } }, { session }),
             this.accountModel.updateOne({ _id: toAccount!._id ?? toAccount!.id }, { $inc: { balance: amt, availableBalance: amt } }, { session }),
+            // Wallet.balanceTL senkronizasyonu (MAIN ↔ MAIN transfer)
+            ...(data.fromAccountType === 'MAIN' || data.toAccountType === 'MAIN'
+              ? [this.walletModel.updateOne(
+                  { userId: data.userId },
+                  { $inc: { balanceTL: data.fromAccountType === 'MAIN' ? negAmt : data.toAccountType === 'MAIN' ? amt : d128(0) } },
+                  { session },
+                )]
+              : []),
           ]);
 
           const referenceId = `trf-${Date.now()}`;

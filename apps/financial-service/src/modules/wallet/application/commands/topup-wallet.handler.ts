@@ -11,8 +11,11 @@ import {
   IFinancialGeneralLedger,
 } from '@barterborsa/shared-persistence';
 
+import { Decimal } from 'decimal.js';
+
+// Number(v) float precision kaybı yaratır; Decimal.js üzerinden dönüştür
 const d128 = (v: number | string): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 @CommandHandler(TopUpWalletCommand)
 export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {

@@ -39,7 +39,7 @@ export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuer
     @InjectModel('GeneralLedger') private readonly ledgerModel: Model<IFinancialGeneralLedger>,
   ) {}
 
-  private parseDate(dateVal: any, idVal?: string): Date {
+  private parseDate(dateVal: unknown, idVal?: string): Date {
     if (dateVal instanceof Date) return dateVal;
     if (dateVal) {
       const d = new Date(dateVal);

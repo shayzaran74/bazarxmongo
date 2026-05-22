@@ -13,8 +13,11 @@ import {
   IFinancialAccountTopUpRequest,
 } from '@barterborsa/shared-persistence';
 
+import { Decimal } from 'decimal.js';
+
+// Number(v) float precision kaybı yaratır; Decimal.js üzerinden dönüştür
 const d128 = (v: string | number): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 @CommandHandler(ApproveTopUpCommand)
 export class ApproveTopUpHandler implements ICommandHandler<ApproveTopUpCommand> {

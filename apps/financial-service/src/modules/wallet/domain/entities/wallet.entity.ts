@@ -1,6 +1,6 @@
 // apps/financial-service/src/modules/wallet/domain/entities/wallet.entity.ts
 
-import { AggregateRoot } from '@barterborsa/shared-core';
+import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
 import { Money } from '../value-objects/money.vo';
 
 interface WalletProps {
@@ -30,13 +30,13 @@ export class Wallet extends AggregateRoot<WalletProps> {
 
   // Topup TL
   public topUpTL(amount: Money): void {
-    if (amount.currency !== 'TRY') throw new Error('Para birimi TRY olmalıdır.');
+    if (amount.currency !== 'TRY') throw new DomainException('Para birimi TRY olmalıdır.');
     this.props.balanceTL = this.props.balanceTL.add(amount);
   }
 
   // Withdraw TL
   public withdrawTL(amount: Money): void {
-    if (amount.currency !== 'TRY') throw new Error('Para birimi TRY olmalıdır.');
+    if (amount.currency !== 'TRY') throw new DomainException('Para birimi TRY olmalıdır.');
     this.props.balanceTL = this.props.balanceTL.subtract(amount);
   }
 

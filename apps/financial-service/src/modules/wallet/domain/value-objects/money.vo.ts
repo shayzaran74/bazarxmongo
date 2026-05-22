@@ -1,6 +1,6 @@
 // apps/financial-service/src/modules/wallet/domain/value-objects/money.vo.ts
 
-import { ValueObject } from '@barterborsa/shared-core';
+import { ValueObject, DomainException } from '@barterborsa/shared-core';
 import { Decimal } from 'decimal.js';
 
 interface MoneyProps {
@@ -23,7 +23,7 @@ export class Money extends ValueObject<MoneyProps> {
 
   add(other: Money): Money {
     if (this.currency !== other.currency) {
-      throw new Error('Farklı para birimleri toplanamaz.');
+      throw new DomainException('Farklı para birimleri toplanamaz.');
     }
     return new Money({
       amount: this.amount.plus(other.amount),
@@ -36,7 +36,7 @@ export class Money extends ValueObject<MoneyProps> {
       throw new Error('Farklı para birimleri çıkarılamaz.');
     }
     if (this.amount.minus(other.amount).isNegative()) {
-      throw new Error('Yetersiz bakiye.');
+      throw new DomainException('Yetersiz bakiye.');
     }
     return new Money({
       amount: this.amount.minus(other.amount),
