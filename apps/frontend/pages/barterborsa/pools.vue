@@ -5,7 +5,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ['auth'] })
 
-const { apiBase } = useRuntimeConfig().public
+const { $api } = useApi()
 
 interface Pool {
   id:             string
@@ -26,9 +26,10 @@ async function fetchPools(groupId: string = 'default'): Promise<void> {
   pending.value = true
   error.value   = null
   try {
-    const data = await $fetch<Pool[]>(
-      `${apiBase}/api/v1/barterborsa/pools/group/${groupId}`,
+    const res = await $api<{ success: boolean; data?: Pool[] }>(
+      `/api/v1/barterborsa/pools/group/${groupId}`,
     )
+    const data = res.data ?? []
     pools.value = data
     data.forEach(p => { if (!qty.value[p.id]) qty.value[p.id] = 1 })
   } catch (err: unknown) {
@@ -41,7 +42,7 @@ async function fetchPools(groupId: string = 'default'): Promise<void> {
 async function request(poolId: string): Promise<void> {
   requesting.value = poolId
   try {
-    await $fetch(`${apiBase}/api/v1/barterborsa/pools/${poolId}/request`, {
+    await $api(`/api/v1/barterborsa/pools/${poolId}/request`, {
       method: 'POST',
       body:   { quantity: qty.value[poolId] ?? 1 },
     })

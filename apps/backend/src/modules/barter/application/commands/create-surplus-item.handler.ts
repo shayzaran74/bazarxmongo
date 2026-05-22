@@ -2,6 +2,7 @@
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { CreateSurplusItemCommand } from './create-surplus-item.command';
 import { ISurplusItemRepository } from '../../domain/repositories/surplus-item.repository.interface';
 import { SurplusItem } from '../../domain/entities/surplus-item.entity';
@@ -15,7 +16,7 @@ export class CreateSurplusItemHandler implements ICommandHandler<CreateSurplusIt
 
   async execute(command: CreateSurplusItemCommand): Promise<{ success: boolean; id: string }> {
     const now = new Date();
-    const id = 'surplus-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = randomUUID();
     const props = {
       companyId:         command.companyId,
       title:             command.title,

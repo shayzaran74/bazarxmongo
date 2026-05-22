@@ -101,7 +101,7 @@
                   <span class="material-symbols-outlined text-blue-600">payments</span>
                 </div>
               </div>
-              <p class="text-2xl font-extrabold text-primary-container">₺124.5M</p>
+              <p class="text-2xl font-extrabold text-primary-container">{{ barterVolume }}</p>
             </div>
             <div class="mt-4 flex items-center gap-2">
               <span class="text-md3-secondary text-xs font-bold flex items-center gap-1">
@@ -120,10 +120,10 @@
                   <span class="material-symbols-outlined text-green-600">account_balance_wallet</span>
                 </div>
               </div>
-              <p class="text-2xl font-extrabold text-primary-container">%68</p>
+              <p class="text-2xl font-extrabold text-primary-container">%{{ poolUsagePct }}</p>
             </div>
             <div class="mt-4 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-              <div class="bg-md3-secondary h-full rounded-full" style="width:68%" />
+              <div class="bg-md3-secondary h-full rounded-full" :style="`width:${poolUsagePct}%`" />
             </div>
           </div>
 
@@ -136,7 +136,7 @@
                   <span class="material-symbols-outlined text-amber-600">verified_user</span>
                 </div>
               </div>
-              <p class="text-2xl font-extrabold text-primary-container">82</p>
+              <p class="text-2xl font-extrabold text-primary-container">{{ avgTrustScore ?? '—' }}</p>
             </div>
             <div class="mt-4">
               <span class="px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-bold rounded uppercase">
@@ -154,7 +154,7 @@
                   <span class="material-symbols-outlined text-purple-600">savings</span>
                 </div>
               </div>
-              <p class="text-2xl font-extrabold text-primary-container">₺1.2M</p>
+              <p class="text-2xl font-extrabold text-primary-container">{{ commissionSaved }}</p>
             </div>
             <div class="mt-4 flex items-center gap-2">
               <span class="text-md3-secondary text-xs font-bold flex items-center gap-1">
@@ -329,17 +329,54 @@ useHead({
   meta: [{ name: 'description', content: 'BarterBorsa kurumsal analitik ve executive overview paneli' }],
 })
 
+interface BarterInfoData {
+  barterBalance?: string
+  barterCreditLimit?: string
+  commissionXP?: string
+  trustScore?: number
+  tier?: string
+}
+
+interface TrustScoreData {
+  score?: number
+  level?: string
+}
+
+const { $api } = useApi()
+
+const barterVolume    = ref('—')
+const poolUsagePct    = ref(0)
+const avgTrustScore   = ref<number | null>(null)
+const commissionSaved = ref('—')
+
+const fetchAnalytics = async (): Promise<void> => {
+  const [barterRes, tsRes] = await Promise.all([
+    $api<{ success: boolean; data: BarterInfoData }>('/api/v1/barter/info').catch(() => null),
+    $api<{ success: boolean; data: TrustScoreData }>('/api/v1/trust-score/me').catch(() => null),
+  ])
+
+  if (barterRes?.success && barterRes.data) {
+    const d = barterRes.data
+    const bal   = Number(d.barterBalance ?? 0)
+    const limit = Number(d.barterCreditLimit ?? 0)
+    barterVolume.value    = `₺${new Intl.NumberFormat('tr-TR').format(bal)}`
+    poolUsagePct.value    = limit > 0 ? Math.min(100, Math.round((bal / limit) * 100)) : 0
+    commissionSaved.value = `₺${new Intl.NumberFormat('tr-TR').format(Number(d.commissionXP ?? 0))}`
+  }
+
+  if (tsRes?.success && tsRes.data) {
+    avgTrustScore.value = tsRes.data.score ?? null
+  }
+}
+
+onMounted(fetchAnalytics)
+
 const regions = [
-  { name: 'Marmara', value: '₺52.4M', pct: 85, opacity: 1 },
-  { name: 'İç Anadolu', value: '₺31.2M', pct: 60, opacity: 0.7 },
-  { name: 'Ege', value: '₺24.8M', pct: 45, opacity: 0.5 },
-  { name: 'Akdeniz', value: '₺16.1M', pct: 30, opacity: 0.3 },
+  { name: 'Marmara',     value: '—', pct: 85, opacity: 1 },
+  { name: 'İç Anadolu',  value: '—', pct: 60, opacity: 0.7 },
+  { name: 'Ege',         value: '—', pct: 45, opacity: 0.5 },
+  { name: 'Akdeniz',     value: '—', pct: 30, opacity: 0.3 },
 ]
 
-const dealers = [
-  { name: 'Global Lojistik A.Ş.', initials: 'GL', volume: '₺4,250,000', trust: 94, growth: '+18.2%', avatarClass: 'bg-blue-100 text-blue-800' },
-  { name: 'Yıldız Mobilya Ltd.', initials: 'YM', volume: '₺3,840,000', trust: 89, growth: '+12.4%', avatarClass: 'bg-amber-100 text-amber-800' },
-  { name: 'Özdemir Tekstil', initials: 'OT', volume: '₺2,910,000', trust: 72, growth: '+5.8%', avatarClass: 'bg-slate-100 text-slate-600' },
-  { name: 'Birlik Plastik', initials: 'BP', volume: '₺1,150,000', trust: 81, growth: '-2.1%', avatarClass: 'bg-red-50 text-red-800' },
-]
+const dealers: { name: string; initials: string; volume: string; trust: number; growth: string; avatarClass: string }[] = []
 </script>

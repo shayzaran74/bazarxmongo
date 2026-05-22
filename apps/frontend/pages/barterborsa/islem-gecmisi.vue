@@ -21,7 +21,7 @@
           <span class="material-symbols-outlined mr-3">dashboard</span>
           <span class="text-sm">Dashboard</span>
         </NuxtLink>
-        <NuxtLink to="/barterborsa/b2b-dashboard" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
+        <NuxtLink to="/ticaritakas/b2b-dashboard" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
           <span class="material-symbols-outlined mr-3">swap_vertical_circle</span>
           <span class="text-sm">Trade Pool</span>
         </NuxtLink>
@@ -60,8 +60,8 @@
           </button>
           <div class="flex items-center gap-3">
             <div class="text-right">
-              <p class="text-sm font-bold text-primary-container">Global Logistics Inc.</p>
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-tertiary-fixed text-on-tertiary-fixed-variant">ELITE MEMBER</span>
+              <p class="text-sm font-bold text-primary-container">{{ useAuthStore().fullName || '—' }}</p>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-tertiary-fixed text-on-tertiary-fixed-variant">APEX ÜYE</span>
             </div>
             <div class="h-10 w-10 rounded-full border-2 border-primary-container bg-primary-container text-on-primary flex items-center justify-center font-bold">GL</div>
           </div>
@@ -92,7 +92,7 @@
             <div>
               <span class="text-[12px] font-bold uppercase tracking-[0.05em] text-slate-500 mb-2 block">Total Trade Volume</span>
               <div class="flex items-baseline gap-2">
-                <span class="text-[32px] leading-[40px] font-bold text-primary-container">₺ 2,450,000</span>
+                <span class="text-[32px] leading-[40px] font-bold text-primary-container">{{ tradeVolume }}</span>
                 <span class="text-md3-secondary text-sm font-bold flex items-center">
                   <span class="material-symbols-outlined text-sm">trending_up</span> 12%
                 </span>
@@ -108,7 +108,7 @@
             <div>
               <span class="text-[12px] font-bold uppercase tracking-[0.05em] text-slate-500 mb-2 block">Total XP Earned</span>
               <div class="flex items-baseline gap-2">
-                <span class="text-[32px] leading-[40px] font-bold text-tertiary-container">124,500 XP</span>
+                <span class="text-[32px] leading-[40px] font-bold text-tertiary-container">{{ totalXP }}</span>
                 <span class="text-md3-secondary text-sm font-bold">Gold Tier</span>
               </div>
             </div>
@@ -124,7 +124,7 @@
             <div>
               <span class="text-[12px] font-bold uppercase tracking-[0.05em] text-slate-500 mb-2 block">Net Savings</span>
               <div class="flex items-baseline gap-2">
-                <span class="text-[32px] leading-[40px] font-bold text-md3-secondary">₺ 342,000</span>
+                <span class="text-[32px] leading-[40px] font-bold text-md3-secondary">{{ netSavings }}</span>
                 <span class="text-on-secondary-container text-sm font-medium">vs Cash</span>
               </div>
             </div>
@@ -183,7 +183,13 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
-                    <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 transition-colors group cursor-pointer">
+                    <tr v-if="loading">
+                      <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">Yükleniyor…</td>
+                    </tr>
+                    <tr v-else-if="transactions.length === 0">
+                      <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">Henüz işlem kaydı bulunmuyor.</td>
+                    </tr>
+                    <tr v-else v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 transition-colors group cursor-pointer">
                       <td class="px-6 py-4 font-mono text-sm text-primary-container">{{ tx.id }}</td>
                       <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
@@ -214,7 +220,7 @@
                 </table>
               </div>
               <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                <span class="text-sm text-slate-500">Showing 1-10 of 128 transactions</span>
+                <span class="text-sm text-slate-500">{{ transactions.length }} işlem listeleniyor</span>
                 <div class="flex gap-2">
                   <button class="p-1 hover:bg-slate-200 rounded border border-slate-200" type="button"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
                   <button class="px-3 py-1 bg-md3-primary text-on-primary text-sm font-bold rounded" type="button">1</button>
@@ -298,10 +304,101 @@ useHead({
   meta: [{ name: 'description', content: 'B2B TicariTakas işlem geçmişi, bakiye hareketleri ve trustscore etkisi' }],
 })
 
-const transactions = [
-  { id: '#TRX-88102', partnerInitials: 'TL', partner: 'TechLogistics Inc.', type: 'Barter', typeClass: 'bg-secondary-container text-on-secondary-container', date: 'Oct 24, 2023', amount: '₺ 45,000', xp: '+450 XP', status: 'Completed', statusColorClass: 'text-md3-secondary', statusDotClass: 'bg-md3-secondary' },
-  { id: '#TRX-88103', partnerInitials: 'AS', partner: 'Apex Solutions Group', type: 'XP Reward', typeClass: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', date: 'Oct 22, 2023', amount: '₺ 0', xp: '+2,500 XP', status: 'Completed', statusColorClass: 'text-md3-secondary', statusDotClass: 'bg-md3-secondary' },
-  { id: '#TRX-88104', partnerInitials: 'GT', partner: 'Global Trade Partners', type: 'Cash', typeClass: 'bg-slate-200 text-slate-600', date: 'Oct 21, 2023', amount: '₺ 128,400', xp: '+0 XP', status: 'Processing', statusColorClass: 'text-amber-600', statusDotClass: 'bg-amber-600' },
-  { id: '#TRX-88105', partnerInitials: 'HM', partner: 'Horizon Media Ltd.', type: 'Barter', typeClass: 'bg-secondary-container text-on-secondary-container', date: 'Oct 20, 2023', amount: '₺ 12,000', xp: '+120 XP', status: 'Pending', statusColorClass: 'text-error', statusDotClass: 'bg-error' },
-]
+interface TxRow {
+  id: string
+  partnerInitials: string
+  partner: string
+  type: string
+  typeClass: string
+  date: string
+  amount: string
+  xp: string
+  status: string
+  statusColorClass: string
+  statusDotClass: string
+}
+
+interface BarterInfoData {
+  barterBalance?: string
+  commissionXP?: string
+  transactions?: RawTx[]
+}
+
+interface RawTx {
+  id?: string
+  type?: string
+  amount?: number | string
+  xpAmount?: number | string
+  status?: string
+  createdAt?: string
+  partnerName?: string
+}
+
+const { $api } = useApi()
+const authStore = useAuthStore()
+
+const tradeVolume = ref('₺ —')
+const totalXP     = ref('— XP')
+const netSavings  = ref('₺ —')
+const transactions = ref<TxRow[]>([])
+const loading     = ref(true)
+
+const formatStatus = (s: string | undefined): { label: string; colorClass: string; dotClass: string } => {
+  switch ((s ?? '').toUpperCase()) {
+    case 'COMPLETED': return { label: 'Completed', colorClass: 'text-md3-secondary', dotClass: 'bg-md3-secondary' }
+    case 'PROCESSING':
+    case 'PENDING_COLLATERAL': return { label: 'Processing', colorClass: 'text-amber-600', dotClass: 'bg-amber-600' }
+    default: return { label: 'Pending', colorClass: 'text-error', dotClass: 'bg-error' }
+  }
+}
+
+const formatType = (t: string | undefined): { label: string; cls: string } => {
+  switch ((t ?? '').toUpperCase()) {
+    case 'BARTER': return { label: 'Barter', cls: 'bg-secondary-container text-on-secondary-container' }
+    case 'XP_REWARD': return { label: 'XP Ödülü', cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
+    default: return { label: 'Nakit', cls: 'bg-slate-200 text-slate-600' }
+  }
+}
+
+const fetchData = async (): Promise<void> => {
+  loading.value = true
+  try {
+    const res = await $api<{ success: boolean; data: BarterInfoData }>('/api/v1/barter/info')
+    if (res.success && res.data) {
+      const d = res.data
+      const bal = Number(d.barterBalance ?? 0)
+      const xp  = Number(d.commissionXP ?? 0)
+      tradeVolume.value = `₺ ${new Intl.NumberFormat('tr-TR').format(bal)}`
+      totalXP.value     = `${new Intl.NumberFormat('tr-TR').format(xp)} XP`
+      netSavings.value  = `₺ ${new Intl.NumberFormat('tr-TR').format(Math.round(xp * 0.8))}`
+
+      const rawTxs = d.transactions ?? []
+      transactions.value = rawTxs.map((tx, i) => {
+        const partner = tx.partnerName ?? '—'
+        const initials = partner.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()
+        const { label: statusLabel, colorClass, dotClass } = formatStatus(tx.status)
+        const { label: typeLabel, cls: typeClass } = formatType(tx.type)
+        const amount = Number(tx.amount ?? 0)
+        const xpAmt  = Number(tx.xpAmount ?? 0)
+        return {
+          id:              tx.id ? `#TRX-${tx.id.substring(0, 5).toUpperCase()}` : `#TRX-${String(i).padStart(5, '0')}`,
+          partnerInitials: initials || '—',
+          partner,
+          type:            typeLabel,
+          typeClass,
+          date:            tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('tr-TR') : '—',
+          amount:          `₺ ${new Intl.NumberFormat('tr-TR').format(amount)}`,
+          xp:              xpAmt > 0 ? `+${xpAmt} XP` : '+0 XP',
+          status:          statusLabel,
+          statusColorClass: colorClass,
+          statusDotClass:   dotClass,
+        }
+      })
+    }
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchData)
 </script>

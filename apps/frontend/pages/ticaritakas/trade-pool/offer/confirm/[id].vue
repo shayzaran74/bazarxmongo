@@ -10,30 +10,35 @@ const cashAmount = ref(Number(route.query.cash) || 0)
 const note = ref(String(route.query.note || ''))
 const type = ref(String(route.query.type || 'HYBRID'))
 
-const loading = ref(true)
-const opportunity = ref<any>(null)
+interface SurplusData {
+  id: string
+  title: string
+  description?: string
+  unitPrice?: number
+  images?: string[]
+  company?: { id: string; name: string }
+  image?: string
+}
 
-const fetchOpportunity = async () => {
+const loading = ref(true)
+const opportunity = ref<SurplusData | null>(null)
+
+const resolveImage = (images: string[] | undefined): string => {
+  if (!Array.isArray(images) || images.length === 0) return '/placeholder-image.jpg'
+  const img = images[0]
+  if (img.startsWith('http') || img.startsWith('data:')) return img
+  const clean = img.startsWith('/') ? img : `/${img}`
+  return clean.startsWith('/uploads') ? clean : `/uploads${clean}`
+}
+
+const fetchOpportunity = async (): Promise<void> => {
   loading.value = true
   try {
-    const res: any = await $api(`/api/v1/surplus/${opportunityId}`)
+    const res = await $api<{ success: boolean; data: SurplusData }>(`/api/v1/surplus/${opportunityId}`)
     if (res.success && res.data) {
-      opportunity.value = res.data
-      if (Array.isArray(opportunity.value.images) && opportunity.value.images.length > 0) {
-        const firstImg = opportunity.value.images[0]
-        if (firstImg.startsWith('http') || firstImg.startsWith('data:')) {
-          opportunity.value.image = firstImg
-        } else {
-          const cleanPath = firstImg.startsWith('/') ? firstImg : `/${firstImg}`
-          opportunity.value.image = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`
-        }
-      } else {
-        opportunity.value.image = 'https://placehold.co/600x400?text=Resim+Yok'
-      }
+      opportunity.value = { ...res.data, image: resolveImage(res.data.images) }
     }
-  } catch (error) {
-    console.error('İlan çekilemedi:', error)
-  } finally {
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
   }
 }
@@ -47,32 +52,32 @@ const confirmAndSubmit = async () => {
   errorBanner.value = null
 
   try {
-    const res: any = await $api('/api/v1/offers', {
+    const res = await $api<{ success: boolean; data?: { id?: string } }>('/api/v1/offers', {
       method: 'POST',
       body: {
         surplusItemId: opportunityId,
-        barterAmount: barterAmount.value,
-        cashAmount: cashAmount.value,
-        note: note.value,
-        type: type.value
-      }
+        barterAmount:  barterAmount.value,
+        cashAmount:    cashAmount.value,
+        note:          note.value,
+        type:          type.value,
+      },
     })
 
     if (res.success) {
       router.push({
         path: '/ticaritakas/trade-pool/offer/success',
         query: {
-          id: `#TRX-${res.data?.id?.substring(0, 5).toUpperCase() || 'NEW'}`,
-          partner: opportunity.value.company?.name || 'Kurumsal Satıcı',
-          amount: new Intl.NumberFormat('tr-TR').format(barterAmount.value + cashAmount.value),
-          xp: '240'
-        }
+          id:      `#TRX-${res.data?.id?.substring(0, 5).toUpperCase() ?? 'NEW'}`,
+          partner: opportunity.value?.company?.name ?? 'Kurumsal Satıcı',
+          amount:  new Intl.NumberFormat('tr-TR').format(barterAmount.value + cashAmount.value),
+        },
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı + §4.2 allowOnlineResale
-    const code = error?.data?.code || error?.data?.response?.code
-    const message = error?.data?.message || error?.message || 'Teklif onaylanırken bir hata oluştu.'
+    const err = error as { data?: { code?: string; message?: string }; message?: string }
+    const code    = err?.data?.code
+    const message = err?.data?.message ?? err?.message ?? 'Teklif onaylanırken bir hata oluştu.'
     if (code === 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM') {
       errorBanner.value = {
         code,
@@ -150,7 +155,7 @@ const discountedCommission = computed(() => commission.value / 2)
 
             <div class="flex flex-col md:flex-row gap-8 p-6 rounded-2xl bg-slate-50 border border-slate-100">
               <div class="w-full md:w-48 h-36 rounded-xl overflow-hidden shrink-0 shadow-inner bg-slate-200">
-                <img :src="opportunity.image" class="w-full h-full object-cover" @error="(e: any) => e.target.src = 'https://placehold.co/600x400?text=Resim+Yuklenemedi'" />
+                <img :src="opportunity.image" class="w-full h-full object-cover" @error="(e: Event) => ((e.target as HTMLImageElement).src = '/placeholder-image.jpg')" />
               </div>
               <div class="flex-1">
                 <div class="flex justify-between items-start">

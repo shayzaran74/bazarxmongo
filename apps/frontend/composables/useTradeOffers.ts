@@ -44,7 +44,7 @@ export const useTradeOffers = () => {
     loading.value = true
     try {
       if (!myCompany.value) {
-        const compRes = await $api<Company>('/api/companies/me')
+        const compRes = await $api<Company>('/api/v1/companies/me')
         if (compRes.success && (compRes.data || (compRes as any).company)) {
           myCompany.value = compRes.data || (compRes as any).company
         }
@@ -52,7 +52,7 @@ export const useTradeOffers = () => {
 
       if (myCompany.value) {
         const res = await $api<TradeOfferRow[]>(
-          '/api/offers/my',
+          '/api/v1/offers/my',
           { query: { companyId: myCompany.value.id, type: activeTab.value } }
         )
         if (res.success && res.data) {
@@ -75,7 +75,7 @@ export const useTradeOffers = () => {
     try {
       if (s === 'ACCEPTED') {
         const res = await $api<AcceptResponse>(
-          `/api/offers/${id}/accept`,
+          `/api/v1/offers/${id}/accept`,
           { method: 'POST' }
         )
         const sessionId = (res as any).sessionId || res.data?.sessionId
@@ -93,7 +93,7 @@ export const useTradeOffers = () => {
       }
 
       const res = await $api<StatusResponse>(
-        `/api/offers/${id}/status`,
+        `/api/v1/offers/${id}/status`,
         { method: 'PATCH', body: { status: s } }
       )
       if (res.success) {

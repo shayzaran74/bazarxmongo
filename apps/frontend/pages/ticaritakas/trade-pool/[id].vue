@@ -61,11 +61,8 @@ const fetchOpportunity = async () => {
         images: normalizedImages
       }
     }
-  } catch (err: any) {
-    if (err.status === 404) {
-      error404.value = true
-    }
-    console.error('İlan detay hatası:', err)
+  } catch (err: unknown) {
+    if ((err as { status?: number })?.status === 404) error404.value = true
   } finally {
     loading.value = false
   }

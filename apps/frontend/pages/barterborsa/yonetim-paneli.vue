@@ -15,7 +15,7 @@
         </div>
       </div>
       <nav class="flex-1 space-y-1">
-        <NuxtLink to="/barterborsa/b2b-dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
+        <NuxtLink to="/ticaritakas/b2b-dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
           <span class="material-symbols-outlined">dashboard</span>
           <span class="font-medium text-sm">Dashboard</span>
         </NuxtLink>
@@ -73,10 +73,12 @@
           <div class="h-8 w-px bg-slate-200 mx-2" />
           <div class="flex items-center gap-3 cursor-pointer group">
             <div class="text-right">
-              <p class="text-xs font-bold text-primary-container">Ahmet Yılmaz</p>
-              <p class="text-[10px] text-slate-500">Global Admin</p>
+              <p class="text-xs font-bold text-primary-container">{{ authStore.fullName || '—' }}</p>
+              <p class="text-[10px] text-slate-500">Apex Üye</p>
             </div>
-            <div class="w-10 h-10 rounded-full border-2 border-primary-fixed bg-primary-container text-white flex items-center justify-center text-sm font-bold shadow-sm group-hover:scale-105 transition-transform">AY</div>
+            <div class="w-10 h-10 rounded-full border-2 border-primary-fixed bg-primary-container text-white flex items-center justify-center text-sm font-bold shadow-sm group-hover:scale-105 transition-transform">
+              {{ (authStore.fullName || '?').substring(0, 2).toUpperCase() }}
+            </div>
           </div>
         </div>
       </header>
@@ -96,7 +98,7 @@
               <span class="material-symbols-outlined text-primary-container bg-primary-fixed/30 p-2 rounded-lg">group</span>
             </div>
             <div>
-              <h3 class="text-2xl font-bold text-primary-container">1,248</h3>
+              <h3 class="text-2xl font-bold text-primary-container">{{ kpiTotal }}</h3>
               <p class="text-xs text-md3-secondary font-medium flex items-center gap-1 mt-1">
                 <span class="material-symbols-outlined text-[14px]">trending_up</span> +12 bu ay
               </p>
@@ -109,9 +111,9 @@
               <span class="material-symbols-outlined text-md3-secondary bg-secondary-container p-2 rounded-lg">verified</span>
             </div>
             <div>
-              <h3 class="text-2xl font-bold text-primary-container">1,192 / 56</h3>
+              <h3 class="text-2xl font-bold text-primary-container">{{ kpiActive }}</h3>
               <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div class="bg-md3-secondary h-full rounded-full" style="width: 95.5%;" />
+                <div class="bg-md3-secondary h-full rounded-full" :style="`width:${kpiPoolPct}%`" />
               </div>
             </div>
           </div>
@@ -122,7 +124,7 @@
               <span class="material-symbols-outlined text-tertiary-container bg-tertiary-fixed p-2 rounded-lg">account_balance_wallet</span>
             </div>
             <div>
-              <h3 class="text-2xl font-bold text-primary-container">₺45.2M</h3>
+              <h3 class="text-2xl font-bold text-primary-container">{{ kpiPool }}</h3>
               <p class="text-xs text-slate-500 font-medium mt-1">Toplam tanımlı barter hacmi</p>
             </div>
           </div>
@@ -133,7 +135,7 @@
               <span class="material-symbols-outlined text-error bg-error-container p-2 rounded-lg">analytics</span>
             </div>
             <div>
-              <h3 class="text-2xl font-bold text-primary-container">64.2%</h3>
+              <h3 class="text-2xl font-bold text-primary-container">{{ kpiPoolPct }}%</h3>
               <p class="text-xs text-slate-500 font-medium mt-1">Sistem geneli doluluk</p>
             </div>
           </div>
@@ -260,7 +262,7 @@
                 </table>
               </div>
               <div class="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <p class="text-xs text-slate-500">Toplam 1,248 kayıt arasından 1-30 arası gösteriliyor.</p>
+                <p class="text-xs text-slate-500">Toplam {{ dealers.length }} kayıt listeleniyor.</p>
                 <div class="flex items-center gap-2">
                   <button class="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-400" type="button"><span class="material-symbols-outlined text-base">chevron_left</span></button>
                   <button class="w-8 h-8 rounded-lg bg-md3-primary text-on-primary text-xs font-bold" type="button">1</button>
@@ -330,15 +332,138 @@ useHead({
   meta: [{ name: 'description', content: 'Kurumsal bayi paneli, akıllı kota yönetimi, trustscore analizi ve uyarı sistemi' }],
 })
 
-const dealers = [
-  { id: 1, initials: 'AY', name: 'Anadolu Yapı A.Ş.', location: 'İstanbul, Kadıköy', avatarClass: 'bg-primary-fixed/30 text-primary-container', membership: 'ELITE', membershipIcon: 'workspace_premium', membershipClass: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', trustScore: 92, trustLabel: 'GÜVENLİ', trustCircleClass: 'border-md3-secondary/30 text-md3-secondary', trustTextClass: 'text-md3-secondary', balance: '₺452.000', capPct: 42, capTextClass: 'text-primary-container', capBarClass: 'bg-primary-container' },
-  { id: 2, initials: 'ML', name: 'Mavi Lojistik', location: 'Ankara, Ostim', avatarClass: 'bg-secondary-fixed/30 text-md3-secondary', membership: 'PRIME', membershipIcon: 'star', membershipClass: 'bg-primary-fixed text-primary-container', trustScore: 68, trustLabel: 'ORTA', trustCircleClass: 'border-amber-500/30 text-amber-600', trustTextClass: 'text-amber-600', balance: '₺125.400', capPct: 88, capTextClass: 'text-amber-600', capBarClass: 'bg-amber-500' },
-  { id: 3, initials: 'ÖT', name: 'Özcan Tekstil', location: 'Bursa, Yıldırım', avatarClass: 'bg-slate-100 text-slate-500', membership: 'CORE', membershipIcon: 'trip_origin', membershipClass: 'bg-slate-100 text-slate-600 border border-slate-200', trustScore: 34, trustLabel: 'KRİTİK', trustCircleClass: 'border-error/30 text-error', trustTextClass: 'text-error', balance: '₺8.200', capPct: 12, capTextClass: 'text-slate-600', capBarClass: 'bg-slate-400' },
-]
+interface DealerRow {
+  id: string
+  initials: string
+  name: string
+  location: string
+  avatarClass: string
+  membership: string
+  membershipIcon: string
+  membershipClass: string
+  trustScore: number
+  trustLabel: string
+  trustCircleClass: string
+  trustTextClass: string
+  balance: string
+  capPct: number
+  capTextClass: string
+  capBarClass: string
+}
 
-const alerts = [
-  { title: 'Kota Sınırı', time: '14:20', dealer: 'Mavi Lojistik A.Ş.', desc: 'Kota doluluk oranı %94\'e ulaştı. Havuz limiti yükseltilmesi gerekebilir.', bgClass: 'bg-error/5 border-error', textClass: 'text-error' },
-  { title: 'TrustScore Düşüşü', time: '11:05', dealer: 'Özcan Tekstil', desc: 'Son 3 ayda 12 puanlık sert düşüş tespit edildi. İnceleme başlatın.', bgClass: 'bg-amber-50 border-amber-500', textClass: 'text-amber-600' },
-  { title: 'Vadesi Geçmiş', time: 'Dün', dealer: 'Korkmaz Mobilya', desc: 'Takas bekleyen ₺45.000 tutarında işlem vadesi 7 gün aşıldı.', bgClass: 'bg-error/5 border-error', textClass: 'text-error' },
-]
+interface AlertRow {
+  title: string
+  time: string
+  dealer: string
+  desc: string
+  bgClass: string
+  textClass: string
+}
+
+interface BarterUser {
+  id: string
+  name: string
+  wallet?: { barterBalance?: number; barterCreditLimit?: number }
+  tier?: string
+  trustScore?: number
+  city?: string
+}
+
+interface BarterInfoData {
+  barterBalance?: string
+  barterCreditLimit?: string
+  tier?: string
+}
+
+const TIER_LIMITS: Record<string, number> = { CORE: 150_000, PRIME: 500_000, ELITE: 1_500_000, APEX: 10_000_000 }
+
+const { $api } = useApi()
+const authStore = useAuthStore()
+
+const dealers = ref<DealerRow[]>([])
+const alerts  = ref<AlertRow[]>([])
+const kpiTotal    = ref('—')
+const kpiActive   = ref('—')
+const kpiPool     = ref('—')
+const kpiPoolPct  = ref(0)
+
+const trustLabel = (score: number): string => {
+  if (score >= 75) return 'GÜVENLİ'
+  if (score >= 40) return 'ORTA'
+  return 'KRİTİK'
+}
+const trustCircleClass = (score: number): string => {
+  if (score >= 75) return 'border-md3-secondary/30 text-md3-secondary'
+  if (score >= 40) return 'border-amber-500/30 text-amber-600'
+  return 'border-error/30 text-error'
+}
+const trustTextClass = (score: number): string => {
+  if (score >= 75) return 'text-md3-secondary'
+  if (score >= 40) return 'text-amber-600'
+  return 'text-error'
+}
+const capTextClass = (pct: number): string => (pct >= 80 ? 'text-amber-600' : 'text-primary-container')
+const capBarClass  = (pct: number): string => (pct >= 80 ? 'bg-amber-500' : 'bg-primary-container')
+
+const fetchData = async (): Promise<void> => {
+  const [usersRes, barterRes] = await Promise.all([
+    $api<{ success: boolean; data: BarterUser[] }>('/api/v1/admin/barter/users').catch(() => null),
+    $api<{ success: boolean; data: BarterInfoData }>('/api/v1/barter/info').catch(() => null),
+  ])
+
+  if (usersRes?.success && usersRes.data) {
+    const users = usersRes.data
+    const active = users.filter(u => (u.wallet?.barterBalance ?? 0) > 0).length
+    kpiTotal.value  = new Intl.NumberFormat('tr-TR').format(users.length)
+    kpiActive.value = `${active} / ${users.length - active}`
+
+    dealers.value = users.map(u => {
+      const bal    = Number(u.wallet?.barterBalance ?? 0)
+      const limit  = TIER_LIMITS[u.tier ?? 'CORE'] ?? 150_000
+      const capPct = limit > 0 ? Math.min(100, Math.round((bal / limit) * 100)) : 0
+      const score  = u.trustScore ?? 50
+      const initials = (u.name ?? '?').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()
+      return {
+        id:              u.id,
+        initials,
+        name:            u.name ?? '—',
+        location:        u.city ?? '—',
+        avatarClass:     'bg-primary-fixed/30 text-primary-container',
+        membership:      u.tier ?? 'CORE',
+        membershipIcon:  u.tier === 'ELITE' ? 'workspace_premium' : u.tier === 'PRIME' ? 'star' : 'trip_origin',
+        membershipClass: u.tier === 'ELITE' ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant' : u.tier === 'PRIME' ? 'bg-primary-fixed text-primary-container' : 'bg-slate-100 text-slate-600 border border-slate-200',
+        trustScore:      score,
+        trustLabel:      trustLabel(score),
+        trustCircleClass: trustCircleClass(score),
+        trustTextClass:  trustTextClass(score),
+        balance:         `₺${new Intl.NumberFormat('tr-TR').format(bal)}`,
+        capPct,
+        capTextClass:    capTextClass(capPct),
+        capBarClass:     capBarClass(capPct),
+      }
+    })
+
+    // %80+ kota doluluk oranına sahip bayi uyarıları
+    alerts.value = dealers.value
+      .filter(d => d.capPct >= 80)
+      .map(d => ({
+        title:   'Kota Sınırı',
+        time:    'Şimdi',
+        dealer:  d.name,
+        desc:    `Kota doluluk oranı %${d.capPct}'e ulaştı. Havuz limiti yükseltilmesi gerekebilir.`,
+        bgClass: 'bg-error/5 border-error',
+        textClass: 'text-error',
+      }))
+  }
+
+  if (barterRes?.success && barterRes.data) {
+    const d    = barterRes.data
+    const bal  = Number(d.barterBalance ?? 0)
+    const lim  = Number(d.barterCreditLimit ?? TIER_LIMITS.ELITE)
+    kpiPool.value    = `₺${new Intl.NumberFormat('tr-TR').format(bal)}`
+    kpiPoolPct.value = lim > 0 ? Math.min(100, Math.round((bal / lim) * 100)) : 0
+  }
+}
+
+onMounted(fetchData)
 </script>

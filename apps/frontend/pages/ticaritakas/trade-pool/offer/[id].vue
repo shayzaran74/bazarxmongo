@@ -11,51 +11,64 @@ const route = useRoute()
 const router = useRouter()
 const opportunityId = route.params.id
 
+interface OpportunityData {
+  title: string
+  listingCompany: string
+  value: number
+  image: string
+  city: string
+}
+
 // State
 const loading = ref(true)
-const opportunity = ref({
+const xpBalance = ref(0)
+const opportunity = ref<OpportunityData>({
   title: 'Yükleniyor...',
   listingCompany: '...',
   value: 0,
-  image: 'https://placehold.co/600x400?text=Yukleniyor...'
-} as any)
+  image: '/placeholder-image.jpg',
+  city: '',
+})
 
-const offerType = ref('hybrid') // hybrid, barter, cash, swap
+const offerType = ref('hybrid')
 const barterAmount = ref(0)
 const cashAmount = ref(0)
 const xpEnabled = ref(true)
 const note = ref('')
 
-const fetchOpportunity = async () => {
+const resolveImage = (images: string[] | undefined): string => {
+  if (!Array.isArray(images) || images.length === 0) return '/placeholder-image.jpg'
+  const img = images[0]
+  if (img.startsWith('http') || img.startsWith('data:')) return img
+  const clean = img.startsWith('/') ? img : `/${img}`
+  return clean.startsWith('/uploads') ? clean : `/uploads${clean}`
+}
+
+const fetchOpportunity = async (): Promise<void> => {
   loading.value = true
   try {
-    const res: any = await $api(`/api/v1/surplus/${opportunityId}`)
-    if (res.success && res.data) {
-      let imageUrl = 'https://placehold.co/600x400?text=Resim+Yok'
-      if (Array.isArray(res.data.images) && res.data.images.length > 0) {
-        const firstImg = res.data.images[0]
-        if (firstImg.startsWith('http') || firstImg.startsWith('data:')) {
-          imageUrl = firstImg
-        } else {
-          // Eğer yol /uploads ile başlamıyorsa ve bir relatif yolsa başına ekleyelim
-          const cleanPath = firstImg.startsWith('/') ? firstImg : `/${firstImg}`
-          imageUrl = cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`
-        }
-      }
+    const [surplusRes, barterRes] = await Promise.all([
+      $api<{ success: boolean; data: Record<string, unknown> }>(`/api/v1/surplus/${opportunityId}`),
+      $api<{ success: boolean; data: { commissionXP?: string } }>('/api/v1/barter/info').catch(() => null),
+    ])
 
+    if (surplusRes.success && surplusRes.data) {
+      const d = surplusRes.data
       opportunity.value = {
-        title: res.data.title,
-        listingCompany: res.data.company?.name || 'Kurumsal Satıcı',
-        value: Number(res.data.unitPrice) || 0,
-        image: imageUrl
+        title:          String(d.title ?? ''),
+        listingCompany: (d.company as { name?: string })?.name ?? 'Kurumsal Satıcı',
+        value:          Number(d.unitPrice ?? 0),
+        image:          resolveImage(d.images as string[] | undefined),
+        city:           String(d.city ?? ''),
       }
-      // Başlangıç değerlerini ata (Default: %60 Barter, %40 Nakit)
       barterAmount.value = Math.round(opportunity.value.value * 0.6)
-      cashAmount.value = opportunity.value.value - barterAmount.value
+      cashAmount.value   = opportunity.value.value - barterAmount.value
     }
-  } catch (error) {
-    console.error('İlan çekilemedi:', error)
-  } finally {
+
+    if (barterRes?.success && barterRes.data) {
+      xpBalance.value = Number(barterRes.data.commissionXP ?? 0)
+    }
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
   }
 }
@@ -105,7 +118,7 @@ onMounted(() => {
             <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">GÜVEN SKORUNUZ</span>
             <span class="text-xs font-black text-green-600 uppercase">Yüksek Güvenilirlik</span>
           </div>
-          <div class="w-8 h-8 rounded-full border-2 border-green-500 flex items-center justify-center text-[10px] font-black text-green-700 bg-white shadow-inner">82</div>
+          <div class="w-8 h-8 rounded-full border-2 border-green-500 flex items-center justify-center text-[10px] font-black text-green-700 bg-white shadow-inner">—</div>
         </div>
       </div>
     </header>
@@ -122,7 +135,7 @@ onMounted(() => {
           <!-- Hedef Ürün Kartı -->
           <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col md:flex-row">
             <div class="md:w-1/3 aspect-video md:aspect-square relative overflow-hidden bg-slate-100">
-              <img :src="opportunity.image" class="w-full h-full object-cover" @error="(e: any) => e.target.src = 'https://placehold.co/600x400?text=Resim+Yuklenemedi'" />
+              <img :src="opportunity.image" class="w-full h-full object-cover" @error="(e: Event) => ((e.target as HTMLImageElement).src = '/placeholder-image.jpg')" />
               <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
             <div class="p-8 md:w-2/3 flex flex-col justify-center">
@@ -132,12 +145,12 @@ onMounted(() => {
               </div>
               <h3 class="text-xl font-black text-[#002444] mb-4">{{ opportunity.title }}</h3>
               <div class="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                <span class="flex items-center gap-1">
+                <span v-if="opportunity.city" class="flex items-center gap-1">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-blue-500">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                   </svg>
-                  İstanbul, TR
+                  {{ opportunity.city }}, TR
                 </span>
                 <span class="flex items-center gap-1 text-green-600">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
@@ -231,7 +244,7 @@ onMounted(() => {
               <p class="text-xs font-bold leading-relaxed mb-6 opacity-80">XP puanlarınızı kullanarak işlem komisyonunu %50 indirimli ödeyin.</p>
               <div class="bg-white/20 p-4 rounded-2xl flex justify-between items-center backdrop-blur-md">
                 <span class="text-[9px] font-black uppercase">KULLANILABİLİR XP</span>
-                <span class="text-sm font-black">2,450 XP</span>
+                <span class="text-sm font-black">{{ new Intl.NumberFormat('tr-TR').format(xpBalance) }} XP</span>
               </div>
             </div>
           </div>

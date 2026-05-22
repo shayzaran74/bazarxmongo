@@ -4,65 +4,77 @@ const route = useRoute()
 const router = useRouter()
 const originalOfferId = route.params.id
 
+interface OfferData {
+  id: string
+  cashAmount?: number
+  offeredItems?: { estimatedValue?: number }[]
+  fromCompany?: { id: string; name: string }
+  toCompany?: { id: string; name: string }
+  status?: string
+}
+
+const toast = useNuxtApp().$toast as { error: (msg: string) => void; success: (msg: string) => void }
+
 const loading = ref(true)
-const originalOffer = ref<any>(null)
+const originalOffer = ref<OfferData | null>(null)
 
-// Form State
-const barterRatio = ref(66)
-const totalAmount = ref(120000)
-const deliveryDate = ref('2024-06-15')
+// Form State — bugün + 14 gün
+const defaultDelivery = new Date(Date.now() + 14 * 86_400_000).toISOString().split('T')[0]
+const barterRatio   = ref(66)
+const totalAmount   = ref(0)
+const deliveryDate  = ref(defaultDelivery)
 const warrantyMonth = ref('24 Ay')
-const xpEnabled = ref(true)
-const note = ref('')
+const xpEnabled     = ref(true)
+const note          = ref('')
 
-const barterAmount = computed(() => (totalAmount.value * barterRatio.value) / 100)
-const cashAmount = computed(() => totalAmount.value - barterAmount.value)
+const barterAmount = computed((): number => (totalAmount.value * barterRatio.value) / 100)
+const cashAmount   = computed((): number => totalAmount.value - barterAmount.value)
 
-const fetchOffer = async () => {
+const fetchOffer = async (): Promise<void> => {
   loading.value = true
   try {
-    const res: any = await $api(`/api/v1/offers/${originalOfferId}`)
+    const res = await $api<{ success: boolean; data: OfferData }>(`/api/v1/offers/${originalOfferId}`)
     if (res.success && res.data) {
       originalOffer.value = res.data
-      totalAmount.value = Number(res.data.cashAmount || 0) + (res.data.offeredItems?.reduce((acc: any, i: any) => acc + Number(i.estimatedValue || 0), 0) || 0)
+      const itemsTotal = res.data.offeredItems?.reduce(
+        (acc, i) => acc + Number(i.estimatedValue ?? 0), 0,
+      ) ?? 0
+      totalAmount.value = Number(res.data.cashAmount ?? 0) + itemsTotal
     }
-  } catch (error) {
-    console.error('Teklif çekilemedi:', error)
-  } finally {
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
   }
 }
 
 const isSubmitting = ref(false)
-const submitCounterOffer = async () => {
+const submitCounterOffer = async (): Promise<void> => {
   if (isSubmitting.value) return
   isSubmitting.value = true
-  
   try {
-    const res: any = await $api(`/api/v1/offers/${originalOfferId}/counter`, {
+    const res = await $api<{ success: boolean }>(`/api/v1/offers/${originalOfferId}/counter`, {
       method: 'POST',
       body: {
-        barterAmount: barterAmount.value,
-        cashAmount: cashAmount.value,
-        deliveryDate: deliveryDate.value,
-        warranty: warrantyMonth.value,
-        xpEnabled: xpEnabled.value,
-        note: note.value
-      }
+        barterAmount:  barterAmount.value,
+        cashAmount:    cashAmount.value,
+        deliveryDate:  deliveryDate.value,
+        warranty:      warrantyMonth.value,
+        xpEnabled:     xpEnabled.value,
+        note:          note.value,
+      },
     })
-    
     if (res.success) {
       router.push({
         path: '/ticaritakas/trade-pool/offer/counter/success',
         query: {
-          partner: originalOffer.value?.fromCompany?.name || 'Aras Endüstriyel Ltd.',
-          amount: new Intl.NumberFormat('tr-TR').format(totalAmount.value),
-          ratio: `%${barterRatio.value} / %${100 - barterRatio.value}`
-        }
+          partner: originalOffer.value?.fromCompany?.name ?? 'Karşı Taraf',
+          amount:  new Intl.NumberFormat('tr-TR').format(totalAmount.value),
+          ratio:   `%${barterRatio.value} / %${100 - barterRatio.value}`,
+        },
       })
     }
-  } catch (error: any) {
-    alert(error.data?.message || 'Karşı teklif gönderilirken bir hata oluştu.')
+  } catch (error: unknown) {
+    const msg = (error as { data?: { message?: string } })?.data?.message ?? 'Karşı teklif gönderilirken bir hata oluştu.'
+    toast.error(msg)
   } finally {
     isSubmitting.value = false
   }

@@ -276,11 +276,19 @@ const isVendor = computed(() => {
 const loading = ref(true)
 const myCompany = ref<any>(null)
 
+// Tier → havuz limiti eşlemesi (MasterPlan v4.3 §3)
+const TIER_LIMITS: Record<string, number> = {
+  CORE:  150_000,
+  PRIME: 500_000,
+  ELITE: 1_500_000,
+  APEX:  10_000_000,
+}
+
 const metrics = ref([
-  { label: 'TAKAS HAVUZU BAKİYESİ', value: '0 TL', icon: 'account_balance_wallet', color: 'bg-primary-container', iconColor: 'text-blue-600', bar: true, barPct: 0, sub: 'Limit: 1,500,000 TL' },
-  { label: 'BEKLEYEN TEKLİFLER', value: '0', icon: 'stars', color: 'bg-tertiary-container', iconColor: 'text-tertiary-container', sub: 'İşlem bekleniyor' },
-  { label: 'AKTİF İLANLAR', value: '0', icon: 'gavel', color: 'bg-primary-container', iconColor: 'text-primary-container', sub: 'Takas havuzunda' },
-  { label: 'TASARRUF EDİLEN KOMİSYON', value: '0 TL', icon: 'savings', color: 'bg-secondary-container', iconColor: 'text-md3-secondary', sub: 'XP çarpanları ile' },
+  { label: 'TAKAS HAVUZU BAKİYESİ', value: '0 TL', icon: 'account_balance_wallet', color: 'bg-primary-container', iconColor: 'text-blue-600', bar: true, barPct: 0, sub: 'Limit: 1.500.000 TL' },
+  { label: 'BEKLEYEN TEKLİFLER',    value: '0',    icon: 'stars',                  color: 'bg-tertiary-container', iconColor: 'text-tertiary-container', sub: 'İşlem bekleniyor' },
+  { label: 'AKTİF İLANLAR',        value: '0',    icon: 'gavel',                  color: 'bg-primary-container', iconColor: 'text-primary-container',  sub: 'Takas havuzunda' },
+  { label: 'XP BAKİYESİ',          value: '0 XP', icon: 'savings',                color: 'bg-secondary-container', iconColor: 'text-md3-secondary',    sub: 'Komisyon indiriminde kullanılır' },
 ])
 
 const opportunities = ref<any[]>([])
@@ -294,41 +302,58 @@ const fetchDashboardData = async () => {
       myCompany.value = compRes.data || (compRes as any).company || null
     }
 
-    const [surplusRes, offersRes] = await Promise.all([
+    const [surplusRes, offersRes, barterRes] = await Promise.all([
       $api<any>('/api/v1/surplus', { query: { limit: 4 } }),
       $api<any>('/api/v1/offers/my'),
+      $api<any>('/api/v1/barter/info').catch(() => null),
     ])
 
-    if (surplusRes.success) {
+    if (surplusRes?.success) {
       const items = (surplusRes as any).items || surplusRes.data || []
       opportunities.value = items.slice(0, 4).map((item: any) => ({
-        id: item.id,
-        title: item.title,
+        id:       item.id,
+        title:    item.title,
         category: item.category || 'Genel',
-        desc: item.description || 'Açıklama bulunmuyor.',
-        value: `${item.unitPrice || 0} TL`,
-        image: Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null,
-        icon: 'inventory_2'
+        desc:     item.description || 'Açıklama bulunmuyor.',
+        value:    `${item.unitPrice || 0} TL`,
+        image:    Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null,
+        icon:     'inventory_2',
       }))
       metrics.value[2].value = String(surplusRes.meta?.total || items.length)
     }
 
-    if (offersRes.success) {
+    if (offersRes?.success) {
       const allOffers = (offersRes as any).offers || offersRes.data || []
       recentTx.value = allOffers.slice(0, 5).map((offer: any) => ({
-        rawId: offer.id,
-        surplusId: offer.surplusItemId,
-        id: `#TRX-${offer.id.substring(0, 5).toUpperCase()}`,
-        partner: offer.toCompany?.name || offer.fromCompany?.name || 'Karşı Taraf',
+        rawId:    offer.id,
+        id:       `#TRX-${offer.id.substring(0, 5).toUpperCase()}`,
+        partner:  offer.toCompany?.name || offer.fromCompany?.name || 'Karşı Taraf',
         category: 'Ticari Takas',
-        date: new Date(offer.createdAt).toLocaleDateString('tr-TR'),
-        value: `${offer.cashAmount || 0}`,
-        status: offer.status === 'PENDING' ? 'BEKLEMEDE' : offer.status,
-        statusClass: offer.status === 'COMPLETED' || offer.status === 'ACCEPTED' 
-          ? 'bg-secondary-container text-on-secondary-fixed-variant' 
-          : 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+        date:     new Date(offer.createdAt).toLocaleDateString('tr-TR'),
+        value:    `${offer.cashAmount || 0}`,
+        status:   offer.status === 'PENDING' ? 'BEKLEMEDE' : offer.status,
+        statusClass: (offer.status === 'COMPLETED' || offer.status === 'ACCEPTED')
+          ? 'bg-secondary-container text-on-secondary-fixed-variant'
+          : 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
       }))
       metrics.value[1].value = String(allOffers.filter((o: any) => o.status === 'PENDING').length)
+    }
+
+    // Barter info → havuz bakiyesi + XP metrikleri
+    if (barterRes?.success && barterRes.data) {
+      const info = barterRes.data
+      const barterBal = Number(info.barterBalance ?? 0)
+      const tier: string = (info.tier as string) || 'ELITE'
+      const poolLimit = TIER_LIMITS[tier] ?? TIER_LIMITS.ELITE
+      const barPct = poolLimit > 0 ? Math.min(100, Math.round((barterBal / poolLimit) * 100)) : 0
+      const formattedBal   = new Intl.NumberFormat('tr-TR').format(barterBal)
+      const formattedLimit = new Intl.NumberFormat('tr-TR').format(poolLimit)
+      metrics.value[0].value  = `${formattedBal} TL`
+      metrics.value[0].sub    = `Limit: ${formattedLimit} TL`
+      metrics.value[0].barPct = barPct
+
+      const commXP = Number(info.commissionXP ?? 0)
+      metrics.value[3].value = `${new Intl.NumberFormat('tr-TR').format(commXP)} XP`
     }
   } catch {
     // Dashboard verisi yüklenemedi — metrikler sıfır gösterilecek

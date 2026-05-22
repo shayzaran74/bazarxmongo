@@ -121,14 +121,14 @@
               Kurumsal Araçlar
             </NuxtLink>
             <NuxtLink
-              to="/barterborsa/ticari-detay"
+              to="/ticaritakas/trade-pool/all"
               class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
             >
               <span class="text-base">🔄</span>
-              Ticari Takas Detay
+              Takas Havuzu
             </NuxtLink>
             <NuxtLink
-              to="/barterborsa/b2b-dashboard"
+              to="/ticaritakas/b2b-dashboard"
               class="flex items-center gap-2 px-4 py-3 bg-white border border-amber-100 rounded-xl text-sm font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
             >
               <span class="text-base">💼</span>
@@ -170,15 +170,13 @@
   </AccessGuard>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({
-    layout: 'default'
+  layout: 'default',
 })
 
 useHead({
-    title: 'Barter Borsa - Çok Yakında',
-    meta: [
-        { name: 'description', content: 'Barter Borsa ekosistemi çok yakında sizlerle. Elite ve Apex üyelere özel takas platformu.' }
-    ]
+  title: 'Barter Borsa - Çok Yakında',
+  meta: [{ name: 'description', content: 'Barter Borsa ekosistemi çok yakında sizlerle. Elite ve Apex üyelere özel takas platformu.' }],
 })
 </script>

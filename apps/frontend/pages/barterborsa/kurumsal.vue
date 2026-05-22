@@ -61,7 +61,7 @@
             <span class="material-symbols-outlined">help_outline</span>
           </button>
           <div class="h-8 w-8 rounded-full overflow-hidden border-2 border-primary-container bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm ml-2">
-            AK
+            {{ (useAuthStore().fullName || 'AK').substring(0, 2).toUpperCase() }}
           </div>
         </div>
       </header>
@@ -242,7 +242,13 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
-                    <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-slate-50 transition-colors">
+                    <tr v-if="loadingLogs">
+                      <td colspan="5" class="px-6 py-10 text-center text-slate-400 text-sm">Yükleniyor…</td>
+                    </tr>
+                    <tr v-else-if="auditLogs.length === 0">
+                      <td colspan="5" class="px-6 py-10 text-center text-slate-400 text-sm">Kayıt bulunamadı.</td>
+                    </tr>
+                    <tr v-else v-for="log in auditLogs" :key="log.id" class="hover:bg-slate-50 transition-colors">
                       <td class="px-6 py-4 text-sm font-medium text-slate-600">{{ log.time }}</td>
                       <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
@@ -312,7 +318,7 @@
 
           <!-- Footer -->
           <footer class="pt-6 pb-10 flex justify-between items-center text-slate-400 border-t border-slate-100">
-            <p class="text-xs">© 2024 TicariTakas Enterprise. Tüm hakları saklıdır.</p>
+            <p class="text-xs">© {{ new Date().getFullYear() }} TicariTakas Enterprise. Tüm hakları saklıdır.</p>
             <div class="flex items-center gap-2">
               <div class="h-px w-8 bg-slate-300" />
               <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Master Plan v4.3</span>
@@ -336,10 +342,66 @@ useHead({
   meta: [{ name: 'description', content: 'TicariTakas kurumsal araçlar paneli — bayii ağı, smart cap ve audit log yönetimi' }],
 })
 
-const auditLogs = [
-  { id: 1, time: '2023-10-27 14:45:12', initials: 'AK', user: 'A. Karahan', action: 'Akıllı Kota Eşiği Değiştirildi', ip: '192.168.1.104', status: 'SUCCESS', avatarClass: 'bg-primary-container text-on-primary', statusClass: 'bg-green-100 text-green-700' },
-  { id: 2, time: '2023-10-27 14:42:05', initials: 'SYS', user: 'System Automation', action: 'API Anahtarı Döndürme (Periyodik)', ip: 'INTERNAL', status: 'INFO', avatarClass: 'bg-slate-300 text-slate-700', statusClass: 'bg-blue-100 text-blue-700' },
-  { id: 3, time: '2023-10-27 13:12:59', initials: 'MS', user: 'M. Soydan', action: 'Yeni Kullanıcı Rolü: "Şube Müdürü"', ip: '45.22.19.04', status: 'SUCCESS', avatarClass: 'bg-primary-container text-on-primary', statusClass: 'bg-green-100 text-green-700' },
-  { id: 4, time: '2023-10-27 12:44:21', initials: 'EXT', user: 'Unknown (External)', action: 'Başarısız Giriş Denemesi', ip: '201.34.11.82', status: 'FAILED', avatarClass: 'bg-red-100 text-red-600', statusClass: 'bg-red-100 text-red-700' },
-]
+interface AuditLogRow {
+  id: number | string
+  time: string
+  initials: string
+  user: string
+  action: string
+  ip: string
+  status: string
+  avatarClass: string
+  statusClass: string
+}
+
+interface RawAuditLog {
+  id?: string
+  createdAt?: string
+  actorId?: string
+  actorName?: string
+  action?: string
+  ipAddress?: string
+  severity?: string
+}
+
+const { $api } = useApi()
+
+const auditLogs = ref<AuditLogRow[]>([])
+const loadingLogs = ref(true)
+
+const statusClass = (severity: string | undefined): string => {
+  switch ((severity ?? '').toUpperCase()) {
+    case 'HIGH':   return 'bg-red-100 text-red-700'
+    case 'WARN':   return 'bg-amber-100 text-amber-700'
+    default:       return 'bg-blue-100 text-blue-700'
+  }
+}
+
+const fetchLogs = async (): Promise<void> => {
+  loadingLogs.value = true
+  try {
+    const res = await $api<{ success: boolean; data?: RawAuditLog[] }>('/api/v1/admin/barter/trust-scores')
+    if (res.success && res.data) {
+      auditLogs.value = res.data.slice(0, 10).map((log, i) => {
+        const name = log.actorName ?? log.actorId ?? 'Sistem'
+        const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 3).toUpperCase()
+        return {
+          id:          log.id ?? i,
+          time:        log.createdAt ? new Date(log.createdAt).toLocaleString('tr-TR') : '—',
+          initials,
+          user:        name,
+          action:      log.action ?? '—',
+          ip:          log.ipAddress ?? 'INTERNAL',
+          status:      (log.severity ?? 'INFO').toUpperCase(),
+          avatarClass: 'bg-primary-container text-on-primary',
+          statusClass: statusClass(log.severity),
+        }
+      })
+    }
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
+    loadingLogs.value = false
+  }
+}
+
+onMounted(fetchLogs)
 </script>

@@ -22,8 +22,8 @@ export const useLayoutLogic = () => {
   const geoLoading           = ref(false)
   const geoError             = ref('')
   const detectedCity = ref('')
-  const sideAds = ref<any[]>([])
-  const layoutCategories = ref<any[]>([])
+  const sideAds = ref<Record<string, unknown>[]>([])
+  const layoutCategories = ref<Record<string, unknown>[]>([])
 
   // ── Ecosystem ─────────────────────────────────────────────
   const currentEcosystem = computed(() => {
@@ -40,14 +40,14 @@ export const useLayoutLogic = () => {
 
   const siteLogoUrl = computed(() => {
     const logo = siteSettingsStore.settings[`${currentEcosystem.value}_siteLogo`] || siteSettingsStore.settings.siteLogo
-    return logo ? resolveImageUrl(logo as any) : null
+    return logo ? resolveImageUrl(logo as string | { url?: string } | null | undefined) : null
   })
 
   // ── Side Ads ──────────────────────────────────────────────
   const fetchSideAds = async (city = '') => {
     try {
       const ecoMap: Record<string, string> = { ticaritakas: 'TICARITAKAS', barterborsa: 'BARTER_BORSA', bazarx: 'BAZARX' }
-      const res: any = await $api('/api/v1/side-ads', {
+      const res = await $api<{ success: boolean; data: Record<string, unknown>[] }>('/api/v1/side-ads', {
         query: { city: city && city !== 'Tüm Türkiye' ? city : undefined, ecosystem: ecoMap[currentEcosystem.value] }
       })
       console.log('useLayoutLogic - fetchSideAds result:', res)
@@ -67,7 +67,7 @@ export const useLayoutLogic = () => {
       } else {
         const cookie = useCookie('user_location')
         cookie.value = city
-        if (!authStore.user) authStore.user = { id: 'guest', city } as any
+        if (!authStore.user) authStore.user = { id: 'guest', city } as unknown as UserDTO
         else (authStore.user as UserDTO).city = city
       }
       localStorage.setItem('detected_location', JSON.stringify({ city, timestamp: Date.now() }))
@@ -142,7 +142,7 @@ export const useLayoutLogic = () => {
         } catch { /* fall through to IP */ }
       }
       // IP fallback
-      const resp: any = await $api('/api/settings/detect-location')
+      const resp = await $api<{ success: boolean; data: { city?: string; regionName?: string } }>('/api/settings/detect-location')
       if (resp.success && (resp.data?.city || resp.data?.regionName)) {
         const city = matchCity(resp.data.city || '', resp.data.regionName || '')
         detectedCity.value = city
@@ -150,8 +150,8 @@ export const useLayoutLogic = () => {
       } else {
         throw new Error('Şehir bilgisi tespit edilemedi.')
       }
-    } catch (err: any) {
-      geoError.value = err?.message || 'Konum tespit edilemedi'
+    } catch (err: unknown) {
+      geoError.value = (err as Error)?.message || 'Konum tespit edilemedi'
     } finally {
       geoLoading.value = false
     }
@@ -189,7 +189,7 @@ export const useLayoutLogic = () => {
     
     // Fetch categories for layout
     try {
-      const res: any = await $api('/api/categories', { query: { all: true } })
+      const res = await $api<{ success: boolean; data: { items?: Record<string, unknown>[] } | Record<string, unknown>[] }>('/api/categories', { query: { all: true } })
       if (res.success && res.data) {
         layoutCategories.value = Array.isArray(res.data.items) ? res.data.items : (Array.isArray(res.data) ? res.data : [])
       }
@@ -199,7 +199,7 @@ export const useLayoutLogic = () => {
       cartStore.fetchCart()
       wishlistStore.fetchWishlist()
       try {
-        const res: any = await $api('/api/companies/me').catch(() => null)
+        const res = await $api<{ data?: { id?: string } }>('/api/v1/companies/me').catch(() => null)
         connect(res?.data?.id || undefined)
       } catch { connect() }
     }

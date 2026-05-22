@@ -161,12 +161,35 @@ const isVendor = computed(() => {
   return authStore.isAuthenticated && (authStore.user?.role === 'VENDOR' || authStore.user?.role === 'ADMIN' || authStore.user?.role === 'SUPER_ADMIN')
 })
 
+interface SurplusListItem {
+  id: string
+  title: string
+  description?: string
+  category?: string
+  categoryName?: string
+  city?: string
+  unitPrice?: number
+  images?: string[]
+  company?: { id: string; name: string }
+}
+
+interface SurplusCategory {
+  id: string
+  name: string
+  slug?: string
+}
+
+interface SurplusMeta {
+  total: number
+  totalPages: number
+}
+
 // State
 const loading = ref(true)
-const items = ref([] as any[])
+const items = ref<SurplusListItem[]>([])
 const totalItems = ref(0)
 const totalPages = ref(1)
-const categories = ref([] as any[])
+const categories = ref<SurplusCategory[]>([])
 const cities = ['ISTANBUL', 'ANKARA', 'IZMIR', 'BURSA', 'KOCAELI', 'HATAY']
 
 // Filters
@@ -177,43 +200,40 @@ const page = ref(1)
 const limit = 12
 
 // Fetch Functions
-const fetchCategories = async () => {
+const fetchCategories = async (): Promise<void> => {
   try {
-    const res: any = await $api('/api/v1/surplus/categories')
-    if (res.success) {
-      categories.value = res.data || []
-    }
-  } catch (error) {
-    console.warn('Kategoriler yüklenemedi:', error)
-  }
+    const res = await $api<{ success: boolean; data?: SurplusCategory[] }>('/api/v1/surplus/categories')
+    if (res.success) categories.value = res.data ?? []
+  } catch { /* hata filtresi tarafından işlenir */ }
 }
 
-const fetchItems = async () => {
+const fetchItems = async (): Promise<void> => {
   loading.value = true
   try {
-    const res: any = await $api('/api/v1/surplus', {
-      query: {
-        page: page.value,
-        limit,
-        q: searchQuery.value,
-        categoryId: selectedCategory.value,
-        city: selectedCity.value
-      }
-    })
+    const res = await $api<{ success: boolean; data?: SurplusListItem[]; meta?: SurplusMeta }>(
+      '/api/v1/surplus',
+      {
+        query: {
+          page:       page.value,
+          limit,
+          q:          searchQuery.value  || undefined,
+          categoryId: selectedCategory.value || undefined,
+          city:       selectedCity.value || undefined,
+        },
+      },
+    )
     if (res.success) {
-      items.value = res.data || []
-      totalItems.value = res.meta?.total || 0
-      totalPages.value = res.meta?.totalPages || 1
+      items.value      = res.data ?? []
+      totalItems.value = res.meta?.total ?? 0
+      totalPages.value = res.meta?.totalPages ?? 1
     }
-  } catch (error) {
-    console.error('Liste yükleme hatası:', error)
-  } finally {
+  } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
   }
 }
 
 // Helpers
-const formatPrice = (p: any) => {
+const formatPrice = (p: number | string | undefined): string => {
   if (!p) return '0'
   return new Intl.NumberFormat('tr-TR').format(Number(p))
 }
@@ -230,8 +250,8 @@ watch([selectedCategory, selectedCity, page], () => {
   fetchItems()
 })
 
-let searchTimeout: any = null
-const debouncedSearch = () => {
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+const debouncedSearch = (): void => {
   if (searchTimeout) clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
     page.value = 1
