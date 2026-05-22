@@ -37,13 +37,13 @@ export function useSubscription() {
   const eligibility  = computed(() => membership.value.upgradeEligibility)
 
   async function fetchPlans() {
-    const res = await $api<MembershipPlan[]>('/api/subscriptions/plans')
+    const res = await $api<MembershipPlan[]>('/api/v1/subscriptions/plans')
     plans.value = Array.isArray(res.data) ? res.data : []
   }
 
   async function fetchMyMembership() {
     try {
-      const res = await $api<MyMembership>('/api/subscriptions/me')
+      const res = await $api<MyMembership>('/api/v1/subscriptions/me')
       membership.value = res.data ?? { hasSubscription: false }
     } catch { membership.value = { hasSubscription: false } }
   }
@@ -51,7 +51,7 @@ export function useSubscription() {
   async function subscribe(tier: SubscriptionTier, annual = false) {
     pending.value = true; error.value = null
     try {
-      const res = await $api('/api/subscriptions/subscribe', {
+      const res = await $api('/api/v1/subscriptions/subscribe', {
         method: 'POST', body: { tier, annual },
       })
       await fetchMyMembership()
@@ -65,7 +65,7 @@ export function useSubscription() {
   async function upgrade(newTier: SubscriptionTier, xpAmount = 0) {
     pending.value = true; error.value = null
     try {
-      const res = await $api('/api/subscriptions/upgrade', {
+      const res = await $api('/api/v1/subscriptions/upgrade', {
         method: 'POST', body: { newTier, xpAmount },
       })
       await fetchMyMembership()
@@ -77,13 +77,13 @@ export function useSubscription() {
   }
 
   async function cancel() {
-    await $api('/api/subscriptions/cancel', { method: 'POST' })
+    await $api('/api/v1/subscriptions/cancel', { method: 'POST' })
     await fetchMyMembership()
   }
 
   async function calcMenuPrice(originalPrice: number) {
     const res = await $api<{ originalPrice: number; totalPaid: number; savings: number }>(
-      '/api/subscriptions/menu-price-calc', { method: 'POST', body: { originalPrice } },
+      '/api/v1/subscriptions/menu-price-calc', { method: 'POST', body: { originalPrice } },
     )
     return res.data
   }

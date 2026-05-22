@@ -1,10 +1,10 @@
 export const useVendorEcosystem = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
-  const ecosystem = ref<any>(null)
-  const members = ref<any[]>([])
-  const auditLogs = ref<any[]>([])
+  const ecosystem = ref<Record<string, unknown> | null>(null)
+  const members = ref<Record<string, unknown>[]>([])
+  const auditLogs = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const creating = ref(false)
   const isOwner = ref(false)
@@ -20,30 +20,26 @@ export const useVendorEcosystem = () => {
     error.value = null
     try {
       const [ecoRes, auditRes, profileRes] = await Promise.allSettled([
-        $api<any>('/api/ecosystem/my'),
-        $api<any>('/api/ecosystem/audit'),
-        $api<any>('/api/v1/vendors/me'),
+        $api<{ success: boolean; ecosystem?: Record<string, unknown>; isOwner?: boolean }>('/api/v1/ecosystem/my'),
+        $api<{ success: boolean; data?: Record<string, unknown>[] }>('/api/v1/ecosystem/audit'),
+        $api<{ data?: { tier?: string }; tier?: string }>('/api/v1/vendors/me'),
       ])
 
-      const ecoResAny = ecoRes as any
-      const auditResAny = auditRes as any
-      const profileResAny = profileRes as any
-
-      if (ecoRes.status === 'fulfilled' && ecoResAny.value?.success) {
-        ecosystem.value = ecoResAny.value.ecosystem
-        isOwner.value = ecoResAny.value.isOwner
-        members.value = ecosystem.value?.members || []
+      if (ecoRes.status === 'fulfilled' && ecoRes.value?.success) {
+        ecosystem.value = ecoRes.value.ecosystem
+        isOwner.value = ecoRes.value.isOwner
+        members.value = (ecosystem.value?.members as Record<string, unknown>[]) || []
       }
 
-      if (auditRes.status === 'fulfilled' && auditResAny.value?.success) {
-        auditLogs.value = auditResAny.value.data || auditResAny.value || []
+      if (auditRes.status === 'fulfilled' && auditRes.value?.success) {
+        auditLogs.value = auditRes.value.data || []
       }
 
       // Vendor tier'ı çek (APEX kontrolü için)
       if (profileRes.status === 'fulfilled') {
-        vendorTier.value = profileResAny.value?.data?.tier ?? profileResAny.value?.tier ?? null
+        vendorTier.value = profileRes.value?.data?.tier ?? profileRes.value?.tier ?? null
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       error.value = 'Ekosistem verileri alınamadı'
     } finally {
       loading.value = false
@@ -52,7 +48,7 @@ export const useVendorEcosystem = () => {
 
   const inviteMember = async (memberVendorId: string) => {
     try {
-      await $api('/api/ecosystem/members', {
+      await $api('/api/v1/ecosystem/members', {
         method: 'POST',
         body: { memberVendorId }
       })
@@ -67,7 +63,7 @@ export const useVendorEcosystem = () => {
   const createEcosystem = async (name: string, description?: string) => {
     creating.value = true
     try {
-      const res = await $api<any>('/api/ecosystem/create', {
+      const res = await $api<{ success: boolean }>('/api/v1/ecosystem/create', {
         method: 'POST',
         body: { name, description }
       })
@@ -77,13 +73,14 @@ export const useVendorEcosystem = () => {
         return true
       }
       return false
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Master Plan §4.1 — APEX olmayan vendor ekosistem kuramaz
-      const code = e?.data?.code || e?.data?.response?.code
+      const errObj = e as { data?: { code?: string; message?: string } }
+      const code = errObj?.data?.code
       if (code === 'ECOSYSTEM_REQUIRES_APEX') {
         $toast.error('Ekosistem kurabilmek için APEX B2B üyeliği gereklidir.')
       } else {
-        $toast.error(e?.data?.message || 'Oluşturulamadı')
+        $toast.error(errObj?.data?.message || 'Oluşturulamadı')
       }
       return false
     } finally {
@@ -92,9 +89,8 @@ export const useVendorEcosystem = () => {
   }
 
   const removeMember = async (memberId: string) => {
-    if (!confirm('Bu üyeyi ekosistemden çıkarmak istediğinize emin misiniz?')) return
     try {
-      await $api(`/api/ecosystem/members/${memberId}`, { method: 'DELETE' })
+      await $api(`/api/v1/ecosystem/members/${memberId}`, { method: 'DELETE' })
       $toast.success('Üye çıkarıldı')
       await fetchData()
     } catch {

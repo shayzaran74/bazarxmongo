@@ -22,7 +22,7 @@ export const useVendorBrands = () => {
   const fetchBrands = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/vendor-brands')
+      const res = await $api<any>('/api/v1/vendor-brands')
       brands.value = res.data || []
       brandStats.total = brands.value.length
       brandStats.approved = brands.value.filter((b: any) => b.status === 'APPROVED').length

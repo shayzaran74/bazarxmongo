@@ -1,6 +1,7 @@
 // apps/backend/src/modules/auction/infrastructure/persistence/mongo-auction-bid.repository.ts
 // AuctionBid repository — Mongoose implementation (ADR-005 Faz 2a)
 
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { AuctionBid as AuctionBidModel, IAuctionBid } from '@barterborsa/shared-persistence';
@@ -32,7 +33,7 @@ export class MongoAuctionBidRepository implements IAuctionBidRepository {
 
   async create(data: { auctionId: string; userId: string; amount: number; holdId?: string }): Promise<AuctionBid> {
     const doc = await this.model.create({
-      id: 'bid-' + Date.now() + '-' + Math.random().toString(36).substring(7),
+      id: randomUUID(),
       ...data,
       createdAt: new Date(),
     });

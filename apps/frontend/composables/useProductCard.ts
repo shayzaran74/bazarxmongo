@@ -2,7 +2,7 @@ import { ref, computed, type CSSProperties } from 'vue'
 import { useI18n, useAds, useProductBadges, useCartStore, useNuxtApp } from '#imports'
 import type { Product, Review, DynamicBadges } from '@barterborsa/shared-types'
 
-export const useProductCard = (props: { product: Product, badges?: DynamicBadges }, emit: any) => {
+export const useProductCard = (props: { product: Product, badges?: DynamicBadges }, emit: { (e: 'click', product: Product): void; (e: 'add-to-cart', product: Product): void }) => {
   const { t, locale } = useI18n()
   const { recordClick } = useAds()
   const { getProductBadges } = useProductBadges()
@@ -57,8 +57,8 @@ export const useProductCard = (props: { product: Product, badges?: DynamicBadges
       if (props.product.isSponsored && typeof recordClick === 'function' && props.product.id) {
         recordClick(props.product.id.toString())
       }
-    } catch (e) {
-      console.error('Ad tracking error:', e)
+    } catch {
+      /* sessiz hata */
     }
     emit('click', props.product)
   }
@@ -69,9 +69,8 @@ export const useProductCard = (props: { product: Product, badges?: DynamicBadges
       if (!props.product.id) return
       await cartStore.addToCart(props.product.id.toString(), 1, undefined, props.product)
       nuxtApp.$toast.success(t('product.addedToCart') || 'Ürün sepete eklendi')
-    } catch (err: any) {
-      console.error('Cart error:', err)
-      const errorMsg = err.message || t('product.addToCartError') || 'Hata oluştu'
+    } catch (err: unknown) {
+      const errorMsg = (err as Error).message || t('product.addToCartError') || 'Hata oluştu'
       nuxtApp.$toast.error(errorMsg)
     }
     emit('add-to-cart', props.product)

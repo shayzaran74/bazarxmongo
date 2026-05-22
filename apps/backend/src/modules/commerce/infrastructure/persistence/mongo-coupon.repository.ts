@@ -1,6 +1,7 @@
 // apps/backend/src/modules/commerce/infrastructure/persistence/mongo-coupon.repository.ts
 // Coupon & EscrowCoupon repository — Mongoose implementation (ADR-005 Faz 2a)
 
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { ICoupon, IEscrowCoupon } from '@barterborsa/shared-persistence';
@@ -49,7 +50,7 @@ export class MongoEscrowCouponRepository implements IEscrowCouponRepository {
     minAmount?: number;
     expiresAt?: Date;
   }): Promise<IEscrowCoupon> {
-    const id = 'ec-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = randomUUID();
     const doc = await this.model.create({
       id,
       ...data,

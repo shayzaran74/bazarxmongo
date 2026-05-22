@@ -56,7 +56,7 @@ export const useCollectionForm = () => {
     }
     searchTimeout = setTimeout(async () => {
       try {
-        const response: any = await $api('/api/products', {
+        const response: any = await $api('/api/v1/products', {
           query: { search: productSearch.value, limit: 10 }
         })
         searchResults.value = response.data.filter(

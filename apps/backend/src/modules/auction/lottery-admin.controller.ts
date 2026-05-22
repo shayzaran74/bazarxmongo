@@ -1,5 +1,6 @@
 // apps/backend/src/modules/auction/lottery-admin.controller.ts
 
+import { randomUUID } from 'crypto';
 import { Controller, Get, Post, Put, Body, Param, UseGuards, Delete, Query, Inject, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
@@ -80,7 +81,7 @@ export class LotteryAdminController {
     @Body() dto: CreateLotteryDto,
   ) {
     const now = new Date();
-    const id = 'lottery-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = randomUUID();
     const props: LotteryProps = {
       title: dto.title,
       prizeDescription: dto.prizeDescription ?? '',

@@ -2,25 +2,25 @@ import { useOrderStatusLabel } from './useOrderStatusLabel'
 
 export const useVendorOrders = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
   const { getStatusInfo } = useOrderStatusLabel()
 
-  const orders = ref<any[]>([])
+  const orders = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const searchQuery = ref('')
   const filterStatus = ref('')
-  const selectedOrder = ref<any>(null)
+  const selectedOrder = ref<Record<string, unknown> | null>(null)
 
   const pending = computed(() => loading.value)
 
   const filteredOrders = computed(() => {
     let list = orders.value
     if (filterStatus.value) {
-      list = list.filter((o: any) => o.status === filterStatus.value)
+      list = list.filter((o) => o.status === filterStatus.value)
     }
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
-      list = list.filter((o: any) =>
+      list = list.filter((o) =>
         o.orderNumber?.toLowerCase().includes(q) ||
         o.id?.toLowerCase().includes(q)
       )
@@ -29,24 +29,24 @@ export const useVendorOrders = () => {
   })
 
   const pendingCount = computed(() =>
-    orders.value.filter((o: any) => ['PENDING', 'PAID', 'PROCESSING', 'PREPARING'].includes(o.status)).length
+    orders.value.filter((o) => ['PENDING', 'PAID', 'PROCESSING', 'PREPARING'].includes(o.status as string)).length
   )
 
   const shippedCount = computed(() =>
-    orders.value.filter((o: any) => ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)).length
+    orders.value.filter((o) => ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status as string)).length
   )
 
   const totalRevenue = computed(() =>
     orders.value
-      .filter((o: any) => ['COMPLETED', 'DELIVERED', 'PAID'].includes(o.status))
-      .reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0)
+      .filter((o) => ['COMPLETED', 'DELIVERED', 'PAID'].includes(o.status as string))
+      .reduce((sum: number, o) => sum + Number(o.totalAmount || 0), 0)
   )
 
   const fetchOrders = async () => {
     loading.value = true
     try {
-      const res = await $api<any>(
-        '/api/vendors/orders'
+      const res = await $api<{ data?: { items: Record<string, unknown>[] } }>(
+        '/api/v1/vendors/orders'
       )
       orders.value = res.data?.items || []
     } catch {
@@ -59,7 +59,7 @@ export const useVendorOrders = () => {
   const refresh = () => fetchOrders()
 
   const updateItemShipping = async (
-    item: any
+    item: Record<string, unknown>
   ) => {
     try {
       await $api(`/api/orders/${item.id}/ship`, {
@@ -76,17 +76,17 @@ export const useVendorOrders = () => {
     }
   }
 
-  const orderTotalForVendor = (order: any): number => {
+  const orderTotalForVendor = (order: Record<string, unknown>): number => {
     return Number(order.totalAmount || 0)
   }
 
   const getStatusBadgeClass = (status: string): string => {
-    const info = getStatusInfo(status as any)
+    const info = getStatusInfo(status)
     return `${info.bgColor} ${info.color} px-3 py-1 rounded-full text-xs font-bold`
   }
 
   const getStatusText = (status: string): string => {
-    return getStatusInfo(status as any).label
+    return getStatusInfo(status).label
   }
 
   return {

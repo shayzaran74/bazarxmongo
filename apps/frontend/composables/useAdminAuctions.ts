@@ -145,7 +145,7 @@ export const useAdminAuctions = () => {
   const fetchAuctions = async () => {
     loading.value = true
     try {
-      const res = await $api<{ items: AdminAuction[]; total: number }>('/api/v1/admin/auctions', {
+      const res = await $api<{ data?: { items: AdminAuction[]; total: number } }>('/api/v1/admin/auctions', {
         query: {
           status: filters.status || undefined,
           page: pagination.page,
@@ -153,9 +153,9 @@ export const useAdminAuctions = () => {
         },
       })
 
-      const raw = (res as any).data?.items || (res as any).data || []
+      const raw = res.data?.items || res.data || []
       auctions.value = raw.map(mapAuctionAdmin)
-      pagination.total = (res as any).data?.total ?? raw.length
+      pagination.total = res.data?.total ?? raw.length
 
       stats.total = auctions.value.length
       stats.active = auctions.value.filter(a => a.status === 'ACTIVE').length
@@ -176,7 +176,7 @@ export const useAdminAuctions = () => {
     participationsLoading.value = true
     try {
       const res = await $api<{ data: Participation[] }>('/api/v1/admin/auctions/participations')
-      participations.value = (res as any).data || []
+      participations.value = res.data || []
       stats.pendingParticipations = participations.value.filter(p => p.status === 'PENDING').length
     } catch {
       $toast.error('Katılımlar yüklenemedi')
@@ -188,7 +188,7 @@ export const useAdminAuctions = () => {
   const fetchCategories = async () => {
     try {
       const res = await $api<{ data: Category[] }>('/api/v1/listings/categories')
-      categories.value = (res as any).data || []
+      categories.value = res.data || []
     } catch {
       $toast.warning('Kategoriler yüklenemedi')
     }
@@ -225,7 +225,6 @@ export const useAdminAuctions = () => {
   }
 
   const deleteAuction = async (id: string) => {
-    if (!confirm('Bu artırmayı silmek istediğinizden emin misiniz?')) return
     try {
       await $api(`/api/v1/admin/auctions/${id}`, { method: 'DELETE' })
       $toast.success('Artırma silindi')

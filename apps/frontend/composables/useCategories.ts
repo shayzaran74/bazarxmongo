@@ -5,7 +5,7 @@ export const useCategories = () => {
     const { $api } = useApi()
     
     return useAsyncData('mega-menu', async () => {
-        const response = await $api<Category[]>('/api/categories/mega-menu')
+        const response = await $api<Category[]>('/api/v1/categories/mega-menu')
         return (response.data || []) as Category[]
     }, {
         lazy: true,

@@ -50,12 +50,10 @@ export const useLayoutLogic = () => {
       const res = await $api<{ success: boolean; data: Record<string, unknown>[] }>('/api/v1/side-ads', {
         query: { city: city && city !== 'Tüm Türkiye' ? city : undefined, ecosystem: ecoMap[currentEcosystem.value] }
       })
-      console.log('useLayoutLogic - fetchSideAds result:', res)
       if (res.success) {
         sideAds.value = res.data
-        console.log('useLayoutLogic - sideAds.value set to:', sideAds.value.length, 'items')
       }
-    } catch (e) { console.error('Ads error:', e) }
+    } catch { /* sessiz hata */ }
   }
 
   // ── Location: save ────────────────────────────────────────
@@ -74,7 +72,7 @@ export const useLayoutLogic = () => {
       await fetchSideAds(city)
       locationModalOpen.value = false
       useNuxtApp().$toast.success(`Konumunuz ${city} olarak güncellendi!`)
-    } catch (e) { console.error('Save location error:', e) }
+    } catch { /* sessiz hata */ }
   }
 
   // ── Location: auto-detect ─────────────────────────────────
@@ -142,7 +140,7 @@ export const useLayoutLogic = () => {
         } catch { /* fall through to IP */ }
       }
       // IP fallback
-      const resp = await $api<{ success: boolean; data: { city?: string; regionName?: string } }>('/api/settings/detect-location')
+      const resp = await $api<{ success: boolean; data: { city?: string; regionName?: string } }>('/api/v1/settings/detect-location')
       if (resp.success && (resp.data?.city || resp.data?.regionName)) {
         const city = matchCity(resp.data.city || '', resp.data.regionName || '')
         detectedCity.value = city
@@ -189,7 +187,7 @@ export const useLayoutLogic = () => {
     
     // Fetch categories for layout
     try {
-      const res = await $api<{ success: boolean; data: { items?: Record<string, unknown>[] } | Record<string, unknown>[] }>('/api/categories', { query: { all: true } })
+      const res = await $api<{ success: boolean; data: { items?: Record<string, unknown>[] } | Record<string, unknown>[] }>('/api/v1/categories', { query: { all: true } })
       if (res.success && res.data) {
         layoutCategories.value = Array.isArray(res.data.items) ? res.data.items : (Array.isArray(res.data) ? res.data : [])
       }

@@ -1,6 +1,7 @@
 // apps/backend/src/modules/commerce/infrastructure/persistence/mongo-cart.repository.ts
 // Cart repository — Mongoose implementation (ADR-005 Faz 2a)
 
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
@@ -84,12 +85,12 @@ export class MongoCartRepository implements ICartRepository {
   async findOrCreate(userId: string): Promise<Cart> {
     let cart = await this.cartModel.findOne({ userId }).exec();
     if (!cart) {
-      const id = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-      const doc = new this.cartModel({ 
-        _id: new (require('mongoose')).Types.ObjectId().toString(),
-        id, 
-        userId, 
-        items: [] 
+      const id = randomUUID();
+      const doc = new this.cartModel({
+        _id: new Types.ObjectId().toString(),
+        id,
+        userId,
+        items: []
       });
       await doc.save();
       cart = doc;
@@ -111,7 +112,7 @@ export class MongoCartRepository implements ICartRepository {
   }
 
   async addItem(cartId: string, listingId: string, quantity: number, variantId?: string): Promise<void> {
-    const id = 'ci-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = randomUUID();
     await this.cartItemModel.create({
       _id: new Types.ObjectId().toString(),
       id,

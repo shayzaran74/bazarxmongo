@@ -76,8 +76,7 @@ export async function populateDynamicBadges(items: Record<string, unknown>[]) {
 
       item.dynamicBadges = badges;
     }
-  } catch (error) {
-    console.error('❌ Error in populateDynamicBadges:', error);
+  } catch (/* ignore */_error) {
     // Fallback: populate empty badges so that the query successfully returns without failing
     for (const item of items) {
       item.dynamicBadges = {

@@ -24,8 +24,4 @@ import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audi
   ],
   exports: [AuditLogService, AuditLogRepository],
 })
-export class AuditMongooseModule {
-  constructor() {
-    console.log('[AuditMongooseModule] Mongoose ile yüklendi — pilot test için.');
-  }
-}
+export class AuditMongooseModule {}

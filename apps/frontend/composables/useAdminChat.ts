@@ -1,31 +1,31 @@
 export const useAdminChat = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
   const roomsLoading = ref(false)
   const messagesLoading = ref(false)
   const auditLogsLoading = ref(false)
-  
-  const rooms = ref<any[]>([])
-  const activeRoom = ref<any>(null)
+
+  const rooms = ref<Record<string, unknown>[]>([])
+  const activeRoom = ref<Record<string, unknown> | null>(null)
   const activeRoomId = ref<string | null>(null)
-  const messages = ref<any[]>([])
+  const messages = ref<Record<string, unknown>[]>([])
   const isConnected = ref(true)
   const filterRisky = ref(false)
   const sortByRisk = ref(false)
   const isFrozen = ref(false)
-  
-  const auditLogs = ref<any[]>([])
+
+  const auditLogs = ref<Record<string, unknown>[]>([])
   const pagination = reactive({ page: 1, total: 0, limit: 10 })
   const auditLogsPagination = reactive({ page: 1, total: 0, limit: 10 })
 
   const filteredRooms = computed(() => {
     let list = rooms.value
     if (filterRisky.value) {
-      list = list.filter((r: any) => (r.riskScore || 0) > 50)
+      list = list.filter((r) => (r.riskScore as number || 0) > 50)
     }
     if (sortByRisk.value) {
-      list = [...list].sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
+      list = [...list].sort((a, b) => ((b.riskScore as number) || 0) - ((a.riskScore as number) || 0))
     }
     return list
   })
@@ -34,12 +34,11 @@ export const useAdminChat = () => {
     roomsLoading.value = true
     pagination.page = page
     try {
-      const res = await $api<any>('/api/v1/admin/chat/rooms', {
+      const res = await $api<{ data?: Record<string, unknown>[]; total?: number }>('/api/v1/admin/chat/rooms', {
         query: { page, limit: pagination.limit }
       })
-      const response = res as any
-      rooms.value = response.data || []
-      pagination.total = response.total || rooms.value.length
+      rooms.value = res.data || []
+      pagination.total = res.total || rooms.value.length
     } catch { /* ignore */ } finally {
       roomsLoading.value = false
     }
@@ -49,7 +48,7 @@ export const useAdminChat = () => {
     auditLogsLoading.value = true
     auditLogsPagination.page = page
     try {
-      const res = await $api<any>('/api/v1/admin/chat/audit-logs', {
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/admin/chat/audit-logs', {
         query: { page, limit: auditLogsPagination.limit }
       })
       auditLogs.value = res.data || []
@@ -58,12 +57,12 @@ export const useAdminChat = () => {
     }
   }
 
-  const joinRoom = async (room: any) => {
+  const joinRoom = async (room: Record<string, unknown>) => {
     activeRoom.value = room
-    activeRoomId.value = room.id
+    activeRoomId.value = room.id as string | null
     messagesLoading.value = true
     try {
-      const res = await $api<any>(`/api/admin/chat/rooms/${room.id}/messages`)
+      const res = await $api<{ data: Record<string, unknown>[] }>(`/api/admin/chat/rooms/${room.id}/messages`)
       messages.value = res.data || []
       isFrozen.value = !!room.isFrozen
     } catch { /* ignore */ } finally {
@@ -77,9 +76,8 @@ export const useAdminChat = () => {
     messages.value = []
   }
 
-  const setSearch = (q: string) => {
+  const setSearch = (_q: string) => {
     // Implement socket based search or local search
-    console.log('Searching for:', q)
   }
 
   const toggleRiskyFilter = () => (filterRisky.value = !filterRisky.value)
@@ -134,8 +132,8 @@ export const useAdminChat = () => {
     })
   }
 
-  const initSocket = () => { console.log('Socket initialized') }
-  const destroySocket = () => { console.log('Socket destroyed') }
+  const initSocket = () => { /* başlatıldı */ }
+  const destroySocket = () => { /* temizlendi */ }
 
   return {
     roomsLoading, pagination, activeRoom, activeRoomId, messages, messagesLoading,

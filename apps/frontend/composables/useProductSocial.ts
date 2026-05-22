@@ -5,7 +5,7 @@ import { useVendorService } from '~/services/api/VendorService'
 import { useAuthStore } from '~/stores/auth'
 import { useI18n } from 'vue-i18n'
 
-export const useProductSocial = (product: any) => {
+export const useProductSocial = (product: Ref<{ Review?: Array<{ rating: number }>; id?: { toString(): string }; vendorId?: { toString(): string } } | null>) => {
   const { t } = useI18n()
   const { $toast: toast } = useNuxtApp()
   const authStore = useAuthStore()
@@ -22,7 +22,7 @@ export const useProductSocial = (product: any) => {
 
   const averageRating = computed(() => {
     if (!product.value?.Review || product.value.Review.length === 0) return 5
-    const sum = product.value.Review.reduce((acc: number, review: any) => acc + review.rating, 0)
+    const sum = product.value.Review.reduce((acc: number, review) => acc + review.rating, 0)
     return sum / product.value.Review.length
   })
 
@@ -32,11 +32,11 @@ export const useProductSocial = (product: any) => {
       loadingReviewEligibility.value = true
       const response = await productService.checkReviewEligibility(product.value.id.toString())
       if (response.success && response.data) {
-        canReview.value = (response.data as any).canReview
-        canReviewReason.value = (response.data as any).reason || ''
+        canReview.value = (response.data as { canReview: boolean }).canReview
+        canReviewReason.value = (response.data as { reason?: string }).reason || ''
       }
-    } catch (err) {
-      console.error('Check review eligibility error:', err)
+    } catch {
+      /* sessiz hata */
     } finally {
       loadingReviewEligibility.value = false
     }
@@ -59,8 +59,8 @@ export const useProductSocial = (product: any) => {
         reviewDraft.value = { rating: 5, comment: '' }
         checkReviewEligibility()
       }
-    } catch (err: any) {
-      toast.error(err.message || t('products.detail.review.error'))
+    } catch (err: unknown) {
+      toast.error((err as Error).message || t('products.detail.review.error'))
     } finally {
       submittingReview.value = false
     }
@@ -72,10 +72,10 @@ export const useProductSocial = (product: any) => {
     try {
       const response = await vendorService.checkFollowStatus(vendorId.toString())
       if (response.success && response.data) {
-        isFollowing.value = (response.data as any).isFollowing || false
+        isFollowing.value = (response.data as { isFollowing: boolean }).isFollowing || false
       }
-    } catch (err) {
-      console.error('Check follow status error:', err)
+    } catch {
+      /* sessiz hata */
     }
   }
 
@@ -106,7 +106,7 @@ export const useProductSocial = (product: any) => {
 
   const getStarPercentage = (star: number) => {
     if (!product.value?.Review || product.value.Review.length === 0) return 0
-    const count = product.value.Review.filter((r: any) => r.rating === star).length
+    const count = product.value.Review.filter((r) => r.rating === star).length
     return (count / product.value.Review.length) * 100
   }
 

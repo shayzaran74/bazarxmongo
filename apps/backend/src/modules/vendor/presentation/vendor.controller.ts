@@ -275,7 +275,6 @@ export class VendorController {
   @ApiParam({ name: 'idOrSlug' })
   @Get('public/:idOrSlug')
   async getVendorPublic(@Param('idOrSlug') idOrSlug: string) {
-    console.log('Fetching public vendor:', idOrSlug);
     const data = await this.queryBus.execute(new GetVendorBySlugQuery(idOrSlug));
     return { success: true, data };
   }

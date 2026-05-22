@@ -121,7 +121,7 @@ export const useCheckout = (): any => {
   const fetchWallet = async () => {
     walletLoading.value = true
     try {
-      const res: any = await $api('/api/wallet')
+      const res: any = await $api('/api/v1/wallet')
       if (res.success && res.data?.accounts) {
         // Yeni birleşik yapıda MAIN hesabı bul
         const mainAccount = res.data.accounts.find((a: any) => a.type === 'MAIN')
@@ -139,7 +139,7 @@ export const useCheckout = (): any => {
     validatingCoupon.value = true
     couponError.value = ''
     try {
-      const res: any = await $api('/api/coupons/validate', {
+      const res: any = await $api('/api/v1/coupons/validate', {
         method: 'POST',
         body: { code, totalAmount: cartStore.totalPrice }
       })
@@ -172,7 +172,7 @@ export const useCheckout = (): any => {
         const firstName = nameParts[0] || ''
         const lastName = nameParts.slice(1).join(' ') || '-' // Fallback for last name if not provided
 
-        const res: any = await $api('/api/addresses', {
+        const res: any = await $api('/api/v1/addresses', {
           method: 'POST',
           body: {
             title: newAddress.title || 'Adres',
@@ -196,7 +196,7 @@ export const useCheckout = (): any => {
          return { success: false, error: 'Lütfen bir teslimat adresi seçin' }
       }
 
-      const res: any = await $api('/api/checkout', {
+      const res: any = await $api('/api/v1/checkout', {
         method: 'POST',
         body: {
           addressId: addressId,

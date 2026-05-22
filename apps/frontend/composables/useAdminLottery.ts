@@ -56,7 +56,7 @@ export const useAdminLottery = () => {
   const fetchLotteries = async () => {
     loading.value = true
     try {
-      const res = await $api<{ items: LotteryItem[]; total: number }>('/api/v1/admin/lotteries', {
+      const res = await $api<{ data?: { items: LotteryItem[]; total: number } }>('/api/v1/admin/lotteries', {
         query: {
           status: filters.status || undefined,
           page: pagination.page,
@@ -64,9 +64,9 @@ export const useAdminLottery = () => {
         },
       })
 
-      const raw = (res as any).data?.items || (res as any).data || []
+      const raw = res.data?.items || res.data || []
       lotteries.value = raw
-      pagination.total = (res as any).data?.total || raw.length
+      pagination.total = res.data?.total || raw.length
 
       stats.total = raw.length
       stats.active = raw.filter((l: LotteryItem) => l.status === 'ACTIVE').length
@@ -87,7 +87,6 @@ export const useAdminLottery = () => {
   }
 
   const deleteLottery = async (id: string) => {
-    if (!confirm('Bu çekilişi silmek istediğinizden emin misiniz?')) return
     try {
       await $api(`/api/v1/admin/lotteries/${id}`, { method: 'DELETE' })
       $toast.success('Çekiliş silindi')

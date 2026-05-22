@@ -1,6 +1,6 @@
 export const useVendorApplication = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
   const authStore = useAuthStore()
 
   const currentStep = ref(0)
@@ -28,26 +28,26 @@ export const useVendorApplication = () => {
     cuisineType: '',
     deliveryRadius: null as number | null,
     minOrderAmount: null as number | null,
-    openingHours: null as any,
+    openingHours: null as Record<string, unknown> | null,
   })
 
-  const categories = ref<any[]>([])
-  const announcements = ref<any[]>([])
+  const categories = ref<Record<string, unknown>[]>([])
+  const announcements = ref<Record<string, unknown>[]>([])
 
   const checkExistingApplication = async () => {
     try {
-      const res = await $api<{ success: boolean; data: any }>(
-        '/api/vendors/profile/me'
+      const res = await $api<{ success: boolean; data: Record<string, unknown> }>(
+        '/api/v1/vendors/profile/me'
       )
       if (res.success && res.data) {
-        applicationStatus.value = (res.data as any).status || null
+        applicationStatus.value = res.data.status as string || null
       }
     } catch { /* ignore */ }
   }
 
   const fetchCategories = async () => {
     try {
-      const res = await $api<{ success: boolean; data: any[] }>(
+      const res = await $api<{ success: boolean; data: Record<string, unknown>[] }>(
         '/api/v1/categories?type=PRODUCT'
       )
       if (res.success) {
@@ -60,7 +60,7 @@ export const useVendorApplication = () => {
     loading.value = true
     try {
       const res = await $api<{ success: boolean; error?: string }>(
-        '/api/vendors/apply-atomic',
+        '/api/v1/vendors/apply-atomic',
         { method: 'POST', body: { ...formData } }
       )
       if (res.success) {
@@ -71,8 +71,8 @@ export const useVendorApplication = () => {
       }
       $toast.error(res.error || 'Başvuru gönderilemedi')
       return { success: false }
-    } catch (e: any) {
-      $toast.error(e?.data?.message || 'Başvuru gönderilemedi')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Başvuru gönderilemedi')
       return { success: false }
     } finally {
       loading.value = false

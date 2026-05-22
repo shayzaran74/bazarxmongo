@@ -45,7 +45,7 @@ export const useAnalytics = () => {
         try {
             const sid = getSessionId()
             const utm: UtmParams = JSON.parse(sessionStorage.getItem('utm_params') || '{}')
-            await $api('/api/analytics/track', {
+            await $api('/api/v1/analytics/track', {
                 method: 'POST',
                 body: {
                     eventType, sessionId: sid,
@@ -62,13 +62,13 @@ export const useAnalytics = () => {
         }
     }
 
-    const getRealTimeStats     = () => $api('/api/analytics/realtime')
-    const getCampaignPerformance = () => $api('/api/analytics/campaigns')
-    const getChannelBreakdown  = () => $api('/api/analytics/channels')
-    const getUserTrends        = () => $api('/api/analytics/trends')
+    const getRealTimeStats     = () => $api('/api/v1/analytics/realtime')
+    const getCampaignPerformance = () => $api('/api/v1/analytics/campaigns')
+    const getChannelBreakdown  = () => $api('/api/v1/analytics/channels')
+    const getUserTrends        = () => $api('/api/v1/analytics/trends')
 
     const createCampaign = (data: Record<string, unknown>) =>
-        $api('/api/analytics/campaigns', { method: 'POST', body: data })
+        $api('/api/v1/analytics/campaigns', { method: 'POST', body: data })
 
     const updateCampaign = (id: string, data: Record<string, unknown>) =>
         $api(`/api/analytics/campaigns/${id}`, { method: 'PUT', body: data })

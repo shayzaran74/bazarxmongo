@@ -14,7 +14,7 @@ export const useVendorUsers = () => {
     loading.value = true
     try {
       const res = await $api<any>(
-        '/api/vendors/users',
+        '/api/v1/vendors/users',
         { query: { ...filters } }
       )
       users.value = res.data || []

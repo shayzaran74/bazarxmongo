@@ -29,19 +29,13 @@ export class DispatchNotificationProcessor extends WorkerHost {
     const { dispatchId, orderId, restaurantName, customerName, customerPhone, pickupAddress } = job.data;
 
     // TODO: Gerçek bildirim mekanizması — SMS (Netgsm/Twilio), Push Notification (FCM), veya harici API
-    // Şimdilik stub log:
-    console.log(`[DeliveryDispatch] Kurye atandı. dispatchId=${dispatchId}, orderId=${orderId}`);
-    console.log(`  → Restoran: ${restaurantName}`);
-    console.log(`  → Alıcı: ${customerName} (${customerPhone})`);
-    console.log(`  → Adres: ${pickupAddress}`);
-
     // RabbitMQ veya harici bildirim servisi burada çağrılır:
     // await this.notificationService.sendCourierNotification(courierId, { orderId, pickupAddress });
   }
 
   // Job başarısız olursa
-  async failed(job: Job<DispatchNotificationJob> | undefined, error: Error): Promise<void> {
+  async failed(job: Job<DispatchNotificationJob> | undefined, _error: Error): Promise<void> {
     if (!job) return;
-    console.error(`[DeliveryDispatch] Bildirim başarısız. jobId=${job.id}, error=${error.message}`);
+    /* ignore */
   }
 }

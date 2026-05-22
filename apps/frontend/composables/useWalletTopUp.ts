@@ -2,7 +2,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useTierService } from '~/services/api/TierService'
 
-export const useWalletTopUp = (props: any, emit: any) => {
+export const useWalletTopUp = (props: { userId?: string }, emit: { (e: 'success'): void }) => {
   const { $api } = useApi()
   const authStore = useAuthStore()
   const toast = useNuxtApp().$toast
@@ -13,7 +13,7 @@ export const useWalletTopUp = (props: any, emit: any) => {
   const success = ref(false)
   const error = ref<string | null>(null)
   const selectedPaymentMethod = ref('BANK_TRANSFER')
-  const tierInfo = ref<any>(null)
+  const tierInfo = ref<Record<string, unknown> | null>(null)
 
   const paymentMethods = [
     {
@@ -52,12 +52,12 @@ export const useWalletTopUp = (props: any, emit: any) => {
 
   const fetchTierInfo = async () => {
     try {
-      const res: any = await getUserTier()
+      const res = await getUserTier() as { success: boolean; data?: Record<string, unknown> }
       if (res.success) {
         tierInfo.value = res.data
       }
-    } catch (err) {
-      console.error('Failed to fetch tier info:', err)
+    } catch {
+      /* sessiz hata */
     }
   }
 
@@ -104,8 +104,8 @@ export const useWalletTopUp = (props: any, emit: any) => {
         return
       }
 
-    } catch (err: any) {
-      error.value = err.message || 'Sistem hatası.'
+    } catch (err: unknown) {
+      error.value = (err as Error).message || 'Sistem hatası.'
       toast.error(error.value || 'Hata')
       clearMessages()
     } finally {

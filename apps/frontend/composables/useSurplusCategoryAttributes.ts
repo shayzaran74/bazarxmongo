@@ -4,14 +4,14 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
   const { $api } = useApi()
   const toast = useNuxtApp().$toast
   
-  const category = ref<any>(null)
-  const attributes = ref<any[]>([])
+  const category = ref<Record<string, unknown> | null>(null)
+  const attributes = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const showModal = ref(false)
-  const editingAttribute = ref<any>(null)
+  const editingAttribute = ref<Record<string, unknown> | null>(null)
   const optionsInput = ref('')
 
-  const typeLabels: any = {
+  const typeLabels: Record<string, string> = {
     text: 'Metin',
     number: 'Sayı',
     select: 'Tekli Seçim',
@@ -42,10 +42,10 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
   // Fetch surplus category info
   const fetchCategory = async () => {
     try {
-      const response: any = await $api(`/api/v1/admin/surplus-categories/${categoryId}`)
+      const response = await $api<{ data: Record<string, unknown> }>(`/api/v1/admin/surplus-categories/${categoryId}`)
       category.value = response.data
-    } catch (error) {
-      console.error('Fetch Surplus Category Error:', error)
+    } catch {
+      /* sessiz hata */
     }
   }
 
@@ -53,12 +53,12 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
   const fetchAttributes = async () => {
     loading.value = true
     try {
-      const response: any = await $api('/api/v1/admin/category-attributes', {
+      const response = await $api<{ data: Record<string, unknown>[] }>('/api/v1/admin/category-attributes', {
         query: { surplusCategoryId: categoryId }
       })
       attributes.value = response.data || []
-    } catch (error) {
-      console.error('Fetch Surplus Attributes Error:', error)
+    } catch {
+      /* sessiz hata */
     } finally {
       loading.value = false
     }
@@ -71,7 +71,7 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
     showModal.value = true
   }
 
-  const openEditModal = (attr: any) => {
+  const openEditModal = (attr: Record<string, unknown>) => {
     editingAttribute.value = attr
     attrForm.value = { ...attr }
     optionsInput.value = attr.options?.join(', ') || ''
@@ -97,7 +97,7 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
       const method = editingAttribute.value ? 'PUT' : 'POST'
 
       // Important: Use surplusCategoryId in body
-      const response: any = await $api(url, {
+      const response = await $api<{ success: boolean }>(url, {
         method,
         body: { ...attrForm.value, surplusCategoryId: categoryId }
       })
@@ -107,9 +107,8 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
         closeModal()
         fetchAttributes()
       }
-    } catch (error: any) {
-      console.error('Save Surplus Attribute Error:', error)
-      toast.error(error.data?.error || 'Özellik kaydedilirken hata oluştu')
+    } catch (error: unknown) {
+      toast.error((error as { data?: { error?: string } }).data?.error || 'Özellik kaydedilirken hata oluştu')
     }
   }
 
@@ -119,8 +118,7 @@ export const useSurplusCategoryAttributes = (categoryId: string) => {
       await $api(`/api/v1/admin/category-attributes/${id}`, { method: 'DELETE' })
       toast.success('Özellik silindi')
       fetchAttributes()
-    } catch (error) {
-      console.error('Delete Surplus Attribute Error:', error)
+    } catch {
       toast.error('Özellik silinirken hata oluştu')
     }
   }

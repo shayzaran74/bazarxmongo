@@ -70,7 +70,7 @@ export const useWallet = () => {
   // Barter Methods
   const registerForBarter = async () => {
     try {
-      const response = await $api('/api/barter/register', { method: 'POST' })
+      const response = await $api('/api/v1/barter/register', { method: 'POST' })
       if (response.success) {
         toast.success(response.message || 'Barter havuzuna başarıyla kayıt oldunuz!')
         await fetchWallet()
@@ -85,7 +85,7 @@ export const useWallet = () => {
     if (!amount || amount < 1) return
     submitting.value = true
     try {
-      const response = await $api('/api/barter/topup', {
+      const response = await $api('/api/v1/barter/topup', {
         method: 'POST',
         body: { amount }
       })
@@ -109,7 +109,7 @@ export const useWallet = () => {
     if (!amount || amount < 1) return
     submitting.value = true
     try {
-      const response = await $api('/api/barter/withdraw', {
+      const response = await $api('/api/v1/barter/withdraw', {
         method: 'POST',
         body: { amount }
       })
@@ -132,7 +132,7 @@ export const useWallet = () => {
   // Gift Card Methods
   const redeemGiftCard = async (code: string) => {
     try {
-      const response = await $api('/api/wallet/redeem-gift-card', {
+      const response = await $api('/api/v1/wallet/redeem-gift-card', {
         method: 'POST',
         body: { code }
       })

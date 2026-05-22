@@ -8,8 +8,8 @@ export const useWantedItems = () => {
     const authStore = useAuthStore()
     const toast = useNuxtApp().$toast
 
-    const wantedItems = ref<any[]>([])
-    const categories = ref<any[]>([])
+    const wantedItems = ref<Record<string, unknown>[]>([])
+    const categories = ref<Record<string, unknown>[]>([])
     const loading = ref(true)
     const showAddModal = ref(false)
     const submitting = ref(false)
@@ -39,12 +39,12 @@ export const useWantedItems = () => {
             const [itemsRes, catsRes] = await Promise.all([
                 wantedItemService.getMyItems(),
                 categoryService.getCategories()
-            ]) as [any, any]
-            
-            if (itemsRes.success) wantedItems.value = (itemsRes.data || []) as any[]
-            if (catsRes.success) categories.value = (catsRes.data || []) as any[]
-        } catch (e) {
-            console.error('Fetch data error:', e)
+            ]) as [{ success: boolean; data?: Record<string, unknown>[] }, { success: boolean; data?: Record<string, unknown>[] }]
+
+            if (itemsRes.success) wantedItems.value = itemsRes.data || []
+            if (catsRes.success) categories.value = catsRes.data || []
+        } catch {
+            /* sessiz hata */
         } finally {
             loading.value = false
         }
@@ -65,8 +65,8 @@ export const useWantedItems = () => {
             }
             closeModal()
             fetchData()
-        } catch (e: any) {
-            toast.error(e.data?.error || 'Bir hata oluştu')
+        } catch (e: unknown) {
+            toast.error((e as { data?: { error?: string } }).data?.error || 'Bir hata oluştu')
         } finally {
             submitting.value = false
         }

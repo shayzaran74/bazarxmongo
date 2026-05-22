@@ -1,6 +1,6 @@
 // apps/backend/src/modules/identity/presentation/admin-user.controller.ts
 
-import { Controller, Get, Query, UseGuards, Param, Patch, Delete, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Param, Patch, Delete, Body, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -195,7 +195,7 @@ export class AdminUserController {
     @Body('description') description?: string,
   ): Promise<{ success: boolean; data: unknown; message: string }> {
     if (!minXp || minXp < 0) {
-      throw new Error('Geçerli bir XP eşiği giriniz (≥0)');
+      throw new BadRequestException('Geçerli bir XP eşiği giriniz (≥0)');
     }
 
     const update: Record<string, unknown> = { minXp };
@@ -208,7 +208,7 @@ export class AdminUserController {
     ).lean();
 
     if (!result) {
-      throw new Error(`${tier} tier bulunamadı`);
+      throw new NotFoundException(`${tier} tier bulunamadı`);
     }
 
     return {

@@ -6,25 +6,25 @@ export const useVendorInventory = () => {
     const categoryService = useCategoryService()
     const toast = useNuxtApp().$toast
 
-    const products = ref<any[]>([])
-    const categories = ref<any[]>([])
-    const history = ref<any[]>([])
+    const products = ref<Record<string, unknown>[]>([])
+    const categories = ref<Record<string, unknown>[]>([])
+    const history = ref<Record<string, unknown>[]>([])
     const loading = ref(false)
     const exporting = ref(false)
     const filters = ref({ search: '', categoryId: '', stockStatus: '' })
-    
+
     // Modal states
     const showStockModal = ref(false)
     const showHistoryModal = ref(false)
-    const selectedProduct = ref<any>(null)
+    const selectedProduct = ref<Record<string, unknown> | null>(null)
     const stockChange = ref(0)
     const adjustReason = ref('')
     const historyLoading = ref(false)
 
     const stats = computed(() => ({
         total: products.value.length,
-        lowStock: products.value.filter((p: any) => p.stock > 0 && p.stock <= (p.lowStockThreshold || 5)).length,
-        outOfStock: products.value.filter((p: any) => p.stock === 0).length
+        lowStock: products.value.filter((p) => Number(p.stock) > 0 && Number(p.stock) <= (Number(p.lowStockThreshold) || 5)).length,
+        outOfStock: products.value.filter((p) => Number(p.stock) === 0).length
     }))
 
     const fetchProducts = async () => {
@@ -35,12 +35,12 @@ export const useVendorInventory = () => {
             if (filters.value.categoryId) params.append('categoryId', filters.value.categoryId)
             if (filters.value.stockStatus) params.append('stockStatus', filters.value.stockStatus)
 
-            const res = await $api<any>(`/api/v1/vendors/products?${params.toString()}`)
+            const res = await $api<{ success: boolean; data: Record<string, unknown>[] }>(`/api/v1/vendors/products?${params.toString()}`)
             if (res.success) {
                 products.value = res.data || []
             }
-        } catch (err) {
-            console.error('Fetch products error:', err)
+        } catch {
+            /* sessiz hata */
         } finally {
             loading.value = false
         }
@@ -52,22 +52,22 @@ export const useVendorInventory = () => {
             if (res.success) {
                 categories.value = res.data || []
             }
-        } catch (err) {
-            console.error('Fetch categories error:', err)
+        } catch {
+            /* sessiz hata */
         }
     }
 
     const fetchStats = async () => {
         try {
-            const res = await $api<any>('/api/v1/vendors/inventory/stats')
+            const res = await $api<{ success: boolean }>('/api/v1/vendors/inventory/stats')
             if (res.success) {
                 // Backend returns { totalProducts, outOfStock, lowStock, healthyStock }
                 // We can either use these directly or keep the computed 'stats'
                 // For now, let's just refresh products to keep computed stats in sync
                 await fetchProducts()
             }
-        } catch (err) {
-            console.error('Fetch stats error:', err)
+        } catch {
+            /* sessiz hata */
         }
     }
 
@@ -76,7 +76,7 @@ export const useVendorInventory = () => {
         try {
             const response = await $api('/api/v1/vendors/inventory/export', {
                 responseType: 'blob'
-            }) as any
+            }) as unknown as Blob
             const url = window.URL.createObjectURL(new Blob([response]))
             const link = document.createElement('a')
             link.href = url
@@ -92,17 +92,16 @@ export const useVendorInventory = () => {
         }
     }
 
-    const fetchHistory = async (product: any) => {
+    const fetchHistory = async (product: Record<string, unknown>) => {
         selectedProduct.value = product
         showHistoryModal.value = true
         historyLoading.value = true
         try {
-            const response = await $api<any>(`/api/v1/vendors/inventory/logs/${product.id}`)
+            const response = await $api<{ success: boolean; data: Record<string, unknown>[] }>(`/api/v1/vendors/inventory/logs/${product.id}`)
             if (response.success) {
                 history.value = response.data || []
             }
-        } catch (err) {
-            console.error('History fetch error:', err)
+        } catch {
             toast.error('Geçmiş yüklenemedi')
         } finally {
             historyLoading.value = false
@@ -113,7 +112,7 @@ export const useVendorInventory = () => {
         if (!selectedProduct.value) return
         
         try {
-            const res = await $api<any>(`/api/v1/vendors/products/${selectedProduct.value.id}/stock`, {
+            const res = await $api<{ success: boolean }>(`/api/v1/vendors/products/${selectedProduct.value.id}/stock`, {
                 method: 'PATCH',
                 body: {
                     change: stockChange.value,

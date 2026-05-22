@@ -1,14 +1,14 @@
-export const useProductForm = (params: { productId?: string | null; initialData?: any } = {}) => {
+export const useProductForm = (params: { productId?: string | null; initialData?: Record<string, unknown> } = {}) => {
   const { productId, initialData } = params
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
   const loading = ref(false)
   const isEditing = computed(() => !!productId)
   const activeSection = ref('basics')
   const newImageUrl = ref('')
   const isBarcodeChecking = ref(false)
-  const foundCatalogProduct = ref<any>(null)
+  const foundCatalogProduct = ref<Record<string, unknown> | null>(null)
   
   const form = reactive({
     name: initialData?.name || initialData?.title || '',
@@ -83,15 +83,15 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     { id: 'marketing', title: 'Pazarlama', name: 'Pazarlama', icon: 'RocketLaunchIcon', required: false },
   ]
 
-  const flags = ref<any[]>([
+  const flags = ref<Record<string, unknown>[]>([
     { id: 'draft', label: 'Taslak Modu', value: initialData?.isDraft || false },
     { id: 'published', label: 'Yayında', value: initialData?.status === 'ACTIVE' }
   ])
 
-  const categoryAttributes = ref<any[]>([])
-  const mainCategories = ref<any[]>([])
-  const subCategories1 = ref<any[]>([])
-  const subCategories2 = ref<any[]>([])
+  const categoryAttributes = ref<Record<string, unknown>[]>([])
+  const mainCategories = ref<Record<string, unknown>[]>([])
+  const subCategories1 = ref<Record<string, unknown>[]>([])
+  const subCategories2 = ref<Record<string, unknown>[]>([])
   const selectedMainCategory = ref('')
   const selectedSubCategory1 = ref('')
   const selectedSubCategory2 = ref('')
@@ -109,8 +109,8 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     return true
   }
 
-  const handleFileUpload = async (event: any) => {
-    const files = event.target?.files || event
+  const handleFileUpload = async (event: Event | { target?: { files?: FileList }; dataTransfer?: { files?: FileList } }) => {
+    const files = event.target?.files || event.dataTransfer?.files
     if (!files || files.length === 0) return
     
     $toast.info('Görsel yükleniyor...')
@@ -181,42 +181,42 @@ export const useProductForm = (params: { productId?: string | null; initialData?
   }
 
   const setAsMain = (index: number) => {
-    form.productImages.forEach((img: any, i: number) => img.isMain = i === index)
+    form.productImages.forEach((img: Record<string, unknown>, i: number) => img.isMain = i === index)
   }
 
-  const allCategories = ref<any[]>([])
+  const allCategories = ref<Record<string, unknown>[]>([])
 
   const fetchCategories = async () => {
     try {
-      const res = await $api<any>('/api/v1/listings/categories')
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/listings/categories')
       const cats = res.data || []
       allCategories.value = cats
-      mainCategories.value = cats.filter((c: any) => !c.parentId)
+      mainCategories.value = cats.filter((c) => !c.parentId)
 
       // Resolve initial hierarchy
       if (form.categoryId) {
-        let currentCat = cats.find((c: any) => c.id === form.categoryId)
+        let currentCat = cats.find((c) => c.id === form.categoryId)
         if (currentCat) {
-          const path: any[] = []
+          const path: Record<string, unknown>[] = []
           while(currentCat) {
             path.unshift(currentCat)
-            currentCat = cats.find((c: any) => c.id === currentCat?.parentId)
+            currentCat = cats.find((c) => c.id === currentCat?.parentId)
           }
           if (path.length > 0) {
-            selectedMainCategory.value = path[0].id
-            subCategories1.value = cats.filter((c: any) => c.parentId === path[0].id)
+            selectedMainCategory.value = path[0].id as string
+            subCategories1.value = cats.filter((c) => c.parentId === path[0].id)
           }
           if (path.length > 1) {
-            selectedSubCategory1.value = path[1].id
-            subCategories2.value = cats.filter((c: any) => c.parentId === path[1].id)
+            selectedSubCategory1.value = path[1].id as string
+            subCategories2.value = cats.filter((c) => c.parentId === path[1].id)
           }
           if (path.length > 2) {
-            selectedSubCategory2.value = path[2].id
+            selectedSubCategory2.value = path[2].id as string
           }
         }
       }
     } catch {
-      console.error('Kategoriler yüklenemedi')
+      /* sessiz hata */
     }
   }
 
@@ -225,7 +225,7 @@ export const useProductForm = (params: { productId?: string | null; initialData?
   })
 
   const handleMainCategoryChange = async () => {
-    subCategories1.value = allCategories.value.filter((c: any) => c.parentId === selectedMainCategory.value)
+    subCategories1.value = allCategories.value.filter((c) => c.parentId === selectedMainCategory.value)
     selectedSubCategory1.value = ''
     selectedSubCategory2.value = ''
     subCategories2.value = []
@@ -233,7 +233,7 @@ export const useProductForm = (params: { productId?: string | null; initialData?
   }
 
   const handleSubCategory1Change = async () => {
-    subCategories2.value = allCategories.value.filter((c: any) => c.parentId === selectedSubCategory1.value)
+    subCategories2.value = allCategories.value.filter((c) => c.parentId === selectedSubCategory1.value)
     selectedSubCategory2.value = ''
     form.categoryId = selectedSubCategory1.value || selectedMainCategory.value
   }

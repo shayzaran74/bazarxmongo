@@ -15,11 +15,11 @@ export const useAdminLedger = () => {
   // IMPORTANT: Initialize with empty structures to prevent 'undefined' reading '.value' errors
   // This resolves the "Cannot read properties of undefined (reading 'value')" errors in the template
   const ledgerData = ref({
-    daily: [] as any[],
-    distribution: [] as any[]
+    daily: [] as Record<string, unknown>[],
+    distribution: [] as Record<string, unknown>[]
   })
 
-  const recentEntries = ref<any[]>([])
+  const recentEntries = ref<Record<string, unknown>[]>([])
   
   const kpis = ref({
     totalVolume: 0,
@@ -28,14 +28,14 @@ export const useAdminLedger = () => {
     anomalyScore: 0
   })
 
-  const anomalyAlerts = ref<any[]>([])
+  const anomalyAlerts = ref<Record<string, unknown>[]>([])
   const anomalySummary = ref({ critical: 0, warning: 0, info: 0 })
   const anomalyLoading = ref(false)
   const anomalySeverityFilter = ref('ALL')
   const anomalyLastScanned = ref(new Date().toISOString())
 
   const reconLoading = ref(false)
-  const reconResult = ref<any>(null)
+  const reconResult = ref<Record<string, unknown> | null>(null)
 
   /**
    * Fetches ledger analytics and recent transactions
@@ -45,10 +45,10 @@ export const useAdminLedger = () => {
     loading.value = true
     try {
       // 1. Fetch Analytics Data (Charts)
-      const res = await $api<any>('/api/v1/admin/analytics/ledger', {
+      const res = await $api<{ success: boolean; data: { daily: Record<string, unknown>[]; distribution: Record<string, unknown>[] } }>('/api/v1/admin/analytics/ledger', {
         query: { days: selectedDays.value }
       })
-      
+
       if (res.success && res.data) {
         ledgerData.value = {
           daily: res.data.daily || [],
@@ -59,13 +59,13 @@ export const useAdminLedger = () => {
       }
 
       // 2. Fetch Recent Transactions
-      const txRes = await $api<any>('/api/v1/admin/wallet/transactions', {
+      const txRes = await $api<{ data?: { items: Record<string, unknown>[] } }>('/api/v1/admin/wallet/transactions', {
         query: { limit: 10 }
       })
       recentEntries.value = txRes.data?.items || []
 
       // 3. Fetch KPI Stats
-      const statsRes = await $api<any>('/api/v1/admin/analytics/wallet/stats')
+      const statsRes = await $api<{ success: boolean; data: { users?: Record<string, unknown> } }>('/api/v1/admin/analytics/wallet/stats')
       if (statsRes.success && statsRes.data) {
         const u = statsRes.data.users || {}
         kpis.value = {
@@ -76,8 +76,8 @@ export const useAdminLedger = () => {
         }
       }
 
-    } catch (e) {
-      console.error('Ledger fetch error:', e)
+    } catch {
+      /* sessiz hata */
     } finally {
       loading.value = false
     }
@@ -86,14 +86,14 @@ export const useAdminLedger = () => {
   const fetchAnomalies = async () => {
     anomalyLoading.value = true
     try {
-      const res = await $api<any>('/api/v1/admin/analytics/anomalies')
+      const res = await $api<{ success: boolean; data: { items: Record<string, unknown>[]; summary: { critical: number; warning: number; info: number } } }>('/api/v1/admin/analytics/anomalies')
       if (res.success && res.data) {
         anomalyAlerts.value = res.data.items || []
         anomalySummary.value = res.data.summary || { critical: 0, warning: 0, info: 0 }
       }
       anomalyLastScanned.value = new Date().toISOString()
-    } catch (e) {
-      console.error('Anomaly fetch error:', e)
+    } catch {
+      /* sessiz hata */
     } finally {
       anomalyLoading.value = false
     }
@@ -113,8 +113,7 @@ export const useAdminLedger = () => {
         }
         reconLoading.value = false
       }, 2000)
-    } catch (e) {
-      console.error('Reconciliation error:', e)
+    } catch {
       reconLoading.value = false
     }
   }

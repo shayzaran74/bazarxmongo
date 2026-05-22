@@ -1,28 +1,28 @@
 export const useAdminVendors = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
   const loading = ref(false)
   const vendorActionLoading = ref(false)
-  const vendors = ref<any[]>([])
-  const selectedVendor = ref<any>(null)
+  const vendors = ref<Record<string, unknown>[]>([])
+  const selectedVendor = ref<Record<string, unknown> | null>(null)
   const selectedCategoryId = ref('')
   const statusFilter = ref('')
   const vendorSearchQuery = ref('')
   const showRejectForm = ref(false)
   const rejectionReason = ref('')
-  const availableCategories = ref<any[]>([])
+  const availableCategories = ref<Record<string, unknown>[]>([])
 
   const filteredVendors = computed(() => {
     let list = vendors.value
     if (statusFilter.value) {
-      list = list.filter((v: any) => v.status === statusFilter.value)
+      list = list.filter((v) => v.status === statusFilter.value)
     }
     if (vendorSearchQuery.value) {
       const q = vendorSearchQuery.value.toLowerCase()
-      list = list.filter((v: any) =>
-        v.company?.name?.toLowerCase().includes(q) ||
-        v.profile?.storeName?.toLowerCase().includes(q)
+      list = list.filter((v) =>
+        (v.company as { name?: string })?.name?.toLowerCase().includes(q) ||
+        (v.profile as { storeName?: string })?.storeName?.toLowerCase().includes(q)
       )
     }
     return list
@@ -31,7 +31,7 @@ export const useAdminVendors = () => {
   const fetchVendors = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/admin/vendors')
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/admin/vendors')
       vendors.value = res.data || []
     } catch {
       $toast.error('Satıcılar yüklenemedi')
@@ -42,12 +42,12 @@ export const useAdminVendors = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await $api<any>('/api/v1/listings/categories')
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/listings/categories')
       availableCategories.value = res.data || []
     } catch { /* ignore */ }
   }
 
-  const openVendorDetail = (vendor: any) => {
+  const openVendorDetail = (vendor: Record<string, unknown>) => {
     selectedVendor.value = { ...vendor }
     showRejectForm.value = false
     rejectionReason.value = ''
@@ -58,13 +58,12 @@ export const useAdminVendors = () => {
     showRejectForm.value = false
   }
 
-  const approveVendor = async (vendor?: any) => {
+  const approveVendor = async (vendor?: Record<string, unknown> | string) => {
     const target = vendor || selectedVendor.value
     if (!target) return
 
-    const vendorId = typeof target === 'string' ? target : target.id
+    const vendorId = typeof target === 'string' ? target : target.id as string | undefined
     if (!vendorId) {
-      console.error('Vendor ID not found', target)
       return
     }
 
@@ -81,11 +80,11 @@ export const useAdminVendors = () => {
     }
   }
 
-  const rejectVendor = async (vendor?: any) => {
+  const rejectVendor = async (vendor?: Record<string, unknown> | string) => {
     const target = vendor || selectedVendor.value
     if (!target) return
 
-    const vendorId = typeof target === 'string' ? target : target.id
+    const vendorId = typeof target === 'string' ? target : target.id as string | undefined
     if (!vendorId) return
 
     vendorActionLoading.value = true
@@ -104,13 +103,13 @@ export const useAdminVendors = () => {
     }
   }
 
-  const toggleFeatured = async (vendorOrFeatured: any) => {
+  const toggleFeatured = async (vendorOrFeatured: Record<string, unknown> | boolean) => {
     const target = typeof vendorOrFeatured === 'object' ? vendorOrFeatured : selectedVendor.value
     if (!target) return
 
-    const isFeatured = typeof vendorOrFeatured === 'boolean' 
-      ? vendorOrFeatured 
-      : !target.profile?.isFeatured
+    const isFeatured = typeof vendorOrFeatured === 'boolean'
+      ? vendorOrFeatured
+      : !(target.profile as { isFeatured?: boolean })?.isFeatured
 
     try {
       await $api(`/api/admin/vendors/${target.id}`, {
@@ -119,14 +118,14 @@ export const useAdminVendors = () => {
       })
       $toast.success('Güncellendi')
       if (target.profile) {
-        target.profile.isFeatured = isFeatured
+        (target.profile as { isFeatured?: boolean }).isFeatured = isFeatured
       }
     } catch {
       $toast.error('Güncellenemedi')
     }
   }
 
-  const saveB2BSettings = async (vendorOrData: any) => {
+  const saveB2BSettings = async (vendorOrData: Record<string, unknown>) => {
     const target = (vendorOrData && vendorOrData.id) ? vendorOrData : selectedVendor.value
     if (!target) return
 
@@ -143,9 +142,9 @@ export const useAdminVendors = () => {
     }
   }
 
-  const updateVendorType = async (vendor: any) => {
+  const updateVendorType = async (vendor: Record<string, unknown>) => {
     if (!vendor || !vendor.id) return
-    
+
     vendorActionLoading.value = true
     try {
       await $api(`/api/v1/admin/vendors/${vendor.id}`, {
@@ -161,11 +160,11 @@ export const useAdminVendors = () => {
     }
   }
 
-  const addCategory = async (vendor?: any) => {
+  const addCategory = async (vendor?: Record<string, unknown> | string) => {
     const target = vendor || selectedVendor.value
     if (!target || !selectedCategoryId.value) return
-    
-    const vendorId = typeof target === 'string' ? target : target.id
+
+    const vendorId = typeof target === 'string' ? target : target.id as string | undefined
 
     try {
       await $api(
@@ -188,7 +187,7 @@ export const useAdminVendors = () => {
       vId = vendorIdOrCategoryId
       cId = categoryId
     } else {
-      vId = selectedVendor.value?.id
+      vId = selectedVendor.value?.id as string | undefined
       cId = vendorIdOrCategoryId
     }
 

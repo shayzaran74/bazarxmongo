@@ -22,7 +22,7 @@ export const usePremium = () => {
 
         try {
             loading.value = true
-            const response = await $api('/api/payments/premium/subscribe', {
+            const response = await $api('/api/v1/payments/premium/subscribe', {
                 method: 'POST',
                 body: { plan, amount }
             })
@@ -31,8 +31,8 @@ export const usePremium = () => {
                 await authStore.fetchUser()
                 setTimeout(() => navigateTo('/'), 2000)
             }
-        } catch (error: any) {
-            toast.error(error.data?.error || 'Ödeme işlemi sırasında bir hata oluştu')
+        } catch (error: unknown) {
+            toast.error((error as { data?: { error?: string } }).data?.error || 'Ödeme işlemi sırasında bir hata oluştu')
         } finally {
             loading.value = false
         }

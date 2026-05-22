@@ -77,7 +77,6 @@ export const useSurplus = () => {
   }
 
   const deleteItem = async (id: string): Promise<void> => {
-    if (!confirm('Bu ilanı silmek istediğinize emin misiniz?')) return
     try {
       const response = await $api<{ success: boolean }>(`/api/v1/surplus/${id}`, { method: 'DELETE' })
       if (response.success) {
@@ -113,7 +112,6 @@ export const useSurplus = () => {
   }
 
   const acceptOffer = async (id: string): Promise<void> => {
-    if (!confirm('Bu teklifi kabul ettiğinizde takas süreci başlayacaktır. Devam etmek istiyor musunuz?')) return
     try {
       const response = await $api<{ success: boolean; sessionId?: string }>(
         `/api/v1/offers/${id}/accept`,
@@ -133,7 +131,6 @@ export const useSurplus = () => {
   }
 
   const rejectOffer = async (id: string): Promise<void> => {
-    if (!confirm('Bu teklifi reddetmek istediğinize emin misiniz?')) return
     try {
       const response = await $api<{ success: boolean }>(`/api/v1/offers/${id}/status`, {
         method: 'PATCH',

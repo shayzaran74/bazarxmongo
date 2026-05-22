@@ -77,8 +77,7 @@ export const useGeolocation = () => {
             const rawDistrict = address.county || address.district || address.suburb || address.town || null
 
             return { city: rawCity, district: rawDistrict }
-        } catch (err) {
-            console.error('Reverse geocoding error:', err)
+        } catch {
             return { city: null, district: null }
         }
     }
@@ -165,8 +164,8 @@ export const useGeolocation = () => {
                     return mapped
                 }
             }
-        } catch (err) {
-            console.error('Load saved location error:', err)
+        } catch {
+            /* sessiz hata */
         }
         return null
     }

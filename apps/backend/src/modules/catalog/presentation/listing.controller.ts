@@ -1,6 +1,6 @@
 // apps/backend/src/modules/catalog/presentation/listing.controller.ts
 
-import { Controller, Post, Body, Get, Param, Query, UseGuards, Delete, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards, Delete, Put, BadRequestException } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -115,7 +115,7 @@ export class ListingController {
     let vendorId = user.id;
     if (user.role === 'VENDOR') {
       const vendor = await this.vendorModel.findOne({ userId: user.id }, { id: 1 }).lean();
-      if (!vendor) throw new Error('Satıcı profili bulunamadı. Lütfen önce satıcı başvurusu yapın.');
+      if (!vendor) throw new BadRequestException('Satıcı profili bulunamadı. Lütfen önce satıcı başvurusu yapın.');
       vendorId = vendor.id;
     }
     return this.commandBus.execute(new CreateListingCommand(vendorId, dto));

@@ -2,7 +2,8 @@
 // ReturnService — İade yönetimi iş mantığı (Master Plan §3.5.1)
 // 14 gün cayma hakkı, 48s satıcı timeout → auto-approve, escrow refund tetiklemesi
 
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { Injectable, Logger, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
 import { IReturnRequestRepository } from '../../domain/repositories/return-request.repository.interface';
 import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
@@ -42,15 +43,15 @@ export class ReturnService {
   async createReturn(userId: string, dto: CreateReturnDto): Promise<{ id: string }> {
     const order = await this.orderRepo.findById(dto.orderId);
     if (!order) {
-      throw new Error(`Order not found: ${dto.orderId}`);
+      throw new NotFoundException(`Order not found: ${dto.orderId}`);
     }
 
     if (order.userId !== userId) {
-      throw new Error('Sipariş size ait değil');
+      throw new BadRequestException('Sipariş size ait değil');
     }
 
     if (order.status !== 'DELIVERED' && order.status !== 'COMPLETED') {
-      throw new Error('Sadece teslim edilmiş siparişler için iade açılabilir');
+      throw new BadRequestException('Sadece teslim edilmiş siparişler için iade açılabilir');
     }
 
     const DELIVERY_GRACE_DAYS = 14;
@@ -60,12 +61,12 @@ export class ReturnService {
     graceDeadline.setDate(graceDeadline.getDate() + DELIVERY_GRACE_DAYS);
 
     if (now > graceDeadline) {
-      throw new Error('İade süresi doldu (14 gün)');
+      throw new BadRequestException('İade süresi doldu (14 gün)');
     }
 
     const existing = await this.returnRepo.findByOrderId(dto.orderId);
     if (existing && [ReturnStatus.PENDING, ReturnStatus.APPROVED, ReturnStatus.AUTO_APPROVED].includes(existing.status as ReturnStatus)) {
-      throw new Error('Bu sipariş için aktif iade talebi zaten mevcut');
+      throw new BadRequestException('Bu sipariş için aktif iade talebi zaten mevcut');
     }
 
     // Toplam iade tutarını hesapla
@@ -74,13 +75,13 @@ export class ReturnService {
     const returnItems = dto.items.map(item => {
       const orderItem = orderItems.find(oi => oi.id === item.orderItemId);
       if (!orderItem) {
-        throw new Error(`OrderItem not found: ${item.orderItemId}`);
+        throw new NotFoundException(`OrderItem not found: ${item.orderItemId}`);
       }
       const price = Number(orderItem.price) || 0;
       const refundAmount = price * item.quantity;
       totalRefund += refundAmount;
       return {
-        id: `ri-${Date.now()}-${item.orderItemId}`,
+        id: randomUUID(),
         orderItemId: item.orderItemId,
         quantity: item.quantity,
         refundAmount,
@@ -208,7 +209,7 @@ export class ReturnService {
   async adminArbitrate(returnId: string, adminId: string, decision: 'APPROVE' | 'REJECT'): Promise<{ success: boolean }> {
     const entity = await this.returnRepo.findById(returnId);
     if (!entity) {
-      throw new Error('İade talebi bulunamadı');
+      throw new NotFoundException('İade talebi bulunamadı');
     }
 
     entity.escalateToAdmin();
@@ -221,7 +222,7 @@ export class ReturnService {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
         this.logger.error('Admin arbitration refund başarısız — işlem iptal edildi', { returnId, holdId, error: msg });
-        throw new Error('Finansal iade işlemi başarısız. Tahkim iptal edildi.');
+        throw new BadRequestException('Finansal iade işlemi başarısız. Tahkim iptal edildi.');
       }
       // Refund başarılı → onay durumuna geç
       entity.approve();

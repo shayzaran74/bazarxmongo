@@ -1,5 +1,6 @@
 // apps/backend/src/modules/auction/auction-admin.controller.ts
 
+import { randomUUID } from 'crypto';
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Delete, BadRequestException, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CommandBus } from '@nestjs/cqrs';
@@ -73,7 +74,7 @@ export class AuctionAdminController {
     }
 
     const now = new Date();
-    const id = 'auction-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = randomUUID();
     const props: AuctionProps = {
       listingId: listing.id,
       userId: user.id,

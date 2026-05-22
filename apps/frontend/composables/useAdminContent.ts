@@ -56,9 +56,9 @@ export const useAdminContent = () => {
     loading.value = true
     try {
       const [annRes, polRes, dynRes] = await Promise.all([
-        $api('/api/admin/content/announcements'),
-        $api('/api/admin/content/policies'),
-        $api('/api/admin/content/dynamic')
+        $api('/api/v1/admin/content/announcements'),
+        $api('/api/v1/admin/content/policies'),
+        $api('/api/v1/admin/content/dynamic')
       ])
       
       announcements.value = annRes.data || []
@@ -104,7 +104,7 @@ export const useAdminContent = () => {
     try {
       const id = editingAnnouncement.value?.id
       const method = id ? 'PUT' : 'POST'
-      const url = id ? `/api/admin/content/announcements/${id}` : '/api/admin/content/announcements'
+      const url = id ? `/api/v1/admin/content/announcements/${id}` : '/api/v1/admin/content/announcements'
       
       await $api(url, { method, body: announcementForm.value })
       $toast.success('Duyuru kaydedildi')
@@ -116,7 +116,7 @@ export const useAdminContent = () => {
   const deleteAnnouncement = async (id: string) => {
     if (!confirm('Emin misiniz?')) return
     try {
-      await $api(`/api/admin/content/announcements/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/content/announcements/${id}`, { method: 'DELETE' })
       $toast.success('Silindi')
       fetchAll()
     } catch { $toast.error('Silinemedi') }
@@ -126,7 +126,7 @@ export const useAdminContent = () => {
     try {
       const id = editingPolicy.value?.id
       const method = id ? 'PUT' : 'POST'
-      const url = id ? `/api/admin/content/policies/${id}` : '/api/admin/content/policies'
+      const url = id ? `/api/v1/admin/content/policies/${id}` : '/api/v1/admin/content/policies'
       
       await $api(url, { method, body: policyForm.value })
       $toast.success('Politika kaydedildi')
@@ -138,7 +138,7 @@ export const useAdminContent = () => {
   const deletePolicy = async (id: string) => {
     if (!confirm('Emin misiniz?')) return
     try {
-      await $api(`/api/admin/content/policies/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/content/policies/${id}`, { method: 'DELETE' })
       $toast.success('Silindi')
       fetchAll()
     } catch { $toast.error('Silinemedi') }
@@ -148,7 +148,7 @@ export const useAdminContent = () => {
     try {
       const id = editingContent.value?.id
       const method = id ? 'PUT' : 'POST'
-      const url = id ? `/api/admin/content/dynamic/${id}` : '/api/admin/content/dynamic'
+      const url = id ? `/api/v1/admin/content/dynamic/${id}` : '/api/v1/admin/content/dynamic'
       
       await $api(url, { method, body: contentForm.value })
       $toast.success('İçerik kaydedildi')
@@ -160,7 +160,7 @@ export const useAdminContent = () => {
   const deleteContent = async (id: string) => {
     if (!confirm('Emin misiniz?')) return
     try {
-      await $api(`/api/admin/content/dynamic/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/content/dynamic/${id}`, { method: 'DELETE' })
       $toast.success('Silindi')
       fetchAll()
     } catch { $toast.error('Silinemedi') }

@@ -32,8 +32,7 @@ export class TrackEventHandler implements ICommandHandler<TrackEventCommand> {
         timestamp: props.timestamp,
       });
       return { success: true };
-    } catch (error) {
-      console.error('TrackEventHandler Error:', error);
+    } catch (_error) {
       return { success: false, error: 'Failed to track event' };
     }
   }

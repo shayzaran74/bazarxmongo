@@ -1,14 +1,14 @@
 export const useProductDetail = () => {
   const route = useRoute()
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
   const authStore = useAuthStore()
 
-  const product = ref<any>(null)
-  const listing = ref<any>(null)
+  const product = ref<Record<string, unknown> | null>(null)
+  const listing = ref<Record<string, unknown> | null>(null)
   const loading = ref(true)
   const error = ref<string | null>(null)
-  
+
   const quantity = ref(1)
   const selectedImage = ref('')
   const activeTab = ref('description')
@@ -18,15 +18,15 @@ export const useProductDetail = () => {
   const addingToCart = ref(false)
   const processingBarter = ref(false)
   const showAddressModal = ref(false)
-  
-  const relatedProducts = ref<any[]>([])
+
+  const relatedProducts = ref<Record<string, unknown>[]>([])
   const submittingReview = ref(false)
   const reviewDraft = reactive({ rating: 5, comment: '' })
   const canReview = ref(false)
   const canReviewReason = ref('')
   const loadingReviewEligibility = ref(false)
-  
-  const estimatedDelivery = ref<any>(null)
+
+  const estimatedDelivery = ref<Record<string, unknown> | null>(null)
   const selectedCity = ref('')
   const selectedDistrict = ref('')
 
@@ -90,7 +90,7 @@ export const useProductDetail = () => {
     loading.value = true
     error.value = null
     try {
-      const res = await $api<any>(`/api/products/slug/${slug.value}`)
+      const res = await $api<{ success: boolean; data: Record<string, unknown> }>(`/api/v1/products/slug/${slug.value}`)
       if (res.success && res.data) {
         product.value = res.data
         listing.value = res.data.listings?.[0] || null
@@ -99,8 +99,8 @@ export const useProductDetail = () => {
       } else {
         error.value = 'Ürün bulunamadı'
       }
-    } catch (e: any) {
-      error.value = e.data?.message || 'Ürün yüklenemedi'
+    } catch (e: unknown) {
+      error.value = (e as { data?: { message?: string } }).data?.message || 'Ürün yüklenemedi'
     } finally {
       loading.value = false
     }
@@ -109,7 +109,7 @@ export const useProductDetail = () => {
   const fetchRelated = async () => {
     if (!product.value) return
     try {
-      const res = await $api<any>('/api/products', {
+      const res = await $api<{ data?: { items?: Record<string, unknown>[] } | Record<string, unknown>[] }>('/api/v1/products', {
         query: { categoryId: product.value?.categoryId, limit: 4 }
       })
       relatedProducts.value = res.data?.items || res.data || []
@@ -120,7 +120,7 @@ export const useProductDetail = () => {
     if (!authStore.isLoggedIn) return navigateTo('/auth/login')
     addingToCart.value = true
     try {
-      await $api('/api/cart', {
+      await $api('/api/v1/cart', {
         method: 'POST',
         body: { listingId: listing.value?.id, quantity: quantity.value }
       })
@@ -141,7 +141,7 @@ export const useProductDetail = () => {
     if (!authStore.isLoggedIn) return
     isFavorite.value = !isFavorite.value
     try {
-      await $api('/api/favorites/toggle', {
+      await $api('/api/v1/favorites/toggle', {
         method: 'POST',
         body: { productId: product.value.id }
       })
@@ -167,7 +167,7 @@ export const useProductDetail = () => {
 
   const estimateDelivery = async (loc: { city: string; district: string }) => {
     try {
-      const res: any = await $api('/api/shipping/estimate', { query: loc })
+      const res = await $api<{ data: Record<string, unknown> }>('/api/v1/shipping/estimate', { query: loc })
       estimatedDelivery.value = res.data
     } catch { /* ignore */ }
   }
@@ -175,7 +175,7 @@ export const useProductDetail = () => {
   const submitReview = async () => {
     submittingReview.value = true
     try {
-      await $api('/api/reviews', {
+      await $api('/api/v1/reviews', {
         method: 'POST',
         body: { productId: product.value.id, ...reviewDraft }
       })

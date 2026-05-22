@@ -31,7 +31,7 @@ export function useTrustScore() {
   async function fetch() {
     pending.value = true
     try {
-      const res = await $api<TrustScoreData>('/api/trust-score/me')
+      const res = await $api<TrustScoreData>('/api/v1/trust-score/me')
       data.value = res.data ?? null
     } finally { pending.value = false }
   }
@@ -40,7 +40,7 @@ export function useTrustScore() {
     const body: Record<string, unknown> = { type }
     if (type === 'COMMISSION') body.commissionAmount = amount
     if (type === 'POOL_DEPOSIT') body.quotaAmount = amount
-    const res = await $api('/api/trust-score/xp-allowance', { method: 'POST', body })
+    const res = await $api('/api/v1/trust-score/xp-allowance', { method: 'POST', body })
     return res.data
   }
 
