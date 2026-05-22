@@ -65,8 +65,8 @@ export class AuctionCloseScheduler implements OnApplicationBootstrap, OnModuleDe
     const topBid = bids[0] ?? null;
     const winnerId = topBid?.userId ?? null;
 
-    // Kazanan belirle
-    await this.auctionRepository.updateStatus(auctionId, 'ENDED');
+    // Kazanan belirle ve winnerId'yi auction kaydına yaz
+    await this.auctionRepository.updateAuctionStatus(auctionId, 'ENDED', winnerId ?? undefined);
 
     if (winnerId && topBid) {
       await this.auctionRepository.createWinner({

@@ -36,8 +36,9 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
       throw new BadRequestException('Mevcut bir kazanan yok');
     }
 
+    interface AuctionWinner { userId: string; position: number; auctionId: string; holdId?: string }
     // Önceki kazananları (tüm pozisyonlardaki) hariç tut
-    const excludedUserIds = auction.winners?.map((w: any) => w.userId) ?? [];
+    const excludedUserIds = (auction.winners as AuctionWinner[] | undefined)?.map(w => w.userId) ?? [];
 
     // Sıradaki en yüksek teklif sahibini bul
     const bids = await this.bidRepository.findByAuctionId(auctionId, 100);

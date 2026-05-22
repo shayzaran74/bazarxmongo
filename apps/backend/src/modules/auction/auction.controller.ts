@@ -3,6 +3,7 @@
 import { Controller, Get, Post, Body, Query, Param, UseGuards, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { PlaceBidCommand } from './application/commands/place-bid.command';
@@ -90,7 +91,8 @@ export class AuctionController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Teklif ver' })
   @Post(':id/bid')
   async placeBid(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Body() dto: PlaceBidDto) {
@@ -147,8 +149,9 @@ export class AuctionController {
           idempotencyKey,
         );
         holdId = holdResult.holdId as string;
-      } catch (error: any) {
-        return { success: false, message: error?.message || 'Bakiye yetersiz veya teminat alınamadı.' };
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'Bakiye yetersiz veya teminat alınamadı.';
+        return { success: false, message: msg };
       }
     }
 
