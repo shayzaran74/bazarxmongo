@@ -5,6 +5,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { Logger } from '@nestjs/common';
 import { DELIVERY_DISPATCH_QUEUE } from '@barterborsa/shared-queue';
 
 export interface DispatchNotificationJob {
@@ -19,6 +20,8 @@ export interface DispatchNotificationJob {
 
 @Processor('delivery-dispatch')
 export class DispatchNotificationProcessor extends WorkerHost {
+  private readonly logger = new Logger(DispatchNotificationProcessor.name);
+
   constructor(
     @InjectQueue('delivery-dispatch') private readonly dispatchQueue: Queue,
   ) {
@@ -34,8 +37,13 @@ export class DispatchNotificationProcessor extends WorkerHost {
   }
 
   // Job başarısız olursa
-  async failed(job: Job<DispatchNotificationJob> | undefined, _error: Error): Promise<void> {
+  async failed(job: Job<DispatchNotificationJob> | undefined, error: Error): Promise<void> {
     if (!job) return;
-    /* ignore */
+    this.logger.error('Kurye bildirim job\'u başarısız oldu', {
+      jobId: job.id,
+      dispatchId: job.data?.dispatchId,
+      orderId: job.data?.orderId,
+      error: error.message,
+    });
   }
 }

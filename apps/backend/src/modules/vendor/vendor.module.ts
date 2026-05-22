@@ -188,6 +188,9 @@ import { TierBenefit, TierBenefitSchema } from '../../../../../packages/shared/s
 
 import { CatalogModule } from '../catalog/catalog.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { MediaModule } from '../media/media.module';
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
 
 @Module({
   imports: [
@@ -195,6 +198,9 @@ import { InventoryModule } from '../inventory/inventory.module';
     forwardRef(() => CommerceModule),
     CatalogModule,
     InventoryModule,
+    MediaModule,
+    AuditMongooseModule,
+    FinancialGatewayModule,
     MongooseModule.forFeature([
       { name: 'Vendor', schema: VendorSchema },
       { name: 'Company', schema: CompanySchema },

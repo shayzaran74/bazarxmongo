@@ -1,12 +1,15 @@
 // apps/backend/src/modules/analytics/application/handlers/track-event.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Logger } from '@nestjs/common';
 import { TrackEventCommand, TrackBatchEventsCommand } from '../commands-queries/analytics.bus';
 import { MongoAnalyticsRepository } from '../../infrastructure/persistence/mongo-analytics.repository';
 import { AnalyticsEvent } from '../../domain/entities/analytics.entities';
 
 @CommandHandler(TrackEventCommand)
 export class TrackEventHandler implements ICommandHandler<TrackEventCommand> {
+  private readonly logger = new Logger(TrackEventHandler.name);
+
   constructor(private readonly repository: MongoAnalyticsRepository) {}
   async execute(command: TrackEventCommand) {
     try {
@@ -32,7 +35,9 @@ export class TrackEventHandler implements ICommandHandler<TrackEventCommand> {
         timestamp: props.timestamp,
       });
       return { success: true };
-    } catch (_error) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Bilinmeyen hata';
+      this.logger.warn('Analitik event kaydedilemedi', { error: msg });
       return { success: false, error: 'Failed to track event' };
     }
   }

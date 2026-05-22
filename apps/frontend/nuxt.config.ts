@@ -35,6 +35,21 @@ export default defineNuxtConfig({
   ],
 
   routeRules: {
+    // SEO ve SSR gerektiren public sayfalar
+    '/': { ssr: true },
+    '/products/**': { ssr: true },
+    '/categories/**': { ssr: true },
+    '/search/**': { ssr: true },
+    '/about': { ssr: true },
+    '/contact': { ssr: true },
+    '/faq': { ssr: true },
+    // Dinamik ve yetki gerektiren sayfalar SPA olarak kalır
+    '/vendor/**': { ssr: false },
+    '/admin/**': { ssr: false },
+    '/profile/**': { ssr: false },
+    '/checkout/**': { ssr: false },
+    '/cart/**': { ssr: false },
+
     '/login': { redirect: '/auth/login' },
     '/register': { redirect: '/auth/register' },
     '/forgot-password': { redirect: '/auth/forgot-password' },
@@ -129,7 +144,9 @@ export default defineNuxtConfig({
   },
 
   typescript: {
-    typeCheck: false
+    // typeCheck: true dev'de OOM'a yol açıyor — CI'da nest build ile kontrol edilir
+    typeCheck: false,
+    strict: true,
   },
   
   ssr: false,

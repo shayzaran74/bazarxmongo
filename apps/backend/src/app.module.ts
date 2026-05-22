@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, InjectConnection } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
+import { Connection } from 'mongoose';
+import { ConnectionRegistry } from '@barterborsa/shared-persistence';
 
 import { SharedSecurityModule, JwtAuthGuard } from '@barterborsa/shared-security';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
@@ -32,8 +34,10 @@ import { BarterBorsaModule } from './modules/barterborsa/barterborsa.module';
 import { GarageSaleModule } from './modules/garage-sale/garage-sale.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
+import { HealthModule } from './modules/health/health.module';
 import { OutboxProcessorService } from './infrastructure/outbox/outbox-processor.service';
 import { TierRateLimitModule } from './infrastructure/rate-limit/tier-rate-limit.module';
+import { MetricsModule } from './infrastructure/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -43,16 +47,15 @@ import { TierRateLimitModule } from './infrastructure/rate-limit/tier-rate-limit
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const uri = config.getOrThrow<string>('MONGODB_URI');
-        // @nestjs/mongoose createConnection() kullandığından shared-persistence
-        // modelleri için global bağlantıyı da açmak gerekiyor (ADR-005).
-        const mongoose = require('mongoose') as typeof import('mongoose');
-        if (mongoose.connection.readyState === 0) {
-          mongoose.connect(uri).catch(() => {/* bağlantı hatası MongooseModule tarafından yönetilir */});
-        }
-        return { uri, family: 4 };
-      },
+      useFactory: (config: ConfigService) => ({
+        uri: config.getOrThrow<string>('MONGODB_URI'),
+        family: 4,
+        maxPoolSize: 100,
+        minPoolSize: 10,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 30000,
+        heartbeatFrequencyMS: 10000,
+      }),
     }),
     ScheduleModule.forRoot(),
 
@@ -132,10 +135,11 @@ import { TierRateLimitModule } from './infrastructure/rate-limit/tier-rate-limit
     MediaModule,
     InventoryModule,
     DeliveryModule,
+    HealthModule,
 
     // ─── Infrastructure ────────────────────────────────────────────
-    // Tier bazlı rate limiting (APP_GUARD olarak kayıtlı — JwtAuthGuard'dan sonra çalışır)
     TierRateLimitModule,
+    MetricsModule,
   ],
   providers: [
     {
@@ -145,4 +149,8 @@ import { TierRateLimitModule } from './infrastructure/rate-limit/tier-rate-limit
     OutboxProcessorService,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(@InjectConnection() private readonly connection: Connection) {
+    ConnectionRegistry.registerConnection('default', this.connection);
+  }
+}

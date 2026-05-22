@@ -1,29 +1,47 @@
 // apps/backend/src/main.ts
 
 import 'reflect-metadata';
+import * as Sentry from '@sentry/node';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
+import { HttpMetricsMiddleware } from './infrastructure/metrics/http-metrics.middleware';
+import { MetricsService } from './infrastructure/metrics/metrics.service';
 import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  console.log('Bootstrap: Starting NestFactory.create...');
-  const app = await NestFactory.create<NestExpressApplication>(
-    AppModule,
-  );
-  console.log('Bootstrap: NestFactory.create completed.');
 
-  // CORS: Frontend'in backend ile konuşabilmesi için şart
-  // Production'da origin whitelist kullan
-  const corsOrigin = process.env.CORS_ORIGIN || '';
+  // Sentry: SENTRY_DSN varsa production'da aktif
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV ?? 'development',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0,
+      release: process.env.APP_VERSION ?? 'unknown',
+    });
+    logger.log('Sentry hata izleme aktif.');
+  }
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Trust proxy for rate limiting (ThrottlerGuard) behind Nginx/Cloudflare
+  app.set('trust proxy', 1);
+
+  // CORS: CORS_ORIGIN env boşsa credentials ile wildcard açılmasın
+  const rawOrigin = process.env.CORS_ORIGIN || '';
+  const corsOrigin: string | string[] | false = rawOrigin
+    ? rawOrigin.split(',').map((o) => o.trim())
+    : false;
   app.enableCors({
-    origin: corsOrigin ? corsOrigin.split(',') : true,
+    origin: corsOrigin,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   // Cookie parser: httpOnly cookie'leri req.cookies olarak parse eder (JWT cookie auth için şart)
@@ -50,8 +68,15 @@ async function bootstrap() {
     forbidNonWhitelisted: false,
   }));
 
-  // Global Exception Filter: Tüm 500 hatalarını detaylı loglamak için
-  app.useGlobalFilters(new AllExceptionsFilter());
+  // Prometheus HTTP metrikleri — tüm route'larda ölçüm
+  const metricsService = app.get(MetricsService);
+  app.use((req: Parameters<HttpMetricsMiddleware['use']>[0], res: Parameters<HttpMetricsMiddleware['use']>[1], next: Parameters<HttpMetricsMiddleware['use']>[2]) => {
+    const middleware = new HttpMetricsMiddleware(metricsService);
+    middleware.use(req, res, next);
+  });
+
+  // Global Exception Filter: Sentry entegreli — 5xx'leri raporlar
+  app.useGlobalFilters(new SentryExceptionFilter());
 
   // Swagger Setup
   const { SwaggerModule, DocumentBuilder } = require('@nestjs/swagger');
@@ -67,13 +92,7 @@ async function bootstrap() {
 
   const port = process.env.BACKEND_PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  
-  console.log('\x1b[33m%s\x1b[0m', '================================================');
-  console.log('\x1b[33m%s\x1b[0m', '   BAZARX BACKEND BAŞLADI - PORT: ' + port);
-  console.log('\x1b[33m%s\x1b[0m', '   LOGLAR AKTIF - ' + new Date().toISOString());
-  console.log('\x1b[33m%s\x1b[0m', '================================================');
-  
-  logger.log(`Backend ${port} portunda (Express) çalışmaya başladı.`);
+  logger.log(`Backend ${port} portunda (Express) çalışmaya başladı — ${new Date().toISOString()}`);
 }
 
 bootstrap();

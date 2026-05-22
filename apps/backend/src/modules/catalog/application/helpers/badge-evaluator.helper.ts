@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { BadgeRule } from '@barterborsa/shared-persistence/schemas/backend/badgeRule.schema';
+
+const logger = new Logger('BadgeEvaluatorHelper');
 
 interface BadgeCondition {
   AND?: BadgeCondition[];
@@ -76,7 +79,9 @@ export async function populateDynamicBadges(items: Record<string, unknown>[]) {
 
       item.dynamicBadges = badges;
     }
-  } catch (/* ignore */_error) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Bilinmeyen hata';
+    logger.warn('Badge değerlendirme başarısız, boş badge ile devam ediliyor', { error: msg });
     // Fallback: populate empty badges so that the query successfully returns without failing
     for (const item of items) {
       item.dynamicBadges = {

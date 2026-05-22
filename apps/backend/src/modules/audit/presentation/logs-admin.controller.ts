@@ -1,8 +1,7 @@
-import { Controller, Get, Query, UseGuards, Inject, Logger } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
-import { STORAGE_ADAPTER, IStorageAdapter } from '../../media/domain/storage.adapter.interface';
 import { ConfigService } from '@nestjs/config';
 import { AuditLog } from '@barterborsa/shared-persistence/schemas/backend/auditLog.schema';
 import * as Minio from 'minio';
@@ -12,13 +11,10 @@ import * as Minio from 'minio';
 @Controller('admin/logs')
 export class LogsAdminController {
   private readonly logger = new Logger(LogsAdminController.name);
-  private minioClient: Minio.Client;
+  private readonly minioClient: Minio.Client;
   private readonly bucketName: string;
 
-  constructor(
-    @Inject(STORAGE_ADAPTER) private readonly storage: IStorageAdapter,
-    private readonly config: ConfigService,
-  ) {
+  constructor(private readonly config: ConfigService) {
     const endPoint = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10);
     const useSSL = this.config.get<string>('MINIO_USE_SSL') === 'true';
@@ -28,8 +24,8 @@ export class LogsAdminController {
       endPoint,
       port,
       useSSL,
-      accessKey: this.config.get<string>('MINIO_ACCESS_KEY'),
-      secretKey: this.config.get<string>('MINIO_SECRET_KEY'),
+      accessKey: this.config.get<string>('MINIO_ACCESS_KEY', ''),
+      secretKey: this.config.get<string>('MINIO_SECRET_KEY', ''),
     });
   }
 
@@ -60,7 +56,7 @@ export class LogsAdminController {
                 fileSize: obj.size,
                 createdAt: obj.lastModified,
                 category: this.detectCategory(obj.name),
-                viewUrl: await this.storage.getPresignedUrl(obj.name, 3600, bucket),
+                viewUrl: await this.minioClient.presignedGetObject(bucket, obj.name, 3600),
               });
             }
           }

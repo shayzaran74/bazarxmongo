@@ -69,7 +69,7 @@ export const useAdminVendors = () => {
 
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${vendorId}/approve`, { method: 'PUT' })
+      await $api(`/api/v1/admin/vendors/${vendorId}/approve`, { method: 'PUT' })
       $toast.success('Satıcı onaylandı')
       closeVendorDetail()
       fetchVendors()
@@ -89,7 +89,7 @@ export const useAdminVendors = () => {
 
     vendorActionLoading.value = true
     try {
-      await $api(`/api/admin/vendors/${vendorId}/reject`, {
+      await $api(`/api/v1/admin/vendors/${vendorId}/reject`, {
         method: 'PUT',
         body: { rejectionReason: rejectionReason.value }
       })
@@ -112,7 +112,7 @@ export const useAdminVendors = () => {
       : !(target.profile as { isFeatured?: boolean })?.isFeatured
 
     try {
-      await $api(`/api/admin/vendors/${target.id}`, {
+      await $api(`/api/v1/admin/vendors/${target.id}`, {
         method: 'PUT',
         body: { isFeatured }
       })
@@ -132,7 +132,7 @@ export const useAdminVendors = () => {
     const b2bData = (vendorOrData && vendorOrData.b2bData) ? vendorOrData.b2bData : vendorOrData
 
     try {
-      await $api(`/api/admin/vendors/${target.id}`, {
+      await $api(`/api/v1/admin/vendors/${target.id}`, {
         method: 'PUT',
         body: { b2bData }
       })
@@ -168,7 +168,7 @@ export const useAdminVendors = () => {
 
     try {
       await $api(
-        `/api/admin/vendors/${vendorId}/categories`,
+        `/api/v1/admin/vendors/${vendorId}/categories`,
         { method: 'POST', body: { categoryId: selectedCategoryId.value } }
       )
       $toast.success('Kategori eklendi')
@@ -195,7 +195,7 @@ export const useAdminVendors = () => {
 
     try {
       await $api(
-        `/api/admin/vendors/${vId}/categories/${cId}`,
+        `/api/v1/admin/vendors/${vId}/categories/${cId}`,
         { method: 'DELETE' }
       )
       $toast.success('Kategori kaldırıldı')

@@ -62,12 +62,11 @@ jobs:
         # build = tsc → hem compile hem type-check
 
       - name: Unit tests
-        run: pnpm --filter @bazarx/backend test --passWithNoTests --forceExit
-        # --passWithNoTests: yeni modüller için spec yoksa geçer
-        # --forceExit: async test'lerde asılı kalan handle'ları kapat
+        run: pnpm --filter @bazarx/backend test --forceExit
+        # --passWithNoTests kaldırıldı: test dosyası yoksa CI kırmızı olsun
 
       - name: Coverage report
-        run: pnpm --filter @bazarx/backend test:cov --passWithNoTests --forceExit
+        run: pnpm --filter @bazarx/backend test:cov --forceExit
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
       - name: Upload coverage

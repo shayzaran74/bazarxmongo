@@ -21,7 +21,10 @@ interface ExtendedSocket extends Socket {
   userId?: string;
 }
 
-const WS_CORS_ORIGIN = process.env.WS_CORS_ORIGIN || '*';
+const rawWsOrigin = process.env.WS_CORS_ORIGIN || '';
+const WS_CORS_ORIGIN: string | string[] | false = rawWsOrigin
+  ? rawWsOrigin.split(',').map((o) => o.trim())
+  : false;
 
 @WebSocketGateway({
   cors: { origin: WS_CORS_ORIGIN, credentials: true },

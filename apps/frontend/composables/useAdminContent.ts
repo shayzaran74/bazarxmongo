@@ -64,8 +64,7 @@ export const useAdminContent = () => {
       announcements.value = annRes.data || []
       policies.value = polRes.data || []
       contents.value = dynRes.data || []
-    } catch (err) {
-      console.error('Fetch error:', err)
+    } catch {
       $toast.error('İçerikler yüklenemedi')
     } finally {
       loading.value = false
@@ -168,7 +167,7 @@ export const useAdminContent = () => {
 
   const handleFileUpload = async (event: any) => {
     // Görsel yükleme mantığı buraya eklenebilir
-    console.log('File upload logic placeholder')
+    // TODO: Implement file upload
   }
 
   return {
