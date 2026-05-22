@@ -1,6 +1,6 @@
 // apps/backend/src/modules/auction/domain/entities/lottery.entity.ts
 
-import { AggregateRoot } from '@barterborsa/shared-core';
+import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
 import { LotteryStatus } from '../enums/lottery-status.enum';
 import * as crypto from 'crypto';
 
@@ -59,7 +59,7 @@ export class Lottery extends AggregateRoot<LotteryProps> {
 
   public draw(): string {
     if (this.props.status !== LotteryStatus.ACTIVE) {
-      throw new Error('Yalnızca aktif çekilişler çekilebilir');
+      throw new DomainException('Yalnızca aktif çekilişler çekilebilir');
     }
 
     const maxVal = this.props.totalTickets;
@@ -75,7 +75,7 @@ export class Lottery extends AggregateRoot<LotteryProps> {
 
   public drawManual(winningNumber: string, winnerId: string): void {
     if (this.props.status !== LotteryStatus.ACTIVE) {
-      throw new Error('Yalnızca aktif çekilişler çekilebilir');
+      throw new DomainException('Yalnızca aktif çekilişler çekilebilir');
     }
     this.props.winningNumber = winningNumber;
     this.props.winnerId = winnerId;

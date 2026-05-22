@@ -25,5 +25,7 @@ export const LotteryTicketSchema = new Schema<ILotteryTicket>({
 LotteryTicketSchema.index({ lotteryId: 1 });
 LotteryTicketSchema.index({ userId: 1 });
 LotteryTicketSchema.index({ lotteryId: 1, userId: 1 });
+// Race condition koruması: aynı çekilişte aynı numara kombinasyonu iki kez kaydedilemez
+LotteryTicketSchema.index({ lotteryId: 1, numbers: 1 }, { unique: true });
 
 export const LotteryTicket = createModelProxy<ILotteryTicket>('LotteryTicket', LotteryTicketSchema);
