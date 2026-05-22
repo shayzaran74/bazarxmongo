@@ -1,11 +1,23 @@
 // apps/backend/src/modules/media/infrastructure/minio-storage.adapter.ts
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { encode } from 'blurhash';
 import { IStorageAdapter, StorageUploadResult } from '../domain/storage.adapter.interface';
+
+// local-storage.adapter.ts ile aynı whitelist — bucket prefix injection önleme
+const SAFE_SUBPATH_RE = /^[a-zA-Z0-9_-]+$/;
+const ALLOWED_SUBPATHS = new Set(['products', 'avatars', 'documents', 'surplus', 'banners', 'categories']);
+
+function sanitizeSubPath(subPath: string): string {
+  const cleaned = subPath.trim().toLowerCase();
+  if (!SAFE_SUBPATH_RE.test(cleaned) || !ALLOWED_SUBPATHS.has(cleaned)) {
+    throw new BadRequestException(`Geçersiz subPath: "${subPath}". İzin verilenler: ${[...ALLOWED_SUBPATHS].join(', ')}`);
+  }
+  return cleaned;
+}
 
 @Injectable()
 export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
@@ -79,10 +91,11 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
     }
   }
 
-  async upload(file: any, subPath: string = 'products'): Promise<StorageUploadResult> {
+  async upload(file: Express.Multer.File, subPath: string = 'products'): Promise<StorageUploadResult> {
+    const safeSubPath = sanitizeSubPath(subPath);
     const buffer: Buffer = file.buffer;
     const uuid = randomUUID();
-    const prefix = `${subPath}/${uuid}`;
+    const prefix = `${safeSubPath}/${uuid}`;
 
     const variants: { name: string; width: number | null; quality: number }[] = [
       { name: 'thumb',    width: 300,  quality: 78 },

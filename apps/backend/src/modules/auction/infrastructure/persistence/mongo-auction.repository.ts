@@ -151,4 +151,32 @@ export class MongoAuctionRepository
     const doc = await this.participationModel.findOne({ id: participationId }).exec();
     return doc ? { id: doc.id, holdId: doc.holdId, status: doc.status } : null;
   }
+
+  async findAllParticipations(
+    filter: { auctionId?: string; status?: string },
+    skip: number,
+    limit: number,
+  ): Promise<{ items: AuctionParticipationData[]; total: number }> {
+    const query: Record<string, unknown> = {};
+    if (filter.auctionId) query.auctionId = filter.auctionId;
+    if (filter.status)    query.status    = filter.status;
+
+    const [docs, total] = await Promise.all([
+      this.participationModel.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }).lean().exec(),
+      this.participationModel.countDocuments(query).exec(),
+    ]);
+
+    return {
+      items: docs.map(d => ({
+        id:            d.id,
+        auctionId:     d.auctionId,
+        userId:        d.userId,
+        status:        d.status,
+        holdId:        d.holdId,
+        depositAmount: d.depositAmount,
+        createdAt:     d.createdAt,
+      })),
+      total,
+    };
+  }
 }

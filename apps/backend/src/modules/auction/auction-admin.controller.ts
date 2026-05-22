@@ -168,10 +168,27 @@ export class AuctionAdminController {
 
   @ApiOperation({ summary: 'Tüm katılım taleplerini listele (Admin)' })
   @Get('participations')
-  async getParticipations() {
-    // Admin katılım listesi için repository metodu eklenmeli
-    // Şimdilik basit bir placeholder döndür
-    return { success: true, data: [] };
+  async getParticipations(
+    @Query('auctionId') auctionId?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const pageNum  = parseInt(page,  10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const result = await this.auctionRepository.findAllParticipations(
+      { auctionId, status },
+      skip,
+      limitNum,
+    );
+
+    return {
+      success: true,
+      data: result.items,
+      meta: { page: pageNum, limit: limitNum, total: result.total, totalPages: Math.ceil(result.total / limitNum) },
+    };
   }
 
   @ApiOperation({ summary: 'Katılım talebini onayla' })

@@ -71,4 +71,5 @@ export interface IAuctionRepository extends IRepository<Auction> {
   createWinner(data: { auctionId: string; userId: string; position: number; amount: number }): Promise<void>;
   updateManyParticipations(auctionId: string, userId: string, status: string): Promise<void>;
   refundParticipation(participationId: string): Promise<AuctionRefundResult | null>;
+  findAllParticipations(filter: { auctionId?: string; status?: string }, skip: number, limit: number): Promise<{ items: AuctionParticipationData[]; total: number }>;
 }
