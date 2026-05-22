@@ -41,7 +41,7 @@ async function bootstrap() {
     origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
   });
 
   // Cookie parser: httpOnly cookie'leri req.cookies olarak parse eder (JWT cookie auth için şart)
@@ -61,11 +61,11 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  // Global validation: whitelist, transform aktif
+  // Global validation: whitelist ve forbidNonWhitelisted ile DTO dışı alanlar reddedilir
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
-    forbidNonWhitelisted: false,
+    forbidNonWhitelisted: true,
   }));
 
   // Prometheus HTTP metrikleri — tüm route'larda ölçüm

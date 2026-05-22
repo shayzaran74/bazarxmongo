@@ -35,7 +35,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // Production'da dahili hata detayı client'a sızdırılmaz
+      message = process.env.NODE_ENV === 'production'
+        ? 'Dahili sunucu hatası.'
+        : exception.message;
     }
 
     // 4xx → WARN, 5xx → ERROR

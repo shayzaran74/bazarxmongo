@@ -63,20 +63,21 @@ export const formatPhoneNumber = (phone: string): string => {
     return phone
 }
 
+// localStorage wrapper — şifreleme içermez; hassas veriler burada saklanmamalıdır
 export const secureStorage = {
     set: (key: string, value: unknown): void => {
         try { localStorage.setItem(key, JSON.stringify(value)) }
-        catch (e: unknown) { console.error('Storage error:', e) }
+        catch { /* localStorage erişimi reddedildi (örn: private mod) */ }
     },
     get: <T>(key: string, defaultValue: T | null = null): T | null => {
         try {
             const item = localStorage.getItem(key)
             return item ? JSON.parse(item) as T : defaultValue
-        } catch (e: unknown) { console.error('Storage error:', e); return defaultValue }
+        } catch { return defaultValue }
     },
     remove: (key: string): void => {
         try { localStorage.removeItem(key) }
-        catch (e: unknown) { console.error('Storage error:', e) }
+        catch { /* localStorage erişimi reddedildi */ }
     }
 }
 
