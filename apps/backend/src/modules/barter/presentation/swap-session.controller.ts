@@ -119,6 +119,9 @@ export class SwapSessionController {
 
     const vendor = await this.vendorRepository.findByUserId(user.id);
     if (!vendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
+    if (vendor.getProps().status !== 'APPROVED') {
+      throw new ForbiddenException('Satıcı hesabınız onaylanmamış.');
+    }
     return vendor.id;
   }
 }

@@ -80,9 +80,10 @@ export class SurplusController {
       return { success: true, data: mapped };
     }
 
+    interface CategoryNode { id: string; name: string; slug: string; icon: string; parentId: string | null; order: number; isActive: boolean; children: CategoryNode[] }
     // Build category tree
-    const categoryMap = new Map<string, any>();
-    const rootCategories: any[] = [];
+    const categoryMap = new Map<string, CategoryNode>();
+    const rootCategories: CategoryNode[] = [];
 
     mapped.forEach(cat => {
       categoryMap.set(cat.id, {
@@ -382,10 +383,15 @@ export class SurplusController {
     if (props.status !== 'APPROVED') {
       throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
     }
+    if (!props.barterEnabled) {
+      throw new BadRequestException('Takas (barter) modülü hesabınız için aktif değil.');
+    }
 
     return {
       id: vendor.id,
-      company: props.companyId ? { id: props.companyId, name: '', status: 'APPROVED' } : null,
+      company: props.companyId
+        ? { id: props.companyId, name: '', status: props.companyStatus ?? 'APPROVED' }
+        : null,
     };
   }
 }

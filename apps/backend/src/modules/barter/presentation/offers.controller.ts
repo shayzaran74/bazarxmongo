@@ -101,6 +101,12 @@ export class OffersController {
     if (!toCompanyId) throw new BadRequestException('Hedef şirket ID (toCompanyId) bulunamadı.');
     if (!receiverId) throw new BadRequestException('Hedef alıcı ID (receiverId) bulunamadı.');
 
+    // Receiver vendor APPROVED kontrolü
+    const receiverVendorCheck = await this.vendorRepository.findByCompanyId(toCompanyId);
+    if (!receiverVendorCheck || receiverVendorCheck.getProps().status !== 'APPROVED') {
+      throw new BadRequestException('Hedef firmanın satıcı hesabı onaylanmamış.');
+    }
+
     // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı.
     // Aynı fabrika ekosistemine ait iki bayi birbirleriyle takas yapamaz; pazaryerine geçmeliler.
     if (vendor.ecosystemId) {
@@ -121,9 +127,10 @@ export class OffersController {
     if (body.surplusItemId) {
       const surplus = await this.surplusItemRepository.findById(body.surplusItemId);
       // SurplusItem domain entity'sinde allowOnlineResale yansıtılmışsa kontrol et
-      const surplusProps = (surplus as SurplusItem | null)?.getProps?.() ?? {} as { ecosystemId?: string; allowOnlineResale?: boolean };
-      const ecosystemListing = surplusProps?.ecosystemId;
-      const allowResale = surplusProps?.allowOnlineResale;
+      interface SurplusResaleProps { ecosystemId?: string; allowOnlineResale?: boolean }
+      const surplusProps: SurplusResaleProps = (surplus as SurplusItem | null)?.getProps?.() ?? {};
+      const ecosystemListing = surplusProps.ecosystemId;
+      const allowResale = surplusProps.allowOnlineResale;
       if (ecosystemListing && allowResale === false) {
         throw new ForbiddenException({
           code: 'ONLINE_RESALE_NOT_ALLOWED',
@@ -180,6 +187,12 @@ export class OffersController {
     // Orijinal teklifi COUNTER_OFFERED olarak işaretle
     await this.tradeOfferRepository.updateStatus(originalOfferId, 'COUNTER_OFFERED');
 
+    // Karşı teklif alıcısının vendor kaydını bul (receiverId vendor ID olmalı, company ID değil)
+    const originalInitiatorVendor = await this.vendorRepository.findByCompanyId(original.fromCompanyId ?? '');
+    if (!originalInitiatorVendor) {
+      throw new BadRequestException('Orijinal teklif sahibinin satıcı kaydı bulunamadı.');
+    }
+
     // Yeni karşı teklif oluştur
     const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7));
     const counter = await this.tradeOfferRepository.create({
@@ -194,7 +207,7 @@ export class OffersController {
       counterOfferId: originalOfferId,
       initiatorId:    user.id,
       initiatorType:  'VENDOR',
-      receiverId:     original.fromCompanyId ?? '',
+      receiverId:     originalInitiatorVendor.id,
       receiverType:   'VENDOR',
       expiresAt,
     });
@@ -269,17 +282,20 @@ export class OffersController {
     if (props.status !== 'APPROVED') {
       throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
     }
+    if (!props.barterEnabled) {
+      throw new BadRequestException('Takas (barter) modülü hesabınız için aktif değil.');
+    }
 
     const company = {
       id: props.companyId ?? vendor.id,
       name: '',
-      status: 'APPROVED',
+      status: props.companyStatus ?? 'APPROVED',
     };
 
     return {
       id: vendor.id,
       status: props.status,
-      barterEnabled: false,
+      barterEnabled: props.barterEnabled ?? false,
       ecosystemId: props.ecosystemId,
       company,
     };
