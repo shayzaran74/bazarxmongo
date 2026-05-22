@@ -390,7 +390,7 @@ export class SurplusController {
     return {
       id: vendor.id,
       company: props.companyId
-        ? { id: props.companyId, name: '', status: props.companyStatus ?? 'APPROVED' }
+        ? { id: props.companyId, name: '', status: 'APPROVED' }
         : null,
     };
   }

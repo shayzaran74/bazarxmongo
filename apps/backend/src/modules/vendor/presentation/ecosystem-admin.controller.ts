@@ -1,5 +1,5 @@
 import { IVendor, ICompany, IListing, IEcosystemAuditLog, IBrandEcosystem, ITrustScore } from '@barterborsa/shared-persistence';
-import { scoreToLevel } from '../../../barter/domain/trust-level.constants';
+import { scoreToLevel } from '../../barter/domain/trust-level.constants';
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';

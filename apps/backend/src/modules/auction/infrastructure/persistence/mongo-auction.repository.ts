@@ -6,7 +6,7 @@ import { Model } from 'mongoose';
 import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
 import { Auction as AuctionModel, IAuction, AuctionBid as AuctionBidModel, IAuctionBid, AuctionParticipation as AuctionParticipationModel, IAuctionParticipation } from '@barterborsa/shared-persistence';
 import { AuctionMapper, AuctionDocument } from './mappers/auction.mapper';
-import { IAuctionRepository, AuctionWinnerData, AuctionRefundResult } from '../../domain/repositories/auction.repository.interface';
+import { IAuctionRepository, AuctionWinnerData, AuctionRefundResult, AuctionParticipationData } from '../../domain/repositories/auction.repository.interface';
 import { Auction } from '../../domain/entities/auction.entity';
 import { AuctionBid } from '../../domain/entities/auction-bid.entity';
 import { Types } from 'mongoose';
@@ -173,7 +173,7 @@ export class MongoAuctionRepository
         userId:        d.userId,
         status:        d.status,
         holdId:        d.holdId,
-        depositAmount: d.depositAmount,
+        depositAmount: d.blockedAmount,
         createdAt:     d.createdAt,
       })),
       total,

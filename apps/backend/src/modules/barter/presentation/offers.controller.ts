@@ -289,7 +289,7 @@ export class OffersController {
     const company = {
       id: props.companyId ?? vendor.id,
       name: '',
-      status: props.companyStatus ?? 'APPROVED',
+      status: 'APPROVED',
     };
 
     return {

@@ -1,8 +1,7 @@
 // apps/backend/src/modules/auction/lottery.controller.ts
 
 import * as crypto from 'crypto';
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
-import { StructuredLogger } from '@barterborsa/shared-observability';
+import { Controller, Get, Post, Param, Query, Body, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
@@ -36,7 +35,7 @@ interface LotteryListQuery {
 @ApiTags('Lotteries')
 @Controller('lotteries')
 export class LotteryController {
-  private readonly logger = new StructuredLogger(LotteryController.name);
+  private readonly logger = new Logger(LotteryController.name);
 
   constructor(
     @Inject('ILotteryRepository') private readonly lotteryRepository: ILotteryRepository,

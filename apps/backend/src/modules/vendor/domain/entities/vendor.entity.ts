@@ -22,6 +22,7 @@ export interface VendorProps {
   suspensionReason?: string;
   ecosystemId?: string;
   membershipTierId?: string;
+  barterEnabled?: boolean;
   lastAuditAt?: Date;
   verifiedAt?: Date;
   profile?: {
