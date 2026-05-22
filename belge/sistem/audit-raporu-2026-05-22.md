@@ -1,9 +1,9 @@
 # BazarX Kapsamlı Denetim Özet Raporu
 
 **Tarih:** 22 Mayıs 2026  
-**Toplam Commit:** 6  
+**Toplam Commit:** 7 (6 denetim + 1 iyileştirme)  
 **Toplam Bulgu:** 31 (12 Kritik · 10 Yüksek · 9 Orta/Düşük)  
-**Durum:** Tüm bulgular kapatıldı ✅
+**Durum:** Tüm bulgular kapatıldı ✅ · Tüm önerilen adımlar tamamlandı ✅
 
 ---
 
@@ -150,9 +150,31 @@
 
 ---
 
-## Önerilen Sonraki Adımlar
+## Önerilen Sonraki Adımlar — Tamamlandı
 
-1. **Integration test coverage** — Escrow + SwapSession zinciri için e2e test senaryoları yazılmalı
-2. **MinIO adapter** — Local storage adapter'da uygulanan `subPath` whitelist kontrolü MinIO adapter'a da eklenmeli
-3. **Reconciliation servisi** — Wallet ↔ Account drift tespiti için periyodik bakiye doğrulama job'ı oluşturulmalı
-4. **`getParticipations` admin endpoint** — `auction-admin.controller.ts`'de hâlâ placeholder (boş array) döndürüyor, gerçek repository metodu eklenmeli
+**Commit:** `30ea275d`
+
+| # | Adım | Uygulama | Durum |
+|---|------|----------|-------|
+| 1 | **MinIO adapter subPath whitelist** | `minio-storage.adapter.ts`'e `ALLOWED_SUBPATHS` + `sanitizeSubPath()` eklendi — local adapter ile aynı path traversal koruması | ✅ |
+| 2 | **Reconciliation servisi** | `WalletReconciliationScheduler` — her gece 03:00'te Wallet↔Account bakiye drift tespiti, 500'lük sayfalı tarama, StructuredLogger alarm | ✅ |
+| 3 | **`getParticipations` admin endpoint** | `findAllParticipations()` repository interface + MongoDB implementasyonu eklendi; `auctionId`/`status`/`page`/`limit` filtrelemeli sayfalı sorgu | ✅ |
+| 4 | **Integration test coverage** | `escrow-lifecycle.spec.ts` (create→release→refund, idempotency, yetersiz bakiye) + `swap-session-lifecycle.spec.ts` (teminat zinciri, SmartCap, telafi, %20 oranı, state machine) | ✅ |
+
+---
+
+## Son Durum
+
+**Kapatılmamış açık: 0**  
+**Tamamlanmamış öneri: 0**  
+**Toplam commit: 7**
+
+```
+a7fab855  fix(security): path traversal, 5xx info disclosure, CSRF
+2df25f22  fix(barter): teminat %20, barterEnabled, counterOffer receiverId
+c782e7ee  fix(ecosystem): owner kontrolü, null bypass, internalCommRate
+538b481a  fix(auction): winnerId, any tipler, rate limiting
+2003089d  fix(lottery): unique index, DomainException, ClientSession
+dc5f4ffc  fix(financial): d128 float precision, wallet-account drift
+30ea275d  feat: audit sonrası önerilen geliştirmeler uygulandı
+```
