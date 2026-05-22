@@ -94,7 +94,7 @@ export class AuctionCloseScheduler implements OnApplicationBootstrap, OnModuleDe
       try {
         await this.financialGateway.refundFunds(
           p.holdId,
-          `auction-refund-${p.id}-${Date.now()}`,
+          `auction-refund-${p.id}-${crypto.randomUUID()}`,
         );
 
         await this.auctionRepository.updateParticipationStatus(p.id, 'REFUNDED');

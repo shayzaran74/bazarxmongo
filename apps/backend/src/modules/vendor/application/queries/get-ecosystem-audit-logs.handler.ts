@@ -17,8 +17,7 @@ export class GetEcosystemAuditLogsHandler
     const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) return [];
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     // brandEcosystem ilişkisi MongoDB'de nasıl tutuluyor bilmiyoruz
     // doğrudan BrandEcosystem tablosundan ownerId ile çek

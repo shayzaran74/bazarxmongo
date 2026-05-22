@@ -26,7 +26,7 @@ export class GetVendorDashboardHandler
     if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
 
     const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     // VendorStats ve VendorMetrics ayrı sorgular
     const [statsDoc, metricsDoc] = await Promise.all([
@@ -55,34 +55,33 @@ export class GetVendorDashboardHandler
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const allOrdersResult = await this.orderRepo.findAllFiltered({ vendorId, limit: 0 });
-    const monthlyOrders = allOrdersResult.items.filter((o: any) => {
-      const createdAt = new Date((o as any).createdAt || (o as any).props?.createdAt);
-      return createdAt >= monthStart && ['COMPLETED', 'DELIVERED'].includes((o as any).status || (o as any).props?.status);
+    const monthlyOrders = allOrdersResult.items.filter(o => {
+      return o.createdAt >= monthStart &&
+        ['COMPLETED', 'DELIVERED'].includes(o.getProps().status);
     });
-    const monthlyRevenue = monthlyOrders.reduce((sum: number, o: any) => {
-      const amount = Number((o as any).totalAmount ?? (o as any).props?.totalAmount ?? 0);
-      return sum + amount;
+    const monthlyRevenue = monthlyOrders.reduce((sum: number, o) => {
+      return sum + Number(o.getProps().totalAmount ?? 0);
     }, 0);
 
     const stats = statsDoc ? statsDoc.toObject() : null;
     const metrics = metricsDoc ? metricsDoc.toObject() : null;
 
-    const recentOrders = recentOrdersResult.items.map((o: any) => {
-      const p = o.getProps ? o.getProps() : o;
+    const recentOrders = recentOrdersResult.items.map(o => {
+      const p = o.getProps();
       return {
-        id:          (p as any).id || (o as any).id,
-        status:      (p as any).status || (o as any).status,
-        totalAmount: Number((p as any).totalAmount ?? 0),
-        currency:    (p as any).currency || 'TRY',
-        createdAt:   (p as any).createdAt || (o as any).createdAt,
+        id:          o.id,
+        status:      p.status,
+        totalAmount: Number(p.totalAmount ?? 0),
+        currency:    p.currency,
+        createdAt:   o.createdAt,
       };
     });
 
     return {
       vendor: {
         id:     vendorId,
-        tier:   (vendorProps as any).tier,
-        status: (vendorProps as any).status,
+        tier:   vendorProps.tier,
+        status: vendorProps.status,
       },
       summary: {
         activeListingCount: activeListingCount.total,

@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/orderReturn.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const ReturnStatus = ['PENDING','APPROVED','REJECTED','REFUNDED'] as const;
 export type ReturnStatusType = typeof ReturnStatus[number];
@@ -33,4 +34,4 @@ export const OrderReturnSchema = new Schema<IOrderReturn>({
 
 OrderReturnSchema.index({ orderId: 1 });
 
-export const OrderReturn = model<IOrderReturn>('OrderReturn', OrderReturnSchema);
+export const OrderReturn = createModelProxy<IOrderReturn>('OrderReturn', OrderReturnSchema);

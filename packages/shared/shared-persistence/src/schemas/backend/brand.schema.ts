@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IBrand {
   _id?: string;
@@ -66,4 +67,4 @@ BrandSchema.index({ slug: 1, isOfficial: 1 });
 BrandSchema.index({ isPopular: 1, popularityScore: -1 });
 BrandSchema.index({ status: 1 });
 
-export const Brand = model<IBrand>('Brand', BrandSchema);
+export const Brand = createModelProxy<IBrand>('Brand', BrandSchema);

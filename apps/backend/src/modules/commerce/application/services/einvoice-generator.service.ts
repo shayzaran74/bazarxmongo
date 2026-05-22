@@ -6,6 +6,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { IEInvoiceProvider } from '../../domain/interfaces/IEInvoiceProvider.interface';
 import { EInvoiceStatus } from '../../domain/enums/einvoice-status.enum';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { UBLInvoiceData } from '../../infrastructure/adapters/efatura-com.adapter';
 
 @Injectable()
 export class EInvoiceGeneratorService {
@@ -63,12 +64,11 @@ export class EInvoiceGeneratorService {
    * Admin e-fatura tekrar gönderir
    */
   async resendEInvoice(einvoiceId: string): Promise<void> {
-    // TODO: Veritabanından e-fatura kaydını çek ve tekrar gönder
-    this.logger.log('e-Fatura yeniden gönderiliyor', { einvoiceId });
+    this.logger.warn('resendEInvoice henüz implement edilmedi', { einvoiceId });
   }
 
-  async getEInvoice(orderId: string): Promise<any> {
-    // TODO: Veritabanından e-fatura kaydını getir
+  async getEInvoice(orderId: string): Promise<UBLInvoiceData | null> {
+    this.logger.warn('getEInvoice henüz implement edilmedi', { orderId });
     return null;
   }
 }

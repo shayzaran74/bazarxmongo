@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/listing.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const ListingStatus = ['DRAFT','ACTIVE','INACTIVE','OUT_OF_STOCK','SUSPENDED','REJECTED','ARCHIVED','PENDING'] as const;
 export type ListingStatusType = typeof ListingStatus[number];
@@ -166,4 +167,4 @@ ListingSchema.pre('validate', function (next) {
   next();
 });
 
-export const Listing = model<IListing>('Listing', ListingSchema);
+export const Listing = createModelProxy<IListing>('Listing', ListingSchema);

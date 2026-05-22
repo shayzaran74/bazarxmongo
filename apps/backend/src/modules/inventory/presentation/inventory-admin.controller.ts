@@ -98,7 +98,7 @@ export class InventoryAdminController {
           // 1. Marka
           let brand = await Brand.findOne({ name: brandName }).lean();
           if (!brand) {
-            const brandId = 'brand-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            const brandId = 'brand-' + crypto.randomUUID();
             brand = await Brand.create({ id: brandId, name: brandName, slug: this.slugify(brandName), status: 'APPROVED' });
           }
 
@@ -107,7 +107,7 @@ export class InventoryAdminController {
           let categoryId = categoryCache.get(categorySlug);
 
           if (!categoryId) {
-            const catId = 'cat-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            const catId = 'cat-' + crypto.randomUUID();
             await Category.create({ id: catId, name: categoryName, slug: categorySlug, isActive: true });
             categoryId = catId;
             categoryCache.set(categorySlug, categoryId);
@@ -117,7 +117,7 @@ export class InventoryAdminController {
           // 3. Catalog Product
           let product = await CatalogProduct.findOne({ slug: safeSlug }).lean();
           if (!product) {
-            const pid = 'cp-' + Date.now() + '-' + randomBytes(4).toString('hex');
+            const pid = 'cp-' + crypto.randomUUID();
             product = (await CatalogProduct.create({
               id: pid,
               name: rawName,

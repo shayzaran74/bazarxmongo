@@ -117,7 +117,7 @@ const handleSave = async () => {
     
     const payload = {
       ...formData,
-      image: formData.image || formData.productImages?.[0] || 'https://placehold.co/300x300?text=Ürün+Resmi',
+      image: formData.image || (formData as any).productImages?.[0] || 'https://placehold.co/300x300?text=Ürün+Resmi',
       description: formData.description || '',
       maxPurchasePerMember: formData.maxPurchasePerMember || 0
     }

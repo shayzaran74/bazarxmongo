@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const LotteryStatus = ['SCHEDULED','ACTIVE','DRAWING','COMPLETED','CANCELLED'] as const;
 export type LotteryStatusType = typeof LotteryStatus[number];
@@ -57,4 +58,4 @@ LotterySchema.index({ status: 1 });
 LotterySchema.index({ listingId: 1 });
 LotterySchema.index({ ownerId: 1 });
 
-export const Lottery = model<ILottery>('Lottery', LotterySchema);
+export const Lottery = createModelProxy<ILottery>('Lottery', LotterySchema);

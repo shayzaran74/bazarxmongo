@@ -1,6 +1,7 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/vendorProfile.schema.ts
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface IVendorProfile {
   _id?: string;
@@ -91,4 +92,4 @@ VendorProfileSchema.index({ vendorId: 1 }, { unique: true });
 VendorProfileSchema.index({ city: 1 });
 VendorProfileSchema.index({ lat: 1, lng: 1 });
 
-export const VendorProfile = model<IVendorProfile>('VendorProfile', VendorProfileSchema);
+export const VendorProfile = createModelProxy<IVendorProfile>('VendorProfile', VendorProfileSchema);

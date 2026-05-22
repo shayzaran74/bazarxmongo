@@ -15,10 +15,9 @@ export class ListVendorBannersHandler implements IQueryHandler<ListVendorBanners
     const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) return [];
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const docs = await this.bannerRepo.findByVendorId(vendorId);
-    return docs.map((doc: any) => doc.toObject ? doc.toObject() : doc);
+    return docs.map((doc: unknown) => (doc as { toObject?(): Record<string, unknown> }).toObject?.() ?? doc as Record<string, unknown>);
   }
 }

@@ -4,7 +4,7 @@ import { useCheckoutService } from '~/services/checkoutService'
 import { useI18n } from 'vue-i18n'
 import type { CheckoutCoupon, CheckoutEscrowCoupon } from '@barterborsa/shared-types'
 
-export const useCheckoutCart = (escrowCouponId: any) => {
+export const useCheckoutCart = (escrowCouponId: Ref<string | null>) => {
   const cartStore = useCartStore()
   const checkoutService = useCheckoutService()
   
@@ -34,9 +34,9 @@ export const useCheckoutCart = (escrowCouponId: any) => {
         appliedCoupon.value = res.data
         return { success: true }
       }
-      throw new Error((res as any).error || 'Geçersiz kupon')
-    } catch (error: any) {
-      couponError.value = error.message
+      throw new Error((res as { error?: string }).error || 'Geçersiz kupon')
+    } catch (error: unknown) {
+      couponError.value = (error as Error).message
       return { success: false, error: error.message }
     } finally {
       validatingCoupon.value = false
@@ -53,7 +53,7 @@ export const useCheckoutCart = (escrowCouponId: any) => {
     try {
       const settingsRes = await checkoutService.fetchSettings()
       if (settingsRes.success && settingsRes.data) {
-        const settings = settingsRes.data as any
+        const settings = settingsRes.data as { shippingCost?: string }
         if (settings.shippingCost) shippingCost.value = parseFloat(settings.shippingCost)
       }
       shippingCost.value = cartStore.total >= 500 ? 0 : 50
@@ -67,7 +67,7 @@ export const useCheckoutCart = (escrowCouponId: any) => {
     try {
       const res = await checkoutService.fetchEscrowCoupons()
       if (res.success && res.data) {
-        const found = res.data.find((c: any) => c.id === escrowCouponId.value)
+        const found = res.data.find((c) => c.id === escrowCouponId.value)
         if (found) appliedEscrowCoupon.value = found
       }
     } catch (err) { /* Silent */ }

@@ -1,7 +1,8 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/userDeviceToken.schema.ts
 // FCM push bildirimi için kullanıcı cihaz token'ı
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IUserDeviceToken {
   _id?: string;
@@ -46,4 +47,4 @@ UserDeviceTokenSchema.index({ userId: 1 });
 UserDeviceTokenSchema.index({ fcmToken: 1 }, { unique: true });
 UserDeviceTokenSchema.index({ isActive: 1, lastLat: 1, lastLng: 1 }); // geofence query
 
-export const UserDeviceToken = model<IUserDeviceToken>('UserDeviceToken', UserDeviceTokenSchema);
+export const UserDeviceToken = createModelProxy<IUserDeviceToken>('UserDeviceToken', UserDeviceTokenSchema);

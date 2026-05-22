@@ -54,7 +54,7 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
     }
 
     // 2. Slug üret (Mağaza başlığı + Ürün adı) - Basitleştirilmiş
-    const slugValue = Slug.fromText(`${dto.title}-${Date.now()}`);
+    const slugValue = Slug.fromText(`${dto.title}-${crypto.randomUUID()}`);
 
     // 3. Fiyat VO
     const priceResult = Price.create(dto.price);

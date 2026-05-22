@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VerificationToken — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -29,4 +30,4 @@ export const VerificationTokenSchema = new Schema<IVerificationToken>({
 // Composite index
 VerificationTokenSchema.index({ userId: 1 });
 
-export const VerificationToken = model<IVerificationToken>('VerificationToken', VerificationTokenSchema);
+export const VerificationToken = createModelProxy<IVerificationToken>('VerificationToken', VerificationTokenSchema);

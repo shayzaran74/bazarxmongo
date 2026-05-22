@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // TradeChain — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -26,4 +27,4 @@ export const TradeChainSchema = new Schema<ITradeChain>({
   collection: 'trade_chains',
 });
 
-export const TradeChain = model<ITradeChain>('TradeChain', TradeChainSchema);
+export const TradeChain = createModelProxy<ITradeChain>('TradeChain', TradeChainSchema);

@@ -34,7 +34,7 @@ const resolveImage = (images: string[] | undefined): string => {
 const fetchOpportunity = async (): Promise<void> => {
   loading.value = true
   try {
-    const res = await $api<{ success: boolean; data: SurplusData }>(`/api/v1/surplus/${opportunityId}`)
+    const res = await $api<SurplusData>(`/api/v1/surplus/${opportunityId}`)
     if (res.success && res.data) {
       opportunity.value = { ...res.data, image: resolveImage(res.data.images) }
     }

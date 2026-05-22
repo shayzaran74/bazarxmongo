@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const PaymentStatus = ['PENDING','PROCESSING','COMPLETED','FAILED','REFUNDED'] as const;
 export type PaymentStatusType = typeof PaymentStatus[number];
@@ -47,4 +48,4 @@ PaymentSchema.index({ userId: 1 });
 PaymentSchema.index({ orderId: 1 });
 PaymentSchema.index({ status: 1 });
 
-export const Payment = model<IPayment>('Payment', PaymentSchema);
+export const Payment = createModelProxy<IPayment>('Payment', PaymentSchema);

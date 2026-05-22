@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/companyUser.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const CompanyUserRole = ['OWNER','ADMIN','MEMBER'] as const;
 export type CompanyUserRoleType = typeof CompanyUserRole[number];
@@ -26,4 +27,4 @@ export const CompanyUserSchema = new Schema<ICompanyUser>({
 CompanyUserSchema.index({ userId: 1, companyId: 1 }, { unique: true });
 CompanyUserSchema.index({ companyId: 1 });
 
-export const CompanyUser = model<ICompanyUser>('CompanyUser', CompanyUserSchema);
+export const CompanyUser = createModelProxy<ICompanyUser>('CompanyUser', CompanyUserSchema);

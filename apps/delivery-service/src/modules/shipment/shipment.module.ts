@@ -13,21 +13,26 @@ import { OrderCreatedHandler } from './application/event-handlers/order-created.
 import { BarterAcceptedHandler } from './application/event-handlers/barter-accepted.handler';
 import { CreateBarterShipmentsHandler } from './application/commands/create-barter-shipments.handler';
 
+import { DeliveryGrpcController } from './presentation/delivery.grpc.controller';
+import { UpdateShipmentStatusHandler } from './application/commands/update-shipment-status.handler';
+
 const Handlers = [
   CreateShipmentHandler, 
   CreateBarterShipmentsHandler,
   GetShipmentHandler, 
   OrderCreatedHandler,
-  BarterAcceptedHandler
+  BarterAcceptedHandler,
+  UpdateShipmentStatusHandler,
 ];
 const Services = [ShipmentNumberService, EstimatedDeliveryService];
+
 
 @Module({
   imports: [
     CqrsModule,
     MongooseModule.forFeature([{ name: ShipmentDocument.name, schema: ShipmentSchema }]),
   ],
-  controllers: [ShipmentController],
+  controllers: [ShipmentController, DeliveryGrpcController],
   providers: [
     ...Handlers,
     ...Services,

@@ -4,7 +4,7 @@ import { useAuthStore } from '~/stores/auth'
 
 export const useAuctionDetail = () => {
   const route = useRoute()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
   const authStore = useAuthStore()
   const auctionStore = useAuctionStore()
 
@@ -62,8 +62,8 @@ export const useAuctionDetail = () => {
       if (res.success) {
         $toast.success('Artırmaya katıldınız!')
       }
-    } catch (e: any) {
-      $toast.error(e?.data?.message || 'Katılım başarısız')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Katılım başarısız')
     }
   }
 
@@ -78,8 +78,8 @@ export const useAuctionDetail = () => {
       if (res.success) {
         $toast.success('Teklifiniz kaydedildi!')
       }
-    } catch (e: any) {
-      $toast.error(e?.data?.message || 'Teklif verilemedi')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Teklif verilemedi')
     } finally {
       bidding.value = false
     }
@@ -93,8 +93,8 @@ export const useAuctionDetail = () => {
         $toast.success('Kazanımınız onaylandı!')
         await auctionStore.fetchAuction(route.params.id as string)
       }
-    } catch (e: any) {
-      $toast.error(e?.data?.message || 'Kazanım onaylanamadı')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Kazanım onaylanamadı')
     } finally {
       claiming.value = false
     }

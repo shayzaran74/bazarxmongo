@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IStock {
   _id?: string;
@@ -26,4 +27,4 @@ export const StockSchema = new Schema<IStock>({
 StockSchema.index({ listingId: 1, warehouseId: 1 }, { unique: true });
 StockSchema.index({ listingId: 1 });
 
-export const Stock = model<IStock>('Stock', StockSchema);
+export const Stock = createModelProxy<IStock>('Stock', StockSchema);

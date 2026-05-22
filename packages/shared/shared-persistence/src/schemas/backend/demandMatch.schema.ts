@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/demandMatch.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const DemandMatchStatus = ['PENDING','CONTACTED','REJECTED','MATCHED'] as const;
 export type DemandMatchStatusType = typeof DemandMatchStatus[number];
@@ -43,4 +44,4 @@ DemandMatchSchema.index({ buyerItemId: 1 });
 DemandMatchSchema.index({ sellerItemId: 1 });
 DemandMatchSchema.index({ status: 1 });
 
-export const DemandMatch = model<IDemandMatch>('DemandMatch', DemandMatchSchema);
+export const DemandMatch = createModelProxy<IDemandMatch>('DemandMatch', DemandMatchSchema);

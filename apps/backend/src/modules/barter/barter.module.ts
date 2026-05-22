@@ -80,6 +80,8 @@ import { SurplusItemMapper } from './infrastructure/persistence/mappers/surplus-
 import { TradeOfferMapper } from './infrastructure/persistence/mappers/trade-offer.mapper';
 import { SwapSessionMapper } from './infrastructure/persistence/mappers/swap-session.mapper';
 
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
 const CommandHandlers = [
   AcceptTradeOfferHandler,
   CreateSurplusItemHandler,
@@ -120,6 +122,7 @@ const QueryHandlers = [
     ]),
     CatalogModule,
     VendorModule,
+    AuditMongooseModule,
   ],
   controllers: [
     BarterAdminController,

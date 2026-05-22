@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const CommissionStatus = ['CALCULATED','PENDING','COLLECTED','WAIVED'] as const;
 export type CommissionStatusType = typeof CommissionStatus[number];
@@ -50,4 +51,4 @@ CommissionRecordSchema.index({ status: 1 });
 CommissionRecordSchema.index({ vendorId: 1, status: 1 });
 CommissionRecordSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
-export const CommissionRecord = model<ICommissionRecord>('CommissionRecord', CommissionRecordSchema);
+export const CommissionRecord = createModelProxy<ICommissionRecord>('CommissionRecord', CommissionRecordSchema);

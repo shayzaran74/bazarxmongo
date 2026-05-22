@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/deliveryDispatch.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 // DispatchStatus — aligned with domain enum (DispatchStatus)
 export const DispatchStatusValues = ['PENDING_ASSIGN','ASSIGNED','PICKED_UP','DELIVERED','CANCELLED'] as const;
@@ -42,4 +43,4 @@ DeliveryDispatchSchema.index({ orderId: 1 });
 DeliveryDispatchSchema.index({ courierId: 1 });
 DeliveryDispatchSchema.index({ status: 1 });
 
-export const DeliveryDispatch = model<IDeliveryDispatch>('DeliveryDispatch', DeliveryDispatchSchema);
+export const DeliveryDispatch = createModelProxy<IDeliveryDispatch>('DeliveryDispatch', DeliveryDispatchSchema);

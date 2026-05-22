@@ -31,7 +31,7 @@ export class MongoReferralRepository implements IReferralRepository {
   }
 
   async create(data: { referrerId: string; refereeId: string; referralCode: string }): Promise<void> {
-    const id = 'ref-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'ref-' + crypto.randomUUID();
     await this.model.create({
       id,
       ...data,

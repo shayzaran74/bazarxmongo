@@ -24,17 +24,17 @@ export const useAdminDashboard = () => {
     totalServiceXPSpent: 0,
   })
 
-  const recentActivities = ref<any[]>([])
+  const recentActivities = ref<Record<string, unknown>[]>([])
 
   const fetchStats = async () => {
     loading.value = true
     try {
       const [products, users, orders, auctions, lotteries] = await Promise.allSettled([
-        $api<any>('/api/v1/admin/products', { query: { limit: 1 } }),
-        $api<any>('/api/v1/admin/users', { query: { limit: 1 } }),
-        $api<any>('/api/v1/admin/orders', { query: { limit: 1 } }),
-        $api<any>('/api/v1/admin/auctions', { query: { limit: 1 } }),
-        $api<any>('/api/v1/admin/lotteries', { query: { limit: 1 } }),
+        $api<{ pagination?: { total: number } }>('/api/v1/admin/products', { query: { limit: 1 } }),
+        $api<{ pagination?: { total: number } }>('/api/v1/admin/users', { query: { limit: 1 } }),
+        $api<{ data?: { total: number } }>('/api/v1/admin/orders', { query: { limit: 1 } }),
+        $api<{ data: unknown[] }>('/api/v1/admin/auctions', { query: { limit: 1 } }),
+        $api<{ data?: { items: unknown[] } }>('/api/v1/admin/lotteries', { query: { limit: 1 } }),
       ])
 
       if (products.status === 'fulfilled')
@@ -57,7 +57,7 @@ export const useAdminDashboard = () => {
     // Şimdilik sıfır dönüyor, gerçek entegrasyon Faz 6'da yapıldı
     // Bu composable gelecekte financial gateway'e bağlanacak
     try {
-      const res = await $api<any>('/api/v1/admin/wallet/transactions', {
+      const res = await $api<{ data?: { items: Record<string, unknown>[] } }>('/api/v1/admin/wallet/transactions', {
         query: { limit: 5 }
       })
       recentActivities.value = res?.data?.items || []

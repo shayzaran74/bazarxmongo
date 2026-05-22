@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // XpDistributionRule — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -42,4 +43,4 @@ XpDistributionRuleSchema.index({ city: 1 });
 // Composite index
 XpDistributionRuleSchema.index({ vendorTier: 1 });
 
-export const XpDistributionRule = model<IXpDistributionRule>('XpDistributionRule', XpDistributionRuleSchema);
+export const XpDistributionRule = createModelProxy<IXpDistributionRule>('XpDistributionRule', XpDistributionRuleSchema);

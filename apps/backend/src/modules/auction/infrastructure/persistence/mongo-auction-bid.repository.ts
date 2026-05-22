@@ -32,8 +32,10 @@ export class MongoAuctionBidRepository implements IAuctionBidRepository {
   }
 
   async create(data: { auctionId: string; userId: string; amount: number; holdId?: string }): Promise<AuctionBid> {
+    const newId = randomUUID();
     const doc = await this.model.create({
-      id: randomUUID(),
+      _id: newId,
+      id: newId,
       ...data,
       createdAt: new Date(),
     });

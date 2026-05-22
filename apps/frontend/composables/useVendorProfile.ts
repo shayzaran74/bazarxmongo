@@ -33,9 +33,7 @@ export const useVendorProfile = () => {
         if (!route.params.id || route.params.id === 'undefined') return
         loading.value = true
         try {
-            console.log('Calling fetchVendor for:', route.params.id);
-            const response = await vendorService.getVendorPublic(route.params.id as string)
-            console.log('fetchVendor response:', response);
+            const response = await vendorService.getVendorPublic(String(route.params.id))
             if (response.success && response.data) {
                 vendor.value = response.data
                 if (response.data.products && products.value.length === 0) {
@@ -43,9 +41,10 @@ export const useVendorProfile = () => {
                     totalProducts.value = response.data._count?.listings || response.data.products.length
                 }
             }
-        } catch (error) {
-            console.error('Fetch vendor error:', error)
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Bilinmeyen hata'
             toast.error('Satıcı profili yüklenemedi')
+            console.error('Fetch vendor error:', msg)
         } finally {
             loading.value = false
         }

@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // TradeReview — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -42,4 +43,4 @@ TradeReviewSchema.index({ toUserId: 1 });
 // Unique constraint
 TradeReviewSchema.index({ tradeOfferId: 1, fromUserId: 1 }, { unique: true });
 
-export const TradeReview = model<ITradeReview>('TradeReview', TradeReviewSchema);
+export const TradeReview = createModelProxy<ITradeReview>('TradeReview', TradeReviewSchema);

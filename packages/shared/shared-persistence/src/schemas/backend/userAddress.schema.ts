@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // UserAddress — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -51,4 +52,4 @@ export const UserAddressSchema = new Schema<IUserAddress>({
 // Composite index
 UserAddressSchema.index({ userId: 1 });
 
-export const UserAddress = model<IUserAddress>('UserAddress', UserAddressSchema);
+export const UserAddress = createModelProxy<IUserAddress>('UserAddress', UserAddressSchema);

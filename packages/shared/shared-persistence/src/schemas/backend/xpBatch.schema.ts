@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // XpBatch — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -38,4 +39,4 @@ XpBatchSchema.index({ accountId: 1 });
 // Composite index
 XpBatchSchema.index({ expiresAt: 1 });
 
-export const XpBatch = model<IXpBatch>('XpBatch', XpBatchSchema);
+export const XpBatch = createModelProxy<IXpBatch>('XpBatch', XpBatchSchema);

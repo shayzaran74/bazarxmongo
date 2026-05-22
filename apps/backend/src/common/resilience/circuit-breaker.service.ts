@@ -31,7 +31,7 @@ export class CircuitBreakerService {
     const opts = { ...DEFAULT_OPTIONS, ...options };
 
     if (!this.breakers.has(name)) {
-      const breaker = new CircuitBreaker(fn, {
+      const breaker = new CircuitBreaker((runFn: () => Promise<any>) => runFn(), {
         timeout: opts.timeout,
         errorThresholdPercentage: opts.errorThresholdPercentage,
         resetTimeout: opts.resetTimeout,
@@ -42,7 +42,7 @@ export class CircuitBreakerService {
 
     const breaker = this.breakers.get(name)!;
     try {
-      return await breaker.fire() as T;
+      return await breaker.fire(fn) as T;
     } catch (error: unknown) {
       if (opts.fallbackResponse !== undefined) {
         this.logger.warn(`Circuit breaker '${name}' fallback döndü: ${error instanceof Error ? error.message : String(error)}`);

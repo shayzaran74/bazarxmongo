@@ -14,6 +14,15 @@ export enum DealerVisibility {
   NONE = 'NONE',
 }
 
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  attributes: Record<string, string>;
+  price: number;
+  stock: number;
+  images?: string[];
+}
+
 export interface ListingProps {
   vendorId: string;
   catalogProductId: string;
@@ -37,16 +46,15 @@ export interface ListingProps {
   tags: string[];
   isFeatured: boolean;
   featuredUntil?: Date;
-  listingType: string; // SELL, BUY, RENT
+  listingType: string;
   isAuctionEnabled: boolean;
   isLotteryEnabled: boolean;
   ecosystemId?: string;
   commissionRate?: number;
-  variants?: any;
+  variants?: ProductVariant[];
   metadata?: Record<string, unknown>;
   availableQuantity: number;
   reservedQuantity: number;
-  // Master Plan v4.3 §4.2 — Fabrika ekosistemi ürün gamı kontrolleri
   visibleTo?: DealerVisibility;
   selectedDealerIds?: string[];
   availableFrom?: Date;

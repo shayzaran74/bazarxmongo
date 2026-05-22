@@ -1,9 +1,10 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/order.schema.ts
 // Order — Prisma → Mongoose migration (ADR-005 Faz 2a, Critical)
 // Document-model decision: Reference (Order ayrı collection'da kalır)
 // Transaction: checkout.service.ts — Listing + Order farklı collection'larda transaction zorunlu
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import { OrderItem, OrderItemSchema, IOrderItem } from './order-item.schema';
 
 // Enums — Prisma'dan taşındı
@@ -127,4 +128,4 @@ OrderSchema.index({ orderNumber: 1 }, { unique: true, sparse: true });
 // MAX_ITEMS_PER_ORDER guard — 16MB embed limit koruması (§1b)
 export const MAX_ITEMS_PER_ORDER = 100;
 
-export const Order = model<IOrder>('Order', OrderSchema);
+export const Order = createModelProxy<IOrder>('Order', OrderSchema);

@@ -16,11 +16,15 @@ import {
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CargoTrackingService } from '../application/services/cargo-tracking.service';
 import { CargoProvider } from '../domain/enums/cargo-provider.enum';
+import { DeliveryGrpcService } from '../grpc/delivery-grpc.service';
 
 @Controller('orders/:id/tracking')
 @UseGuards(JwtAuthGuard)
 export class CargoTrackingController {
-  constructor(private readonly cargoTrackingService: CargoTrackingService) {}
+  constructor(
+    private readonly cargoTrackingService: CargoTrackingService,
+    private readonly deliveryGrpcService: DeliveryGrpcService,
+  ) {}
 
   /**
    * GET /orders/:id/tracking
@@ -28,8 +32,13 @@ export class CargoTrackingController {
    */
   @Get()
   async getTracking(@Param('id') orderId: string) {
-    // TODO: Veritabanından siparişin cargo shipment'ını çek
-    return { success: true, data: null };
+    try {
+      const response = await this.deliveryGrpcService.getShipmentByOrder(orderId);
+      return { success: true, data: response.shipments };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+      return { success: false, error: msg };
+    }
   }
 
   /**

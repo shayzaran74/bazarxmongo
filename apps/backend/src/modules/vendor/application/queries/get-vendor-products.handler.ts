@@ -4,6 +4,10 @@ import { Logger, NotFoundException } from '@nestjs/common';
 import { GetVendorProductsQuery } from './get-vendor-products.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
+import { Listing } from '../../../catalog/domain/entities/listing.entity';
+
+interface ListingImageDoc { listingId: string; url: string; order: number; }
+interface ProductMediaDoc { productId: string; url: string; order: number; }
 
 @QueryHandler(GetVendorProductsQuery)
 export class GetVendorProductsHandler implements IQueryHandler<GetVendorProductsQuery> {
@@ -19,34 +23,31 @@ export class GetVendorProductsHandler implements IQueryHandler<GetVendorProducts
     const { search, categoryId, limit = 100 } = filters;
 
     const vendor = await this.vendorRepo.findByUserId(userId);
-    if (!vendor) {
-      throw new NotFoundException('Vendor not found');
+    if (!vendor) throw new NotFoundException('Vendor not found');
+
+    const vendorId = vendor.id;
+
+    // Kategori filtresi varsa repository search'ü kullan (ListingProps'ta categoryId alanı yoktur)
+    let listings: Listing[];
+    if (categoryId) {
+      const searchResult = await this.listingRepo.search({ vendorId, categoryId, take: Number(limit) });
+      listings = searchResult.items;
+    } else {
+      listings = await this.listingRepo.findByVendorId(vendorId);
     }
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
-
-    const listings = await this.listingRepo.findByVendorId(vendorId);
-
-    let filtered = listings;
+    let filtered: Listing[] = listings;
     if (search) {
       const s = search.toLowerCase();
-      filtered = filtered.filter((l: any) => {
-        const p = l.getProps ? l.getProps() : l;
-        return ((p as any).title || '').toLowerCase().includes(s) ||
-               ((p as any).sku || '').toLowerCase().includes(s);
-      });
-    }
-    if (categoryId) {
-      filtered = filtered.filter((l: any) => {
-        const p = l.getProps ? l.getProps() : l;
-        return (p as any).categoryId === categoryId;
+      filtered = filtered.filter(l => {
+        const p = l.getProps();
+        return p.title.toLowerCase().includes(s) || (p.sku ?? '').toLowerCase().includes(s);
       });
     }
 
     const result = filtered.slice(0, Number(limit));
-    const listingIds = result.map((l: any) => (l.getProps ? l.getProps().id : l.id) || l.id);
-    const catalogProductIds = result.map((l: any) => l.getProps ? l.getProps().catalogProductId : l.catalogProductId).filter(Boolean);
+    const listingIds = result.map(l => l.id);
+    const catalogProductIds = result.map(l => l.getProps().catalogProductId).filter(Boolean);
 
     const mongoose = require('mongoose');
     const [listingImages, productMedia] = await Promise.all([
@@ -54,37 +55,31 @@ export class GetVendorProductsHandler implements IQueryHandler<GetVendorProducts
       catalogProductIds.length ? mongoose.model('ProductMedia').find({ productId: { $in: catalogProductIds }, type: 'IMAGE' }).lean().exec() : [],
     ]);
 
-    const listingImageMap = new Map();
-    listingImages.forEach((img: any) => {
-      if (!listingImageMap.has(img.listingId) || img.order < listingImageMap.get(img.listingId).order) {
-        listingImageMap.set(img.listingId, img);
-      }
+    const listingImageMap = new Map<string, ListingImageDoc>();
+    (listingImages as ListingImageDoc[]).forEach(img => {
+      const existing = listingImageMap.get(img.listingId);
+      if (!existing || img.order < existing.order) listingImageMap.set(img.listingId, img);
     });
 
-    const productMediaMap = new Map();
-    productMedia.forEach((media: any) => {
-      if (!productMediaMap.has(media.productId) || media.order < productMediaMap.get(media.productId).order) {
-        productMediaMap.set(media.productId, media);
-      }
+    const productMediaMap = new Map<string, ProductMediaDoc>();
+    (productMedia as ProductMediaDoc[]).forEach(media => {
+      const existing = productMediaMap.get(media.productId);
+      if (!existing || media.order < existing.order) productMediaMap.set(media.productId, media);
     });
 
-    return result.map((l: any) => {
-      const p = l.getProps ? l.getProps() : l;
-      const id = (p as any).id || l.id;
-      const catalogProductId = (p as any).catalogProductId;
-      
-      const lImage = listingImageMap.get(id);
-      const cMedia = productMediaMap.get(catalogProductId);
-      
+    return result.map(l => {
+      const p = l.getProps();
+      const lImage = listingImageMap.get(l.id);
+      const cMedia = productMediaMap.get(p.catalogProductId);
       return {
-        id:         id,
-        name:       (p as any).title,
-        sku:        (p as any).sku,
-        price:      Number((p as any).price ?? 0),
-        stock:      (p as any).stock,
-        status:     (p as any).status,
-        image:      lImage?.url || cMedia?.url || null,
-        Category:   null,
+        id:       l.id,
+        name:     p.title,
+        sku:      p.sku,
+        price:    p.price.amount,
+        stock:    p.stock,
+        status:   p.status,
+        image:    lImage?.url || cMedia?.url || null,
+        Category: null,
       };
     });
   }

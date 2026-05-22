@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const TrustLevel = ['GOOD','FAIR','POOR','SUSPENDED','FROZEN'] as const;
 export type TrustLevelType = typeof TrustLevel[number];
@@ -44,4 +45,4 @@ TrustScoreSchema.index({ vendorId: 1 }, { unique: true });
 TrustScoreSchema.index({ isFrozen: 1 });
 TrustScoreSchema.index({ level: 1 });
 
-export const TrustScore = model<ITrustScore>('TrustScore', TrustScoreSchema);
+export const TrustScore = createModelProxy<ITrustScore>('TrustScore', TrustScoreSchema);

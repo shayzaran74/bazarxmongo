@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const XpTransactionType = ['EARNED','SPENT','EXPIRED','ERODED','BONUS','REFERRAL','COMMISSION','SUBSCRIPTION','MENU','TRADE','ADMIN_MANUAL'] as const;
 export type XpTransactionTypeType = typeof XpTransactionType[number];
@@ -40,4 +41,4 @@ XpTransactionSchema.index({ userId: 1, createdAt: -1 });
 XpTransactionSchema.index({ expiresAt: 1 });
 XpTransactionSchema.index({ type: 1 });
 
-export const XpTransaction = model<IXpTransaction>('XpTransaction', XpTransactionSchema);
+export const XpTransaction = createModelProxy<IXpTransaction>('XpTransaction', XpTransactionSchema);

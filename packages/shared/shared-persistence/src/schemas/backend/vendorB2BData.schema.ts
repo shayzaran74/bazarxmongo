@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const B2BSubscriptionStatus = ['ACTIVE', 'GRACE_PERIOD', 'EXPIRED', 'SUSPENDED'] as const;
 export type B2BSubscriptionStatusType = typeof B2BSubscriptionStatus[number];
@@ -52,4 +53,4 @@ export const VendorB2BDataSchema = new Schema<IVendorB2BData>({
 // Composite index
 VendorB2BDataSchema.index({ subscriptionStatus: 1, subscriptionExpiresAt: 1 });
 
-export const VendorB2BData = model<IVendorB2BData>('VendorB2BData', VendorB2BDataSchema);
+export const VendorB2BData = createModelProxy<IVendorB2BData>('VendorB2BData', VendorB2BDataSchema);

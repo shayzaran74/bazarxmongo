@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // AdSlot — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -25,4 +26,4 @@ export const AdSlotSchema = new Schema<IAdSlot>({
 // Unique constraint
 AdSlotSchema.index({ slotType: 1, platform: 1 }, { unique: true });
 
-export const AdSlot = model<IAdSlot>('AdSlot', AdSlotSchema);
+export const AdSlot = createModelProxy<IAdSlot>('AdSlot', AdSlotSchema);

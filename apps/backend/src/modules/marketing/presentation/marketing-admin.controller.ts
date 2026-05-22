@@ -7,7 +7,25 @@ import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { GiftVoucher } from '@barterborsa/shared-persistence/schemas/backend/giftVoucher.schema';
 import { GroupBuy } from '@barterborsa/shared-persistence/schemas/backend/groupBuy.schema';
 import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
-import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
+
+interface GroupBuyLeanDoc {
+  id: string;
+  productId?: string;
+  title?: string;
+  status?: string;
+  createdAt?: Date;
+  startDate?: Date;
+  endDate?: Date;
+  tiers?: Record<string, unknown>[];
+  price?: number;
+}
+
+interface CatalogProductLeanDoc {
+  id: string;
+  name?: string;
+  slug?: string;
+  media?: Array<{ url?: string }>;
+}
 
 @ApiTags('Marketing Admin')
 @ApiBearerAuth()
@@ -32,7 +50,7 @@ export class MarketingAdminController {
 export class GroupBuyAdminController {
   @Get()
   async getCampaigns() {
-    const data: any[] = await GroupBuy.find().sort({ createdAt: -1 }).lean();
+    const data: GroupBuyLeanDoc[] = await GroupBuy.find().sort({ createdAt: -1 }).lean() as unknown as GroupBuyLeanDoc[];
     const productIds = data.map(d => d.productId).filter(Boolean) as string[];
     const products = productIds.length > 0 ? await CatalogProduct.find({ id: { $in: productIds } })
       .populate('media')
@@ -48,7 +66,7 @@ export class GroupBuyAdminController {
           name: p.name,
           slug: p.slug,
           price: c.price,
-          image: (p as any).media?.[0]?.url || 'https://placehold.co/600x600?text=PRODUCT',
+          image: (p as CatalogProductLeanDoc).media?.[0]?.url || 'https://placehold.co/600x600?text=PRODUCT',
         } : null,
       };
     });
@@ -58,7 +76,7 @@ export class GroupBuyAdminController {
   @Post()
   async createCampaign(@Body() body: Record<string, any>) {
     const id = 'gb-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    const createData: any = {
+    const createData: Record<string, unknown> = {
       _id: id,
       id,
       title: body.title,
@@ -75,7 +93,7 @@ export class GroupBuyAdminController {
 
   @Put(':id')
   async updateCampaign(@Param('id') id: string, @Body() body: Record<string, any>) {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       title: body.title,
       productId: body.productId,
       status: body.isActive ? 'ACTIVE' : 'INACTIVE',

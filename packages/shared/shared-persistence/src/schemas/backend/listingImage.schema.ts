@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IListingImage {
   _id?: string;
@@ -23,4 +24,4 @@ export const ListingImageSchema = new Schema<IListingImage>({
 
 ListingImageSchema.index({ listingId: 1 });
 
-export const ListingImage = model<IListingImage>('ListingImage', ListingImageSchema);
+export const ListingImage = createModelProxy<IListingImage>('ListingImage', ListingImageSchema);

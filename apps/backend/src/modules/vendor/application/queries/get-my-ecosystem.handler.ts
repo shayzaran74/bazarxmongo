@@ -18,14 +18,14 @@ export class GetMyEcosystemHandler
     if (!vendor) return null;
 
     const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     // Kurucu olarak ekosistemi var mı?
     const owned = await this.ecosystemRepo.findByOwnerId(vendorId);
     // Üye olarak ekosisteme dahil mi?
-    const memberOf = await this.ecosystemRepo.findById((vendorProps as any).ecosystemId || '');
+    const memberOf = await this.ecosystemRepo.findById(vendorProps.ecosystemId || '');
 
-    const isApexPlus = (vendorProps as any).tier === 'APEX';
+    const isApexPlus = vendorProps.tier === 'APEX';
 
     return {
       isOwner: !!owned,

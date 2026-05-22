@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const DisputeResolutionStatus = ['OPEN','AUTO_REVIEW','MANUAL_REVIEW','ARBITRATION','RESOLVED','CANCELLED'] as const;
 export type DisputeResolutionStatusType = typeof DisputeResolutionStatus[number];
@@ -52,4 +53,4 @@ BarterDisputeLogSchema.index({ tradeOfferId: 1 });
 BarterDisputeLogSchema.index({ swapSessionId: 1 });
 BarterDisputeLogSchema.index({ status: 1 });
 
-export const BarterDisputeLog = model<IBarterDisputeLog>('BarterDisputeLog', BarterDisputeLogSchema);
+export const BarterDisputeLog = createModelProxy<IBarterDisputeLog>('BarterDisputeLog', BarterDisputeLogSchema);

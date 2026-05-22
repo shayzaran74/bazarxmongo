@@ -29,8 +29,10 @@ export class MongoAuctionParticipationRepository implements IAuctionParticipatio
   }
 
   async create(data: { auctionId: string; userId: string; status: string; holdId?: string; blockedAmount: number }): Promise<AuctionParticipation> {
+    const newId = randomUUID();
     const doc = await this.model.create({
-      id: randomUUID(),
+      _id: newId,
+      id: newId,
       ...data,
       createdAt: new Date(),
     });

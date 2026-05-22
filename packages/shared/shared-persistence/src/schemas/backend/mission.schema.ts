@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Mission — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -34,4 +35,4 @@ export const MissionSchema = new Schema<IMission>({
   collection: 'missions',
 });
 
-export const Mission = model<IMission>('Mission', MissionSchema);
+export const Mission = createModelProxy<IMission>('Mission', MissionSchema);

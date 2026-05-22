@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Collection — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -30,4 +31,4 @@ export const CollectionSchema = new Schema<ICollection>({
   collection: 'collections',
 });
 
-export const Collection = model<ICollection>('Collection', CollectionSchema);
+export const Collection = createModelProxy<ICollection>('Collection', CollectionSchema);

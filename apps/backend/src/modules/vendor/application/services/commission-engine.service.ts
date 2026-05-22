@@ -53,14 +53,14 @@ export class CommissionEngineService {
     if (!vendor) throw new BadRequestException('Vendor bulunamadı');
 
     const vendorProps = vendor.getProps();
-    const tier = (vendorProps as any).tier as VendorTier;
+    const tier = vendorProps.tier as VendorTier;
     const tierVO = VendorTierVO.create(tier);
     const amount = new Decimal(transactionAmount);
 
     // B2B data — firstTransactionAt
     const b2bData = await this.b2bRepo.findByVendorId(vendorId);
     const isFirstTransaction = input.isFirstTransaction
-      ?? !(b2bData && (b2bData as any).firstTransactionAt);
+      ?? !(b2bData && b2bData.firstTransactionAt);
 
     if (isFirstTransaction && xpToApply > 0) {
       throw new BadRequestException(
@@ -87,12 +87,13 @@ export class CommissionEngineService {
       // BrandEcosystem'ten owner veya member kontrolü
       let groupRate = tierVO.getGroupCommissionRate();
       const ecosystems = await this.ecosystemRepo.findAll();
-      const ecosystem = ecosystems.find((e: any) =>
-        (e as any).ownerId === vendorId ||
-        ((e as any).memberIds && (e as any).memberIds.includes(vendorId))
+      const ecosystem = ecosystems.find((e: { ownerId?: string; memberIds?: string[] }) =>
+        e.ownerId === vendorId ||
+        (e.memberIds && e.memberIds.includes(vendorId))
       );
       if (ecosystem) {
-        groupRate = Number((ecosystem as any).internalCommRate ?? groupRate);
+        const eco = ecosystem as unknown as { internalCommRate?: { toString(): string } };
+        groupRate = Number(eco.internalCommRate?.toString() ?? groupRate);
       }
 
       const commission = amount.mul(groupRate).div(100).toDecimalPlaces(2);
@@ -122,7 +123,7 @@ export class CommissionEngineService {
         );
       }
 
-      const userId = (vendorProps as any).userId;
+      const userId = vendorProps.userId;
       await this.assertXpBalance(userId, xpToApply);
 
       const maxXpReduction = standardCommission.sub(xpDiscountedComm);

@@ -159,7 +159,7 @@ export class EarlyPaymentService {
         entity.id, // holdId placeholder
         idempotencyKey,
       );
-      const transactionId = (result as any)?.transactionId ?? idempotencyKey;
+      const transactionId = (result as { transactionId?: string })?.transactionId ?? idempotencyKey;
 
       entity.markPaid(transactionId);
       await this.earlyPaymentRepo.save(entity);

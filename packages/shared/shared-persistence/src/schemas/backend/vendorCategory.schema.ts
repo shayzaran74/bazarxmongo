@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VendorCategory — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -26,4 +27,4 @@ VendorCategorySchema.index({ categoryId: 1 });
 // Composite index
 VendorCategorySchema.index({ vendorId: 1 });
 
-export const VendorCategory = model<IVendorCategory>('VendorCategory', VendorCategorySchema);
+export const VendorCategory = createModelProxy<IVendorCategory>('VendorCategory', VendorCategorySchema);

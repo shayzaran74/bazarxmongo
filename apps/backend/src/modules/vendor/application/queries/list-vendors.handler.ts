@@ -6,6 +6,7 @@ import { ListVendorsQuery } from './list-vendors.query';
 import { Vendor, IVendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { Company, ICompany } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
 import { User, IUser } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
+import { VendorProfile } from '@barterborsa/shared-persistence/schemas/backend/vendorProfile.schema';
 
 interface VendorListItem {
   id: string;
@@ -68,7 +69,7 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, Vendo
     const [companies, users, profiles] = await Promise.all([
       companyIds.length ? Company.find({ id: { $in: companyIds } }).lean().exec() : [],
       userEmails.length ? User.find({ email: { $in: userEmails } }).lean().exec() : [],
-      vendorIds.length  ? require('mongoose').model('VendorProfile').find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
+      vendorIds.length  ? VendorProfile.find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
     ]);
 
     const companyMap = new Map<string, ICompany>(companies.map(c => [(c as ICompany).id, c as ICompany] as [string, ICompany]));

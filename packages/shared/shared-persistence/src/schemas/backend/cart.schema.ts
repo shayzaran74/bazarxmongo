@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/cart.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface ICart {
   _id?: string;
@@ -22,4 +23,4 @@ export const CartSchema = new Schema<ICart>({
 
 CartSchema.index({ userId: 1 }, { unique: true });
 
-export const Cart = model<ICart>('Cart', CartSchema);
+export const Cart = createModelProxy<ICart>('Cart', CartSchema);

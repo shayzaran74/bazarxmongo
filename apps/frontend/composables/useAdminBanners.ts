@@ -3,9 +3,9 @@ import { cities as cityList, districts as districtMap } from '@/data/turkey_loca
 
 export const useAdminBanners = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
-  const banners = ref<any[]>([])
+  const banners = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const saving = ref(false)
   const deleting = ref(false)
@@ -34,11 +34,12 @@ export const useAdminBanners = () => {
 
   const districtList = computed(() => {
     if (!formData.locationTags.city) return []
-    return (districtMap as any)[formData.locationTags.city] || []
+    const map = districtMap as Record<string, string[]>
+    return map[formData.locationTags.city] || []
   })
 
   // Backend'den gelen veriyi frontend formatına dönüştürür
-  const mapBannerData = (banner: any) => ({
+  const mapBannerData = (banner: Record<string, unknown>) => ({
     ...banner,
     imageUrl: banner.image,
     linkUrl: banner.link,
@@ -50,7 +51,7 @@ export const useAdminBanners = () => {
   const fetchBanners = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/admin/banners')
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/admin/banners')
       banners.value = (res.data || []).map(mapBannerData)
     } catch {
       $toast.error('Bannerlar yüklenemedi')
@@ -81,7 +82,7 @@ export const useAdminBanners = () => {
     showModal.value = true
   }
 
-  const editBanner = (banner: any) => {
+  const editBanner = (banner: Record<string, unknown>) => {
     isEditing.value = true
     const mapped = mapBannerData(banner)
     imagePreview.value = mapped.imageUrl
@@ -134,9 +135,9 @@ export const useAdminBanners = () => {
       } else {
         throw new Error('Sunucu URL döndürmedi')
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Hata durumunda önizleme yerel dosyadan devam eder
-      $toast.error(e?.message || 'Görsel yüklenemedi')
+      $toast.error((e as Error)?.message || 'Görsel yüklenemedi')
     } finally {
       uploading.value = false
     }
@@ -172,8 +173,8 @@ export const useAdminBanners = () => {
       $toast.success('Banner başarıyla kaydedildi')
       showModal.value = false
       fetchBanners()
-    } catch (err: any) {
-      $toast.error(err.data?.message || 'Banner kaydedilemedi')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Banner kaydedilemedi')
     } finally {
       saving.value = false
     }
@@ -194,7 +195,7 @@ export const useAdminBanners = () => {
     }
   }
 
-  const toggleStatus = async (banner: any) => {
+  const toggleStatus = async (banner: Record<string, unknown>) => {
     try {
       await $api(`/api/v1/admin/banners/${banner.id}`, {
         method: 'PUT',

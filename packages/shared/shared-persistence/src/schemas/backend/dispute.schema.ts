@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/dispute.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const DisputeStatus = ['OPEN','REVIEWING','RESOLVED','CLOSED'] as const;
 export type DisputeStatusType = typeof DisputeStatus[number];
@@ -47,4 +48,4 @@ DisputeSchema.index({ userId: 1 });
 DisputeSchema.index({ vendorId: 1 });
 DisputeSchema.index({ orderId: 1 });
 
-export const Dispute = model<IDispute>('Dispute', DisputeSchema);
+export const Dispute = createModelProxy<IDispute>('Dispute', DisputeSchema);

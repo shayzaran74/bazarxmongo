@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const AccountStatus = ['ACTIVE','FROZEN','CLOSED'] as const;
 export type AccountStatusType = typeof AccountStatus[number];
@@ -48,4 +49,4 @@ AccountSchema.index({ ownerType: 1 });
 AccountSchema.index({ userId: 1, type: 1 }, { unique: true });
 AccountSchema.index({ status: 1 });
 
-export const Account = model<IAccount>('Account', AccountSchema);
+export const Account = createModelProxy<IAccount>('Account', AccountSchema);

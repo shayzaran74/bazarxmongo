@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/return-request.schema.ts
 // ReturnRequest MongoDB schema — Master Plan §3.7
 // 14 gün iade, 48s satıcı timeout, 96s oto onay
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const ReturnReasonType = ['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CHANGED_MIND', 'ARRIVED_LATE', 'OTHER'] as const;
 export type ReturnReasonTypeType = typeof ReturnReasonType[number];
@@ -69,4 +70,4 @@ ReturnRequestSchema.index({ status: 1 });
 ReturnRequestSchema.index({ sellerId: 1, status: 1 });
 ReturnRequestSchema.index({ sellerDeadlineAt: 1 }, { expireAfterSeconds: 0 }); // TTL — süresi dolanı otomatik sil
 
-export const ReturnRequest = model<IReturnRequest>('ReturnRequest', ReturnRequestSchema);
+export const ReturnRequest = createModelProxy<IReturnRequest>('ReturnRequest', ReturnRequestSchema);

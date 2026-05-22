@@ -31,7 +31,7 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
       throw new BadRequestException('Sadece ihtilaflı (DISPUTED) oturumlar çözümlenebilir.');
     }
 
-    const idempotencyBase = `resolve-${command.sessionId}-${Date.now()}`;
+    const idempotencyBase = `resolve-${command.sessionId}-${crypto.randomUUID()}`;
 
     // Önce finansal operasyonlar — başarısız olursa dispute "çözümlendi" olarak işaretlenmez
     if (command.result === 'SELLER_WINS' || command.result === 'RELEASE_ALL') {

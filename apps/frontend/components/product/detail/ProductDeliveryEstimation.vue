@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import { MapPinIcon, TruckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { MapPinIcon, TruckIcon, XMarkIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { iller } from '~/assets/css/data/component/iller'
 
+interface DeliveryEstimate {
+  city?: string
+  district?: string
+  estimatedDays?: number
+  estimatedDate?: string
+  carrier?: string
+  freeShipping?: boolean
+  freeShippingThreshold?: number
+}
+
 interface Props {
-  estimatedDelivery: string | null
+  estimatedDelivery: DeliveryEstimate | null
   showAddressModal: boolean
   selectedCity: string
   selectedDistrict: string
@@ -12,10 +22,26 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['update:showAddressModal', 'update:selectedCity', 'update:selectedDistrict', 'estimate'])
 
-// ilceleriGetir should return the string[] array for the selected city
 const ilceleriGetir = computed(() => {
   if (!props.selectedCity) return []
   return (iller as Record<string, string[]>)[props.selectedCity] || []
+})
+
+// "2026-05-25" → "25 Mayıs 2026"
+const formatDate = (iso: string): string => {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch { return iso }
+}
+
+const deliveryLabel = computed(() => {
+  const d = props.estimatedDelivery
+  if (!d) return ''
+  const days = d.estimatedDays ?? 0
+  const dayLabel = days <= 1 ? 'Yarın Teslim' : `${days} İş Günü`
+  const dateStr = d.estimatedDate ? formatDate(d.estimatedDate) : ''
+  return dateStr ? `${dayLabel} · ${dateStr}` : dayLabel
 })
 
 const handleCityChange = (e: Event) => {
@@ -41,12 +67,20 @@ const handleCityChange = (e: Event) => {
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $t('products.detail.estimatedDelivery') }}</span>
             <span class="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">{{ $t('products.detail.changeAddress') }}</span>
           </div>
-          <p
-            v-if="estimatedDelivery"
-            class="text-xs font-black text-slate-900 uppercase"
-          >
-            {{ estimatedDelivery }}
-          </p>
+          <div v-if="estimatedDelivery" class="space-y-0.5">
+            <p class="text-xs font-black text-slate-900">
+              {{ deliveryLabel }}
+            </p>
+            <div class="flex items-center gap-1.5 mt-1">
+              <CheckCircleIcon v-if="estimatedDelivery.freeShipping" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span v-if="estimatedDelivery.freeShipping" class="text-[10px] font-bold text-emerald-600">
+                Ücretsiz Kargo
+              </span>
+              <span v-if="estimatedDelivery.city" class="text-[10px] text-slate-400">
+                · {{ estimatedDelivery.city }}{{ estimatedDelivery.district ? ', ' + estimatedDelivery.district : '' }}
+              </span>
+            </div>
+          </div>
           <p
             v-else
             class="text-xs font-bold text-slate-600"

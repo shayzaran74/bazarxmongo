@@ -52,7 +52,7 @@ export const useProfileSecurity = () => {
 
   const savePreferences = async () => {
     try {
-      const res = await userService.updateProfile({ metadata: preferences.value } as any)
+      const res = await userService.updateProfile({ metadata: preferences.value })
       if (res.success) {
         if (process.client) {
           localStorage.setItem('user_preferences', JSON.stringify(preferences.value))

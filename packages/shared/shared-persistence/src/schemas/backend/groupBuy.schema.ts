@@ -1,47 +1,64 @@
-import { Schema, model, Types } from 'mongoose';
+// packages/shared/shared-persistence/src/schemas/backend/groupBuy.schema.ts
 
-// GroupBuy — generated from Prisma schema
-// TODO: strict typing — codegen
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
+
+export interface IGroupBuyTier {
+  minQuantity: number;
+  price: number;
+}
 
 export interface IGroupBuy {
   _id?: string;
   id: string;
   listingId?: string;
+  productId?: string;
+  title?: string;
   targetQuantity: number;
   currentQuantity: number;
+  // Başlangıç fiyatı — kampanya açılışındaki ana fiyat
+  originalPrice: Types.Decimal128;
+  // Anlık geçerli fiyat (tier'a göre güncellenir)
   price: Types.Decimal128;
-  endDate: Date;
-  status: string;
-  createdAt: Date;
-  productId?: string;
+  // Kampanya kapandıktan sonra iade dönemi bitiminde belirlenen kesin fiyat
+  finalPrice?: Types.Decimal128;
+  tiers?: IGroupBuyTier[];
   startDate?: Date;
-  tiers?: Schema.Types.Mixed;
-  title?: string;
+  endDate: Date;
+  // Kampanya bitti + kaç gün iade penceresi bekleneceği (varsayılan 15)
+  returnWindowDays: number;
+  // İade dönemi bitti, fiyat sabitlendi mi?
+  finalizedAt?: Date;
+  status: string;
+  // ACTIVE → ENDED (süre doldu) → FINALIZED (iade dönemi bitti, kuponlar dağıtıldı)
+  createdAt: Date;
 }
 
 export const GroupBuySchema = new Schema<IGroupBuy>({
   _id: { type: String, default: () => new Types.ObjectId().toString() },
   id: { type: String, required: true },
-  listingId: { type: String, alias: 'listing_id' },
-  targetQuantity: { type: Number, default: 0, alias: 'target_quantity' },
-  currentQuantity: { type: Number, default: 0, alias: 'current_quantity' },
-  price: { type: Types.Decimal128, default: 0 },
-  endDate: { type: Date, alias: 'end_date' },
-  status: { type: String, default: 'ACTIVE' },
-  createdAt: { type: Date, alias: 'created_at' },
-  productId: { type: String, alias: 'product_id' },
-  startDate: { type: Date, alias: 'start_date' },
-  tiers: { type: Schema.Types.Mixed },
+  listingId: { type: String },
+  productId: { type: String },
   title: { type: String },
+  targetQuantity: { type: Number, default: 0 },
+  currentQuantity: { type: Number, default: 0 },
+  originalPrice: { type: Types.Decimal128, default: 0 },
+  price: { type: Types.Decimal128, default: 0 },
+  finalPrice: { type: Types.Decimal128 },
+  tiers: { type: Schema.Types.Mixed, default: [] },
+  startDate: { type: Date },
+  endDate: { type: Date, required: true },
+  returnWindowDays: { type: Number, default: 15 },
+  finalizedAt: { type: Date },
+  status: { type: String, default: 'ACTIVE' },
+  createdAt: { type: Date },
 }, {
   timestamps: true,
   collection: 'group_buys',
 });
 
-// Composite index
 GroupBuySchema.index({ listingId: 1 });
-
-// Composite index
 GroupBuySchema.index({ productId: 1 });
+GroupBuySchema.index({ status: 1, endDate: 1 });
 
-export const GroupBuy = model<IGroupBuy>('GroupBuy', GroupBuySchema);
+export const GroupBuy = createModelProxy<IGroupBuy>('GroupBuy', GroupBuySchema);

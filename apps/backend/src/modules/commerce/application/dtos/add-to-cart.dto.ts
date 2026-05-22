@@ -22,4 +22,8 @@ export class AddToCartDto {
   @IsOptional()
   @IsString()
   productVariantId?: string;
+
+  @IsOptional()
+  @IsString()
+  campaignId?: string;
 }

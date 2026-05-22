@@ -1,10 +1,9 @@
-import { Global, Module, Logger } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { AuditLogService } from './application/audit-log.service';
 import { LogsAdminController } from './presentation/logs-admin.controller';
 import { MediaModule } from '../media/media.module';
 
-// Global olarak işaretlendiği için diğer modüller import etmeden inject edebilir
-@Global()
+// Modül explicit import edilmelidir
 @Module({
   imports: [MediaModule],
   controllers: [LogsAdminController],

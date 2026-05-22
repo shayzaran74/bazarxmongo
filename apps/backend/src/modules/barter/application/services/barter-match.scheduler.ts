@@ -11,6 +11,8 @@ import { IWantedItemRepository } from '../../domain/repositories/wanted-item.rep
 import { MatchingService } from './matching.service';
 import { CollateralCalculatorService } from './collateral-calculator.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { SurplusItem, SurplusItemProps } from '../../domain/entities/surplus-item.entity';
+import { WantedItem } from '../../domain/entities/wanted-item.entity';
 
 const BATCH_CHECK_INTERVAL_MS = 60_000; // 1 dakika (tekrar eden cron yerine setInterval)
 const BATCH_SIZE = 100;
@@ -120,8 +122,8 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     }
   }
 
-  private async processSurplusForMatch(surplus: any): Promise<{ matched: boolean; reason?: string }> {
-    const surplusProps = surplus.getProps ? surplus.getProps() : surplus;
+  private async processSurplusForMatch(surplus: SurplusItem): Promise<{ matched: boolean; reason?: string }> {
+    const surplusProps: SurplusItemProps = surplus.getProps();
 
     // MatchPreference kontrolü — FULL_ONLY ise tam eşleşme bekle, kısmi kabul etme
     const matchPreference = surplusProps.matchPreference ?? 'FULL_ONLY';
@@ -134,15 +136,11 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     }
 
     // En iyi eşleşmeyi seç
-    let bestMatch: any = null;
+    let bestMatch: WantedItem | null = null;
     let bestScore = 0;
 
     for (const wanted of wantedItems) {
-      const score = this.matchingService.calculateMatchScore(
-        surplus,
-        wanted,
-      );
-
+      const score = this.matchingService.calculateMatchScore(surplus, wanted);
       if (score > bestScore && score >= 50) { // Minimum eşik: 50 puan
         bestScore = score;
         bestMatch = wanted;
@@ -160,7 +158,7 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
 
     // SwapSession oluştur — PENDING_COLLATERAL
     const collateralAmount = this.collateralCalc.calculateCollateral(
-      surplusProps.estimatedValue ?? 0,
+      surplusProps.estimatedValue ?? surplusProps.unitPrice ?? 0,
     );
 
     await this.createSwapSession(surplus, bestMatch, collateralAmount, bestScore);
@@ -168,7 +166,7 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     return { matched: true };
   }
 
-  private async findWantedItemsForSurplus(surplusProps: any): Promise<any[]> {
+  private async findWantedItemsForSurplus(surplusProps: SurplusItemProps): Promise<WantedItem[]> {
     // Kategori bazlı wanted item'ları bul
     const category = surplusProps.category;
     if (!category) return [];
@@ -176,8 +174,8 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     // IWantedItemRepository inject edilmiş durumda — categoryId ile sorgula
     try {
       const wantedItems = await this.wantedRepo.findAll();
-      return wantedItems.filter((w: any) => {
-        const props = w.getProps ? w.getProps() : w;
+      return wantedItems.filter(w => {
+        const props = w.getProps();
         return props.categoryId === category && props.isActive && props.status === 'ACTIVE';
       });
     } catch {
@@ -186,13 +184,13 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
   }
 
   private async createSwapSession(
-    surplus: any,
-    wanted: any,
-    collateralAmount: any,
+    surplus: SurplusItem,
+    wanted: WantedItem,
+    collateralAmount: number,
     matchScore: number,
   ): Promise<void> {
-    const surplusProps = surplus.getProps ? surplus.getProps() : surplus;
-    const wantedProps = wanted.getProps ? wanted.getProps() : wanted;
+    const surplusProps = surplus.getProps();
+    const wantedProps = wanted.getProps();
 
     const initiatorId = surplusProps.companyId;
     const receiverId = wantedProps.companyId;

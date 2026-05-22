@@ -24,9 +24,10 @@ export default defineNuxtRouteMiddleware((to) => {
 
   // 3. APEX Kontrolü (Sadece Barter Borsa için)
   if (isBarterBorsa) {
-    const tier = (authStore.user?.vendor as any)?.tier
+    const vendorData = authStore.user?.vendor as { tier?: string } | null | undefined
+    const tier = vendorData?.tier
     const isApex = tier === 'APEX' || tier === 'APEX_PLUS'
-    
+
     // Admin bypass'ını bileşen seviyesinde kaldırdık, middleware'de de katı davranıyoruz
     // Eğer APEX değilse, index sayfasındaki AccessGuard uyarısını görecektir.
     // Middleware'de redirect yaparsak ekranı göremez, o yüzden sadece kontrolü geçiyoruz.

@@ -81,14 +81,12 @@ export class GenerateInvoiceHandler
     type: 'BUYER_INVOICE' | 'VENDOR_INVOICE';
     recipientId: string;
     recipientType: 'BUYER' | 'VENDOR';
-    subtotal: any;
+    subtotal: number;
     vatRate: number;
   }): Invoice {
     const { orderId, type, recipientId, recipientType, subtotal, vatRate } = params;
 
-    // Invoice items from order items (orderProps.items)
-    // NOTE: MongoDB'de order items ayrı collection'da — şimdilik boş items ile oluştur
-    const subtotalNum = Number(subtotal.toString ? subtotal.toString() : subtotal);
+    const subtotalNum = Number(subtotal);
     const taxAmountNum = subtotalNum * (vatRate / 100);
     const totalAmountNum = subtotalNum + taxAmountNum;
 

@@ -50,7 +50,7 @@ export class GetVendorTrustScoreHandler implements IQueryHandler<GetVendorTrustS
         isFrozen:          score.isFrozen,
         inactiveDays:      score.inactiveDays,
         lastCalculatedAt:  score.lastCalculatedAt,
-        level: this.scoreLevel(score.score),
+        level: this.scoreLevel(Number(score.score?.toString() ?? 100)),
       },
     };
   }

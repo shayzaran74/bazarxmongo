@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/helpCategory.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IHelpCategory {
   _id?: string;
@@ -38,4 +39,4 @@ export const HelpCategorySchema = new Schema<IHelpCategory>({
 
 HelpCategorySchema.index({ platform: 1, order: 1 });
 
-export const HelpCategory = model<IHelpCategory>('HelpCategory', HelpCategorySchema);
+export const HelpCategory = createModelProxy<IHelpCategory>('HelpCategory', HelpCategorySchema);

@@ -175,7 +175,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
     try {
       for (const { row, name, slug } of prepared) {
         try {
-          const id = 'cp-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+          const id = 'cp-' + crypto.randomUUID();
           const product = new CatalogProduct({
             id,
             name,
@@ -205,7 +205,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
                   subPath: 'catalog/products',
                 });
                 if (uploadResult.success && uploadResult.data) {
-                  const mediaId = 'media-' + Date.now() + '-' + img.sortOrder;
+                  const mediaId = 'media-' + crypto.randomUUID();
                   await ProductMedia.create({
                     id: mediaId,
                     productId: product.id,
@@ -223,7 +223,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
           }
 
           if (row.price !== undefined || row.stock !== undefined) {
-            const listingId = 'listing-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+            const listingId = 'listing-' + crypto.randomUUID();
             await Listing.create({
               id: listingId,
               catalogProductId: product.id,

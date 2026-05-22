@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const LedgerEntryType = ['DEBIT','CREDIT'] as const;
 export type LedgerEntryTypeType = typeof LedgerEntryType[number];
@@ -42,4 +43,4 @@ GeneralLedgerSchema.index({ debitAccountId: 1 });
 GeneralLedgerSchema.index({ creditAccountId: 1 });
 GeneralLedgerSchema.index({ referenceId: 1, refType: 1 });
 
-export const GeneralLedger = model<IGeneralLedger>('GeneralLedger', GeneralLedgerSchema);
+export const GeneralLedger = createModelProxy<IGeneralLedger>('GeneralLedger', GeneralLedgerSchema);

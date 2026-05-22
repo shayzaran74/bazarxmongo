@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // ImportJob — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -42,4 +43,4 @@ ImportJobSchema.index({ adminId: 1 });
 // Composite index
 ImportJobSchema.index({ status: 1 });
 
-export const ImportJob = model<IImportJob>('ImportJob', ImportJobSchema);
+export const ImportJob = createModelProxy<IImportJob>('ImportJob', ImportJobSchema);

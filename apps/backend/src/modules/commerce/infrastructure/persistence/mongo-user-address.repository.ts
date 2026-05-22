@@ -15,13 +15,13 @@ export class MongoUserAddressRepository implements IUserAddressRepository {
     this.model = UserAddressModel;
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<IUserAddress | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as IUserAddress) : null;
   }
 
-  async findByUserId(userId: string): Promise<any[]> {
+  async findByUserId(userId: string): Promise<IUserAddress[]> {
     const docs = await this.model.find({ userId, deletedAt: null }).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as IUserAddress);
   }
 }

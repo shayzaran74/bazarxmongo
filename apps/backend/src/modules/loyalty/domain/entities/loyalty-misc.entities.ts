@@ -43,6 +43,10 @@ export class XpBatch extends AggregateRoot<XpBatchProps> {
     }, id);
   }
 
+  public static fromPersistence(props: XpBatchProps, id: string): XpBatch {
+    return new XpBatch(props, id);
+  }
+
   public deduct(amount: number): void {
     if (this.props.currentBalance < amount) throw new Error('Batch insufficient balance');
     this.props.currentBalance -= amount;

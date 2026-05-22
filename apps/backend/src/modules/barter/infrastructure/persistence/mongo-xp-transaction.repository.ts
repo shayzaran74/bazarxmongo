@@ -58,7 +58,7 @@ export class MongoXpTransactionRepository implements IXpTransactionRepository {
     referenceType?: string;
     expiresAt?: Date;
   }): Promise<void> {
-    const id = 'xpt-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'xpt-' + crypto.randomUUID();
     await this.model.create({
       id,
       userId: data.userId,

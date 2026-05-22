@@ -117,7 +117,7 @@ export class UpdateListingHandler implements ICommandHandler<UpdateListingComman
         await ProductMedia.deleteMany({ productId: listing.catalogProductId }).exec();
         if (dto.productImages.length > 0) {
           const mediaDocs = dto.productImages.map((url: string, index: number) => ({
-            id: 'media-' + Date.now() + '-' + index,
+            id: 'media-' + crypto.randomUUID(),
             productId: listing.catalogProductId,
             url,
             type: 'IMAGE',

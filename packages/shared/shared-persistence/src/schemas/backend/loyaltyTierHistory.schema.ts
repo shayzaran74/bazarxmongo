@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // LoyaltyTierHistory — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -31,4 +32,4 @@ export const LoyaltyTierHistorySchema = new Schema<ILoyaltyTierHistory>({
 // Composite index
 LoyaltyTierHistorySchema.index({ userId: 1 });
 
-export const LoyaltyTierHistory = model<ILoyaltyTierHistory>('LoyaltyTierHistory', LoyaltyTierHistorySchema);
+export const LoyaltyTierHistory = createModelProxy<ILoyaltyTierHistory>('LoyaltyTierHistory', LoyaltyTierHistorySchema);

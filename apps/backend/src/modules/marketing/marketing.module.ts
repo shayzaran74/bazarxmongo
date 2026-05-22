@@ -3,6 +3,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 
 import { BannerController } from './presentation/banner.controller';
 import { CampaignController } from './presentation/campaign.controller';
@@ -16,7 +17,7 @@ import { RedeemGiftVoucherHandler } from './application/commands/redeem-gift-vou
 import { GiftVoucherSchedulerService } from './application/services/gift-voucher-scheduler.service';
 
 @Module({
-  imports: [CqrsModule, FinancialGatewayModule],
+  imports: [CqrsModule, FinancialGatewayModule, AuditMongooseModule],
   controllers: [
     BannerController,
     CampaignController,

@@ -1,6 +1,6 @@
 // apps/backend/src/modules/media/media.module.ts
 
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MediaService } from './application/services/media.service';
 import { MediaController, UploadController } from './presentation/media.controller';
@@ -10,7 +10,6 @@ import { STORAGE_ADAPTER } from './domain/storage.adapter.interface';
 import { MEDIA_SERVICE } from './domain/media.service.interface';
 import { MediaHealthIndicator } from './presentation/media-health.indicator';
 
-@Global()
 @Module({
   controllers: [MediaController, UploadController],
   providers: [

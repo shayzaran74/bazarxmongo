@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/financial/giftCard.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const GiftCardStatus = ['Active', 'Redeemed', 'Expired', 'Cancelled'] as const;
 export type GiftCardStatusType = typeof GiftCardStatus[number];
@@ -37,4 +38,4 @@ GiftCardSchema.index({ code: 1 }, { unique: true });
 GiftCardSchema.index({ customerId: 1 });
 GiftCardSchema.index({ status: 1 });
 
-export const GiftCard = model<IGiftCard>('GiftCard', GiftCardSchema);
+export const GiftCard = createModelProxy<IGiftCard>('GiftCard', GiftCardSchema);

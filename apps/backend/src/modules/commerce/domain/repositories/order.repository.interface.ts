@@ -2,11 +2,10 @@
 
 import { IRepository } from '@barterborsa/shared-core';
 import { Order } from '../entities/order.entity';
-import { OrderStatus } from '../enums/order-status.enum';
 
 export interface IOrderRepository extends IRepository<Order> {
-  findByUserId(userId: string, pagination: any): Promise<{ items: Order[]; total: number }>;
-  findByVendorId(vendorId: string, pagination: any): Promise<{ items: Order[]; total: number }>;
+  findByUserId(userId: string, pagination?: { skip?: number; limit?: number }): Promise<{ items: Order[]; total: number }>;
+  findByVendorId(vendorId: string, pagination?: { skip?: number; limit?: number }): Promise<{ items: Order[]; total: number }>;
   findByOrderNumber(orderNumber: string): Promise<Order | null>;
   findByIdempotencyKey(userId: string, key: string): Promise<Order[]>;
   findAll(): Promise<Order[]>;

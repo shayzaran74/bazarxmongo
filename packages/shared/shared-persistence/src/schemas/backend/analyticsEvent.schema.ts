@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const EventCategory = ['PRODUCT','CART','CHECKOUT','BARTER','SUBSCRIPTION','TRUST','VENDOR'] as const;
 export type EventCategoryType = typeof EventCategory[number];
@@ -54,4 +55,4 @@ AnalyticsEventSchema.index({ vendorId: 1, timestamp: -1 });
 AnalyticsEventSchema.index({ listingId: 1 });
 AnalyticsEventSchema.index({ sessionId: 1 });
 
-export const AnalyticsEvent = model<IAnalyticsEvent>('AnalyticsEvent', AnalyticsEventSchema);
+export const AnalyticsEvent = createModelProxy<IAnalyticsEvent>('AnalyticsEvent', AnalyticsEventSchema);

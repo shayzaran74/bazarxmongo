@@ -7,14 +7,19 @@ import { useBarterService } from '~/services/api/BarterService'
 import { useI18n } from 'vue-i18n'
 import type { Product, ProductVariant } from '@barterborsa/shared-types'
 
-export const useProductActions = (product: any, quantity: any, selectedVariant: any, displayPrice: any) => {
+export const useProductActions = (
+  product: Ref<Product | null | undefined>,
+  quantity: Ref<number>,
+  selectedVariant: Ref<ProductVariant | null | undefined>,
+  displayPrice: Ref<number>
+) => {
   const { t } = useI18n()
   const { $toast: toast } = useNuxtApp()
   const cartStore = useCartStore()
   const wishlistStore = useWishlistStore()
   const authStore = useAuthStore()
   const barterService = useBarterService()
-  
+
   const processingBarter = ref(false)
 
   const isFavorite = computed(() => {
@@ -31,8 +36,8 @@ export const useProductActions = (product: any, quantity: any, selectedVariant: 
       )
       if (result?.success) toast.success(t('product.addedToCart') || 'Ürün sepete eklendi')
       else toast.error(result?.message || t('product.errorAdding'))
-    } catch (err: any) {
-      toast.error(err.message || t('product.errorAdding'))
+    } catch (err: unknown) {
+      toast.error((err as Error).message || t('product.errorAdding'))
     }
   }
 
@@ -46,8 +51,8 @@ export const useProductActions = (product: any, quantity: any, selectedVariant: 
       )
       if (result?.success) await navigateTo('/cart')
       else toast.error(result?.message || t('product.buyNowError'))
-    } catch (err: any) {
-      toast.error(err.message || t('product.buyNowError'))
+    } catch (err: unknown) {
+      toast.error((err as Error).message || t('product.buyNowError'))
     }
   }
 
@@ -63,8 +68,8 @@ export const useProductActions = (product: any, quantity: any, selectedVariant: 
           text: product.value?.description,
           url: window.location.href
         })
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') toast.error(t('products.detail.shareError'))
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError') toast.error(t('products.detail.shareError'))
       }
     } else {
       try {
@@ -90,7 +95,7 @@ export const useProductActions = (product: any, quantity: any, selectedVariant: 
     if (!confirm(t('products.detail.barterConfirm', { price: totalCost }))) return
     try {
       processingBarter.value = true
-      const response = await (barterService as any).transfer({
+      const response = await barterService.transfer({
         toUserId: product.value?.Vendor?.id?.toString() || '',
         amount: totalCost,
         description: t('products.detail.barterPurchaseDescription', { name: product.value?.name, count: quantity.value })
@@ -100,8 +105,8 @@ export const useProductActions = (product: any, quantity: any, selectedVariant: 
         authStore.fetchUser()
         navigateTo('/barter')
       }
-    } catch (err: any) {
-      toast.error(err.message || t('products.detail.errorGeneral'))
+    } catch (err: unknown) {
+      toast.error((err as Error).message || t('products.detail.errorGeneral'))
     } finally {
       processingBarter.value = false
     }

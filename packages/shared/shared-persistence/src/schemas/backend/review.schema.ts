@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/review.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IReview {
   _id?: string;
@@ -36,4 +37,4 @@ ReviewSchema.index({ catalogProductId: 1 });
 ReviewSchema.index({ orderId: 1 });
 ReviewSchema.index({ userId: 1, catalogProductId: 1 }, { unique: true });
 
-export const Review = model<IReview>('Review', ReviewSchema);
+export const Review = createModelProxy<IReview>('Review', ReviewSchema);

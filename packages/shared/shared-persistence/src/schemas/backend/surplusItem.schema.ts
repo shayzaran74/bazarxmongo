@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const SurplusStatus = [
   'PENDING',
@@ -85,4 +86,4 @@ SurplusItemSchema.index({ city: 1, status: 1 });
 SurplusItemSchema.index({ companyId: 1 });
 SurplusItemSchema.index({ status: 1 });
 
-export const SurplusItem = model<ISurplusItem>('SurplusItem', SurplusItemSchema);
+export const SurplusItem = createModelProxy<ISurplusItem>('SurplusItem', SurplusItemSchema);

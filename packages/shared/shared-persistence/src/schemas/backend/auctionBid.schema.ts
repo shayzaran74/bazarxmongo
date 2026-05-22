@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface IAuctionBid {
   _id?: string;
@@ -26,4 +27,4 @@ export const AuctionBidSchema = new Schema<IAuctionBid>({
 AuctionBidSchema.index({ auctionId: 1, createdAt: -1 });
 AuctionBidSchema.index({ userId: 1 });
 
-export const AuctionBid = model<IAuctionBid>('AuctionBid', AuctionBidSchema);
+export const AuctionBid = createModelProxy<IAuctionBid>('AuctionBid', AuctionBidSchema);

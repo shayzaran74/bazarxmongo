@@ -5,6 +5,14 @@ import { IVendorRepository } from '../../domain/repositories/vendor.repository.i
 import { IOrderRepository } from '../../../commerce/domain/repositories/order.repository.interface';
 import { IUserRepository } from '../../../identity/domain/repositories/user.repository.interface';
 import { OrderMapper } from '../../../commerce/infrastructure/persistence/mappers/order.mapper';
+import { Order } from '../../../commerce/domain/entities/order.entity';
+import { ShippingAddressProps } from '../../../commerce/domain/value-objects/shipping-address.vo';
+
+interface UserSummary {
+  id: string;
+  email: string;
+  profile?: { firstName: string; lastName: string };
+}
 
 @QueryHandler(GetVendorOrdersQuery)
 export class GetVendorOrdersHandler
@@ -24,17 +32,16 @@ export class GetVendorOrdersHandler
     const vendor = await this.vendorRepo.findByUserId(userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const result = await this.orderRepo.findAllFiltered({ vendorId, status, skip, limit });
     const total = result.total;
 
-    const items = await Promise.all(result.items.map(async (order: any) => {
+    const items = await Promise.all(result.items.map(async (order: Order) => {
       const p = OrderMapper.toResponse(order);
       await OrderMapper.populateImages(p);
-      
-      let user: any = null;
+
+      let user: UserSummary | null = null;
       if (p.userId) {
         try {
           const userDoc = await this.userRepo.findById(p.userId as string);
@@ -42,22 +49,28 @@ export class GetVendorOrdersHandler
             user = {
               id: userDoc.id,
               email: userDoc.email,
-              profile: userDoc.profile || { firstName: 'İsimsiz', lastName: '' }
+              profile: (userDoc.profile as { firstName: string; lastName: string } | undefined)
+                ?? { firstName: 'İsimsiz', lastName: '' },
             };
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
 
+      const shippingAddr = p.shippingAddress as ShippingAddressProps | undefined;
+      const fullName = shippingAddr
+        ? `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim()
+        : user?.profile ? `${user.profile.firstName} ${user.profile.lastName}` : 'İsimsiz';
+
       return {
         ...p,
         user,
-        address: p.shippingAddress ? {
-          fullName: (p.shippingAddress as any).fullName || (user?.profile ? `${user.profile.firstName} ${user.profile.lastName}` : 'İsimsiz'),
-          addressLine: (p.shippingAddress as any).addressLine || '',
-          district: (p.shippingAddress as any).district || '',
-          city: (p.shippingAddress as any).city || '',
+        address: shippingAddr ? {
+          fullName,
+          addressLine: shippingAddr.addressLine1 || '',
+          district:    shippingAddr.district || '',
+          city:        shippingAddr.city || '',
         } : null,
       };
     }));

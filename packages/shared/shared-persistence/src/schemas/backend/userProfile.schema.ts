@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // UserProfile — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -44,4 +45,4 @@ UserProfileSchema.index({ firstName: 1 });
 // Composite index
 UserProfileSchema.index({ lastName: 1 });
 
-export const UserProfile = model<IUserProfile>('UserProfile', UserProfileSchema);
+export const UserProfile = createModelProxy<IUserProfile>('UserProfile', UserProfileSchema);

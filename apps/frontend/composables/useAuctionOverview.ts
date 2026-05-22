@@ -45,7 +45,7 @@ export const useAuctionOverview = () => {
   const fetchCategories = async () => {
     try {
       const { $api } = useApi()
-      const res = await $api<any[]>(
+      const res = await $api<{ data: Array<{ id: string; name: string }> }>(
         '/api/v1/listings/categories'
       )
       categories.value = res.data || []
@@ -75,7 +75,7 @@ export const useAuctionOverview = () => {
     }, 400)
   }
 
-  const formatPrice = (price: any) => {
+  const formatPrice = (price: string | number) => {
     const num = Number(price);
     if (isNaN(num)) return '₺0,00';
     return new Intl.NumberFormat('tr-TR', {

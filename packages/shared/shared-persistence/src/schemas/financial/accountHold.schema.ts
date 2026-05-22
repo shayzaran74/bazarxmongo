@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const HoldStatus = ['PENDING','ACTIVE','RELEASED','EXPIRED'] as const;
 export type HoldStatusType = typeof HoldStatus[number];
@@ -51,4 +52,4 @@ AccountHoldSchema.index({ accountId: 1, status: 1 });
 AccountHoldSchema.index({ referenceType: 1, referenceId: 1 });
 AccountHoldSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
-export const AccountHold = model<IAccountHold>('AccountHold', AccountHoldSchema);
+export const AccountHold = createModelProxy<IAccountHold>('AccountHold', AccountHoldSchema);

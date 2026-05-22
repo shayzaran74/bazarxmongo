@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/company.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const CompanyStatus = ['PENDING','APPROVED','REJECTED','SUSPENDED'] as const;
 export type CompanyStatusType = typeof CompanyStatus[number];
@@ -65,4 +66,4 @@ CompanySchema.index({ taxNumber: 1 });
 CompanySchema.index({ status: 1 });
 CompanySchema.index({ deletedAt: 1 });
 
-export const Company = model<ICompany>('Company', CompanySchema);
+export const Company = createModelProxy<ICompany>('Company', CompanySchema);

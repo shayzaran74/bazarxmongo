@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/outbox-message.schema.ts
 // OutboxMessage — Prisma → Mongoose migration (ADR-005 Faz 2a)
 // ADR-005 §8.1: Tek outbox_events collection + module discriminator alanı
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const OutboxStatus = ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'] as const;
 export type OutboxStatusType = typeof OutboxStatus[number];
@@ -49,4 +50,4 @@ OutboxMessageSchema.index({ status: 1, createdAt: 1 });
 OutboxMessageSchema.index({ aggregateId: 1, aggregateType: 1 });
 OutboxMessageSchema.index({ module: 1, processedAt: 1 });
 
-export const OutboxMessage = model<IOutboxMessage>('OutboxMessage', OutboxMessageSchema);
+export const OutboxMessage = createModelProxy<IOutboxMessage>('OutboxMessage', OutboxMessageSchema);

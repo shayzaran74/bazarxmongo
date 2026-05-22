@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/homeBanner.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IHomeBanner {
   _id?: string;
@@ -44,4 +45,4 @@ export const HomeBannerSchema = new Schema<IHomeBanner>({
 
 HomeBannerSchema.index({ platform: 1, order: 1 });
 
-export const HomeBanner = model<IHomeBanner>('HomeBanner', HomeBannerSchema);
+export const HomeBanner = createModelProxy<IHomeBanner>('HomeBanner', HomeBannerSchema);

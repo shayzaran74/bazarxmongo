@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // BrandViolation — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -48,4 +49,4 @@ BrandViolationSchema.index({ brandId: 1 });
 // Composite index
 BrandViolationSchema.index({ reporterId: 1 });
 
-export const BrandViolation = model<IBrandViolation>('BrandViolation', BrandViolationSchema);
+export const BrandViolation = createModelProxy<IBrandViolation>('BrandViolation', BrandViolationSchema);

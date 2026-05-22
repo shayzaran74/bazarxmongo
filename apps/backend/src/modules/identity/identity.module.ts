@@ -58,6 +58,7 @@ import { DeleteAdminUserHandler } from './application/commands/delete-admin-user
 import { GrantReferralRewardHandler } from './application/commands/grant-referral-reward.handler';
 import { ReferralService } from './application/services/referral.service';
 import { CommunicationModule } from '../communication/communication.module';
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 
 import { AuthController } from './auth.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
@@ -117,6 +118,7 @@ const Handlers = [
     ]),
     RabbitMQModule,
     CommunicationModule,
+    AuditMongooseModule,
   ],
   controllers: [
     AuthController,

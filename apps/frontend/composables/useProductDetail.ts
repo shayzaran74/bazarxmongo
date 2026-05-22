@@ -26,7 +26,11 @@ export const useProductDetail = () => {
   const canReviewReason = ref('')
   const loadingReviewEligibility = ref(false)
 
-  const estimatedDelivery = ref<Record<string, unknown> | null>(null)
+  interface DeliveryEstimate {
+    city?: string; district?: string; estimatedDays?: number
+    estimatedDate?: string; carrier?: string; freeShipping?: boolean; freeShippingThreshold?: number
+  }
+  const estimatedDelivery = ref<DeliveryEstimate | null>(null)
   const selectedCity = ref('')
   const selectedDistrict = ref('')
 
@@ -55,13 +59,24 @@ export const useProductDetail = () => {
     }
   }, { immediate: true })
 
+  // Mongoose Decimal128 → { $numberDecimal: "199.99" } şeklinde gelebilir
+  const toNum = (val: unknown): number => {
+    if (val == null) return 0
+    if (typeof val === 'number') return isNaN(val) ? 0 : val
+    if (typeof val === 'string') return parseFloat(val) || 0
+    if (typeof val === 'object' && '$numberDecimal' in (val as object)) {
+      return parseFloat((val as { $numberDecimal: string }).$numberDecimal) || 0
+    }
+    return parseFloat(String(val)) || 0
+  }
+
   const displayPrice = computed(() => {
-    if (listing.value?.price) return Number(listing.value.price)
-    if (product.value?.price) return Number(product.value.price)
-    return Number(product.value?.basePrice || 0)
+    if (listing.value?.price) return toNum(listing.value.price)
+    if (product.value?.price) return toNum(product.value.price)
+    return toNum(product.value?.basePrice)
   })
-  const currentStock = computed(() => listing.value?.stock || product.value?.stock || 0)
-  const averageRating = computed(() => Number(product.value?.rating || product.value?.averageRating || 0))
+  const currentStock = computed(() => toNum(listing.value?.stock ?? product.value?.stock))
+  const averageRating = computed(() => toNum(product.value?.rating ?? product.value?.averageRating))
 
   // Watch for product changes to sync listing
   watch(product, (newVal) => {
@@ -120,9 +135,17 @@ export const useProductDetail = () => {
     if (!authStore.isLoggedIn) return navigateTo('/auth/login')
     addingToCart.value = true
     try {
+      const payload: Record<string, unknown> = {
+        listingId: listing.value?.id,
+        quantity: quantity.value
+      }
+      if (route.query.campaignId) {
+        payload.campaignId = route.query.campaignId
+      }
+      
       await $api('/api/v1/cart', {
         method: 'POST',
-        body: { listingId: listing.value?.id, quantity: quantity.value }
+        body: payload
       })
       $toast.success('Ürün sepete eklendi')
     } catch {
@@ -166,10 +189,11 @@ export const useProductDetail = () => {
   }
 
   const estimateDelivery = async (loc: { city: string; district: string }) => {
+    if (!loc.city) return
     try {
-      const res = await $api<{ data: Record<string, unknown> }>('/api/v1/shipping/estimate', { query: loc })
-      estimatedDelivery.value = res.data
-    } catch { /* ignore */ }
+      const res = await $api<{ success: boolean; data: DeliveryEstimate }>('/api/v1/delivery/estimate', { query: loc })
+      if (res.success) estimatedDelivery.value = res.data
+    } catch { /* teslimat tahmini opsiyonel — hata sessizce geçilir */ }
   }
 
   const submitReview = async () => {

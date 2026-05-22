@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Invoice } from '../../domain/entities/invoice.entity';
+import PDFDocument from 'pdfkit';
 
 @Injectable()
 export class InvoicePdfService {
@@ -11,15 +12,6 @@ export class InvoicePdfService {
     vendorName: string;
     vendorTaxNumber?: string;
   }): Promise<Buffer> {
-    // PDFKit dinamik import (ESM/CJS uyumu için)
-    let PDFDocument: any;
-    try {
-      PDFDocument = (await import('pdfkit')).default;
-    } catch (e) {
-      this.logger.error('pdfkit is not installed. Please run: pnpm add pdfkit');
-      throw new Error('PDF Generation failed: pdfkit missing');
-    }
-    
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ margin: 50 });
       const chunks: Buffer[] = [];
@@ -98,9 +90,9 @@ export class InvoicePdfService {
       );
 
       doc.moveDown(2);
-      doc.fontSize(8).text(
+      doc.fontSize(8).fillColor('grey').text(
         'Bu fatura BarterBorsa platformu üzerinden otomatik olarak oluşturulmuştur.',
-        { align: 'center', color: 'grey' }
+        { align: 'center' }
       );
 
       doc.end();

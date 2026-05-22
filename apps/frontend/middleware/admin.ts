@@ -8,8 +8,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // 1. Authentication Check
   if (!authStore.isAuthenticated) {
-    console.warn('🔐 Access Denied: User is not authenticated', { token: !!authStore.token })
-    return navigateTo('/auth/login')
+        return navigateTo('/auth/login')
   }
 
   // 2. Admin Role Check
@@ -21,8 +20,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!authStore.isAdmin) {
-    console.warn('🚫 ACCESS DENIED: Required ADMIN role but found:', authStore.user?.role)
-    // Sadece logları görmek için navigasyonu şimdilik kapatabiliriz veya ana sayfaya atabiliriz
+        // Sadece logları görmek için navigasyonu şimdilik kapatabiliriz veya ana sayfaya atabiliriz
     return navigateTo('/')
   }
 

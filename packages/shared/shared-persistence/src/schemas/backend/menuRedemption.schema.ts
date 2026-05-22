@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IMenuRedemption {
   _id?: string;
@@ -24,4 +25,4 @@ export const MenuRedemptionSchema = new Schema<IMenuRedemption>({
 MenuRedemptionSchema.index({ purchaseId: 1 });
 MenuRedemptionSchema.index({ redeemedAt: -1 });
 
-export const MenuRedemption = model<IMenuRedemption>('MenuRedemption', MenuRedemptionSchema);
+export const MenuRedemption = createModelProxy<IMenuRedemption>('MenuRedemption', MenuRedemptionSchema);

@@ -6,6 +6,8 @@ import { Model } from 'mongoose';
 import { BarterDisputeLog as BarterDisputeLogModel, IBarterDisputeLog } from '@barterborsa/shared-persistence';
 import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
 
+type DisputeDoc = IBarterDisputeLog;
+
 @Injectable()
 export class MongoDisputeRepository implements IDisputeRepository {
   private readonly model: Model<IBarterDisputeLog>;
@@ -23,7 +25,7 @@ export class MongoDisputeRepository implements IDisputeRepository {
     status: string;
     resolutionDeadlineAt: Date;
   }): Promise<void> {
-    const id = 'dispute-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'dispute-' + crypto.randomUUID();
     await this.model.create({
       id,
       ...data,
@@ -56,30 +58,24 @@ export class MongoDisputeRepository implements IDisputeRepository {
     return doc ? { id: doc.id } : null;
   }
 
-  async findByStatus(status: string, limit = 50): Promise<any[]> {
+  async findByStatus(status: string, limit = 50): Promise<DisputeDoc[]> {
     const docs = await this.model.find({ status }).limit(limit).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as DisputeDoc);
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<DisputeDoc | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as DisputeDoc) : null;
   }
 
-  async findByStatusAndCreatedBefore(status: string, cutoff: Date, limit = 50): Promise<any[]> {
-    const docs = await this.model.find({
-      status,
-      createdAt: { $lte: cutoff },
-    }).limit(limit).exec();
-    return docs.map(doc => doc.toObject());
+  async findByStatusAndCreatedBefore(status: string, cutoff: Date, limit = 50): Promise<DisputeDoc[]> {
+    const docs = await this.model.find({ status, createdAt: { $lte: cutoff } }).limit(limit).exec();
+    return docs.map(doc => doc.toObject() as DisputeDoc);
   }
 
-  async findByStatusAndUpdatedBefore(status: string, cutoff: Date, limit = 50): Promise<any[]> {
-    const docs = await this.model.find({
-      status,
-      updatedAt: { $lte: cutoff },
-    }).limit(limit).exec();
-    return docs.map(doc => doc.toObject());
+  async findByStatusAndUpdatedBefore(status: string, cutoff: Date, limit = 50): Promise<DisputeDoc[]> {
+    const docs = await this.model.find({ status, updatedAt: { $lte: cutoff } }).limit(limit).exec();
+    return docs.map(doc => doc.toObject() as DisputeDoc);
   }
 
   async updateStatusAndDeadline(id: string, status: string, resolutionDeadlineAt: Date): Promise<void> {

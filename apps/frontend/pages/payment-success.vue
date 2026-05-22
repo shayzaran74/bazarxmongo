@@ -212,6 +212,11 @@ const checkPaymentStatus = async () => {
       return
     }
 
+    // Wallet payment intent check (if we reached here, walletOrderId was missing)
+    if (isWallet && !walletOrderId) {
+      throw new Error('Sipariş numarası bulunamadı')
+    }
+
     // Stripe payment intent check
     if (!isWallet && !paymentIntentId) {
       throw new Error('Ödeme bilgisi bulunamadı')

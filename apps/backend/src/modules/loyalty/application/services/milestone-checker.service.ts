@@ -2,7 +2,7 @@
 
 import { Injectable, Inject } from '@nestjs/common';
 import { IMilestoneTrackerRepository } from '../../domain/repositories/loyalty.repository.interfaces';
-import { MilestoneTracker } from '../../domain/entities/missions-milestones.entities';
+import { MilestoneTracker, MilestoneTrackerProps } from '../../domain/entities/missions-milestones.entities';
 
 @Injectable()
 export class MilestoneCheckerService {
@@ -33,14 +33,13 @@ export class MilestoneCheckerService {
       tracker.addMonthlySpend(orderAmount);
     }
 
-    // Milestone checks
-    if (tracker.getProps().weeklyOrderCount >= 3 && !tracker.getProps().weeklyBonusGiven) {
-      // Emit MilestoneAchieved event via aggregate root (actually handled in command/event publishers)
-      (tracker.getProps() as any).weeklyBonusGiven = true;
+    const props = tracker.getProps() as MilestoneTrackerProps;
+    if (props.weeklyOrderCount >= 3 && !props.weeklyBonusGiven) {
+      props.weeklyBonusGiven = true;
     }
 
-    if (tracker.getProps().monthlySpendTotal >= 1000 && !tracker.getProps().monthlyBonusGiven) {
-      (tracker.getProps() as any).monthlyBonusGiven = true;
+    if (props.monthlySpendTotal >= 1000 && !props.monthlyBonusGiven) {
+      props.monthlyBonusGiven = true;
     }
 
     await this.repository.save(tracker);

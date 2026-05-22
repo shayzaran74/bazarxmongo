@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // SeoMetadata — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -31,4 +32,4 @@ export const SeoMetadataSchema = new Schema<ISeoMetadata>({
 // Composite index
 SeoMetadataSchema.index({ platform: 1, path: 1 });
 
-export const SeoMetadata = model<ISeoMetadata>('SeoMetadata', SeoMetadataSchema);
+export const SeoMetadata = createModelProxy<ISeoMetadata>('SeoMetadata', SeoMetadataSchema);

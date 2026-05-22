@@ -1,7 +1,8 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/goReferral.schema.ts
 // BazarX-GO §7 — Referans sistemi (tek katmanlı, zincirleme yok)
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const GoReferralStatus = ['PENDING', 'ACTIVATED', 'BONUS_GRANTED', 'BONUS_EXPIRED'] as const;
 export type GoReferralStatusType = typeof GoReferralStatus[number];
@@ -55,4 +56,4 @@ GoReferralSchema.index({ refereeId: 1 }, { unique: true }); // 1 kişi 1 kez ref
 GoReferralSchema.index({ referralCode: 1 });
 GoReferralSchema.index({ bonusExpiresAt: 1, status: 1 }); // expiry cron
 
-export const GoReferral = model<IGoReferral>('GoReferral', GoReferralSchema);
+export const GoReferral = createModelProxy<IGoReferral>('GoReferral', GoReferralSchema);

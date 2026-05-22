@@ -44,8 +44,8 @@ export const useProfileAddress = () => {
 
   const saveAddress = async () => {
     const res = isEditingAddress.value
-      ? await addressStore.updateAddress(String(addressForm.value.id), addressForm.value as any)
-      : await addressStore.addAddress(addressForm.value as any)
+      ? await addressStore.updateAddress(String(addressForm.value.id), addressForm.value)
+      : await addressStore.addAddress(addressForm.value)
     
     if (res?.success) {
       toast.success(isEditingAddress.value ? t('profile.addressUpdatedSuccess') : t('profile.addressAddedSuccess'))

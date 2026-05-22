@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const CategoryType = ['GENERAL', 'RESTAURANT', 'ECOMMERCE'] as const;
 export type CategoryTypeType = typeof CategoryType[number];
@@ -67,4 +68,4 @@ CategorySchema.index({ parentId: 1 });
 CategorySchema.index({ slug: 1 });
 CategorySchema.index({ isActive: 1 });
 
-export const Category = model<ICategory>('Category', CategorySchema);
+export const Category = createModelProxy<ICategory>('Category', CategorySchema);

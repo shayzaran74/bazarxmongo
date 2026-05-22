@@ -106,10 +106,11 @@
           </div>
 
           <!-- Right: Bidding Card & Sidebar -->
-          <div class="lg:col-span-4 space-y-6">
-            <!-- Bidding Card -->
-            <div class="bg-white rounded-xl ambient-shadow overflow-hidden border border-slate-100 lg:sticky lg:top-24">
-              <div class="bg-primary-container p-6 text-white relative">
+          <div class="lg:col-span-4">
+            <div class="space-y-6 lg:sticky lg:top-24">
+              <!-- Bidding Card -->
+              <div class="bg-white rounded-xl ambient-shadow overflow-hidden border border-slate-100">
+                <div class="bg-primary-container p-6 text-white relative">
                 <div class="flex justify-between items-center mb-4">
                   <div class="flex items-center gap-2 bg-error px-3 py-1 rounded-full animate-pulse shadow-lg shadow-error/20">
                     <span class="w-2 h-2 bg-white rounded-full"></span>
@@ -221,6 +222,7 @@
                   <span>BazarX %100 Orijinallik Garantisi kapsamındadır.</span>
                 </li>
               </ul>
+            </div>
             </div>
           </div>
         </div>

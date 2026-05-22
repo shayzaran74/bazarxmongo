@@ -27,31 +27,22 @@ export class ReferralService {
   async processReferral(refereeId: string, referralCode: string): Promise<boolean> {
     const referrer = await this.userRepo.findByReferralCode(referralCode);
 
-    if (!referrer || (referrer as any).id === refereeId) return false;
+    if (!referrer || referrer.id === refereeId) return false;
 
     const reverseRef = await this.referralRepo.findReverseReferral(referrer.id, refereeId);
     if (reverseRef) {
-      this.logger.warn('Karşılıklı referans denemesi engellendi', {
-        referrerId: (referrer as any).id,
-        refereeId,
-      });
+      this.logger.warn('Karşılıklı referans denemesi engellendi', { referrerId: referrer.id, refereeId });
       return false;
     }
 
     const existing = await this.referralRepo.findByReferee(refereeId);
     if (existing) return false;
 
-    await this.referralRepo.create({
-      referrerId:  (referrer as any).id,
-      refereeId,
-      referralCode,
-    });
+    await this.referralRepo.create({ referrerId: referrer.id, refereeId, referralCode });
 
-    await this.commandBus.execute(
-      new GrantReferralRewardCommand((referrer as any).id, refereeId),
-    );
+    await this.commandBus.execute(new GrantReferralRewardCommand(referrer.id, refereeId));
 
-    this.logger.log('Referral işlendi', { referrerId: (referrer as any).id, refereeId });
+    this.logger.log('Referral işlendi', { referrerId: referrer.id, refereeId });
     return true;
   }
 
@@ -61,20 +52,20 @@ export class ReferralService {
       this.userRepo.findById(userId),
     ]);
 
-    const completedCount = referrals.filter((r) => (r as any).rewardGrantedAt !== null).length;
+    const completedCount = referrals.filter(r => r.rewardGrantedAt !== null).length;
 
     return {
-      referralCode:   (user as any)?.referralCode,
+      referralCode:   user?.referralCode,
       totalReferrals: referrals.length,
       completed:      completedCount,
       remaining:      Math.max(0, 3 - completedCount),
       hasThirdBonus:  completedCount >= 3,
-      referrals:      referrals.map((r) => ({
-        refereeId:    (r as any).refereeId,
-        xpEarned:     (r as any).xpGranted,
-        bonusGranted: (r as any).bonusGranted,
-        completedAt:  (r as any).rewardGrantedAt,
-        joinedAt:     (r as any).createdAt,
+      referrals:      referrals.map(r => ({
+        refereeId:    r.refereeId,
+        xpEarned:     r.xpGranted,
+        bonusGranted: r.bonusGranted,
+        completedAt:  r.rewardGrantedAt,
+        joinedAt:     r.createdAt,
       })),
     };
   }

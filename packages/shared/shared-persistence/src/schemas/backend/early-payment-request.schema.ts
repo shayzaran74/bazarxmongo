@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/early-payment-request.schema.ts
 // EarlyPaymentRequest MongoDB schema — Master Plan §3.5.4
 // %0.05/gün, %80 maks, minimum 500₺
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const EarlyPaymentStatus = ['PENDING', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'] as const;
 export type EarlyPaymentStatusType = typeof EarlyPaymentStatus[number];
@@ -58,4 +59,4 @@ EarlyPaymentRequestSchema.index({ vendorId: 1, status: 1 });
 EarlyPaymentRequestSchema.index({ idempotencyKey: 1 }, { unique: true });
 EarlyPaymentRequestSchema.index({ orderId: 1 });
 
-export const EarlyPaymentRequest = model<IEarlyPaymentRequest>('EarlyPaymentRequest', EarlyPaymentRequestSchema);
+export const EarlyPaymentRequest = createModelProxy<IEarlyPaymentRequest>('EarlyPaymentRequest', EarlyPaymentRequestSchema);

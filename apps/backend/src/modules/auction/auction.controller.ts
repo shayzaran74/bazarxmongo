@@ -137,15 +137,19 @@ export class AuctionController {
       // Financial Service'ten gerçek teminat blokajı al
       const idempotencyKey = `auction-participate-${id}-${user.id}`;
       const referenceId = `auction-participate-${id}-${user.id}`;
-      const holdResult = await this.financialGateway.holdFunds(
-        user.id,
-        props.participationDeposit!.toString(),
-        'AUCTION_BID',
-        referenceId,
-        'AUCTION_PARTICIPATION',
-        idempotencyKey,
-      );
-      holdId = holdResult.holdId as string;
+      try {
+        const holdResult = await this.financialGateway.holdFunds(
+          user.id,
+          props.participationDeposit!.toString(),
+          'AUCTION_BID',
+          referenceId,
+          'AUCTION_PARTICIPATION',
+          idempotencyKey,
+        );
+        holdId = holdResult.holdId as string;
+      } catch (error: any) {
+        return { success: false, message: error?.message || 'Bakiye yetersiz veya teminat alınamadı.' };
+      }
     }
 
     // Teminat alındıysa DEPOSIT_HELD, yoksa doğrudan ACTIVE

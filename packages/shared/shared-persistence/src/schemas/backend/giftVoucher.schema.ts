@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const GiftVoucherType = ['BIRTHDAY','ANNIVERSARY','REFERRAL','PROMOTION','COMPENSATION'] as const;
 export type GiftVoucherTypeType = typeof GiftVoucherType[number];
@@ -38,4 +39,4 @@ GiftVoucherSchema.index({ userId: 1 });
 GiftVoucherSchema.index({ code: 1 }, { unique: true });
 GiftVoucherSchema.index({ validUntil: 1 });
 
-export const GiftVoucher = model<IGiftVoucher>('GiftVoucher', GiftVoucherSchema);
+export const GiftVoucher = createModelProxy<IGiftVoucher>('GiftVoucher', GiftVoucherSchema);

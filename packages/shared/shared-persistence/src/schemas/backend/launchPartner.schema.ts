@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // packages/shared/shared-persistence/src/schemas/backend/launchPartner.schema.ts
 
@@ -41,4 +42,4 @@ export const LaunchPartnerSchema = new Schema<ILaunchPartner>({
 LaunchPartnerSchema.index({ vendorId: 1 }, { unique: true });
 LaunchPartnerSchema.index({ phase: 1 });
 
-export const LaunchPartner = model<ILaunchPartner>('LaunchPartner', LaunchPartnerSchema);
+export const LaunchPartner = createModelProxy<ILaunchPartner>('LaunchPartner', LaunchPartnerSchema);

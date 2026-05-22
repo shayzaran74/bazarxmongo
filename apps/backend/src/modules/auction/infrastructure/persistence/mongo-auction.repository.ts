@@ -50,6 +50,7 @@ export class MongoAuctionRepository
 
   async createBid(bid: AuctionBid): Promise<void> {
     const data = {
+      _id: bid.id,
       id: bid.id,
       auctionId: bid.getProps().auctionId,
       userId: bid.getProps().userId,

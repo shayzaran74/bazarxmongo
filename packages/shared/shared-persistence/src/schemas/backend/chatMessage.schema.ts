@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/chatMessage.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IChatMessage {
   _id?: string;
@@ -34,4 +35,4 @@ ChatMessageSchema.index({ roomId: 1 });
 ChatMessageSchema.index({ senderId: 1 });
 ChatMessageSchema.index({ roomId: 1, createdAt: -1 });
 
-export const ChatMessage = model<IChatMessage>('ChatMessage', ChatMessageSchema);
+export const ChatMessage = createModelProxy<IChatMessage>('ChatMessage', ChatMessageSchema);

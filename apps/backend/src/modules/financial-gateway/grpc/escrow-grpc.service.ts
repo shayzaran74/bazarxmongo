@@ -2,14 +2,36 @@
 
 import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { DomainException } from '@barterborsa/shared-core';
 import { CircuitBreakerService } from '../../../common/resilience/circuit-breaker.service';
 
+export interface EscrowResponse {
+  success: boolean;
+  error?: string;
+  holdId?: string;
+}
+
+interface HoldFundsRequest {
+  userId: string;
+  amount: string;
+  reason: string;
+  referenceId: string;
+  referenceType: string;
+  idempotencyKey: string;
+  sellerId: string;
+}
+
+interface FundsActionRequest {
+  holdId: string;
+  idempotencyKey: string;
+}
+
 interface FinancialService {
-  holdFunds(data: any): any;
-  releaseFunds(data: any): any;
-  refundFunds(data: any): any;
+  holdFunds(data: HoldFundsRequest): Observable<EscrowResponse>;
+  releaseFunds(data: FundsActionRequest): Observable<EscrowResponse>;
+  refundFunds(data: FundsActionRequest): Observable<EscrowResponse>;
 }
 
 @Injectable()
@@ -38,7 +60,7 @@ export class EscrowGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'escrow.holdFunds',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: EscrowResponse = await firstValueFrom(
           this.financialService.holdFunds({
             userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId,
           }),
@@ -56,7 +78,7 @@ export class EscrowGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'escrow.releaseFunds',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: EscrowResponse = await firstValueFrom(
           this.financialService.releaseFunds({ holdId, idempotencyKey }),
         );
         return response;
@@ -69,7 +91,7 @@ export class EscrowGrpcService implements OnModuleInit {
     return this.circuitBreaker.execute(
       'escrow.refundFunds',
       async () => {
-        const response: any = await firstValueFrom(
+        const response: EscrowResponse = await firstValueFrom(
           this.financialService.refundFunds({ holdId, idempotencyKey }),
         );
         return response;

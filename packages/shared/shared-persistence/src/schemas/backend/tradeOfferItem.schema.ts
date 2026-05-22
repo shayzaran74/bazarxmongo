@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // TradeOfferItem — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -31,4 +32,4 @@ export const TradeOfferItemSchema = new Schema<ITradeOfferItem>({
 // Composite index
 TradeOfferItemSchema.index({ listingId: 1 });
 
-export const TradeOfferItem = model<ITradeOfferItem>('TradeOfferItem', TradeOfferItemSchema);
+export const TradeOfferItem = createModelProxy<ITradeOfferItem>('TradeOfferItem', TradeOfferItemSchema);

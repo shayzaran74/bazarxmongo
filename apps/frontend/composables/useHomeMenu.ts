@@ -14,18 +14,17 @@ export const useHomeMenuItems = () => {
 
 export const useHomeMenu = () => {
   const { $api } = useApi()
-  const categories = ref<any[]>([])
+  const categories = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
 
   const fetchCategories = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/listings/categories')
-      const resAny = res as any
-      if (resAny.success) {
-        categories.value = resAny.data || []
+      const res = await $api<{ success: boolean; data: Record<string, unknown>[] }>('/api/v1/listings/categories')
+      if (res.success) {
+        categories.value = res.data || []
       } else {
-        categories.value = resAny || []
+        categories.value = []
       }
     } catch { /* ignore */ } finally {
       loading.value = false

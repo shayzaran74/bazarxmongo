@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // packages/shared/shared-persistence/src/schemas/backend/membershipPlan.schema.ts
 
@@ -36,4 +37,4 @@ export const MembershipPlanSchema = new Schema<IMembershipPlan>({
 MembershipPlanSchema.index({ tier: 1 }, { unique: true });
 MembershipPlanSchema.index({ isActive: 1 });
 
-export const MembershipPlan = model<IMembershipPlan>('MembershipPlan', MembershipPlanSchema);
+export const MembershipPlan = createModelProxy<IMembershipPlan>('MembershipPlan', MembershipPlanSchema);

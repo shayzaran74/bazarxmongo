@@ -23,8 +23,14 @@ import { YurticiCargoAdapter } from './infrastructure/adapters/yurtici-cargo.ada
 import { SuratCargoAdapter } from './infrastructure/adapters/surat-cargo.adapter';
 import { TexCargoAdapter } from './infrastructure/adapters/tex-cargo.adapter';
 
+import { ClientsModule } from '@nestjs/microservices';
+import { deliveryGrpcClientOptions } from './grpc/delivery-grpc.client';
+import { DeliveryGrpcService } from './grpc/delivery-grpc.service';
+import { CircuitBreakerService } from '../../common/resilience/circuit-breaker.service';
+
 const CommandHandlers = [DispatchCourierHandler, MarkDeliveredHandler];
 const Processors = [DispatchNotificationProcessor];
+
 
 @Module({
   imports: [
@@ -35,6 +41,7 @@ const Processors = [DispatchNotificationProcessor];
     MongooseModule.forFeature([
       { name: DeliveryDispatch.name, schema: DeliveryDispatchSchema },
     ]),
+    ClientsModule.register(deliveryGrpcClientOptions),
     BullModule.registerQueue({
       name: 'delivery-dispatch',
       defaultJobOptions: {
@@ -66,7 +73,9 @@ const Processors = [DispatchNotificationProcessor];
     { provide: 'ICargoProvider_YURTICI', useClass: YurticiCargoAdapter },
     { provide: 'ICargoProvider_SURAT', useClass: SuratCargoAdapter },
     { provide: 'ICargoProvider_TEX', useClass: TexCargoAdapter },
+    DeliveryGrpcService,
+    CircuitBreakerService,
   ],
-  exports: [MongoDeliveryDispatchRepository],
+  exports: [MongoDeliveryDispatchRepository, DeliveryGrpcService],
 })
 export class DeliveryModule {}

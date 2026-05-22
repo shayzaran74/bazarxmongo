@@ -53,10 +53,10 @@ export const useCartStore = defineStore('cart', {
         console.error('Fetch cart error:', err)
       } finally { this.loading = false }
     },
-    async addToCart(productId: string | number, quantity = 1, variantId?: string, product?: any, listingId?: string) {
-       return await this.addItem(productId.toString(), quantity, variantId, product, listingId)
+    async addToCart(productId: string | number, quantity = 1, variantId?: string, product?: any, listingId?: string, campaignId?: string) {
+       return await this.addItem(productId.toString(), quantity, variantId, product, listingId, campaignId)
     },
-    async addItem(productId: string, quantity = 1, variantId?: string, product?: any, listingId?: string) {
+    async addItem(productId: string, quantity = 1, variantId?: string, product?: any, listingId?: string, campaignId?: string) {
       const authStore = useAuthStore()
       const { $api } = useApi()
       this.loading = true
@@ -64,6 +64,7 @@ export const useCartStore = defineStore('cart', {
         if (authStore.isLoggedIn) {
           const body: any = { productId, quantity, variantId }
           if (listingId) body.listingId = listingId
+          if (campaignId) body.campaignId = campaignId
 
           const res = await $api<any>('/api/cart', { method: 'POST', body })
           if (res.success) {
@@ -85,7 +86,8 @@ export const useCartStore = defineStore('cart', {
               quantity,
               price: product?.price || 0,
               Product: product || {},
-              addedAt: new Date().toISOString()
+              addedAt: new Date().toISOString(),
+              campaignId,
             } as any)
           }
           this.saveLocal()

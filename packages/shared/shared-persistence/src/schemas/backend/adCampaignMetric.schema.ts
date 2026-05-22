@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // AdCampaignMetric — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -33,4 +34,4 @@ export const AdCampaignMetricSchema = new Schema<IAdCampaignMetric>({
 // Composite index
 AdCampaignMetricSchema.index({ date: 1 });
 
-export const AdCampaignMetric = model<IAdCampaignMetric>('AdCampaignMetric', AdCampaignMetricSchema);
+export const AdCampaignMetric = createModelProxy<IAdCampaignMetric>('AdCampaignMetric', AdCampaignMetricSchema);

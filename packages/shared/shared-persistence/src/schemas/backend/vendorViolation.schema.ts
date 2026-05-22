@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const VendorViolationLevel = ['WARNING', 'PENALTY', 'FREEZE'] as const;
 export type VendorViolationLevelType = typeof VendorViolationLevel[number];
@@ -42,4 +43,4 @@ VendorViolationSchema.index({ vendorId: 1, isActive: 1 });
 VendorViolationSchema.index({ vendorId: 1, type: 1 });
 VendorViolationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL — süresi dolanı otomatik sil
 
-export const VendorViolationModel = model<IVendorViolation>('VendorViolation', VendorViolationSchema);
+export const VendorViolationModel = createModelProxy<IVendorViolation>('VendorViolation', VendorViolationSchema);

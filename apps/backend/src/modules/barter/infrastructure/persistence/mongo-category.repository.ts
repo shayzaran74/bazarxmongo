@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { ISurplusCategory } from '@barterborsa/shared-persistence';
+import { ISurplusCategory, ICategory } from '@barterborsa/shared-persistence';
 import { SurplusCategory as SurplusCategoryModel } from '@barterborsa/shared-persistence/schemas/backend/surplusCategory.schema';
 import { ICategoryRepository } from '../../domain/repositories/category.repository.interface';
 
@@ -15,24 +15,24 @@ export class MongoCategoryRepository implements ICategoryRepository {
     this.model = SurplusCategoryModel;
   }
 
-  async findById(id: string): Promise<ISurplusCategory | null> {
+  async findById(id: string): Promise<ICategory | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as unknown as ICategory) : null;
   }
 
-  async findAll(): Promise<ISurplusCategory[]> {
+  async findAll(): Promise<ICategory[]> {
     const docs = await this.model.find({}).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as ICategory);
   }
 
-  async findRootCategories(): Promise<ISurplusCategory[]> {
+  async findRootCategories(): Promise<ICategory[]> {
     const docs = await this.model.find({ parentId: null }).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as ICategory);
   }
 
-  async findWithChildren(parentId: string | null): Promise<ISurplusCategory[]> {
+  async findWithChildren(parentId: string | null): Promise<ICategory[]> {
     const docs = await this.model.find({ parentId }).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as ICategory);
   }
 
   async create(data: {
@@ -43,7 +43,7 @@ export class MongoCategoryRepository implements ICategoryRepository {
     order?: number;
     isActive?: boolean;
   }): Promise<any> {
-    const id = 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'cat-' + crypto.randomUUID();
     const doc = await this.model.create({
       id,
       name: data.name,

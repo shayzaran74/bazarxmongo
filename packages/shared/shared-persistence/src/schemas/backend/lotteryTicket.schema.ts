@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface ILotteryTicket {
   _id?: string;
@@ -25,4 +26,4 @@ LotteryTicketSchema.index({ lotteryId: 1 });
 LotteryTicketSchema.index({ userId: 1 });
 LotteryTicketSchema.index({ lotteryId: 1, userId: 1 });
 
-export const LotteryTicket = model<ILotteryTicket>('LotteryTicket', LotteryTicketSchema);
+export const LotteryTicket = createModelProxy<ILotteryTicket>('LotteryTicket', LotteryTicketSchema);

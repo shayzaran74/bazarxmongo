@@ -106,8 +106,7 @@ export const useAdminProducts = () => {
     try {
       const res = await $api<any>('/api/v1/admin/categories')
       const tree = res.data || []
-      console.log('[DEBUG] Admin Kategori Ağacı Yüklendi:', tree.length, 'ana kategori bulundu.')
-
+      
       // Tüm ağacı düzleştir (flat liste — editProduct'ta parent takibi için)
       const flat: any[] = []
       const flatten = (items: any[]) => {
@@ -131,7 +130,7 @@ export const useAdminProducts = () => {
         mainCategories.value = tree
       }
     } catch (e) {
-      console.error('[fetchCategories] Hata:', e)
+      // Hata yönetimi
     }
   }
 

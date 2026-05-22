@@ -32,7 +32,7 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Kullanıcı bilgileri.' })
   @ApiResponse({ status: 401, description: 'Yetkilendirme gerekli.' })
   @Get('me')
-  async getMe(@Req() req: Record<string, any>) {
+  async getMe(@Req() req: { user: { id: string } }) {
     return this.queryBus.execute(new GetUserQuery(req.user.id));
   }
 
@@ -64,7 +64,7 @@ export class UserController {
   })
   @ApiResponse({ status: 200, description: 'PIN başarıyla belirlendi.' })
   @Post('transaction-pin')
-  async setPin(@Req() req: Record<string, any>, @Body('pin') pin: string) {
+  async setPin(@Req() req: { user: { id: string } }, @Body('pin') pin: string) {
     return this.commandBus.execute(new SetTransactionPinCommand(req.user.id, pin));
   }
 
@@ -76,8 +76,8 @@ export class UserController {
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
-  async listUsers(@Query() query: any) {
-    return this.queryBus.execute(new ListUsersQuery(query, query));
+  async listUsers(@Query() query: { page?: number; limit?: number; role?: string; status?: string; search?: string }) {
+    return this.queryBus.execute(new ListUsersQuery(query, { role: query.role, status: query.status, search: query.search }));
   }
 
   @ApiOperation({ summary: 'Get user by ID (Admin)', description: 'ID bilgisi verilen kullanıcının detaylarını döner.' })

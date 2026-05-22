@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // MilestoneTracker — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -34,4 +35,4 @@ export const MilestoneTrackerSchema = new Schema<IMilestoneTracker>({
   collection: 'milestone_trackers',
 });
 
-export const MilestoneTracker = model<IMilestoneTracker>('MilestoneTracker', MilestoneTrackerSchema);
+export const MilestoneTracker = createModelProxy<IMilestoneTracker>('MilestoneTracker', MilestoneTrackerSchema);

@@ -21,6 +21,7 @@ import { SubscriptionRenewalService } from './application/services/subscription-
 // MenuRightsService stateless; MenuModule ↔ SubscriptionModule circular dep'i önlemek için
 // her iki modüle de doğrudan provider olarak kaydediliyor.
 import { MenuRightsService } from '../menu/application/services/menu-rights.service';
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MenuRightsService } from '../menu/application/services/menu-rights.serv
       { name: 'MenuRight',          schema: MenuRightSchema },
       { name: 'MenuPurchase',       schema: MenuPurchaseSchema },
     ]),
+    AuditMongooseModule,
   ],
   controllers: [SubscriptionController],
   providers: [

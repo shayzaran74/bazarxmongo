@@ -67,11 +67,33 @@ export class CheckoutService {
       cart.items.map(async (item) => {
         const listing = await this.listingRepository.findById(item.getProps().listingId);
         if (!listing) throw new DomainException(`İlan bulunamadı: ${item.getProps().listingId}`);
-        return { item, listing };
+        return { item, listing, campaignId: item.getProps().campaignId };
       })
     );
 
-    // 3. Vendor grupları
+    // 2b. Group Buy kampanya kontrolü — kampanya item'larını normal checkout'tan ayır
+    const campaignItems = itemsWithListings.filter(i => i.campaignId);
+    const regularItems = itemsWithListings.filter(i => !i.campaignId);
+
+    if (campaignItems.length > 0) {
+      // Group Buy katılımı — joinCampaign benzeri akış
+      const { GroupBuy } = await import('@barterborsa/shared-persistence/schemas/backend/groupBuy.schema');
+      for (const ci of campaignItems) {
+        const campaign = await GroupBuy.findOne({ id: ci.campaignId, status: 'ACTIVE' }).lean();
+        if (!campaign) throw new DomainException('Kampanya bulunamadı veya süresi dolmuş');
+
+        const qty = ci.item.getProps().quantity;
+        const updateResult = await GroupBuy.findOneAndUpdate(
+          { id: ci.campaignId, status: 'ACTIVE' },
+          { $inc: { currentQuantity: qty } },
+          { new: true }
+        );
+        if (!updateResult) throw new DomainException('Kampanya güncellenemedi');
+      }
+      this.logger.log(`Group Buy katılımı: ${campaignItems.length} item, ${campaignItems.map(c => c.campaignId).join(',')}`);
+    }
+
+    // 3. Vendor grupları (sadece regular items)
     const vendorGroups = new Map<string, typeof itemsWithListings>();
     for (const entry of itemsWithListings) {
       const vendorId = entry.listing.getProps().vendorId;
@@ -129,7 +151,7 @@ export class CheckoutService {
             }
           }
         } catch (e: unknown) {
-          this.logger.debug('Ürün medyası alınamadı, devam ediliyor', { error: e instanceof Error ? e.message : String(e) });
+          // Medya alınamazsa devam et, ürün bilgisi kritik değil
         }
 
         return OrderItem.create(
@@ -202,7 +224,7 @@ export class CheckoutService {
         // Fonları iade et
         for (const holdId of heldFunds) {
           try {
-            await this.financialGateway.refundFunds(holdId, `refund-${holdId}-${Date.now()}`);
+            await this.financialGateway.refundFunds(holdId, `refund-${holdId}-${crypto.randomUUID()}`);
           } catch (refundError: unknown) {
             const msg = refundError instanceof Error ? refundError.message : 'Bilinmeyen hata';
             this.logger.error(`Hold iadesi başarısız`, { holdId, error: msg });

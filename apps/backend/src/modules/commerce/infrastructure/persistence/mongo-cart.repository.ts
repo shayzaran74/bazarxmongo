@@ -35,6 +35,7 @@ export class MongoCartRepository implements ICartRepository {
           quantity: doc.quantity,
           variantId: doc.variantId || undefined,
           addedAt: doc.addedAt,
+          campaignId: doc.campaignId || undefined,
         },
         doc.id
       )
@@ -104,6 +105,7 @@ export class MongoCartRepository implements ICartRepository {
           quantity: doc.quantity,
           variantId: doc.variantId || undefined,
           addedAt: doc.addedAt,
+          campaignId: doc.campaignId || undefined,
         },
         doc.id
       )
@@ -111,7 +113,7 @@ export class MongoCartRepository implements ICartRepository {
     return Cart.fromPersistence({ userId: cart.userId, items }, cart.id);
   }
 
-  async addItem(cartId: string, listingId: string, quantity: number, variantId?: string): Promise<void> {
+  async addItem(cartId: string, listingId: string, quantity: number, variantId?: string, campaignId?: string): Promise<void> {
     const id = randomUUID();
     await this.cartItemModel.create({
       _id: new Types.ObjectId().toString(),
@@ -121,6 +123,7 @@ export class MongoCartRepository implements ICartRepository {
       quantity,
       variantId,
       addedAt: new Date(),
+      campaignId,
     });
   }
 

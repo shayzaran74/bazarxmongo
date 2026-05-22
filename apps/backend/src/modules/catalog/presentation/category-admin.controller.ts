@@ -9,6 +9,7 @@ import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { ICategory, ICatalogProduct, ICategoryAttribute } from '@barterborsa/shared-persistence';
 import { GetCategoryTreeQuery }  from '../application/queries/get-category-tree/get-category-tree.query';
 import { CreateCategoryCommand } from '../application/commands/create-category.command';
+import { CreateCategoryDto } from '../application/dtos/create-category.dto';
 
 @ApiTags('Category Admin')
 @ApiBearerAuth()
@@ -31,8 +32,8 @@ export class CategoryAdminController {
   }
 
   @Post()
-  create(@Body() dto: Record<string, unknown>) {
-    return this.commandBus.execute(new CreateCategoryCommand(dto as any));
+  create(@Body() dto: CreateCategoryDto) {
+    return this.commandBus.execute(new CreateCategoryCommand(dto));
   }
 
   @Put(':id')

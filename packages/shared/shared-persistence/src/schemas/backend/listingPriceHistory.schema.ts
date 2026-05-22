@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface IListingPriceHistory {
   _id?: string;
@@ -22,4 +23,4 @@ export const ListingPriceHistorySchema = new Schema<IListingPriceHistory>({
 ListingPriceHistorySchema.index({ listingId: 1 });
 ListingPriceHistorySchema.index({ listingId: 1, changedAt: -1 });
 
-export const ListingPriceHistory = model<IListingPriceHistory>('ListingPriceHistory', ListingPriceHistorySchema);
+export const ListingPriceHistory = createModelProxy<IListingPriceHistory>('ListingPriceHistory', ListingPriceHistorySchema);

@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { IWantedItem } from '@barterborsa/shared-persistence';
 import { WantedItem as WantedItemModel } from '@barterborsa/shared-persistence/schemas/backend/wantedItem.schema';
+import { WantedItem } from '../../domain/entities/wanted-item.entity';
 import { IWantedItemRepository, WantedItemDocument } from '../../domain/repositories/wanted-item.repository.interface';
 
 @Injectable()
@@ -15,18 +16,18 @@ export class MongoWantedItemRepository implements IWantedItemRepository {
     this.model = WantedItemModel;
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<WantedItem | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as unknown as WantedItem) : null;
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<WantedItem[]> {
     const docs = await this.model.find({ isActive: true }).exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as WantedItem);
   }
 
-  async save(item: any): Promise<void> {
-    await this.model.create(item);
+  async save(item: WantedItem): Promise<void> {
+    await this.model.create({ id: item.id, ...item.getProps() });
   }
 
   async delete(id: string): Promise<void> {

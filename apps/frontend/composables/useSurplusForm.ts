@@ -135,7 +135,7 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
   }
 
   const fetchMyCompany = async (): Promise<void> => {
-    const res = (await $api<any>('/api/v1/companies/me')) as any
+    const res = await $api<{ success: boolean; company?: { id?: string; city?: string; district?: string } }>('/api/v1/companies/me')
     if (res.success && res.company) {
       formData.value.companyId = res.company.id ?? ''
       formData.value.location  = `${res.company.city ?? ''} / ${res.company.district ?? ''}`.trim()
@@ -230,10 +230,10 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
       if (file.size > 5 * 1024 * 1024) continue
       const data = new FormData()
       data.append('file', file)
-      const res = (await $api<any>('/api/v1/upload?type=product', {
+      const res = await $api<{ success: boolean; url?: string }>('/api/v1/upload?type=product', {
         method: 'POST',
         body:   data,
-      })) as any
+      })
       if (res.success && res.url) formData.value.images.push(res.url)
     }
   }

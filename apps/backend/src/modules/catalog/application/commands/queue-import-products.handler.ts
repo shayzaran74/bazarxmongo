@@ -7,7 +7,7 @@ import { BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { PRODUCT_IMPORT_QUEUE } from '@barterborsa/shared-queue';
 import { ProductImportJobData } from '../workers/product-import.worker';
-import { QueueImportProductsCommand } from './queue-import-products.command';
+import { QueueImportProductsCommand, ImportProductRow } from './queue-import-products.command';
 import { ImportJob } from '@barterborsa/shared-persistence/schemas/backend/importJob.schema';
 
 const MAX_ROWS = 50_000;
@@ -32,12 +32,13 @@ export class QueueImportProductsHandler implements ICommandHandler<QueueImportPr
       );
     }
 
-    const emptyNameCount = rows.filter(r => !r.name && !r.title).length;
+    const typedRows = rows as ImportProductRow[];
+    const emptyNameCount = typedRows.filter(r => !r.name && !r.title).length;
     if (emptyNameCount === rows.length) {
       throw new BadRequestException('Hiçbir satırda ürün adı bulunamadı');
     }
 
-    const id = 'import-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'import-' + crypto.randomUUID();
     const importJob = new ImportJob({
       id,
       adminId,
@@ -52,7 +53,7 @@ export class QueueImportProductsHandler implements ICommandHandler<QueueImportPr
     const jobData: ProductImportJobData = {
       jobId: importJob.id,
       adminId,
-      rows,
+      rows: typedRows as Record<string, unknown>[],
       vendorType: command.vendorType,
     };
 

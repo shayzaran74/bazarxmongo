@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Policy — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -32,4 +33,4 @@ export const PolicySchema = new Schema<IPolicy>({
   collection: 'policies',
 });
 
-export const Policy = model<IPolicy>('Policy', PolicySchema);
+export const Policy = createModelProxy<IPolicy>('Policy', PolicySchema);

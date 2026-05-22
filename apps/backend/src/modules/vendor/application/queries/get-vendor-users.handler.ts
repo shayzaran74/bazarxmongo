@@ -16,20 +16,18 @@ export class GetVendorUsersHandler implements IQueryHandler<GetVendorUsersQuery>
     if (!vendor) return [];
 
     const vendorProps = vendor.getProps();
-    const companyId = (vendorProps as any).companyId;
+    const companyId = vendorProps.companyId;
     if (!companyId) return [];
 
-    // MongoDB'de Company.users ilişkisi farklı yapıda olabilir
-    // Basitleştirilmiş versiyon: sadece vendor'ın kendi userId'sini döndür
-    const vendorUserId = (vendorProps as any).userId;
-    const user = await this.userRepo.findById(vendorUserId);
+    const vendorUserId = vendorProps.userId;
+    const user = await this.userRepo.findById(vendorUserId ?? '');
     if (!user) return [];
 
-    const userProps = user.getProps ? user.getProps() : user;
+    const userProps = (user as unknown as { getProps?(): Record<string, unknown> }).getProps?.() ?? user as unknown as Record<string, unknown>;
     return [{
-      id:         vendorUserId,
-      email:      (userProps as any).email || user.id,
-      role:       (userProps as any).role || 'VENDOR',
+      id:         vendorUserId ?? user.id,
+      email:      (userProps.email as string) || user.id,
+      role:       (userProps.role as string) || 'VENDOR',
       companyRole: 'OWNER',
     }];
   }

@@ -179,8 +179,8 @@ export class VendorScoreService {
     const existing = await this.trustScoreRepo.findByVendorId(vendorId);
     if (!existing) return 80;
 
-    const tradingScore = Number((existing as any).tradingPerformance ?? 80);
-    const inactiveDays = (existing as any).inactiveDays ?? 0;
+    const tradingScore = Number(existing.tradingPerformance);
+    const inactiveDays = existing.inactiveDays;
 
     let score = tradingScore;
     if (inactiveDays >= INACTIVITY_THRESHOLD_DAYS) {
@@ -199,8 +199,7 @@ export class VendorScoreService {
     const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) return 50;
 
-    const props = vendor.getProps();
-    const userId = (props as any).userId;
+    const userId = vendor.userId;
     if (!userId) return 50;
 
     // UserLevel'dan XP çek — şimdilik basit placeholder
@@ -209,7 +208,7 @@ export class VendorScoreService {
     const currentXp = 0; // TODO: UserLevel'dan çek
 
     if (currentXp <= 0) {
-      const currentLoyalty = Number((existing as any)?.xpLoyalty ?? 100);
+      const currentLoyalty = Number(existing?.xpLoyalty ?? 100);
       return Math.max(0, currentLoyalty - LOW_XP_PENALTY_PER_MONTH);
     }
 

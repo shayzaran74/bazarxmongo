@@ -13,6 +13,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useRoute, useRouter, useNuxtApp, useCookie } from '#app'
 
 onErrorCaptured((err) => {
+  // Hata yakalama - üretimde monitoring servisi kullanılmalı
   console.error('[App] Unhandled error:', err)
   // Optionally show a toast or send to error tracking service
   return false // Prevent propagation
@@ -59,6 +60,7 @@ onMounted(async () => {
       // Navigate to home to ensure clean state
       router.replace('/')
     } catch (error) {
+      // OAuth hata yakalama - üretimde monitoring servisi kullanılmalı
       console.error('OAuth user fetch error:', error)
       const toast = useNuxtApp().$toast
       toast.error('Giriş doğrulanırken bir hata oluştu.')

@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/financial/accountWithdrawalRequest.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const WithdrawalRequestStatus = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 export type WithdrawalRequestStatusType = typeof WithdrawalRequestStatus[number];
@@ -45,4 +46,4 @@ AccountWithdrawalRequestSchema.index({ userId: 1 });
 AccountWithdrawalRequestSchema.index({ status: 1 });
 AccountWithdrawalRequestSchema.index({ accountId: 1 });
 
-export const AccountWithdrawalRequest = model<IAccountWithdrawalRequest>('AccountWithdrawalRequest', AccountWithdrawalRequestSchema);
+export const AccountWithdrawalRequest = createModelProxy<IAccountWithdrawalRequest>('AccountWithdrawalRequest', AccountWithdrawalRequestSchema);

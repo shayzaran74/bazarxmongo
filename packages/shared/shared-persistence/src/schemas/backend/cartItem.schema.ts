@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/cartItem.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface ICartItem {
   _id?: string;
@@ -9,6 +10,7 @@ export interface ICartItem {
   quantity: number;
   variantId?: string;
   addedAt: Date;
+  campaignId?: string;
 }
 
 export const CartItemSchema = new Schema<ICartItem>({
@@ -19,6 +21,7 @@ export const CartItemSchema = new Schema<ICartItem>({
   quantity: { type: Number, default: 1 },
   variantId: { type: String },
   addedAt: { type: Date },
+  campaignId: { type: String },
 }, {
   timestamps: true,
   collection: 'cart_items',
@@ -28,4 +31,4 @@ CartItemSchema.index({ cartId: 1 });
 CartItemSchema.index({ listingId: 1 });
 CartItemSchema.index({ cartId: 1, listingId: 1 });
 
-export const CartItem = model<ICartItem>('CartItem', CartItemSchema);
+export const CartItem = createModelProxy<ICartItem>('CartItem', CartItemSchema);

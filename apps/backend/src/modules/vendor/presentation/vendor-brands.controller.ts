@@ -106,7 +106,7 @@ export class VendorBrandsController {
         invoiceChainUrl: body.invoiceChainUrl,
         authorizationUrl: body.authorizationUrl,
         image: body.image,
-      } as any),
+      }),
     );
   }
 
@@ -136,8 +136,7 @@ export class VendorBrandsController {
     if (brandId) {
       const vendor = await this.vendorRepo.findByUserId(user.id);
       if (vendor) {
-        const vendorProps = vendor.getProps();
-        const vendorId = (vendorProps as any).id || vendor.id;
+        const vendorId = vendor.id;
         await this.brandRepo.update(brandId, { image: result.data.url });
       }
     }
@@ -170,11 +169,11 @@ export class VendorBrandsController {
     const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) throw new NotFoundException('Satıcı hesabı bulunamadı');
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const brand = await this.brandRepo.findById(brandId);
-    if (!brand || (brand as any).vendorId !== vendorId) throw new NotFoundException('Marka bulunamadı');
+    const brandVendorId = (brand as { vendorId?: string }).vendorId;
+    if (!brand || brandVendorId !== vendorId) throw new NotFoundException('Marka bulunamadı');
 
     const result = await this.mediaService.processAndUpload(file, { subPath: 'brand-documents' });
     if (!result.success) throw new BadRequestException(result.error.message);

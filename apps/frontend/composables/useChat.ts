@@ -6,7 +6,7 @@ import type { ChatMessage } from '@barterborsa/shared-types'
 export const useChat = (tradeOfferId: string) => {
   const chatStore = useChatStore()
   const authStore = useAuthStore()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
   // Computed refs — store'dan reaktif oku
   const messages = computed(() => chatStore.messages)

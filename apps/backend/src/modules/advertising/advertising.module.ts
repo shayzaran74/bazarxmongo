@@ -27,6 +27,8 @@ import { AdCampaign, AdCampaignSchema } from '@barterborsa/shared-persistence/sc
 import { AdSlot, AdSlotSchema } from '@barterborsa/shared-persistence/schemas/backend/adSlot.schema';
 import { AdCampaignMetric, AdCampaignMetricSchema } from '@barterborsa/shared-persistence/schemas/backend/adCampaignMetric.schema';
 
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
 const CommandHandlers = [
   CreateAdCampaignHandler,
   ApproveAdCampaignHandler,
@@ -56,6 +58,7 @@ const Repositories = [
       { name: AdSlot.name, schema: AdSlotSchema },
       { name: AdCampaignMetric.name, schema: AdCampaignMetricSchema },
     ]),
+    AuditMongooseModule,
   ],
   controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController, B2BAdPackageController],
   providers: [

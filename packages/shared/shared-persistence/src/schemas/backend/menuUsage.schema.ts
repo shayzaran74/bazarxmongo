@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface IMenuUsage {
   _id?: string;
@@ -25,4 +26,4 @@ export const MenuUsageSchema = new Schema<IMenuUsage>({
 
 MenuUsageSchema.index({ subscriptionId: 1, month: 1, year: 1 }, { unique: true });
 
-export const MenuUsage = model<IMenuUsage>('MenuUsage', MenuUsageSchema);
+export const MenuUsage = createModelProxy<IMenuUsage>('MenuUsage', MenuUsageSchema);

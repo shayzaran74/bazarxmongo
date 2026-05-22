@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const WalletType = ['CASH','BARTER','XP_ADS','XP_COMMISSION','XP_TRADE'] as const;
 export type WalletTypeType = typeof WalletType[number];
@@ -35,4 +36,4 @@ export const WalletSchema = new Schema<IWallet>({
 WalletSchema.index({ userId: 1 }, { unique: true });
 WalletSchema.index({ balanceTL: 1 });
 
-export const Wallet = model<IWallet>('Wallet', WalletSchema);
+export const Wallet = createModelProxy<IWallet>('Wallet', WalletSchema);

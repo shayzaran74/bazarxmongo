@@ -9,6 +9,7 @@ export interface CartItem {
   price: number;
   productVariantId?: string;
   addedAt: string;
+  campaignId?: string;
 }
 
 export interface CartSummary {

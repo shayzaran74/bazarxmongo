@@ -1,5 +1,7 @@
 // apps/backend/src/modules/barter/domain/repositories/dispute.repository.interface.ts
 
+import { IBarterDisputeLog } from '@barterborsa/shared-persistence';
+
 export interface IDisputeRepository {
   create(data: {
     swapSessionId: string;
@@ -17,11 +19,11 @@ export interface IDisputeRepository {
     resolutionNote?: string;
   }): Promise<void>;
   findOpenByUserId(userId: string): Promise<{ id: string } | null>;
-  findByStatus(status: string, limit?: number): Promise<any[]>;
-  findById(id: string): Promise<any | null>;
+  findByStatus(status: string, limit?: number): Promise<IBarterDisputeLog[]>;
+  findById(id: string): Promise<IBarterDisputeLog | null>;
   // Scheduler desteği
-  findByStatusAndCreatedBefore(status: string, cutoff: Date, limit?: number): Promise<any[]>;
-  findByStatusAndUpdatedBefore(status: string, cutoff: Date, limit?: number): Promise<any[]>;
+  findByStatusAndCreatedBefore(status: string, cutoff: Date, limit?: number): Promise<IBarterDisputeLog[]>;
+  findByStatusAndUpdatedBefore(status: string, cutoff: Date, limit?: number): Promise<IBarterDisputeLog[]>;
   updateStatusAndDeadline(id: string, status: string, resolutionDeadlineAt: Date): Promise<void>;
   updateResolutionDetails(id: string, data: {
     status: string;

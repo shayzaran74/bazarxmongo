@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const AuctionStatus = ['SCHEDULED','ACTIVE','ENDED','COMPLETED','CANCELLED'] as const;
 export type AuctionStatusType = typeof AuctionStatus[number];
@@ -22,6 +23,7 @@ export interface IAuction {
   winner3Id?: string;
   createdAt: Date;
   updatedAt: Date;
+  version?: number;
 }
 
 export const AuctionSchema = new Schema<IAuction>({
@@ -43,6 +45,7 @@ export const AuctionSchema = new Schema<IAuction>({
   winner3Id: { type: String },
   createdAt: { type: Date },
   updatedAt: { type: Date },
+  version: { type: Number, default: 1 },
 }, {
   timestamps: true,
   collection: 'auctions',
@@ -53,4 +56,4 @@ AuctionSchema.index({ listingId: 1 });
 AuctionSchema.index({ userId: 1 });
 AuctionSchema.index({ status: 1, startTime: 1 });
 
-export const Auction = model<IAuction>('Auction', AuctionSchema);
+export const Auction = createModelProxy<IAuction>('Auction', AuctionSchema);

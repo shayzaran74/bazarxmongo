@@ -1,6 +1,7 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/xpSpendingLimitRule.schema.ts
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface IXpSpendingLimitRule {
   _id?: string;
@@ -45,4 +46,4 @@ export const XpSpendingLimitRuleSchema = new Schema<IXpSpendingLimitRule>({
 
 XpSpendingLimitRuleSchema.index({ tier: 1 });
 
-export const XpSpendingLimitRule = model<IXpSpendingLimitRule>('XpSpendingLimitRule', XpSpendingLimitRuleSchema);
+export const XpSpendingLimitRule = createModelProxy<IXpSpendingLimitRule>('XpSpendingLimitRule', XpSpendingLimitRuleSchema);

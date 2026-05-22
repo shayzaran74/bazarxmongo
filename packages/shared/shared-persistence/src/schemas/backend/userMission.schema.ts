@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // UserMission — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -38,4 +39,4 @@ UserMissionSchema.index({ userId: 1, status: 1 });
 // Unique constraint
 UserMissionSchema.index({ userId: 1, missionId: 1 }, { unique: true });
 
-export const UserMission = model<IUserMission>('UserMission', UserMissionSchema);
+export const UserMission = createModelProxy<IUserMission>('UserMission', UserMissionSchema);

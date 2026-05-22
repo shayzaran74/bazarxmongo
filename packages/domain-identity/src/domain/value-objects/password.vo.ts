@@ -19,7 +19,13 @@ export class Password extends ValueObject<PasswordProps> {
   }
 
   public static create(raw: string): Result<Password, DomainException> {
-    if (raw.length < 6) return Err(new DomainException('Şifre en az 6 karakter olmalıdır.'));
+    if (raw.length < 8) return Err(new DomainException('Şifre en az 8 karakter olmalıdır.'));
+
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
+    if (!strongPasswordRegex.test(raw)) {
+      return Err(new DomainException('Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir.'));
+    }
+
     return Ok(new Password({ value: raw, isHashed: false }));
   }
 

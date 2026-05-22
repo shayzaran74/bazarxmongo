@@ -8,6 +8,16 @@ import { CreateChatRoomCommand } from '../commands/create-chat-room.command';
 import { SendMessageCommand } from '../commands/send-message.command';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
+export interface TradeOfferAcceptedEvent {
+  offerId: string;
+  sessionId: string;
+  fromCompanyId: string;
+  toCompanyId: string;
+  initiatorId: string;
+  receiverId: string;
+  collateralAmount: string;
+}
+
 @Injectable()
 export class TradeOfferAcceptedNotificationHandler {
   constructor(private readonly commandBus: CommandBus) {}
@@ -17,8 +27,8 @@ export class TradeOfferAcceptedNotificationHandler {
     routingKey: 'offer.accepted',
     queue: 'communication.trade-offer-accepted',
   })
-  async handle(event: any) {
-    const { id, initiatorId, receiverId } = event;
+  async handle(event: TradeOfferAcceptedEvent) {
+    const { offerId, initiatorId, receiverId } = event;
 
     // 1. Notify Both Parties
     await this.commandBus.execute(
@@ -43,7 +53,7 @@ export class TradeOfferAcceptedNotificationHandler {
 
     // 2. Create Chat Room
     const roomResult = await this.commandBus.execute(
-      new CreateChatRoomCommand(undefined, id)
+      new CreateChatRoomCommand(undefined, offerId)
     );
 
     // 3. System Message

@@ -87,7 +87,7 @@ export class MongoListingRepository
     slug?: string;
     categoryId?: string;
   }): Promise<Listing> {
-    const id = 'listing-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'listing-' + crypto.randomUUID();
     const doc = new this.model({
       _id: id,
       id,

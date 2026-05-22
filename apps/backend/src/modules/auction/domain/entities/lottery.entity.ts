@@ -91,4 +91,21 @@ export class Lottery extends AggregateRoot<LotteryProps> {
   public static createFrom(props: LotteryProps, id: string): Lottery {
     return new Lottery(props, id);
   }
+
+  public updateProps(partial: Partial<Pick<LotteryProps,
+    'title' | 'prizeDescription' | 'ticketPrice' | 'totalTickets' |
+    'maxTicketsPerUser' | 'startTime' | 'endTime' | 'status' | 'prizeValue' | 'imageUrl'
+  >>): void {
+    if (partial.title !== undefined) this.props.title = partial.title;
+    if (partial.prizeDescription !== undefined) this.props.prizeDescription = partial.prizeDescription;
+    if (partial.ticketPrice !== undefined) this.props.ticketPrice = partial.ticketPrice;
+    if (partial.totalTickets !== undefined) this.props.totalTickets = partial.totalTickets;
+    if (partial.maxTicketsPerUser !== undefined) this.props.maxTicketsPerUser = partial.maxTicketsPerUser;
+    if (partial.startTime !== undefined) this.props.startTime = partial.startTime;
+    if (partial.endTime !== undefined) this.props.endTime = partial.endTime;
+    if (partial.status !== undefined) this.props.status = partial.status;
+    if (partial.prizeValue !== undefined) this.props.prizeValue = partial.prizeValue;
+    if (partial.imageUrl !== undefined) this.props.imageUrl = partial.imageUrl;
+    this.props.updatedAt = new Date();
+  }
 }

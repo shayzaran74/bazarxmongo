@@ -1,9 +1,10 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/order-status-history.schema.ts
 // OrderStatusHistory — Prisma → Mongoose migration (ADR-005 Faz 2a)
 // Document-model decision: Embed (Order içinde) — §1b embed kararı
 // Status geçmişi küçük, Order ile birlikte gelir
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IOrderStatusHistory {
   _id?: string;
@@ -24,4 +25,4 @@ export const OrderStatusHistorySchema = new Schema<IOrderStatusHistory>({
 // NOT: OrderStatusHistory OrderSchema'ya embed olarak eklenir
 // Kullanım: OrderSchema.add({ statusHistory: [OrderStatusHistorySchema] })
 
-export const OrderStatusHistory = model<IOrderStatusHistory>('OrderStatusHistory', OrderStatusHistorySchema);
+export const OrderStatusHistory = createModelProxy<IOrderStatusHistory>('OrderStatusHistory', OrderStatusHistorySchema);

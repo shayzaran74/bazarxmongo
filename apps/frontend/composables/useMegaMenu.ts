@@ -1,17 +1,17 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-export const useMegaMenu = (props: any, emit: any) => {
+export const useMegaMenu = (props: { categories: Record<string, unknown>[] }, emit: { (e: 'select', category: Record<string, unknown>): void }) => {
   const router = useRouter()
-  
+
   // State
   const mainCategories = computed(() => props.categories)
   const showMegaMenuFlag = ref(false)
   const showingAllCategories = ref(false)
-  const currentCategory = ref<any>(null)
-  const activeMobileSubCategory = ref<any>(null)
+  const currentCategory = ref<Record<string, unknown> | null>(null)
+  const activeMobileSubCategory = ref<Record<string, unknown> | null>(null)
   const isMobile = ref(false)
-  const hideTimeout = ref<any>(null)
+  const hideTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
   const categoriesContainer = ref<HTMLElement | null>(null)
   const showScrollButtons = ref(false)
 
@@ -46,24 +46,24 @@ export const useMegaMenu = (props: any, emit: any) => {
     showingAllCategories.value = true
   }
 
-  const handleCategoryClick = (category: any) => {
+  const handleCategoryClick = (category: Record<string, unknown>) => {
     if (isMobile.value) {
-      if (category.children && category.children.length > 0) {
+      if ((category.children as Record<string, unknown>[])?.length > 0) {
         activeMobileSubCategory.value = category
       } else {
-        navigateTo(`/products?categorySlug=${category.slug}`)
+        navigateTo(`/products?categorySlug=${category.slug as string}`)
         hideMegaMenu()
       }
     } else {
-      navigateTo(`/products?categorySlug=${category.slug}`)
+      navigateTo(`/products?categorySlug=${category.slug as string}`)
       hideMegaMenu()
     }
   }
 
-  const showSubMenu = (category: any) => {
+  const showSubMenu = (category: Record<string, unknown>) => {
     if (isMobile.value) return
     cancelHideTimeout()
-    if (category.children && category.children.length > 0) {
+    if ((category.children as Record<string, unknown>[])?.length > 0) {
       currentCategory.value = category
       showMegaMenuFlag.value = true
       showingAllCategories.value = false

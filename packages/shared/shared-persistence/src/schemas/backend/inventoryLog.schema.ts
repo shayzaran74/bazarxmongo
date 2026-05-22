@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const InventoryLogType = ['SALE','PURCHASE','RESERVE','RELEASE','RETURN','ADJUSTMENT','EXPIRY','TRANSFER'] as const;
 export type InventoryLogTypeType = typeof InventoryLogType[number];
@@ -37,4 +38,4 @@ InventoryLogSchema.index({ listingId: 1 });
 InventoryLogSchema.index({ createdAt: -1 });
 InventoryLogSchema.index({ type: 1, createdAt: -1 });
 
-export const InventoryLog = model<IInventoryLog>('InventoryLog', InventoryLogSchema);
+export const InventoryLog = createModelProxy<IInventoryLog>('InventoryLog', InventoryLogSchema);

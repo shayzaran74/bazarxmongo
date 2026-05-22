@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/invoice.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const InvoiceStatus = ['DRAFT','ISSUED','PAID','OVERDUE','CANCELLED'] as const;
 export type InvoiceStatusType = typeof InvoiceStatus[number];
@@ -53,4 +54,4 @@ InvoiceSchema.index({ orderId: 1 });
 InvoiceSchema.index({ recipientId: 1 });
 InvoiceSchema.index({ status: 1 });
 
-export const Invoice = model<IInvoice>('Invoice', InvoiceSchema);
+export const Invoice = createModelProxy<IInvoice>('Invoice', InvoiceSchema);

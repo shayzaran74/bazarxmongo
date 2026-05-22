@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/campaign.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface ICampaign {
   _id?: string;
@@ -32,4 +33,4 @@ export const CampaignSchema = new Schema<ICampaign>({
 
 CampaignSchema.index({ isActive: 1, startDate: 1 });
 
-export const Campaign = model<ICampaign>('Campaign', CampaignSchema);
+export const Campaign = createModelProxy<ICampaign>('Campaign', CampaignSchema);

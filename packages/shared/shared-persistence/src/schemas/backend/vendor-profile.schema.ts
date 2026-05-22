@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/vendor-profile.schema.ts
 // VendorProfile — Prisma → Mongoose migration (ADR-005 Faz 2a)
 // Document-model decision: Embed (Vendor içinde 1:1)
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface IVendorProfile {
   _id?: string;
@@ -47,4 +48,4 @@ export const VendorProfileSchema = new Schema<IVendorProfile>({
 
 VendorProfileSchema.index({ vendorId: 1 }, { unique: true });
 
-export const VendorProfile = model<IVendorProfile>('VendorProfile', VendorProfileSchema);
+export const VendorProfile = createModelProxy<IVendorProfile>('VendorProfile', VendorProfileSchema);

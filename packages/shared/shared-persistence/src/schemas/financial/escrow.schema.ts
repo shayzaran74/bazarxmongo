@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const EscrowStatus = ['PENDING','FUNDED','HELD','RELEASED','REFUNDED','DISPUTED','CANCELLED'] as const;
 export type EscrowStatusType = typeof EscrowStatus[number];
@@ -41,4 +42,4 @@ EscrowSchema.index({ sellerId: 1 });
 EscrowSchema.index({ orderId: 1 });
 EscrowSchema.index({ status: 1 });
 
-export const Escrow = model<IEscrow>('Escrow', EscrowSchema);
+export const Escrow = createModelProxy<IEscrow>('Escrow', EscrowSchema);

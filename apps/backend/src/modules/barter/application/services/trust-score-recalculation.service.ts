@@ -138,7 +138,7 @@ export class TrustScoreRecalculationService {
     for (const { vendorId, violationCount } of candidates) {
       try {
         const existing = await this.trustScoreRepo.findByVendorId(vendorId);
-        const newScore = existing?.score ?? 0;
+        const newScore = Number(existing?.score?.toString() ?? 0);
 
         await this.trustScoreRepo.updateScore(vendorId, {
           isFrozen:        true,

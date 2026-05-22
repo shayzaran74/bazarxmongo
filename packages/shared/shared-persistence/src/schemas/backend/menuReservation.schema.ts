@@ -1,7 +1,8 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/menuReservation.schema.ts
 // BazarX-GO §9 — Uygulama içi rezervasyon sistemi
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const ReservationStatus = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
 export type ReservationStatusType = typeof ReservationStatus[number];
@@ -52,4 +53,4 @@ MenuReservationSchema.index({ vendorId: 1, date: 1, status: 1 });
 MenuReservationSchema.index({ purchaseId: 1 }, { unique: true }); // 1 QR = 1 rezervasyon
 MenuReservationSchema.index({ status: 1, date: 1 }); // cleanup cron için
 
-export const MenuReservation = model<IMenuReservation>('MenuReservation', MenuReservationSchema);
+export const MenuReservation = createModelProxy<IMenuReservation>('MenuReservation', MenuReservationSchema);

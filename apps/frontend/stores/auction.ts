@@ -182,6 +182,12 @@ export const useAuctionStore = defineStore('auction', {
         { method: 'POST', body: { amount } }
       )
       if (res.success && res.data) {
+        const authStore = useAuthStore()
+        if (authStore.user) {
+          res.data.userName = authStore.user.firstName 
+            || authStore.user.email?.split('@')[0] 
+            || 'Siz';
+        }
         this.bids.unshift(res.data)
         if (this.currentAuction) {
           this.currentAuction.currentPrice = amount

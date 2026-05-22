@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // OrderStatusHistory — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -32,4 +33,4 @@ OrderStatusHistorySchema.index({ orderId: 1 });
 // Composite index
 OrderStatusHistorySchema.index({ userId: 1 });
 
-export const OrderStatusHistory = model<IOrderStatusHistory>('OrderStatusHistory', OrderStatusHistorySchema);
+export const OrderStatusHistory = createModelProxy<IOrderStatusHistory>('OrderStatusHistory', OrderStatusHistorySchema);

@@ -1,9 +1,10 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/garageSale.schema.ts
 // Master Plan v4.3 §4.4 — Garaj Günü (Flash Sale)
 // Fabrika belirli zaman aralığında indirimli stok satışı yapabilir.
 // Stok atomic decrement edilir; süre dolunca veya stok bitince otomatik kapanır.
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const GarageSaleStatus = ['SCHEDULED', 'ACTIVE', 'EXHAUSTED', 'EXPIRED', 'CANCELLED'] as const;
 export type GarageSaleStatusType = typeof GarageSaleStatus[number];
@@ -73,7 +74,7 @@ GarageSaleSchema.pre('validate', function (next) {
   next();
 });
 
-export const GarageSale = model<IGarageSale>('GarageSale', GarageSaleSchema);
+export const GarageSale = createModelProxy<IGarageSale>('GarageSale', GarageSaleSchema);
 
 // Bayinin Garaj Günü siparişlerinin toplamı (Watchover'a benzer, ayrı tablo)
 export interface IGarageSalePurchase {
@@ -103,4 +104,4 @@ export const GarageSalePurchaseSchema = new Schema<IGarageSalePurchase>({
 
 GarageSalePurchaseSchema.index({ garageSaleId: 1, dealerId: 1 });
 
-export const GarageSalePurchase = model<IGarageSalePurchase>('GarageSalePurchase', GarageSalePurchaseSchema);
+export const GarageSalePurchase = createModelProxy<IGarageSalePurchase>('GarageSalePurchase', GarageSalePurchaseSchema);

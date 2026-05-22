@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useCheckoutService } from '~/services/checkoutService'
 import { useWalletService } from '~/services/api/WalletService'
 
-export const useCheckoutPayment = (buildPayload: any) => {
+export const useCheckoutPayment = (buildPayload: () => Record<string, unknown>) => {
   const checkoutService = useCheckoutService()
   const walletService = useWalletService()
 
@@ -30,7 +30,7 @@ export const useCheckoutPayment = (buildPayload: any) => {
       const payload = buildPayload()
       const res = await checkoutService.createPaymentIntent(payload)
       if (res.success && res.data) {
-        const data = res.data as any
+        const data = res.data as { htmlContent?: string; orderId?: string }
         if (data.htmlContent) {
           paymentFormContent.value = data.htmlContent
           currentOrderId.value = data.orderId
@@ -38,8 +38,8 @@ export const useCheckoutPayment = (buildPayload: any) => {
         }
       }
       throw new Error('Ödeme başlatılamadı.')
-    } catch (error: any) {
-      return { success: false, error: error.message }
+    } catch (error: unknown) {
+      return { success: false, error: (error as Error).message }
     }
   }
 

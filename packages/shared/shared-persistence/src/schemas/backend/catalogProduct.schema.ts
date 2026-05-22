@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface ICatalogProduct {
   _id?: string;
@@ -82,4 +83,4 @@ CatalogProductSchema.virtual('brands', {
 
 CatalogProductSchema.index({ categoryId: 1 });
 
-export const CatalogProduct = model<ICatalogProduct>('CatalogProduct', CatalogProductSchema);
+export const CatalogProduct = createModelProxy<ICatalogProduct>('CatalogProduct', CatalogProductSchema);

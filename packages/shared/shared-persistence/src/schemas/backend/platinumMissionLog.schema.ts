@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // PlatinumMissionLog — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -35,4 +36,4 @@ export const PlatinumMissionLogSchema = new Schema<IPlatinumMissionLog>({
 // Composite index
 PlatinumMissionLogSchema.index({ userId: 1, vendorId: 1 });
 
-export const PlatinumMissionLog = model<IPlatinumMissionLog>('PlatinumMissionLog', PlatinumMissionLogSchema);
+export const PlatinumMissionLog = createModelProxy<IPlatinumMissionLog>('PlatinumMissionLog', PlatinumMissionLogSchema);

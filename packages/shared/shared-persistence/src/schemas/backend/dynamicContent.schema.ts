@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/dynamicContent.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const ContentType = ['TEXT','HTML','MARKDOWN','JSON'] as const;
 export type ContentTypeType = typeof ContentType[number];
@@ -36,4 +37,4 @@ export const DynamicContentSchema = new Schema<IDynamicContent>({
 DynamicContentSchema.index({ key: 1 }, { unique: true });
 DynamicContentSchema.index({ category: 1, isActive: 1 });
 
-export const DynamicContent = model<IDynamicContent>('DynamicContent', DynamicContentSchema);
+export const DynamicContent = createModelProxy<IDynamicContent>('DynamicContent', DynamicContentSchema);

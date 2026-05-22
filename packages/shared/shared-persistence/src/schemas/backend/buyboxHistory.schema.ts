@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // apps/backend/node_modules/@barterborsa/shared-persistence/schemas/backend/buybox-history.schema.ts
 // BuyboxHistory — buybox score geçmişi kaydı (Master Plan §3.8)
@@ -46,4 +47,4 @@ BuyboxHistorySchema.index({ productId: 1, winnerAt: -1 });
 BuyboxHistorySchema.index({ listingId: 1 });
 BuyboxHistorySchema.index({ vendorId: 1 });
 
-export const BuyboxHistory = model<IBuyboxHistory>('BuyboxHistory', BuyboxHistorySchema);
+export const BuyboxHistory = createModelProxy<IBuyboxHistory>('BuyboxHistory', BuyboxHistorySchema);

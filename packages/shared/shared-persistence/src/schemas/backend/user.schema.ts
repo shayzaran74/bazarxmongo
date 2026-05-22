@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/user.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const UserRole = ['USER','VENDOR','ADMIN','SUPER_ADMIN'] as const;
 export type UserRoleType = typeof UserRole[number];
@@ -59,4 +60,4 @@ UserSchema.index({ status: 1 });
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
 
-export const User = model<IUser>('User', UserSchema);
+export const User = createModelProxy<IUser>('User', UserSchema);

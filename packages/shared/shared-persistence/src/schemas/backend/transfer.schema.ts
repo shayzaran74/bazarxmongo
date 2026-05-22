@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Transfer — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -33,4 +34,4 @@ export const TransferSchema = new Schema<ITransfer>({
 // Composite index
 TransferSchema.index({ vendorId: 1 });
 
-export const Transfer = model<ITransfer>('Transfer', TransferSchema);
+export const Transfer = createModelProxy<ITransfer>('Transfer', TransferSchema);

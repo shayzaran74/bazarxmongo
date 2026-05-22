@@ -1,7 +1,8 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/surpriseMenu.schema.ts
 // BazarX-GO §10 — Sürpriz Menü: restoranın ölü saatlerini değere dönüştürme
 
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface ISurpriseMenuTimeBlock {
   start: string;  // "14:00"
@@ -49,4 +50,4 @@ export const SurpriseMenuSchema = new Schema<ISurpriseMenu>({
 SurpriseMenuSchema.index({ vendorId: 1 }, { unique: true }); // vendor başına 1 kayıt
 SurpriseMenuSchema.index({ isActive: 1, 'activeHours.start': 1 }); // aktif sürprizler
 
-export const SurpriseMenu = model<ISurpriseMenu>('SurpriseMenu', SurpriseMenuSchema);
+export const SurpriseMenu = createModelProxy<ISurpriseMenu>('SurpriseMenu', SurpriseMenuSchema);

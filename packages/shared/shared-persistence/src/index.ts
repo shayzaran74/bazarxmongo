@@ -1,6 +1,7 @@
 // packages/shared/shared-persistence/src/index.ts
 
 export * from './mongodb/base-mongo.repository';
+export * from './mongodb/model-proxy';
 
 // Audit repository
 export * from './mongodb/audit/audit-log.repository';

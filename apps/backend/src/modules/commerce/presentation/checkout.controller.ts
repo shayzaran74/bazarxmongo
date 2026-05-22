@@ -38,7 +38,7 @@ export class CheckoutController {
 
     if (dto.addressId) {
       const address = await this.addressRepo.findById(dto.addressId);
-      if (!address || (address as any).userId !== user.id) {
+      if (!address || address.userId !== user.id) {
         throw new BadRequestException('Seçilen adres bulunamadı.');
       }
 
@@ -46,18 +46,18 @@ export class CheckoutController {
         firstName: address.firstName || user.firstName || 'User',
         lastName: address.lastName || user.lastName || '',
         phone: address.phone || '',
-        addressLine1: (address as any).addressLine1,
-        addressLine2: (address as any).addressLine2 || '',
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2 || '',
         city: address.city,
         district: address.district,
-        postalCode: (address as any).postalCode || '00000',
+        postalCode: address.postalCode || '00000',
       };
 
-      shippingAddress = ShippingAddress.create(addrData as any);
-      billingAddress = ShippingAddress.create(addrData as any);
+      shippingAddress = ShippingAddress.create(addrData);
+      billingAddress = ShippingAddress.create(addrData);
     } else if (dto.shippingAddress && dto.billingAddress) {
-      shippingAddress = ShippingAddress.create(dto.shippingAddress as any);
-      billingAddress = ShippingAddress.create(dto.billingAddress as any);
+      shippingAddress = ShippingAddress.create(dto.shippingAddress);
+      billingAddress = ShippingAddress.create(dto.billingAddress);
     } else {
       throw new BadRequestException('Teslimat adresi belirtilmelidir.');
     }

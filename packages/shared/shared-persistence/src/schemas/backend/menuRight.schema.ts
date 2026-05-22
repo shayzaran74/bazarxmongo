@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/menuRight.schema.ts
 // Master Plan v4.3 §2.2 + §2.7 — Kullanıcının BazarX Menü Hakkı (aidat × 2).
 // Tier yükseldiğinde yeni hak verilir; tier düştüğünde eski haklar 30 gün daha geçerli kalır.
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 // MenuRight kayıt nedeni — upgrade vs downgrade grace
 export const MenuRightSource = ['UPGRADE', 'DOWNGRADE_GRACE', 'INITIAL', 'TRIAL'] as const;
@@ -62,4 +63,4 @@ MenuRightSchema.index({ userId: 1, tier: 1, source: 1 });
 // Master Plan §2.7 — Downgrade grace: validUntil < now olunca cron temizler
 MenuRightSchema.index({ validUntil: 1, isActive: 1 });
 
-export const MenuRight = model<IMenuRight>('MenuRight', MenuRightSchema);
+export const MenuRight = createModelProxy<IMenuRight>('MenuRight', MenuRightSchema);

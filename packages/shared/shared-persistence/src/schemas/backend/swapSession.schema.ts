@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const CollateralStatus = ['NONE','DEPOSITED','HELD','RELEASED','FORFEITED'] as const;
 export type CollateralStatusType = typeof CollateralStatus[number];
@@ -70,4 +71,4 @@ SwapSessionSchema.index({ tradeOfferId: 1 });
 SwapSessionSchema.index({ status: 1, timeoutAt: 1 });
 SwapSessionSchema.index({ timeoutAt: 1 }, { expireAfterSeconds: 0 }); // TTL — otomatik silme
 
-export const SwapSession = model<ISwapSession>('SwapSession', SwapSessionSchema);
+export const SwapSession = createModelProxy<ISwapSession>('SwapSession', SwapSessionSchema);

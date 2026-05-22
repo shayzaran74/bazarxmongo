@@ -15,7 +15,7 @@ export class AddToCartHandler implements ICommandHandler<AddToCartCommand> {
   ) {}
 
   async execute(command: AddToCartCommand) {
-    const { userId, productId, quantity } = command;
+    const { userId, productId, quantity, campaignId } = command;
     let { listingId } = command;
 
     // productId varsa listing bul
@@ -60,7 +60,7 @@ export class AddToCartHandler implements ICommandHandler<AddToCartCommand> {
     if (existingItem) {
       await this.cartRepo.updateItemQuantity(existingItem.id, totalRequested);
     } else {
-      await this.cartRepo.addItem(cart.id, listingId, quantity);
+      await this.cartRepo.addItem(cart.id, listingId, quantity, undefined, campaignId);
     }
 
     return { success: true, message: 'Ürün sepete eklendi' };

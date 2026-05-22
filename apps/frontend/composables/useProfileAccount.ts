@@ -77,7 +77,6 @@ export const useProfileAccount = () => {
   }
 
   const updateProfile = async () => {
-    console.log('[useProfileAccount] updateProfile tetiklendi.')
     profileLoading.value = true
     try {
       // Boş değerleri temizle
@@ -85,12 +84,9 @@ export const useProfileAccount = () => {
         Object.entries(profileForm.value).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
       )
 
-      console.log('[useProfileAccount] Veri gönderiliyor:', cleanData)
       const res = await userService.updateProfile(cleanData as any)
-      console.log('[useProfileAccount] Yanıt alındı:', res)
 
       if (res.success && res.data) {
-        console.log('[useProfileAccount] Güncelleme başarılı, user:', res.data.user)
         // Mevcut kullanıcı verisini ezmek yerine merge et
         if (authStore.user && res.data.user) {
           Object.assign(authStore.user, res.data.user)

@@ -18,8 +18,7 @@ export class GetVendorPendingOrderCountHandler
     const vendor = await this.vendorRepo.findByUserId(query.userId);
     if (!vendor) throw new NotFoundException('Vendor not found');
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const result = await this.orderRepo.findAllFiltered({ vendorId, status: 'PENDING', limit: 0 });
     return result.total;

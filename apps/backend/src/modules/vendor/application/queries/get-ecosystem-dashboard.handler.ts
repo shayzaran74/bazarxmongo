@@ -59,25 +59,25 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     const actorVendor = await this.vendorRepo.findByUserId(actorUserId);
     if (!actorVendor) throw new NotFoundException('Vendor bulunamadı.');
 
-    const actorProps = actorVendor.getProps();
-    const actorVendorId = (actorProps as any).id || actorVendor.id;
+    const actorVendorId = actorVendor.id;
 
     const ecosystem = await this.ecosystemRepo.findById(ecosystemId);
     if (!ecosystem) throw new NotFoundException('Ekosistem bulunamadı.');
 
     const isOwner = ecosystem.ownerId === actorVendorId;
-    const actorUser = await this.vendorRepo.findById(actorUserId);
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes((actorProps as any).role ?? '');
-
-    if (!isOwner && !isAdmin) {
+    if (!isOwner) {
       throw new ForbiddenException('Bu ekosistemin yönetim paneline erişim yetkiniz yok.');
     }
 
     const since = new Date();
     since.setDate(since.getDate() - ACTIVITY_WINDOW_DAYS);
 
+    // IBrandEcosystem'de memberIds alanı tip dışında tutulduğundan güvenli cast kullanılır
+    const ecosystemDoc = ecosystem as unknown as { memberIds?: string[] };
+    const memberIds: string[] = ecosystemDoc.memberIds || [];
+
     const members: EcosystemMemberDashboard[] = [];
-    for (const memberId of (ecosystem as any).memberIds || []) {
+    for (const memberId of memberIds) {
       const memberVendor = await this.vendorRepo.findById(memberId);
       if (!memberVendor) continue;
 
@@ -88,30 +88,25 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
       const initiatorSessions = await this.swapRepo.findByInitiatorId(memberId);
       const receiverSessions = await this.swapRepo.findByReceiverId(memberId);
       const allSessions = [...initiatorSessions, ...receiverSessions];
-      const recentTrades = allSessions.filter((s: any) => {
-        const createdAt = new Date((s as any).createdAt || (s.getProps && s.getProps().createdAt) || 0);
-        return createdAt >= since;
-      }).length;
+      const recentTrades = allSessions.filter(s => s.getProps().createdAt >= since).length;
 
       // Son aktivite
-      const sortedSessions = allSessions.sort((a: any, b: any) => {
-        const aDate = new Date((a as any).createdAt || 0);
-        const bDate = new Date((b as any).createdAt || 0);
-        return bDate.getTime() - aDate.getTime();
-      });
-      const lastSession = sortedSessions[0] || null;
-      const lastActivityAt = lastSession
-        ? new Date((lastSession as any).createdAt || (lastSession.getProps && lastSession.getProps().createdAt) || 0)
-        : null;
+      const sortedSessions = allSessions.sort((a, b) =>
+        b.getProps().createdAt.getTime() - a.getProps().createdAt.getTime()
+      );
+      const lastSession = sortedSessions[0] ?? null;
+      const lastActivityAt = lastSession ? lastSession.getProps().createdAt : null;
 
       // Aktif ilan sayısı
       const listingsResult = await this.listingRepo.search({ vendorId: memberId, status: 'ACTIVE', take: 1 });
 
+      // VendorProps'ta storeName/slug olmadığından güvenli fallback kullanılır
+      const vendorMeta = memberProps as unknown as { storeName?: string; slug?: string };
       members.push({
         vendorId:         memberId,
-        vendorName:       (memberProps as any).storeName || (memberProps as any).slug || memberId,
-        tier:             (memberProps as any).tier || 'CORE',
-        trustScore:       trustRecord?.score ?? 100,
+        vendorName:       vendorMeta.storeName || vendorMeta.slug || memberId,
+        tier:             String(memberProps.tier ?? 'CORE'),
+        trustScore:       Number(trustRecord?.score?.toString() ?? 100),
         trustLevel:       trustRecord?.level ?? 'GOOD',
         violationCount:   trustRecord?.violationCount ?? 0,
         isFrozen:         trustRecord?.isFrozen ?? false,
@@ -130,9 +125,9 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
 
     return {
       ecosystemId:      ecosystem.id,
-      ecosystemName:    (ecosystem as any).name || ecosystemId,
-      isBlindPool:      (ecosystem as any).isBlindPool ?? false,
-      internalCommRate: Number((ecosystem as any).internalCommRate ?? 4),
+      ecosystemName:    ecosystem.name || ecosystemId,
+      isBlindPool:      ecosystem.isBlindPool ?? false,
+      internalCommRate: Number(ecosystem.internalCommRate ?? 4),
       memberCount:      members.length,
       members:          members.sort((a, b) => b.trustScore - a.trustScore),
       summary: {

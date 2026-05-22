@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VendorFollower — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -31,4 +32,4 @@ VendorFollowerSchema.index({ vendorId: 1 });
 // Unique constraint
 VendorFollowerSchema.index({ userId: 1, vendorId: 1 }, { unique: true });
 
-export const VendorFollower = model<IVendorFollower>('VendorFollower', VendorFollowerSchema);
+export const VendorFollower = createModelProxy<IVendorFollower>('VendorFollower', VendorFollowerSchema);

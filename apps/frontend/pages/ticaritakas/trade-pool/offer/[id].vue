@@ -48,8 +48,8 @@ const fetchOpportunity = async (): Promise<void> => {
   loading.value = true
   try {
     const [surplusRes, barterRes] = await Promise.all([
-      $api<{ success: boolean; data: Record<string, unknown> }>(`/api/v1/surplus/${opportunityId}`),
-      $api<{ success: boolean; data: { commissionXP?: string } }>('/api/v1/barter/info').catch(() => null),
+      $api<Record<string, any>>(`/api/v1/surplus/${opportunityId}`),
+      $api<{ commissionXP?: string }>('/api/v1/barter/info').catch(() => null),
     ])
 
     if (surplusRes.success && surplusRes.data) {

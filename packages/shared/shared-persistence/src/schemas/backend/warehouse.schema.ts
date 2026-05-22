@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Warehouse — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -35,4 +36,4 @@ export const WarehouseSchema = new Schema<IWarehouse>({
 // Composite index
 WarehouseSchema.index({ vendorId: 1 });
 
-export const Warehouse = model<IWarehouse>('Warehouse', WarehouseSchema);
+export const Warehouse = createModelProxy<IWarehouse>('Warehouse', WarehouseSchema);

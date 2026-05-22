@@ -57,7 +57,7 @@ export const useAdminOrders = () => {
   const fetchOrders = async () => {
     loading.value = true
     try {
-      const res = await $api<{ items: AdminOrder[]; total: number }>('/api/v1/admin/orders', {
+      const res = await $api<{ data?: { items: AdminOrder[]; total: number } }>('/api/v1/admin/orders', {
         query: {
           status: filterStatus.value || undefined,
           vendorId: filterVendorId.value || undefined,
@@ -66,8 +66,8 @@ export const useAdminOrders = () => {
           limit: pagination.limit,
         },
       })
-      orders.value = (res as any).data?.items || []
-      pagination.total = (res as any).data?.total || 0
+      orders.value = res.data?.items || []
+      pagination.total = res.data?.total || 0
     } catch {
       $toast.error('Siparişler yüklenemedi')
     } finally {
@@ -84,7 +84,7 @@ export const useAdminOrders = () => {
   const fetchVendors = async () => {
     try {
       const res = await $api<{ data: VendorRaw[] }>('/api/v1/admin/vendors')
-      vendors.value = ((res as any).data || []).map((v: VendorRaw) => ({
+      vendors.value = (res.data || []).map((v: VendorRaw) => ({
         id: v.id,
         businessName: v.company?.name || v.profile?.storeName || 'Bilinmeyen',
       }))
@@ -112,7 +112,7 @@ export const useAdminOrders = () => {
           body: { orderIds: selectedOrderIds.value, status: bulkStatus.value },
         },
       )
-      const result = (res as any).data
+      const result = res.data
       if (result?.failed?.length) {
         $toast.warning(`${result.succeeded.length} sipariş güncellendi, ${result.failed.length} başarısız`)
       } else {

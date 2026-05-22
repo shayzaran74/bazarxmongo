@@ -33,7 +33,7 @@ export class MongoTransferRepository implements ITransferRepository {
   }
 
   async create(data: any): Promise<any> {
-    const id = 'tr-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'tr-' + crypto.randomUUID();
     const doc = await this.model.create({ id, ...data, createdAt: new Date(), updatedAt: new Date() });
     return doc.toObject();
   }

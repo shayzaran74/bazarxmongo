@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VendorStats — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -30,4 +31,4 @@ export const VendorStatsSchema = new Schema<IVendorStats>({
   collection: 'vendor_stats',
 });
 
-export const VendorStats = model<IVendorStats>('VendorStats', VendorStatsSchema);
+export const VendorStats = createModelProxy<IVendorStats>('VendorStats', VendorStatsSchema);

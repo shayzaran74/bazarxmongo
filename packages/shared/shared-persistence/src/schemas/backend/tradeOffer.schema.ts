@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const TradeOfferStatus = ['PENDING','ACCEPTED','REJECTED','COUNTER_OFFERED','COMPLETED','CANCELLED','EXPIRED'] as const;
 export type TradeOfferStatusType = typeof TradeOfferStatus[number];
@@ -70,7 +71,8 @@ export const TradeOfferSchema = new Schema<ITradeOffer>({
 TradeOfferSchema.index({ fromCompanyId: 1 });
 TradeOfferSchema.index({ toCompanyId: 1 });
 TradeOfferSchema.index({ initiatorId: 1 });
+TradeOfferSchema.index({ receiverId: 1 });
 TradeOfferSchema.index({ status: 1, expiresAt: 1 });
 TradeOfferSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL — otomatik silme
 
-export const TradeOffer = model<ITradeOffer>('TradeOffer', TradeOfferSchema);
+export const TradeOffer = createModelProxy<ITradeOffer>('TradeOffer', TradeOfferSchema);

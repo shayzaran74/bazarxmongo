@@ -21,28 +21,28 @@ export class GetInvoiceDownloadUrlHandler
     const invoice = await this.invoiceRepository.findById(invoiceId);
     if (!invoice) throw new NotFoundException('Fatura bulunamadı');
 
-    const props = invoice.getProps ? invoice.getProps() : invoice;
+    const props = invoice.getProps ? invoice.getProps() as unknown as Record<string, unknown> : invoice as unknown as Record<string, unknown>;
 
     const vendor = await this.vendorRepo.findByUserId(userId);
-    const vendorId = vendor ? ((vendor.getProps() as any).id || vendor.id) : null;
+    const vendorId = vendor?.id ?? null;
 
     const isOwner =
-      (props as any).recipientId === userId ||
-      (props as any).recipientId === vendorId;
+      (props.recipientId as string) === userId ||
+      (props.recipientId as string) === vendorId;
 
     if (!isOwner) {
       throw new ForbiddenException('Bu faturaya erişim yetkiniz yok');
     }
 
-    const pdfUrl = (invoice as any).pdfUrl;
+    const pdfUrl = (invoice as { pdfUrl?: string }).pdfUrl;
     if (!pdfUrl) {
       throw new NotFoundException('PDF henüz oluşturulmamış');
     }
 
     return {
-      invoiceNumber: (invoice as any).invoiceNumber || (props as any).invoiceNumber,
+      invoiceNumber: (invoice as { invoiceNumber?: string }).invoiceNumber || (props.invoiceNumber as string),
       pdfUrl,
-      status: (props as any).status || (invoice as any).status,
+      status: (props.status as string) || (invoice as { status?: string }).status,
     };
   }
 }

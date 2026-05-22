@@ -19,7 +19,7 @@ export const Err = <E>(error: E): Result<never, E> => ({
   error,
 });
 
-export type Optional<T> = T | null | undefined;
+export type Optional<T> = T | null | undefined; // Not: Proje genelinde null vs undefined kullanımı tutarsız — standart belirlenmeli
 
 export const isOk = <T, E>(result: Result<T, E>): result is { success: true; data: T } => {
   return result.success;

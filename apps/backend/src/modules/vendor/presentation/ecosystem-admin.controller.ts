@@ -1,4 +1,4 @@
-import { IVendor, ICompany, IListing, IEcosystemAuditLog } from '@barterborsa/shared-persistence';
+import { IVendor, ICompany, IListing, IEcosystemAuditLog, IBrandEcosystem, ITrustScore } from '@barterborsa/shared-persistence';
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
@@ -96,7 +96,9 @@ export class EcosystemAdminController {
     ]);
 
     const trustScores = await Promise.all(memberVendors.map(mv => this.trustScoreRepo.findByVendorId(mv.id)));
-    const trustScoreMap = new Map<string, any>(trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts]));
+    const trustScoreMap = new Map<string, ITrustScore | null>(
+      trustScores.filter(Boolean).map(ts => [ts!.vendorId, ts])
+    );
 
     const companyMap = new Map<string, ICompany>(companies.map(c => [c.id, c] as [string, ICompany]));
     
@@ -206,7 +208,9 @@ export class EcosystemAdminController {
     const uniqueEcoIds = [...new Set([...ecoIdsFromLogs, ...ecoIdsFromVendors])];
     
     const ecosystems = await Promise.all(uniqueEcoIds.map(id => this.brandEcosystemRepo.findById(id)));
-    const ecoMap = new Map<string, any>(ecosystems.filter(Boolean).map(e => [e!.id, e]));
+    const ecoMap = new Map<string, IBrandEcosystem | null>(
+      ecosystems.filter(Boolean).map(e => [e!.id, e])
+    );
 
     const result = logs.map(log => {
       let vendorBusinessName = 'SİSTEM';

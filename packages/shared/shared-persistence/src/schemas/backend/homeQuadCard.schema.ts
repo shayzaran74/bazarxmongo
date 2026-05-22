@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // HomeQuadCard — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -37,4 +38,4 @@ export const HomeQuadCardSchema = new Schema<IHomeQuadCard>({
 // Composite index
 HomeQuadCardSchema.index({ platform: 1, order: 1 });
 
-export const HomeQuadCard = model<IHomeQuadCard>('HomeQuadCard', HomeQuadCardSchema);
+export const HomeQuadCard = createModelProxy<IHomeQuadCard>('HomeQuadCard', HomeQuadCardSchema);

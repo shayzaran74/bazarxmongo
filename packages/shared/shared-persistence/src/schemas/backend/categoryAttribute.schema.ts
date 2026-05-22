@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface ICategoryAttribute {
   _id?: string;
@@ -46,4 +47,4 @@ export const CategoryAttributeSchema = new Schema<ICategoryAttribute>({
 CategoryAttributeSchema.index({ categoryId: 1 });
 CategoryAttributeSchema.index({ surplusCategoryId: 1 });
 
-export const CategoryAttribute = model<ICategoryAttribute>('CategoryAttribute', CategoryAttributeSchema);
+export const CategoryAttribute = createModelProxy<ICategoryAttribute>('CategoryAttribute', CategoryAttributeSchema);

@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // OutboxMessage — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -41,4 +42,4 @@ export const OutboxMessageSchema = new Schema<IOutboxMessage>({
 // Composite index
 OutboxMessageSchema.index({ status: 1, createdAt: 1 });
 
-export const OutboxMessage = model<IOutboxMessage>('OutboxMessage', OutboxMessageSchema);
+export const OutboxMessage = createModelProxy<IOutboxMessage>('OutboxMessage', OutboxMessageSchema);

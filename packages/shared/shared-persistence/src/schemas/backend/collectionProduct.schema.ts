@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // CollectionProduct — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -25,4 +26,4 @@ export const CollectionProductSchema = new Schema<ICollectionProduct>({
 // Unique constraint
 CollectionProductSchema.index({ collectionId: 1, listingId: 1 }, { unique: true });
 
-export const CollectionProduct = model<ICollectionProduct>('CollectionProduct', CollectionProductSchema);
+export const CollectionProduct = createModelProxy<ICollectionProduct>('CollectionProduct', CollectionProductSchema);

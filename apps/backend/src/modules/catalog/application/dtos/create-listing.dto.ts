@@ -89,4 +89,40 @@ export class CreateListingDto {
   @IsNumber()
   @Min(1)
   maxOrderQtyPerDealer?: number;
+
+  @IsNumber()
+  @IsOptional()
+  minMarketPrice?: number;
+
+  @IsNumber()
+  @IsOptional()
+  maxPurchasePerMember?: number;
+
+  @IsNumber()
+  @IsOptional()
+  compareAtPrice?: number;
+
+  @IsNumber()
+  @IsOptional()
+  weight?: number;
+
+  @IsNumber()
+  @IsOptional()
+  volume?: number;
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsArray()
+  @IsOptional()
+  productImages?: string[];
+
+  @IsString()
+  @IsOptional()
+  status?: string;
 }

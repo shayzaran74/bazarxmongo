@@ -1,6 +1,7 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/menuPurchase.schema.ts
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const MenuPurchaseStatus = [
   'PENDING', 'ACTIVE', 'PARTIALLY_REDEEMED', 'REDEEMED',
@@ -74,4 +75,4 @@ MenuPurchaseSchema.index({ qrCode: 1 }, { unique: true });
 MenuPurchaseSchema.index({ oneFreeQrCode: 1 }, { sparse: true });
 MenuPurchaseSchema.index({ transferredTo: 1 });
 
-export const MenuPurchase = model<IMenuPurchase>('MenuPurchase', MenuPurchaseSchema);
+export const MenuPurchase = createModelProxy<IMenuPurchase>('MenuPurchase', MenuPurchaseSchema);

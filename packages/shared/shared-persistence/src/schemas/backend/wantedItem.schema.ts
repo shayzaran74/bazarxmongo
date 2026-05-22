@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // WantedItem — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -47,4 +48,4 @@ WantedItemSchema.index({ userId: 1 });
 // Composite index
 WantedItemSchema.index({ categoryId: 1 });
 
-export const WantedItem = model<IWantedItem>('WantedItem', WantedItemSchema);
+export const WantedItem = createModelProxy<IWantedItem>('WantedItem', WantedItemSchema);

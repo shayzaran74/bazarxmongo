@@ -27,12 +27,12 @@ export const useVendorDashboard = () => {
     barterBalance: 0,
   })
 
-  const recentActivities = ref<Record<string, unknown>[]>([])
-  const rawOrders = ref<Record<string, unknown>[]>([])
-  const myEcosystem = ref<Record<string, unknown> | null>(null)
-  const vendorTierData = ref<Record<string, unknown> | null>(null)
-  const vendorTierStats = ref<Record<string, unknown> | null>(null)
-  const brandStats = ref<Record<string, unknown> | null>(null)
+  const recentActivities = ref<any[]>([])
+  const rawOrders = ref<any[]>([])
+  const myEcosystem = ref<any>(null)
+  const vendorTierData = ref<any>(null)
+  const vendorTierStats = ref<any>(null)
+  const brandStats = ref<any>(null)
 
   // ─── Computed ─────────────────────────────────────────────────────
   const pendingOrdersList = computed(() =>

@@ -80,6 +80,14 @@ export class Shipment extends AggregateRoot<ShipmentProps> {
     this.props.notes = (this.props.notes || '') + `\nCancellation Reason: ${reason}`;
   }
 
+  public updateStatusDirect(status: ShipmentStatus, notes?: string): void {
+    this.props.status = status;
+    if (notes) {
+      this.props.notes = (this.props.notes || '') + `\nUpdate Note: ${notes}`;
+    }
+  }
+
+
   get shipmentNumber(): string { return this.props.shipmentNumber; }
   get status(): ShipmentStatus { return this.props.status; }
   get orderId(): string { return this.props.orderId; }

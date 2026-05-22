@@ -60,8 +60,11 @@
             <div class="mb-6 bg-gray-50 p-4 rounded-2xl">
               <div class="flex justify-between items-end mb-2">
                 <div>
-                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Mevcut Katılım</p>
-                  <p class="text-xl font-black text-primary-600">{{ campaign.currentQuantity || 0 }} <span class="text-xs text-gray-500">Adet</span></p>
+                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Satın Alınan</p>
+                  <p class="text-xl font-black text-primary-600">
+                    {{ campaign.currentQuantity || 0 }}
+                    <span class="text-xs text-gray-500">/ {{ campaign.targetQuantity || '?' }} Adet</span>
+                  </p>
                 </div>
                 <div class="text-right">
                   <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sıradaki Hedef</p>
@@ -73,29 +76,59 @@
               </div>
             </div>
 
+            <!-- Mevcut Fiyat -->
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Şu Anki Fiyat</p>
+                <p class="text-3xl font-black text-primary-600">{{ toNum(getActiveTierPrice(campaign)).toFixed(2) }} ₺</p>
+              </div>
+              <div v-if="toNum(campaign.originalPrice) > getActiveTierPrice(campaign)" class="text-right">
+                <p class="text-[10px] font-bold text-gray-400 uppercase">Başlangıç</p>
+                <p class="text-sm text-gray-400 line-through">{{ toNum(campaign.originalPrice).toFixed(2) }} ₺</p>
+              </div>
+            </div>
+
             <!-- Tiers -->
-            <div class="flex flex-wrap gap-2 mb-8">
-              <div 
-                v-for="tier in getSortedTiers(campaign)" 
+            <div class="flex flex-wrap gap-2 mb-6">
+              <div
+                v-for="tier in getSortedTiers(campaign)"
                 :key="tier.minQuantity"
-                class="flex-1 min-w-[30%] bg-gray-50 border border-gray-100 p-2 rounded-xl text-center"
-                :class="{ 'bg-primary-50 border-primary-200 shadow-inner': (campaign.currentQuantity || 0) >= tier.minQuantity }"
+                class="flex-1 min-w-[30%] border p-2 rounded-xl text-center transition-all"
+                :class="(campaign.currentQuantity || 0) >= Number(tier.minQuantity)
+                  ? 'bg-primary-50 border-primary-300 shadow-inner'
+                  : 'bg-gray-50 border-gray-100'"
               >
                 <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{{ tier.minQuantity }}+ Adet</p>
-                <p class="text-sm font-black text-gray-900" :class="{ 'text-primary-600': (campaign.currentQuantity || 0) >= tier.minQuantity }">
-                  ₺{{ formatPrice(tier.price) }}
+                <p class="text-sm font-black"
+                   :class="(campaign.currentQuantity || 0) >= Number(tier.minQuantity) ? 'text-primary-600' : 'text-gray-900'">
+                  {{ toNum(tier.price).toFixed(2) }} ₺
                 </p>
               </div>
             </div>
 
             <!-- Action -->
-            <div class="mt-auto">
-              <button 
-                @click="navigateTo(getProductUrl(campaign.Product))"
-                class="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-md hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
+            <div class="mt-auto space-y-2">
+              <button
+                :disabled="joining[campaign.id]"
+                class="w-full py-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-md hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
+                @click="joinCampaign(campaign)"
               >
-                Kampanyaya Katıl
-                <ArrowRightIcon class="h-4 w-4" />
+                <ShoppingCartIcon v-if="!joining[campaign.id]" class="h-4 w-4" />
+                <span v-if="joining[campaign.id]" class="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                {{ joining[campaign.id] ? 'İşleniyor...' : 'Hemen Katıl' }}
+              </button>
+              <button
+                :disabled="joining[campaign.id]"
+                class="w-full py-3 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                @click="addToCart(campaign)"
+              >
+                Sepete Ekle
+              </button>
+              <button
+                class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                @click="navigateTo(getProductUrl(campaign.Product))"
+              >
+                Ürünü İncele <ArrowRightIcon class="h-3 w-3" />
               </button>
             </div>
           </div>
@@ -107,64 +140,132 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { UserGroupIcon, ClockIcon, ArrowRightIcon } from '@heroicons/vue/24/outline'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { UserGroupIcon, ClockIcon, ArrowRightIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { useFormat } from '~/composables/useFormat'
+import { useCartStore } from '~/stores/cart'
 import type { GroupBuyDTO, ApiResponse } from '@barterborsa/shared-types'
 
-useHead({
-  title: 'Birlikte Al Kampanyaları | BazarX'
-})
+useHead({ title: 'Birlikte Al Kampanyaları | BazarX' })
+
+const { $api } = useApi()
+const { $toast } = useNuxtApp()
+const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 const campaigns = ref<GroupBuyDTO[]>([])
 const loading = ref(true)
-const { formatPrice } = useFormat()
+const joining = ref<Record<string, boolean>>({})
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+// Decimal128 veya düz sayı → number
+const toNum = (val: unknown): number => {
+  if (val == null) return 0
+  if (typeof val === 'number') return isNaN(val) ? 0 : val
+  if (typeof val === 'string') return parseFloat(val) || 0
+  if (typeof val === 'object' && '$numberDecimal' in (val as object))
+    return parseFloat((val as { $numberDecimal: string }).$numberDecimal) || 0
+  return 0
+}
 
 const formatDate = (date: string) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-const getSortedTiers = (campaign: any) => {
+const getSortedTiers = (campaign: GroupBuyDTO) => {
   if (!campaign?.tiers) return []
-  return [...campaign.tiers].sort((a: any, b: any) => a.minQuantity - b.minQuantity)
+  return [...campaign.tiers].sort((a, b) => Number(a.minQuantity) - Number(b.minQuantity))
 }
 
-const getNextTierQuantity = (campaign: any) => {
-  if (!campaign?.tiers) return 100
+const getNextTierQuantity = (campaign: GroupBuyDTO): number => {
   const current = campaign.currentQuantity || 0
-  const sortedTiers = getSortedTiers(campaign)
-  const nextTier = sortedTiers.find((t: any) => t.minQuantity > current)
-  return nextTier ? nextTier.minQuantity : Math.max(...sortedTiers.map((t: any) => t.minQuantity))
+  const sorted = getSortedTiers(campaign)
+  const next = sorted.find(t => Number(t.minQuantity) > current)
+  return next ? Number(next.minQuantity) : (sorted.length ? Math.max(...sorted.map(t => Number(t.minQuantity))) : 100)
 }
 
-const getProgressPercent = (campaign: any) => {
+const getProgressPercent = (campaign: GroupBuyDTO): number => {
   const current = campaign.currentQuantity || 0
   const target = getNextTierQuantity(campaign)
-  return Math.min(Math.round((current / target) * 100), 100)
+  return target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0
 }
 
-const getProductUrl = (product: any) => {
+const getProductUrl = (product: GroupBuyDTO['Product']) => {
   if (!product) return '/'
-  return `/products/${product.slug || product.id}`
+  return `/products/${(product as { slug?: string; id?: string }).slug || (product as { id?: string }).id}`
 }
 
-const fetchCampaigns = async () => {
-  loading.value = true
+const getActiveTierPrice = (campaign: GroupBuyDTO): number => {
+  const current = campaign.currentQuantity || 0
+  const tiers = getSortedTiers(campaign)
+  const active = [...tiers].reverse().find(t => current >= Number(t.minQuantity))
+  return active ? toNum(active.price) : toNum(campaign.price ?? campaign.originalPrice)
+}
+
+const fetchCampaigns = async (silent = false) => {
+  if (!silent) loading.value = true
   try {
-    const { $api } = useApi()
-    const data = await $api('/api/group-buy/all') as ApiResponse<GroupBuyDTO[]>
-    if (data.success && data.data) {
-      campaigns.value = data.data
-    }
-  } catch (error) {
-    console.error('Failed to fetch group buys', error)
-  } finally {
+    const data = await $api<ApiResponse<GroupBuyDTO[]>>('/api/v1/group-buy/all')
+    if (data.success && data.data) campaigns.value = data.data
+  } catch { /* ignore */ } finally {
     loading.value = false
+  }
+}
+
+const joinCampaign = async (campaign: GroupBuyDTO) => {
+  if (!authStore.isLoggedIn) return navigateTo('/auth/login')
+  if (joining.value[campaign.id]) return
+  joining.value[campaign.id] = true
+  try {
+    const productId = campaign.Product?.id || campaign.id
+    await cartStore.addToCart(productId, 1, undefined, campaign.Product, undefined, campaign.id)
+    $toast.success('Kampanya ürünü sepete eklendi! Ödemeye yönlendiriliyorsunuz...')
+    await navigateTo('/cart')
+  } catch (e: unknown) {
+    $toast.error((e as { data?: { message?: string } })?.data?.message || 'Ekleme başarısız')
+  } finally {
+    joining.value[campaign.id] = false
+  }
+}
+
+const addToCart = async (campaign: GroupBuyDTO) => {
+  if (!authStore.isLoggedIn) return navigateTo('/auth/login')
+  if (joining.value[campaign.id]) return
+  joining.value[campaign.id] = true
+  try {
+    const productId = campaign.Product?.id || campaign.id
+    const res = await cartStore.addToCart(productId, 1, undefined, campaign.Product, undefined, campaign.id)
+    if (res.success) {
+      $toast.success('Sepete eklendi!')
+    }
+  } catch (e: unknown) {
+    $toast.error((e as { data?: { message?: string } })?.data?.message || 'Ekleme başarısız')
+  } finally {
+    joining.value[campaign.id] = false
+  }
+}
+
+// Sekme tekrar görünür olduğunda hızlı yenile (örn. /cart'tan dönüş)
+const onVisibility = () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    fetchCampaigns(true)
   }
 }
 
 onMounted(() => {
   fetchCampaigns()
+  // 30 saniyede bir sessizce yenile — diğer kullanıcıların alımlarını göster
+  pollTimer = setInterval(() => fetchCampaigns(true), 30_000)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibility)
+  }
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
 })
 </script>

@@ -21,12 +21,11 @@ export class VendorRegistrationService {
     @Inject('IUserRepository') private readonly userRepo: IUserRepository,
   ) {}
 
-  async registerAtomic(userId: string, body: any) {
+  async registerAtomic(userId: string, body: Record<string, unknown>) {
     const {
       businessName, businessType, taxId, phone, email, address,
-      city, district, zipCode, bankName, bankAccountName, bankIban,
-      categories
-    } = body;
+      city, district,
+    } = body as { businessName?: string; businessType?: string; taxId?: string; phone?: string; email?: string; address?: string; city?: string; district?: string };
 
     if (!userId) {
       return { success: false, error: 'Oturum bilgisi bulunamadı. Lütfen tekrar giriş yapın.' };
@@ -54,23 +53,23 @@ export class VendorRegistrationService {
       });
 
       // 2. Vendor oluştur
-      const slug = this.slugify(businessName) + '-' + Math.random().toString(36).substring(7);
+      const slug = this.slugify(businessName ?? 'vendor') + '-' + Math.random().toString(36).substring(7);
       // VendorSlug.create validation'ı bypass etmek için doğrudan props ile oluştur
       const vendor = await this.vendorRepo.create(Vendor.create(
         userId,
         companyId,
         { value: slug } as VendorSlug,
-        businessName,
+        businessName ?? 'Unknown',
       ));
 
       const vendorProps = vendor.getProps();
-      const vendorId = (vendorProps as any).id || vendor.id;
+      const vendorId = vendor.id;
 
       // 3. Profile oluştur
       await this.profileRepo.updateByVendorId(vendorId, {
-        storeName: businessName,
-        city,
-        district,
+        storeName: businessName ?? '',
+        city: city ?? '',
+        district: district ?? '',
       });
 
       // 4. Settings oluştur

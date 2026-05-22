@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/chatRoom.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const StorageTier = ['STANDARD','COLD','ARCHIVED'] as const;
 export type StorageTierType = typeof StorageTier[number];
@@ -40,4 +41,4 @@ export const ChatRoomSchema = new Schema<IChatRoom>({
 ChatRoomSchema.index({ isArchived: 1 });
 ChatRoomSchema.index({ updatedAt: -1 });
 
-export const ChatRoom = model<IChatRoom>('ChatRoom', ChatRoomSchema);
+export const ChatRoom = createModelProxy<IChatRoom>('ChatRoom', ChatRoomSchema);

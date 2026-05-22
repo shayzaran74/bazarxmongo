@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface IBlindPoolEntry {
   _id?: string;
@@ -29,4 +30,4 @@ BlindPoolEntrySchema.index({ poolId: 1 });
 BlindPoolEntrySchema.index({ listingId: 1 });
 BlindPoolEntrySchema.index({ vendorId: 1 });
 
-export const BlindPoolEntry = model<IBlindPoolEntry>('BlindPoolEntry', BlindPoolEntrySchema);
+export const BlindPoolEntry = createModelProxy<IBlindPoolEntry>('BlindPoolEntry', BlindPoolEntrySchema);

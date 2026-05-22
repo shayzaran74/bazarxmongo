@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/announcement.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const AnnouncementType = ['INFO','WARNING','PROMO','MAINTENANCE'] as const;
 export type AnnouncementTypeType = typeof AnnouncementType[number];
@@ -45,4 +46,4 @@ export const AnnouncementSchema = new Schema<IAnnouncement>({
 
 AnnouncementSchema.index({ isActive: 1, startDate: 1 });
 
-export const Announcement = model<IAnnouncement>('Announcement', AnnouncementSchema);
+export const Announcement = createModelProxy<IAnnouncement>('Announcement', AnnouncementSchema);

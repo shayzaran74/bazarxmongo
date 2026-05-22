@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/systemSetting.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface ISystemSetting {
   _id?: string;
@@ -22,4 +23,4 @@ export const SystemSettingSchema = new Schema<ISystemSetting>({
 
 SystemSettingSchema.index({ key: 1 }, { unique: true });
 
-export const SystemSetting = model<ISystemSetting>('SystemSetting', SystemSettingSchema);
+export const SystemSetting = createModelProxy<ISystemSetting>('SystemSetting', SystemSettingSchema);

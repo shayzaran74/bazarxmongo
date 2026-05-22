@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // SideAd — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -41,4 +42,4 @@ export const SideAdSchema = new Schema<ISideAd>({
 // Composite index
 SideAdSchema.index({ isActive: 1, order: 1, side: 1 });
 
-export const SideAd = model<ISideAd>('SideAd', SideAdSchema);
+export const SideAd = createModelProxy<ISideAd>('SideAd', SideAdSchema);

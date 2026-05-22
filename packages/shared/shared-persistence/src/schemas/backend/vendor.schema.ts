@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/vendor.schema.ts
 // Vendor — Prisma → Mongoose migration (ADR-005 Faz 2a)
 // Document-model decision: Reference (Vendor ayrı collection'da kalır)
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 // Enums
 export const VendorStatus = ['PENDING', 'APPROVED', 'SUSPENDED', 'REJECTED'] as const;
@@ -66,4 +67,4 @@ VendorSchema.index({ companyId: 1 }, { unique: true });
 VendorSchema.index({ userId: 1 }, { unique: true });
 VendorSchema.index({ slug: 1 }, { unique: true });
 
-export const Vendor = model<IVendor>('Vendor', VendorSchema);
+export const Vendor = createModelProxy<IVendor>('Vendor', VendorSchema);

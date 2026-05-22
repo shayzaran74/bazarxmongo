@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // Favorite — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -28,4 +29,4 @@ FavoriteSchema.index({ userId: 1 });
 // Unique constraint
 FavoriteSchema.index({ userId: 1, catalogProductId: 1 }, { unique: true });
 
-export const Favorite = model<IFavorite>('Favorite', FavoriteSchema);
+export const Favorite = createModelProxy<IFavorite>('Favorite', FavoriteSchema);

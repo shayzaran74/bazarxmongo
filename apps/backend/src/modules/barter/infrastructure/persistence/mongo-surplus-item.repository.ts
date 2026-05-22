@@ -6,7 +6,7 @@ import { Model } from 'mongoose';
 import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
 import { SurplusItem as SurplusItemModel, ISurplusItem } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/surplusItem.schema';
 import { SurplusItemMapper, SurplusItemDocument } from './mappers/surplus-item.mapper';
-import { ISurplusItemRepository } from '../../domain/repositories/surplus-item.repository.interface';
+import { ISurplusItemRepository, SurplusItemWithCompany, SurplusItemUpdateData } from '../../domain/repositories/surplus-item.repository.interface';
 import { SurplusItem } from '../../domain/entities/surplus-item.entity';
 
 @Injectable()
@@ -16,9 +16,9 @@ export class MongoSurplusItemRepository
 {
   constructor() {
     const mapper = new SurplusItemMapper();
-    super(SurplusItemModel as any, {
-      toDomain: mapper.toDomain.bind(mapper) as any,
-      toPersistence: mapper.toPersistence.bind(mapper) as any,
+    super(SurplusItemModel as unknown as Model<ISurplusItem>, {
+      toDomain: (doc: ISurplusItem) => mapper.toDomain(doc as SurplusItemDocument),
+      toPersistence: mapper.toPersistence.bind(mapper),
     });
   }
 
@@ -40,29 +40,17 @@ export class MongoSurplusItemRepository
     return { items: docs.map(doc => this.mapper.toDomain(doc)), total };
   }
 
-  async findByIdWithCompany(id: string): Promise<any | null> {
+  async findByIdWithCompany(id: string): Promise<SurplusItemWithCompany | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? (doc.toObject() as unknown as SurplusItemWithCompany) : null;
   }
 
-  async update(id: string, data: Partial<{
-    title: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    materialType: string;
-    location: string;
-    images: unknown;
-    wantedCategories: unknown;
-    tradeModes: unknown;
-    technicalSpecs: unknown;
-    status: string;
-  }>): Promise<any | null> {
+  async update(id: string, data: Partial<SurplusItemUpdateData>): Promise<SurplusItem | null> {
     const doc = await this.model.findOneAndUpdate(
       { id },
       { $set: data },
       { new: true },
     ).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? this.mapper.toDomain(doc as SurplusItemDocument) : null;
   }
 }

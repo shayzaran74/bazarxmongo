@@ -74,7 +74,7 @@ export class MongoCatalogProductRepository
     gtin?: string;
     status?: string;
   }): Promise<CatalogProduct> {
-    const id = 'cp-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'cp-' + crypto.randomUUID();
     const doc = new this.model({
       _id: id,
       id,

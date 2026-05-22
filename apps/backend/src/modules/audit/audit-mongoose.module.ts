@@ -3,14 +3,13 @@
 // Not: Bu modül Prisma yerine Mongoose kullanır. Test için.
 // TODO: strict typing — codegen
 
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuditLogService } from './application/audit-log.service';
 import { LogsAdminController } from './presentation/logs-admin.controller';
 import { AuditLog, AuditLogSchema } from '@barterborsa/shared-persistence/schemas/backend/auditLog.schema';
 import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audit/audit-log.repository';
 
-@Global()
 @Module({
   imports: [
     MongooseModule.forFeature([

@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/notification.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export interface INotification {
   _id?: string;
@@ -34,4 +35,4 @@ NotificationSchema.index({ userId: 1 });
 NotificationSchema.index({ userId: 1, isRead: 1 });
 NotificationSchema.index({ createdAt: -1 });
 
-export const Notification = model<INotification>('Notification', NotificationSchema);
+export const Notification = createModelProxy<INotification>('Notification', NotificationSchema);

@@ -6,6 +6,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { MongoOrderRepository } from '../../infrastructure/persistence/mongo-order.repository';
 
+type EscrowReleaseResult = { success: boolean; error?: string; holdId?: string };
+
 @Injectable()
 export class OrderEscrowWorker {
   private static readonly serviceName = 'OrderEscrowWorker';
@@ -45,7 +47,7 @@ export class OrderEscrowWorker {
 
         this.logger.debug(`Sipariş ${order.getProps().orderNumber.value} için fonlar serbest bırakılıyor (HoldId: ${escrowHoldId})`);
 
-        const result: any = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
+        const result: EscrowReleaseResult = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
 
         if (result.success) {
           await this.orderRepo.updateOne(

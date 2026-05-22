@@ -5,11 +5,11 @@ import { useAuthStore } from '~/stores/auth'
 export const useMyAuctions = () => {
   const auctionStore = useAuctionStore()
   const authStore = useAuthStore()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
   const activeTab = ref<'created' | 'bids' | 'won'>('created')
   const showCreateModal = ref(false)
-  const editingAuction = ref<any>(null)
+  const editingAuction = ref<Record<string, unknown> | null>(null)
   const loadingCreated = ref(false)
   const loadingBids = ref(false)
 
@@ -28,7 +28,7 @@ export const useMyAuctions = () => {
     loadingBids.value = false
   }
 
-  const editAuction = (auction: any) => {
+  const editAuction = (auction: Record<string, unknown>) => {
     editingAuction.value = auction
     showCreateModal.value = true
   }
@@ -38,8 +38,8 @@ export const useMyAuctions = () => {
       await auctionStore.endAuction(auctionId)
       $toast.success('Artırma sonlandırıldı')
       await loadCreated()
-    } catch (e: any) {
-      $toast.error(e?.data?.message || 'Sonlandırılamadı')
+    } catch (e: unknown) {
+      $toast.error((e as { data?: { message?: string } }).data?.message || 'Sonlandırılamadı')
     }
   }
 

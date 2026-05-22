@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IBadgeRule {
   _id?: string;
@@ -36,4 +37,4 @@ export const BadgeRuleSchema = new Schema<IBadgeRule>({
 BadgeRuleSchema.index({ code: 1 }, { unique: true });
 BadgeRuleSchema.index({ isActive: 1 });
 
-export const BadgeRule = model<IBadgeRule>('BadgeRule', BadgeRuleSchema);
+export const BadgeRule = createModelProxy<IBadgeRule>('BadgeRule', BadgeRuleSchema);

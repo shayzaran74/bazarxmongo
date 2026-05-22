@@ -1,9 +1,11 @@
 // apps/backend/src/modules/barter/domain/repositories/category.repository.interface.ts
 
+import { ICategory } from '@barterborsa/shared-persistence';
+
 export interface ICategoryRepository {
-  findById(id: string): Promise<any | null>;
-  findAll(): Promise<any[]>;
-  findRootCategories(): Promise<any[]>;
+  findById(id: string): Promise<ICategory | null>;
+  findAll(): Promise<ICategory[]>;
+  findRootCategories(): Promise<ICategory[]>;
   create(data: {
     name: string;
     slug?: string;
@@ -11,7 +13,7 @@ export interface ICategoryRepository {
     parentId?: string;
     order?: number;
     isActive?: boolean;
-  }): Promise<any>;
+  }): Promise<ICategory>;
   update(id: string, data: Partial<{
     name: string;
     slug?: string;
@@ -19,7 +21,7 @@ export interface ICategoryRepository {
     parentId?: string;
     order?: number;
     isActive?: boolean;
-  }>): Promise<any>;
+  }>): Promise<ICategory>;
   delete(id: string): Promise<void>;
-  findWithChildren(parentId: string | null): Promise<any[]>;
+  findWithChildren(parentId: string | null): Promise<ICategory[]>;
 }

@@ -16,7 +16,7 @@ export interface CategoryProps {
   type: CategoryType;
   badgeText?: string;
   badgeColor?: string;
-  attributeTemplate?: any;
+  attributeTemplate?: Record<string, unknown>;
   isFeatured: boolean;
 }
 

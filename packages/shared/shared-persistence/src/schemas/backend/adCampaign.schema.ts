@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/adCampaign.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const AdCampaignStatus = ['PENDING','ACTIVE','PAUSED','REJECTED','COMPLETED'] as const;
 export type AdCampaignStatusType = typeof AdCampaignStatus[number];
@@ -71,4 +72,4 @@ AdCampaignSchema.index({ adType: 1 });
 AdCampaignSchema.index({ platform: 1 });
 AdCampaignSchema.index({ vendorId: 1 });
 
-export const AdCampaign = model<IAdCampaign>('AdCampaign', AdCampaignSchema);
+export const AdCampaign = createModelProxy<IAdCampaign>('AdCampaign', AdCampaignSchema);

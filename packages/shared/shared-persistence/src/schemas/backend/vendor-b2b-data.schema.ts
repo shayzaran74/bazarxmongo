@@ -1,8 +1,9 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/vendor-b2b-data.schema.ts
 // VendorB2BData — Prisma → Mongoose migration (ADR-005 Faz 2a)
 // Document-model decision: Embed (Vendor içinde 1:1)
 
-import { Schema, model, Types, models } from 'mongoose';
+import { Schema, Types, models } from 'mongoose';
 
 export const B2BTier = ['NONE', 'BRONZE', 'SILVER', 'GOLD'] as const;
 export type B2BTierType = typeof B2BTier[number];
@@ -54,4 +55,4 @@ export const VendorB2BDataSchema = new Schema<IVendorB2BData>({
 VendorB2BDataSchema.index({ vendorId: 1 }, { unique: true });
 VendorB2BDataSchema.index({ subscriptionStatus: 1, subscriptionExpiresAt: 1 });
 
-export const VendorB2BData = models.VendorB2BData || model<IVendorB2BData>('VendorB2BData', VendorB2BDataSchema);
+export const VendorB2BData = models.VendorB2BData || createModelProxy<IVendorB2BData>('VendorB2BData', VendorB2BDataSchema);

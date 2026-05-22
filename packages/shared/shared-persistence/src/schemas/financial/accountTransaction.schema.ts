@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/financial/accountTransaction.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const TransactionType = [
   'CREDIT', 'DEBIT', 'HOLD', 'RELEASE', 'REFUND', 'FEE', 'COMMISSION',
@@ -54,4 +55,4 @@ AccountTransactionSchema.index({ accountId: 1, createdAt: -1 });
 AccountTransactionSchema.index({ referenceId: 1, referenceType: 1 });
 AccountTransactionSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
-export const AccountTransaction = model<IAccountTransaction>('AccountTransaction', AccountTransactionSchema);
+export const AccountTransaction = createModelProxy<IAccountTransaction>('AccountTransaction', AccountTransactionSchema);

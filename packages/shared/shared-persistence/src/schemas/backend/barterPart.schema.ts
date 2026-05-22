@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const BarterPartStatus = ['PENDING','SHIPPED','DELIVERED','CONFIRMED','DISPUTED'] as const;
 export type BarterPartStatusType = typeof BarterPartStatus[number];
@@ -47,4 +48,4 @@ export const BarterPartSchema = new Schema<IBarterPart>({
 BarterPartSchema.index({ senderId: 1 });
 BarterPartSchema.index({ swapSessionId: 1, partNumber: 1 }, { unique: true });
 
-export const BarterPart = model<IBarterPart>('BarterPart', BarterPartSchema);
+export const BarterPart = createModelProxy<IBarterPart>('BarterPart', BarterPartSchema);

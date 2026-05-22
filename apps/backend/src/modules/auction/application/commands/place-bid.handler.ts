@@ -96,7 +96,13 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
 
     return {
       success: true,
-      data: bid,
+      data: {
+        id: bid.id,
+        auctionId: bid.getProps().auctionId,
+        userId: bid.getProps().userId,
+        amount: bid.getProps().amount,
+        createdAt: bid.getProps().createdAt,
+      },
       currentPrice: String(auction.getProps().currentPrice),
     };
   }

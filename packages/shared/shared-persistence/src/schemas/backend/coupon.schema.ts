@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/coupon.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface ICoupon {
   _id?: string;
@@ -33,4 +34,4 @@ export const CouponSchema = new Schema<ICoupon>({
 CouponSchema.index({ code: 1 }, { unique: true });
 CouponSchema.index({ isActive: 1, expiresAt: 1 });
 
-export const Coupon = model<ICoupon>('Coupon', CouponSchema);
+export const Coupon = createModelProxy<ICoupon>('Coupon', CouponSchema);

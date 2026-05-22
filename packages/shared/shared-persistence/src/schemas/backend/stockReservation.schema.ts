@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IStockReservation {
   _id?: string;
@@ -29,4 +30,4 @@ StockReservationSchema.index({ stockId: 1 });
 StockReservationSchema.index({ orderId: 1 });
 StockReservationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
-export const StockReservation = model<IStockReservation>('StockReservation', StockReservationSchema);
+export const StockReservation = createModelProxy<IStockReservation>('StockReservation', StockReservationSchema);

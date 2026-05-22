@@ -57,7 +57,7 @@ export class UpdateAdminProductHandler implements ICommandHandler<UpdateAdminPro
       await ProductMedia.deleteMany({ productId }).exec();
       if (data.productImages.length > 0) {
         const mediaDocs = data.productImages.map((url: string, index: number) => ({
-          id: 'media-' + Date.now() + '-' + index,
+          id: 'media-' + crypto.randomUUID(),
           productId,
           url,
           type: 'IMAGE',

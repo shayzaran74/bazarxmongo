@@ -2,7 +2,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useAdminChatStore } from '~/stores/adminChat'
 import type { AdminMessage, AdminChatRoom } from '@barterborsa/shared-types'
 
-export const useAdminChatWindow = (props: any, emit: any) => {
+export const useAdminChatWindow = (props: { messages: AdminMessage[]; room: { userAId?: string } }, emit: { (e: 'system-message', content: string): void; (e: 'warning', data: { reason: string; note: string }): void; (e: 'freeze', data: { reason: string; note: string }): void; (e: 'unfreeze', data: { note: string }): void }) => {
   const store = useAdminChatStore()
   const scrollContainer = ref<HTMLElement | null>(null)
 
@@ -23,8 +23,8 @@ export const useAdminChatWindow = (props: any, emit: any) => {
   const typingIndicator = computed(() => {
     const users = store.typingUsers
     const typingList = Object.values(users)
-      .filter((data: any) => data.expires > Date.now())
-      .map((data: any) => data.username)
+      .filter((data: { expires: number }) => data.expires > Date.now())
+      .map((data: { username: string }) => data.username)
 
     if (typingList.length === 0) return null
     if (typingList.length === 1) return `${typingList[0]} YAZIYOR...`

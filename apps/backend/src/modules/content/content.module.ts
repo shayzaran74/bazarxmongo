@@ -61,6 +61,8 @@ import {
   HomeQuadCardItemSchema,
 } from '@barterborsa/shared-persistence';
 
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
 const CommandHandlers = [
   CreateHomeBannerHandler,
   CreateQuadCardHandler,
@@ -116,6 +118,7 @@ import { SettingsController } from './presentation/settings.controller';
       { name: 'SystemSetting',   schema: SystemSettingSchema },
       { name: 'HomeQuadCardItem',schema: HomeQuadCardItemSchema },
     ]),
+    AuditMongooseModule,
   ],
   controllers: [
     HomeBannerController,

@@ -20,6 +20,11 @@ export class CreateShipmentHandler implements ICommandHandler<CreateShipmentComm
   async execute(command: CreateShipmentCommand): Promise<Result<string>> {
     const { dto } = command;
 
+    const existingShipments = await this.shipmentRepository.findByOrderId(dto.orderId);
+    if (existingShipments.length > 0) {
+      return Ok(existingShipments[0].id);
+    }
+
     const senderAddress = ShippingAddress.create(dto.senderAddress);
     const receiverAddress = ShippingAddress.create(dto.receiverAddress);
     const packageInfo = dto.packageInfo ? Dimensions.create(dto.packageInfo) : undefined;

@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/helpArticle.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const HelpArticleStatus = ['DRAFT','PUBLISHED','ARCHIVED'] as const;
 export type HelpArticleStatusType = typeof HelpArticleStatus[number];
@@ -52,4 +53,4 @@ export const HelpArticleSchema = new Schema<IHelpArticle>({
 HelpArticleSchema.index({ platform: 1, categoryId: 1, status: 1 });
 HelpArticleSchema.index({ slug: 1 }, { unique: true });
 
-export const HelpArticle = model<IHelpArticle>('HelpArticle', HelpArticleSchema);
+export const HelpArticle = createModelProxy<IHelpArticle>('HelpArticle', HelpArticleSchema);

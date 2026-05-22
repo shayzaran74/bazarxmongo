@@ -18,6 +18,16 @@ const SERVICE_FEE_RATE = 0.08;
 const KDV_RATE        = 0.20;
 const BB_GROUP_RATE   = 0.06;
 
+import { Types } from 'mongoose';
+
+interface SubscriptionLeanDoc  { plan?: { monthlyFee?: Types.Decimal128 | number } }
+interface OrderLeanDoc         { totalAmount?: Types.Decimal128 | number }
+interface MenuPurchaseLeanDoc  { paidAmount?: Types.Decimal128 | number }
+interface AdCampaignLeanDoc    { budget?: Types.Decimal128 | number }
+interface VendorLeanDoc        { tier?: string }
+interface SwapSessionLeanDoc   { tradeOffer?: { cashAmount?: Types.Decimal128 | number } }
+interface BlindPoolEntryLeanDoc { listing?: { price?: Types.Decimal128 | number }; quantity?: Types.Decimal128 | number }
+
 export interface PlatformRevenueDetail {
   aidatGeliri:     number;
   saticiKomisyon:  number;
@@ -91,20 +101,21 @@ export class RevenueReportingService {
     const subs = await UserSubscription.find({ status: 'ACTIVE', startDate: { $gte: start, $lt: end } })
       .populate('plan')
       .lean();
-    const aidatGeliri = subs.reduce((s, sub: any) => s + Number(sub.plan?.monthlyFee ?? 0), 0);
+    const aidatGeliri = (subs as SubscriptionLeanDoc[])
+      .reduce((s, sub) => s + Number(sub.plan?.monthlyFee?.toString() ?? 0), 0);
 
     // Satıcı komisyon geliri — sipariş bazlı %6-12
     const orders = await Order.find({ status: 'DELIVERED', createdAt: { $gte: start, $lt: end } })
       .select('totalAmount')
       .lean();
-    const toplamCiro     = orders.reduce((s, o: any) => s + Number(o.totalAmount ?? 0), 0);
+    const toplamCiro     = (orders as OrderLeanDoc[]).reduce((s, o) => s + Number(o.totalAmount?.toString() ?? 0), 0);
     const saticiKomisyon = toplamCiro * 0.08; // ortalama %8
 
     // Platform hizmet bedeli — %8 + %20 KDV
     const menuPurchases = await MenuPurchase.find({ createdAt: { $gte: start, $lt: end }, status: 'REDEEMED' })
       .select('paidAmount')
       .lean();
-    const menuCiro   = menuPurchases.reduce((s, m: any) => s + Number(m.paidAmount ?? 0), 0);
+    const menuCiro   = (menuPurchases as MenuPurchaseLeanDoc[]).reduce((s, m) => s + Number(m.paidAmount?.toString() ?? 0), 0);
     const hizmetBase = menuCiro * SERVICE_FEE_RATE;
     const hizmetBedeli = hizmetBase + hizmetBase * KDV_RATE;
 
@@ -112,7 +123,7 @@ export class RevenueReportingService {
     const adBudgets = await AdCampaign.find({ platform: 'BAZARX', adStatus: 'ACTIVE', createdAt: { $gte: start, $lt: end } })
       .select('budget')
       .lean();
-    const reklamGeliri = adBudgets.reduce((s, a: any) => s + Number(a.budget ?? 0), 0);
+    const reklamGeliri = (adBudgets as AdCampaignLeanDoc[]).reduce((s, a) => s + Number(a.budget?.toString() ?? 0), 0);
 
     const toplamBrut = aidatGeliri + saticiKomisyon + hizmetBedeli + reklamGeliri;
     return { aidatGeliri, saticiKomisyon, hizmetBedeli, reklamGeliri, toplamBrut };
@@ -128,14 +139,15 @@ export class RevenueReportingService {
     const ANNUAL_FEES: Record<string, number> = {
       CORE: 12000, PRIME: 48000, ELITE: 120000, APEX: 300000,
     };
-    const aidatGeliri = b2bVendors.reduce((s, v: any) => s + (ANNUAL_FEES[v.tier] ?? 0) / 12, 0);
+    const aidatGeliri = (b2bVendors as VendorLeanDoc[])
+      .reduce((s, v) => s + (ANNUAL_FEES[v.tier ?? ''] ?? 0) / 12, 0);
 
     // Takas komisyon geliri — tamamlanan swap session'lar
     const sessions = await SwapSession.find({ status: 'COMPLETED', createdAt: { $gte: start, $lt: end } })
       .populate('tradeOffer')
       .lean();
-    const saticiKomisyon = sessions.reduce((s, ss: any) => {
-      const val = Number(ss.tradeOffer?.cashAmount ?? 0);
+    const saticiKomisyon = (sessions as SwapSessionLeanDoc[]).reduce((s, ss) => {
+      const val = Number(ss.tradeOffer?.cashAmount?.toString() ?? 0);
       return s + val * 0.09; // ortalama %9 (grup dışı standart)
     }, 0);
 
@@ -143,7 +155,7 @@ export class RevenueReportingService {
     const adBudgets = await AdCampaign.find({ platform: 'BARTERBORSA', adStatus: 'ACTIVE', createdAt: { $gte: start, $lt: end } })
       .select('budget')
       .lean();
-    const reklamGeliri = adBudgets.reduce((s, a: any) => s + Number(a.budget ?? 0), 0);
+    const reklamGeliri = (adBudgets as AdCampaignLeanDoc[]).reduce((s, a) => s + Number(a.budget?.toString() ?? 0), 0);
 
     const toplamBrut = aidatGeliri + saticiKomisyon + reklamGeliri;
     return { aidatGeliri, saticiKomisyon, hizmetBedeli: 0, reklamGeliri, toplamBrut };
@@ -163,9 +175,9 @@ export class RevenueReportingService {
     const poolRequests = await BlindPoolEntry.find({ createdAt: { $gte: start, $lt: end } })
       .populate('listing')
       .lean();
-    const saticiKomisyon = poolRequests.reduce((s, r: any) => {
-      const price = Number(r.listing?.price ?? 0);
-      return s + price * Number(r.quantity ?? 0) * BB_GROUP_RATE;
+    const saticiKomisyon = (poolRequests as BlindPoolEntryLeanDoc[]).reduce((s, r) => {
+      const price = Number(r.listing?.price?.toString() ?? 0);
+      return s + price * Number(r.quantity?.toString() ?? 0) * BB_GROUP_RATE;
     }, 0);
 
     const toplamBrut = aidatGeliri + saticiKomisyon;

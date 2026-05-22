@@ -28,11 +28,6 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<{ user?: { role: string; email: string } }>();
     const user = request?.user;
-    
-    // Debug log for 403 issues
-    if (!user || !user.role || !requiredRoles.includes(user.role)) {
-      console.log(`[RolesGuard] Access Denied: User=${user?.email}, Role=${user?.role}, Required=${requiredRoles}`);
-    }
 
     if (!user || !user.role) {
       return false;

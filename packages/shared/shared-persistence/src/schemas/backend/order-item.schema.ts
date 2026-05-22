@@ -1,10 +1,11 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/order-item.schema.ts
 // OrderItem — Prisma → Mongoose migration (ADR-005 Faz 2a, Critical)
 // Document-model decision: Embed (Order içinde) — §1b embed kararı
 // Immutable snapshot — sipariş tamamlandıktan sonra değiştirilmez
 // MAX_ITEMS_PER_ORDER = 100 guard Order.addItem() seviyesinde uygulanır
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface IOrderItem {
   _id?: string;
@@ -32,4 +33,4 @@ export const OrderItemSchema = new Schema<IOrderItem>({
 // Kullanım: OrderSchema.add({ items: [OrderItemSchema] })
 // veya Order.doc/items.push(...) ile ekleme
 
-export const OrderItem = model<IOrderItem>('OrderItem', OrderItemSchema);
+export const OrderItem = createModelProxy<IOrderItem>('OrderItem', OrderItemSchema);

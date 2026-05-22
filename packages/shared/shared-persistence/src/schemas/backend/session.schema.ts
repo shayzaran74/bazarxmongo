@@ -1,7 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
-
-// Session — generated from Prisma schema
-// TODO: strict typing — codegen
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface ISession {
   _id?: string;
@@ -28,10 +26,10 @@ export const SessionSchema = new Schema<ISession>({
   collection: 'sessions',
 });
 
-// Composite index
-SessionSchema.index({ tokenHash: 1 });
+// Compound index for query performance on { userId, tokenHash }
+SessionSchema.index({ userId: 1, tokenHash: 1 });
 
-// Composite index
-SessionSchema.index({ userId: 1 });
+// TTL index to automatically remove sessions older than 30 days
+SessionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 });
 
-export const Session = model<ISession>('Session', SessionSchema);
+export const Session = createModelProxy<ISession>('Session', SessionSchema);

@@ -28,6 +28,7 @@ export interface HomeLottery extends Product {
 export interface GroupBuyDTO extends Product {
     endDate: string;
     currentQuantity: number;
+    targetQuantity: number;
     tiers: GroupBuyTier[];
     title?: string;
     Product?: Product;

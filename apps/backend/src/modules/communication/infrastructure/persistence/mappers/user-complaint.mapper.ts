@@ -3,28 +3,29 @@
 
 import { Injectable } from '@nestjs/common';
 import { IUserComplaint } from '@barterborsa/shared-persistence/schemas/backend/userComplaint.schema';
-import { UserComplaint } from '../../../domain/entities/user-complaint.entity';
+import { UserComplaint, UserComplaintProps } from '../../../domain/entities/user-complaint.entity';
+import { ComplaintStatus } from '../../../domain/enums/complaint-status.enum';
 
 export interface UserComplaintDocument extends IUserComplaint {
   _id?: string;
-  status?: string;
 }
 
 @Injectable()
 export class UserComplaintMapper {
   static toDomain(doc: UserComplaintDocument): UserComplaint {
-    return (UserComplaint as any).createFrom({
+    const props: UserComplaintProps = {
       reporterId: doc.reporterId,
       subjectId: doc.subjectId,
       reason: doc.reason,
       description: doc.description ?? undefined,
-      status: (doc.status as any) ?? 'PENDING',
+      status: (doc as { status?: string }).status as ComplaintStatus ?? ComplaintStatus.PENDING,
       adminNote: doc.adminNote ?? undefined,
       resolvedAt: doc.resolvedAt ?? undefined,
       resolvedBy: doc.resolvedBy ?? undefined,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
-    }, doc.id);
+    };
+    return UserComplaint.createFrom(props, doc.id);
   }
 
   static toPersistence(domain: UserComplaint): Record<string, unknown> {

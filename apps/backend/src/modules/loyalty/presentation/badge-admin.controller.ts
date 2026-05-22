@@ -52,7 +52,7 @@ export class BadgeAdminController {
   @ApiOperation({ summary: 'Create a new badge rule' })
   @Post()
   async createBadgeRule(@Body() body: CreateBadgeRuleDto) {
-    const id = 'badgerule-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'badgerule-' + crypto.randomUUID();
     const rule = await this.badgeRuleModel.create({
       _id: id,
       id,

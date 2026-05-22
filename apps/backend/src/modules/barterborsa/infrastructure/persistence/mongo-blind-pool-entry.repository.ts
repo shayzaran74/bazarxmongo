@@ -31,7 +31,7 @@ export class MongoBlindPoolEntryRepository {
     listingId: string;
     quantity: number;
   }): Promise<BlindPoolEntryDocument> {
-    const id = 'bpe-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'bpe-' + crypto.randomUUID();
     const doc = new this.model({
       _id: id,
       id,

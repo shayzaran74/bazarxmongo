@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // SSOToken — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -34,4 +35,4 @@ SSOTokenSchema.index({ userId: 1 });
 // Unique constraint
 SSOTokenSchema.index({ provider: 1, providerId: 1 }, { unique: true });
 
-export const SSOToken = model<ISSOToken>('SSOToken', SSOTokenSchema);
+export const SSOToken = createModelProxy<ISSOToken>('SSOToken', SSOTokenSchema);

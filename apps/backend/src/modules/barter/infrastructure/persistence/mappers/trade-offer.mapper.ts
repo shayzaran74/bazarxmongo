@@ -8,16 +8,23 @@ import { TradeOffer, TradeOfferProps } from '../../../domain/entities/trade-offe
 import { TradeOfferItem } from '../../../domain/entities/trade-offer-item.entity';
 import { TradeOfferStatus } from '../../../domain/enums/trade-offer-status.enum';
 
+interface TradeOfferItemDoc {
+  quantity?: number;
+  estimatedValue?: number;
+  listingId?: string;
+  surplusItemId?: string;
+}
+
 export interface TradeOfferDocument extends ITradeOffer {
   _id?: string;
-  offeredItems?: any[];
-  requestedItems?: any[];
+  offeredItems?: TradeOfferItemDoc[];
+  requestedItems?: TradeOfferItemDoc[];
 }
 
 @Injectable()
 export class TradeOfferMapper {
   toDomain(doc: TradeOfferDocument): TradeOffer {
-    const mapItem = (item: any): TradeOfferItem =>
+    const mapItem = (item: TradeOfferItemDoc): TradeOfferItem =>
       TradeOfferItem.create(
         Number(item.quantity) || 0,
         Number(item.estimatedValue) || 0,

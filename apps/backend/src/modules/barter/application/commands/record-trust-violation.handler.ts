@@ -26,7 +26,7 @@ export class RecordTrustViolationHandler implements ICommandHandler<RecordTrustV
 
     if (!trustScore) {
       trustScore = {
-        id: 'trust-' + Date.now(),
+        id: 'trust-' + crypto.randomUUID(),
         vendorId,
         score: Types.Decimal128.fromString('100'),
         tradingPerformance: Types.Decimal128.fromString('100'),

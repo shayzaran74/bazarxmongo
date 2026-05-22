@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/invoiceItem.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export interface IInvoiceItem {
   _id?: string;
@@ -28,4 +29,4 @@ export const InvoiceItemSchema = new Schema<IInvoiceItem>({
 
 InvoiceItemSchema.index({ invoiceId: 1 });
 
-export const InvoiceItem = model<IInvoiceItem>('InvoiceItem', InvoiceItemSchema);
+export const InvoiceItem = createModelProxy<IInvoiceItem>('InvoiceItem', InvoiceItemSchema);

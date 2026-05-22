@@ -72,7 +72,7 @@ export class AdvanceWinnerHandler implements ICommandHandler<AdvanceWinnerComman
       try {
         await this.financialGateway.refundFunds(
           previousParticipation.holdId,
-          `auction-advance-refund-${previousParticipation.id}-${Date.now()}`,
+          `auction-advance-refund-${previousParticipation.id}-${crypto.randomUUID()}`,
         );
         await this.auctionRepository.updateParticipationStatus(previousParticipation.id, 'REFUNDED');
       } catch (error: unknown) {

@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export const EcosystemAuditSeverity = ['INFO','WARN','HIGH','CRITICAL'] as const;
 export type EcosystemAuditSeverityType = typeof EcosystemAuditSeverity[number];
@@ -33,4 +34,4 @@ EcosystemAuditLogSchema.index({ vendorId: 1 });
 EcosystemAuditLogSchema.index({ action: 1 });
 EcosystemAuditLogSchema.index({ severity: 1 });
 
-export const EcosystemAuditLog = model<IEcosystemAuditLog>('EcosystemAuditLog', EcosystemAuditLogSchema);
+export const EcosystemAuditLog = createModelProxy<IEcosystemAuditLog>('EcosystemAuditLog', EcosystemAuditLogSchema);

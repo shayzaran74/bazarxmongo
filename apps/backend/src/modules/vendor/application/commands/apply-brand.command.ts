@@ -4,6 +4,10 @@ export interface ApplyBrandDto {
   name: string;
   description?: string;
   aliases?: string[];
+  image?: string;
+  documentUrl?: string;
+  invoiceChainUrl?: string;
+  authorizationUrl?: string;
 }
 
 export class ApplyBrandCommand {

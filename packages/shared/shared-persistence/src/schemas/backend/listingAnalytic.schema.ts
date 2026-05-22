@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export interface IListingAnalytic {
   _id?: string;
@@ -28,4 +29,4 @@ export const ListingAnalyticSchema = new Schema<IListingAnalytic>({
 ListingAnalyticSchema.index({ date: 1 });
 ListingAnalyticSchema.index({ listingId: 1, date: 1 }, { unique: true });
 
-export const ListingAnalytic = model<IListingAnalytic>('ListingAnalytic', ListingAnalyticSchema);
+export const ListingAnalytic = createModelProxy<IListingAnalytic>('ListingAnalytic', ListingAnalyticSchema);

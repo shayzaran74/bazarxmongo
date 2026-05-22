@@ -1,10 +1,12 @@
 // apps/backend/src/modules/vendor/domain/repositories/trust-score.repository.interface.ts
 
+import { ITrustScore } from '@barterborsa/shared-persistence';
+
 export interface ITrustScoreRepository {
-  findByVendorId(vendorId: string): Promise<any | null>;
-  findById(id: string): Promise<any | null>;
-  findAll(): Promise<any[]>;
-  save(score: any): Promise<void>;
+  findByVendorId(vendorId: string): Promise<ITrustScore | null>;
+  findById(id: string): Promise<ITrustScore | null>;
+  findAll(): Promise<ITrustScore[]>;
+  save(score: ITrustScore): Promise<void>;
   delete(id: string): Promise<void>;
   updateScore(vendorId: string, data: {
     score?: number;

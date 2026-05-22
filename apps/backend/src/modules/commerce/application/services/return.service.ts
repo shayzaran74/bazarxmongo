@@ -142,7 +142,7 @@ export class ReturnService {
     // Önce finansal iade — başarısız olursa entity kaydedilmez
     const order = await this.orderRepo.findById(entity.orderId);
     const holdId = order?.escrowHoldId ?? `return-refund-${returnId}`;
-    const idempotencyKey = `return-approve-${returnId}-${Date.now()}`;
+    const idempotencyKey = `return-approve-${returnId}-${crypto.randomUUID()}`;
 
     let refundId: string;
     try {

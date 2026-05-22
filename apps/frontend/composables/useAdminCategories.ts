@@ -1,15 +1,15 @@
 export const useAdminCategories = () => {
   const { $api } = useApi()
-  const { $toast } = useNuxtApp() as any
+  const { $toast } = useNuxtApp()
 
-  const categories = ref<any[]>([])
+  const categories = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const showModal = ref(false)
-  const editingCategory = ref<any>(null)
+  const editingCategory = ref<Record<string, unknown> | null>(null)
   const expandedCategories = ref<string[]>([])
   const imagePreview = ref<string | null>(null)
 
-  const categoryForm = ref<any>({
+  const categoryForm = ref<Record<string, unknown>>({
     id: '',
     name: '',
     slug: '',
@@ -24,7 +24,7 @@ export const useAdminCategories = () => {
   const fetchCategories = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/listings/categories')
+      const res = await $api<{ data: Record<string, unknown>[] }>('/api/v1/listings/categories')
       categories.value = res.data || []
     } catch {
       $toast.error('Kategoriler yüklenemedi')
@@ -39,7 +39,7 @@ export const useAdminCategories = () => {
     else expandedCategories.value.splice(index, 1)
   }
 
-  const handleFileUpload = async (event: any) => {
+  const handleFileUpload = async (event: Event & { target: { files?: FileList } }) => {
     const file = event.target.files?.[0]
     if (!file) return
     
@@ -54,7 +54,7 @@ export const useAdminCategories = () => {
     data.append('file', file)
     
     try {
-      const res = await $api<any>('/api/v1/upload?subPath=categories', {
+      const res = await $api<{ success: boolean; data?: { url?: string } }>('/api/v1/upload?subPath=categories', {
         method: 'POST',
         body: data
       })

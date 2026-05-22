@@ -32,7 +32,9 @@ export class AuctionMapper {
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
-    return Auction.createFrom(props, doc.id);
+    const domain = Auction.createFrom(props, doc.id);
+    (domain as any)._version = doc.version ?? 1;
+    return domain;
   }
 
   toPersistence(domain: Auction): Record<string, unknown> {
@@ -56,6 +58,7 @@ export class AuctionMapper {
       paymentDeadline: props.paymentDeadline,
       createdAt: props.createdAt,
       updatedAt: props.updatedAt,
+      version: domain.version,
     };
   }
 }

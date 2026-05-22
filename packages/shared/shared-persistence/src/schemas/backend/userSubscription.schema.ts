@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // packages/shared/shared-persistence/src/schemas/backend/userSubscription.schema.ts
 
@@ -47,4 +48,4 @@ UserSubscriptionSchema.index({ userId: 1 }, { unique: true });
 // Composite index
 UserSubscriptionSchema.index({ status: 1 });
 
-export const UserSubscription = model<IUserSubscription>('UserSubscription', UserSubscriptionSchema);
+export const UserSubscription = createModelProxy<IUserSubscription>('UserSubscription', UserSubscriptionSchema);

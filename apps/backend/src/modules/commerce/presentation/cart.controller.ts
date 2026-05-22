@@ -54,7 +54,7 @@ export class CartController {
   @UseGuards(JwtAuthGuard)
   async addToCart(@CurrentUser() user: AuthenticatedUser, @Body() dto: AddToCartDto) {
     return this.commandBus.execute(
-      new AddToCartCommand(user.id, dto.listingId, dto.productId, dto.quantity),
+      new AddToCartCommand(user.id, dto.listingId, dto.productId, dto.quantity, dto.campaignId),
     );
   }
 

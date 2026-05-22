@@ -8,6 +8,7 @@ export interface CartItemProps {
   quantity: number;
   variantId?: string;
   addedAt: Date;
+  campaignId?: string;
 }
 
 export class CartItem extends Entity<CartItemProps> {

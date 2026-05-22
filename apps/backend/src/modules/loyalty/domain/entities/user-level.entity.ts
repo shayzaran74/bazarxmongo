@@ -30,6 +30,10 @@ export class UserLevel extends AggregateRoot<UserLevelProps> {
     });
   }
 
+  public static fromPersistence(props: UserLevelProps, id: string): UserLevel {
+    return new UserLevel(props, id);
+  }
+
   public addXp(amount: number): void {
     this.props.currentXp += amount;
     this.props.lifetimeXp += amount;

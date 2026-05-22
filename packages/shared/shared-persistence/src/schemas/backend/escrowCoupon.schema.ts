@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // EscrowCoupon — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -36,4 +37,4 @@ export const EscrowCouponSchema = new Schema<IEscrowCoupon>({
   collection: 'escrow_coupons',
 });
 
-export const EscrowCoupon = model<IEscrowCoupon>('EscrowCoupon', EscrowCouponSchema);
+export const EscrowCoupon = createModelProxy<IEscrowCoupon>('EscrowCoupon', EscrowCouponSchema);

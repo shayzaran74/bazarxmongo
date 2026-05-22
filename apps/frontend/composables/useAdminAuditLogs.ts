@@ -1,10 +1,10 @@
 export const useAdminAuditLogs = () => {
   const { $api } = useApi()
 
-  const logs = ref<any[]>([])
+  const logs = ref<Record<string, unknown>[]>([])
   const loading = ref(false)
   const isModalOpen = ref(false)
-  const selectedLog = ref<any>(null)
+  const selectedLog = ref<Record<string, unknown> | null>(null)
   const actionTypes = ref<string[]>([
     'LOGIN', 'LOGOUT', 'UPDATE_PRODUCT', 'DELETE_USER', 'APPROVE_VENDOR', 'SYSTEM_UPDATE'
   ])
@@ -27,7 +27,7 @@ export const useAdminAuditLogs = () => {
   const fetchLogs = async () => {
     loading.value = true
     try {
-      const res = await $api<any>('/api/v1/admin/audit-logs', {
+      const res = await $api<{ data?: { items: Record<string, unknown>[]; total: number } }>('/api/v1/admin/audit-logs', {
         query: {
           page: filters.page,
           limit: filters.limit,
@@ -50,7 +50,7 @@ export const useAdminAuditLogs = () => {
     fetchLogs()
   }
 
-  const showDetails = (log: any) => {
+  const showDetails = (log: Record<string, unknown>) => {
     selectedLog.value = log
     isModalOpen.value = true
   }

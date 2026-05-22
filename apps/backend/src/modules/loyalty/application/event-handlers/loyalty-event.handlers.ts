@@ -6,15 +6,36 @@ import { EarnXpCommand } from '../commands/earn-xp.command';
 import { CheckMilestonesCommand } from '../commands/check-milestones.command';
 import { XpSourceType } from '../../domain/enums/loyalty.enums';
 
-// Bunlar genelde Integration Event'ler olacak ama burada basitlik için temsil ediliyor
-@EventsHandler() // Gerçek event tipleri eklenecek (örn: OrderCompletedIntegrationEvent)
-export class LoyaltyIntegrationEventHandler implements IEventHandler<any> {
+interface OrderCompletedEvent {
+  type: 'order.completed'
+  userId: string
+  totalAmount: number
+  isFirstOrder: boolean
+  orderId: string
+}
+
+interface SwapCompletedEvent {
+  type: 'swap.completed'
+  userId: string
+  tradeValue: number
+  swapId: string
+}
+
+interface UserLoggedInEvent {
+  type: 'user.logged_in'
+  userId: string
+}
+
+type LoyaltyEvent = OrderCompletedEvent | SwapCompletedEvent | UserLoggedInEvent
+
+@EventsHandler()
+export class LoyaltyIntegrationEventHandler implements IEventHandler<LoyaltyEvent> {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly xpCalc: XpCalculatorService
   ) {}
 
-  async handle(event: any) {
+  async handle(event: LoyaltyEvent) {
     if (event.type === 'order.completed') {
       const xp = this.xpCalc.calculateOrderXp(event.totalAmount, event.isFirstOrder);
       await this.commandBus.execute(new EarnXpCommand(event.userId, xp, XpSourceType.ORDER, event.orderId));

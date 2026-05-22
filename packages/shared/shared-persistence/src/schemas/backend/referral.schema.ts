@@ -1,4 +1,5 @@
-import { Schema, model } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema } from 'mongoose';
 
 export interface IReferral {
   _id?: string;
@@ -31,4 +32,4 @@ ReferralSchema.index({ referrerId: 1 });
 ReferralSchema.index({ refereeId: 1 });
 ReferralSchema.index({ referralCode: 1 }, { unique: true });
 
-export const Referral = model<IReferral>('Referral', ReferralSchema);
+export const Referral = createModelProxy<IReferral>('Referral', ReferralSchema);

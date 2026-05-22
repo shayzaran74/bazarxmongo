@@ -129,4 +129,17 @@ export class Auction extends AggregateRoot<AuctionProps> {
     }
     this.transitionTo(AuctionStatus.CANCELLED);
   }
+
+  public updateProps(partial: Partial<Pick<AuctionProps,
+    'startingPrice' | 'minBidIncrement' | 'participationDeposit' |
+    'startTime' | 'endTime' | 'status'
+  >>): void {
+    if (partial.startingPrice !== undefined) this.props.startingPrice = partial.startingPrice;
+    if (partial.minBidIncrement !== undefined) this.props.minBidIncrement = partial.minBidIncrement;
+    if (partial.participationDeposit !== undefined) this.props.participationDeposit = partial.participationDeposit;
+    if (partial.startTime !== undefined) this.props.startTime = partial.startTime;
+    if (partial.endTime !== undefined) this.props.endTime = partial.endTime;
+    if (partial.status !== undefined) this.props.status = partial.status;
+    this.props.updatedAt = new Date();
+  }
 }

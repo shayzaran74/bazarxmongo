@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { IUser } from '@barterborsa/shared-persistence';
 import { User as UserModel } from '@barterborsa/shared-persistence';
-import { IUserRepository } from '../../domain/repositories/user.repository.interface';
+import { IUserRepository, UserIdentity } from '../../domain/repositories/user.repository.interface';
 
 @Injectable()
 export class MongoUserRepository implements IUserRepository {
@@ -24,14 +24,14 @@ export class MongoUserRepository implements IUserRepository {
     return obj;
   }
 
-  async findById(id: string): Promise<Record<string, unknown> | null> {
+  async findById(id: string): Promise<UserIdentity | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? this.toUserDomain(doc) : null;
+    return doc ? (doc.toObject() as unknown as UserIdentity) : null;
   }
 
-  async findByEmail(email: string): Promise<Record<string, unknown> | null> {
+  async findByEmail(email: string): Promise<UserIdentity | null> {
     const doc = await this.model.findOne({ email }).exec();
-    return doc ? this.toUserDomain(doc) : null;
+    return doc ? (doc.toObject() as unknown as UserIdentity) : null;
   }
 
   async findByReferralCode(code: string): Promise<any | null> {

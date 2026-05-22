@@ -37,8 +37,7 @@ export class CommissionController {
     const vendor = await this.vendorRepo.findByUserId(user.id);
     if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
 
-    const vendorProps = vendor.getProps();
-    const vendorId = (vendorProps as any).id || vendor.id;
+    const vendorId = vendor.id;
 
     const breakdown = await this.engine.preview({
       vendorId:           vendorId,

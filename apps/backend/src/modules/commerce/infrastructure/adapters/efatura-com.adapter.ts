@@ -70,7 +70,7 @@ export class EfaturaComAdapter implements IEInvoiceProvider {
 
   constructor(private readonly httpService: HttpService) {}
 
-  async generateXml(invoiceData: any): Promise<EInvoiceXmlResult> {
+  async generateXml(invoiceData: UBLInvoiceData): Promise<EInvoiceXmlResult> {
     const data = invoiceData as UBLInvoiceData;
     this.logger.log('e-Fatura XML oluşturuluyor', { invoiceId: data.id });
 
@@ -260,7 +260,7 @@ ${linesXml}
     if (!this.GIB_USER || !this.GIB_PASSWORD) {
       this.logger.warn('GİB API kimlik bilgileri tanımlanmamış, test modu');
       return {
-        einvoiceNumber: `EF${Date.now()}`,
+        einvoiceNumber: `EF${crypto.randomUUID()}`,
         gibStatus: 'TEST_KABUL',
         gibReceiptDate: new Date(),
       };
@@ -291,7 +291,7 @@ ${linesXml}
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
       this.logger.error('GİB gönderim hatası', { error: msg });
       return {
-        einvoiceNumber: `EF${Date.now()}`,
+        einvoiceNumber: `EF${crypto.randomUUID()}`,
         gibStatus: 'GONDERIM_HATASI',
         gibReceiptDate: new Date(),
       };

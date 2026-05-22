@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // AdCampaignProduct — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -23,4 +24,4 @@ export const AdCampaignProductSchema = new Schema<IAdCampaignProduct>({
 // Unique constraint
 AdCampaignProductSchema.index({ adCampaignId: 1, listingId: 1 }, { unique: true });
 
-export const AdCampaignProduct = model<IAdCampaignProduct>('AdCampaignProduct', AdCampaignProductSchema);
+export const AdCampaignProduct = createModelProxy<IAdCampaignProduct>('AdCampaignProduct', AdCampaignProductSchema);

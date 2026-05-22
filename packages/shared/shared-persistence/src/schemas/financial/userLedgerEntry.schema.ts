@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const LedgerEntryStatus = ['PENDING','COMPLETED','FAILED','REVERSED'] as const;
 export type LedgerEntryStatusType = typeof LedgerEntryStatus[number];
@@ -33,4 +34,4 @@ export const UserLedgerEntrySchema = new Schema<IUserLedgerEntry>({
 UserLedgerEntrySchema.index({ userId: 1, createdAt: -1 });
 UserLedgerEntrySchema.index({ referenceId: 1 });
 
-export const UserLedgerEntry = model<IUserLedgerEntry>('UserLedgerEntry', UserLedgerEntrySchema);
+export const UserLedgerEntry = createModelProxy<IUserLedgerEntry>('UserLedgerEntry', UserLedgerEntrySchema);

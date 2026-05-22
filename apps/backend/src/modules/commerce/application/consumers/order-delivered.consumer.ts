@@ -5,6 +5,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EInvoiceGeneratorService } from '../services/einvoice-generator.service';
 
+interface OrderDeliveredMessage {
+  orderId: string;
+  invoiceData: Parameters<EInvoiceGeneratorService['onOrderDelivered']>[1];
+}
+
 @Injectable()
 export class OrderDeliveredConsumer {
   private readonly logger = new Logger(OrderDeliveredConsumer.name);
@@ -15,7 +20,7 @@ export class OrderDeliveredConsumer {
    * RabbitMQ queue: order.status.delivered
    * Mesaj format: { orderId, invoiceData }
    */
-  async handleOrderDelivered(message: any): Promise<void> {
+  async handleOrderDelivered(message: OrderDeliveredMessage): Promise<void> {
     try {
       const { orderId, invoiceData } = message;
 

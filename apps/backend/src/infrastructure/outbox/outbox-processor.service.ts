@@ -45,29 +45,39 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
     this.isProcessing = true;
 
     try {
-      const pendingMessages = await OutboxMessage.find({
-        status: 'PENDING',
-        retryCount: { $lt: 3 },
-      })
-        .sort({ createdAt: 1 })
-        .limit(this.BATCH_SIZE)
-        .lean();
+      let processedCount = 0;
+      while (processedCount < this.BATCH_SIZE) {
+        const msg = await OutboxMessage.findOneAndUpdate(
+          {
+            status: 'PENDING',
+            $expr: {
+              $lt: ['$retryCount', { $ifNull: ['$maxRetries', 3] }]
+            }
+          },
+          {
+            $set: { status: 'PROCESSING' },
+          },
+          {
+            sort: { createdAt: 1 },
+            new: true,
+            lean: true,
+          },
+        );
 
-      for (const msg of pendingMessages) {
-        await this.processMessage(msg);
+        if (!msg) {
+          break;
+        }
+
+        await this.processMessage(msg as any);
+        processedCount++;
       }
     } finally {
       this.isProcessing = false;
     }
   }
 
-  private async processMessage(msg: { _id: string; exchange: string; routingKey: string; payload: unknown; retryCount: number }): Promise<void> {
+  private async processMessage(msg: { _id: string; exchange: string; routingKey: string; payload: unknown; retryCount: number; maxRetries?: number }): Promise<void> {
     try {
-      await OutboxMessage.updateOne(
-        { _id: msg._id },
-        { $set: { status: 'PROCESSING' } }
-      );
-
       await this.rabbitMQ.publish(msg.exchange, msg.routingKey, msg.payload);
 
       await OutboxMessage.updateOne(
@@ -81,18 +91,25 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+      const maxRetries = msg.maxRetries ?? 3;
+      const nextRetryCount = msg.retryCount + 1;
+      const status = nextRetryCount >= maxRetries ? 'FAILED' : 'PENDING';
 
       await OutboxMessage.updateOne(
         { _id: msg._id },
         {
-          $set: { status: 'PENDING', error: errorMessage },
+          $set: { status, error: errorMessage },
           $inc: { retryCount: 1 },
         }
       );
 
-      this.logger.warn(`Outbox mesajı işlenemedi: ${msg._id}, tekrar deneme: ${msg.retryCount + 1}`, {
-        error: errorMessage,
-      });
+      if (status === 'FAILED') {
+        this.logger.error(`Outbox mesajı kalıcı olarak BAŞARISIZ oldu: ${msg._id}, exchange: ${msg.exchange}, routingKey: ${msg.routingKey}. Hata: ${errorMessage}`);
+      } else {
+        this.logger.warn(`Outbox mesajı işlenemedi: ${msg._id}, tekrar deneme: ${nextRetryCount}/${maxRetries}`, {
+          error: errorMessage,
+        });
+      }
     }
   }
 }

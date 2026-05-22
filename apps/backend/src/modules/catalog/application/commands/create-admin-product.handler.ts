@@ -26,7 +26,7 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
       throw new BadRequestException('Ürün adı gereklidir');
     }
 
-    const name = data.name || data.title;
+    const name = (data.name || data.title) as string;
     const baseSlug = name.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
@@ -71,7 +71,7 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
     const vendorId = this.systemVendorService.getSystemVendorId();
 
     if (data.price !== undefined || data.stock !== undefined) {
-      const id = 'listing-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+      const id = 'listing-' + crypto.randomUUID();
       await Listing.create({
         id,
         catalogProductId: catalogProduct.id,

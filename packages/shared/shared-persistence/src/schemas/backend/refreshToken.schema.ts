@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // RefreshToken — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -29,4 +30,4 @@ export const RefreshTokenSchema = new Schema<IRefreshToken>({
 // Composite index
 RefreshTokenSchema.index({ userId: 1 });
 
-export const RefreshToken = model<IRefreshToken>('RefreshToken', RefreshTokenSchema);
+export const RefreshToken = createModelProxy<IRefreshToken>('RefreshToken', RefreshTokenSchema);

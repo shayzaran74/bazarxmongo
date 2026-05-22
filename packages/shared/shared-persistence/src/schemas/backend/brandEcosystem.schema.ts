@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // BrandEcosystem — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -36,4 +37,4 @@ export const BrandEcosystemSchema = new Schema<IBrandEcosystem>({
   collection: 'brand_ecosystems',
 });
 
-export const BrandEcosystem = model<IBrandEcosystem>('BrandEcosystem', BrandEcosystemSchema);
+export const BrandEcosystem = createModelProxy<IBrandEcosystem>('BrandEcosystem', BrandEcosystemSchema);

@@ -1,11 +1,13 @@
 // apps/backend/src/modules/auction/lottery.controller.ts
 
 import * as crypto from 'crypto';
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Inject } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { DomainException } from '@barterborsa/shared-core';
 import { FinancialGatewayService } from '../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../audit/application/audit-log.service';
@@ -33,11 +35,14 @@ interface LotteryListQuery {
 @ApiTags('Lotteries')
 @Controller('lotteries')
 export class LotteryController {
+  private readonly logger = new Logger(LotteryController.name);
+
   constructor(
     @Inject('ILotteryRepository') private readonly lotteryRepository: ILotteryRepository,
     @Inject('IListingRepository') private readonly listingRepository: IListingRepository,
     private readonly financialGateway: FinancialGatewayService,
     private readonly auditLog: AuditLogService,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   @Public()
@@ -105,44 +110,19 @@ export class LotteryController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: LotteryParticipateDto,
   ) {
+    const quantity = dto.quantity;
+
+    // ─── Ön kontroller (transaction dışında, fast-fail) ────────────────────────
     const lottery = await this.lotteryRepository.findById(id);
     if (!lottery) return { success: false, message: 'Çekiliş bulunamadı' };
     if (lottery.getProps().status !== 'ACTIVE') return { success: false, message: 'Çekiliş aktif değil' };
     if (new Date() > lottery.getProps().endTime) return { success: false, message: 'Çekiliş süresi dolmuş' };
 
-    const quantity = dto.quantity;
     const props = lottery.getProps();
 
-    // Kullanıcının mevcut bilet sayısı kontrolü
-    const userTicketCount = await this.lotteryRepository.countTickets(id, user.id);
-    if (userTicketCount + quantity > props.maxTicketsPerUser) {
-      return {
-        success: false,
-        message: `Kişi başı maksimum ${props.maxTicketsPerUser} bilet alınabilir`,
-      };
-    }
-
-    // Toplam bilet kotası kontrolü
-    const totalSold = await this.lotteryRepository.countTickets(id);
-    if (totalSold + quantity > props.totalTickets) {
-      return { success: false, message: 'Yeterli bilet kalmadı' };
-    }
-
-    // Her bilet için çakışmasız numaralar üret
-    const ticketNumbers: string[][] = [];
-    for (let i = 0; i < quantity; i++) {
-      const numbers = await this.generateUniqueNumbers(
-        id,
-        props.ticketDigits,
-        props.numbersPerTicket,
-        props.totalTickets,
-      );
-      ticketNumbers.push(numbers);
-    }
-
-    // Bilet ücreti kadar cüzdandan teminat al (ownerId = satıcı/çekiliş sahibi)
+    // ─── Harici ödeme: cüzdandan blokaj (gRPC — transaction dışında) ──────────
     const totalAmount = Number(props.ticketPrice) * quantity;
-    const idempotencyKey = `lottery-ticket-${id}-${user.id}-${Date.now()}`;
+    const idempotencyKey = `lottery-ticket-${id}-${user.id}-${crypto.randomUUID()}`;
     const holdResult = await this.financialGateway.holdFunds(
       user.id,
       totalAmount.toString(),
@@ -154,11 +134,59 @@ export class LotteryController {
     );
     const holdId = holdResult.holdId as string;
 
-    // Biletleri atomik işlem içinde kaydet
-    const createdTickets: ILotteryTicket[] = [];
-    for (const numbers of ticketNumbers) {
-      const ticket = await this.lotteryRepository.createTicket({ lotteryId: id, userId: user.id, numbers });
-      createdTickets.push(ticket);
+    // ─── Atomik DB işlemi: kota + bilet numaraları + kayıt ────────────────────
+    let createdTickets: ILotteryTicket[] = [];
+    const mongoSession = await this.connection.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        // Kilitli okuma ile kota kontrolleri (session içinde)
+        const userTicketCount = await this.lotteryRepository.countTickets(id, user.id, mongoSession);
+        if (userTicketCount + quantity > props.maxTicketsPerUser) {
+          throw new DomainException(`Kişi başı maksimum ${props.maxTicketsPerUser} bilet alınabilir`);
+        }
+
+        const totalSold = await this.lotteryRepository.countTickets(id, undefined, mongoSession);
+        if (totalSold + quantity > props.totalTickets) {
+          throw new DomainException('Yeterli bilet kalmadı');
+        }
+
+        // Her bilet için çakışmasız numaralar üret (session içinde)
+        const ticketNumbers: string[][] = [];
+        for (let i = 0; i < quantity; i++) {
+          const numbers = await this.generateUniqueNumbers(
+            id,
+            props.ticketDigits,
+            props.numbersPerTicket,
+            props.totalTickets,
+            mongoSession,
+          );
+          ticketNumbers.push(numbers);
+        }
+
+        // Biletleri session içinde kaydet
+        createdTickets = [];
+        for (const numbers of ticketNumbers) {
+          const ticket = await this.lotteryRepository.createTicket(
+            { lotteryId: id, userId: user.id, numbers },
+            mongoSession,
+          );
+          createdTickets.push(ticket);
+        }
+      });
+    } catch (err) {
+      // DB başarısız → blokajı iade et (telafi / compensation)
+      this.logger.error(`Lottery participate DB hatası, holdId=${holdId} iade ediliyor`, err);
+      try {
+        await this.financialGateway.releaseFunds(
+          holdId,
+          `rollback-lottery-${id}-${user.id}`,
+        );
+      } catch (releaseErr) {
+        this.logger.error(`holdId=${holdId} iade BAŞARISIZ — manuel müdahale gerekli`, releaseErr);
+      }
+      throw err;
+    } finally {
+      await mongoSession.endSession();
     }
 
     await this.auditLog.log({
@@ -178,12 +206,13 @@ export class LotteryController {
     return { success: true, data: { tickets: createdTickets, holdId } };
   }
 
-  // Çakışmasız benzersiz bilet numaraları üretir (maks 5 deneme)
+  // Çakışmasız benzersiz bilet numaraları üretir (maks 5 deneme, session destekli)
   private async generateUniqueNumbers(
     lotteryId: string,
     ticketDigits: number,
     numbersPerTicket: number,
     totalTickets: number,
+    session?: any,
   ): Promise<string[]> {
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidates: string[] = [];
@@ -193,7 +222,7 @@ export class LotteryController {
       }
 
       // Aynı çekilişte bu numaralardan herhangi biri başka bilette var mı?
-      const collision = await this.lotteryRepository.findTicketWithNumbers(lotteryId, candidates);
+      const collision = await this.lotteryRepository.findTicketWithNumbers(lotteryId, candidates, session);
 
       if (!collision) return candidates;
     }

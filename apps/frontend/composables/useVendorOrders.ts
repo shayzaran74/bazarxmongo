@@ -5,11 +5,11 @@ export const useVendorOrders = () => {
   const { $toast } = useNuxtApp()
   const { getStatusInfo } = useOrderStatusLabel()
 
-  const orders = ref<Record<string, unknown>[]>([])
+  const orders = ref<any[]>([])
   const loading = ref(false)
   const searchQuery = ref('')
   const filterStatus = ref('')
-  const selectedOrder = ref<Record<string, unknown> | null>(null)
+  const selectedOrder = ref<any>(null)
 
   const pending = computed(() => loading.value)
 

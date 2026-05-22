@@ -12,7 +12,7 @@ export class GetMyOrdersHandler implements IQueryHandler<GetMyOrdersQuery> {
   constructor(@Inject('IOrderRepository') private readonly orderRepo: IOrderRepository) {}
 
   async execute(query: GetMyOrdersQuery) {
-    const result = await this.orderRepo.findByUserId(query.userId, { page: 1, limit: 50 });
+    const result = await this.orderRepo.findByUserId(query.userId, { skip: 0, limit: 50 });
     const response = result.items.map(order => OrderMapper.toResponse(order));
     return OrderMapper.populateImages(response);
   }

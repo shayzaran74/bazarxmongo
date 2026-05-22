@@ -9,6 +9,19 @@ import { CreateChatRoomCommand } from '../commands/create-chat-room.command';
 import { SendMessageCommand } from '../commands/send-message.command';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
 
+export interface OrderCreatedEvent {
+  orderId: string;
+  id: string;
+  orderNumber: string;
+  userId: string;
+  buyerId: string;
+  sellerId: string;
+  vendorId: string;
+  totalAmount: string;
+  shippingAddress: unknown;
+  billingAddress: unknown;
+}
+
 @Injectable()
 export class OrderCreatedNotificationHandler {
   constructor(
@@ -21,8 +34,8 @@ export class OrderCreatedNotificationHandler {
     routingKey: 'order.created',
     queue: 'communication.order-created',
   })
-  async handle(event: any) {
-    const { id, orderNumber, userId, vendorId } = event;
+  async handle(event: OrderCreatedEvent) {
+    const { id, orderNumber, userId } = event;
 
     // 1. Create Notification for Buyer
     const template = this.templateService.getOrderCreatedTemplate(orderNumber, id);

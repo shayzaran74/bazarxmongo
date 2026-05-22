@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/financial/accountTopUpRequest.schema.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const TopUpRequestStatus = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 export type TopUpRequestStatusType = typeof TopUpRequestStatus[number];
@@ -46,4 +47,4 @@ AccountTopUpRequestSchema.index({ userId: 1 });
 AccountTopUpRequestSchema.index({ status: 1 });
 AccountTopUpRequestSchema.index({ accountId: 1 });
 
-export const AccountTopUpRequest = model<IAccountTopUpRequest>('AccountTopUpRequest', AccountTopUpRequestSchema);
+export const AccountTopUpRequest = createModelProxy<IAccountTopUpRequest>('AccountTopUpRequest', AccountTopUpRequestSchema);

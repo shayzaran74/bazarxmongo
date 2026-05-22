@@ -123,7 +123,7 @@ export class BarterController {
       success: true,
       message: 'Transfer isteği alındı',
       data: {
-        transactionId: `transfer_${Date.now()}`,
+        transactionId: `transfer_${crypto.randomUUID()}`,
         amount:        body.amount,
         toCompanyId:   body.toCompanyId,
         status:        'PENDING',

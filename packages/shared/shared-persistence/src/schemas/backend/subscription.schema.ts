@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const SubscriptionStatus = ['ACTIVE','GRACE_PERIOD','EXPIRED','SUSPENDED','CANCELLED'] as const;
 export type SubscriptionStatusType = typeof SubscriptionStatus[number];
@@ -45,4 +46,4 @@ export const SubscriptionSchema = new Schema<ISubscription>({
 SubscriptionSchema.index({ companyId: 1 });
 SubscriptionSchema.index({ status: 1, endDate: 1 });
 
-export const Subscription = model<ISubscription>('Subscription', SubscriptionSchema);
+export const Subscription = createModelProxy<ISubscription>('Subscription', SubscriptionSchema);

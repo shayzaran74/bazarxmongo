@@ -1,4 +1,4 @@
-import { Module, Global } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ClientsModule } from '@nestjs/microservices';
 import { financialGrpcClientOptions } from './grpc/financial-grpc.client';
@@ -19,6 +19,8 @@ import { RequestWithdrawalHandler } from './application/commands/request-withdra
 import { ProcessWalletRequestHandler } from './application/commands/process-wallet-request.handler';
 import { ProcessWithdrawalHandler } from './application/commands/process-withdrawal.handler';
 
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
 const QueryHandlers = [
   GetWalletBalanceHandler,
   GetWalletTransactionsHandler,
@@ -33,11 +35,11 @@ const CommandHandlers = [
   ProcessWithdrawalHandler,
 ];
 
-@Global()
 @Module({
   imports: [
     CqrsModule,
     ClientsModule.register(financialGrpcClientOptions),
+    AuditMongooseModule,
   ],
   controllers: [WalletController, WalletAdminController],
   providers: [

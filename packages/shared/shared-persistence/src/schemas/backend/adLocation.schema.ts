@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // AdLocation — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -40,4 +41,4 @@ AdLocationSchema.index({ sideAdId: 1, tag: 1 }, { unique: true });
 // Unique constraint
 AdLocationSchema.index({ adCampaignId: 1, tag: 1 }, { unique: true });
 
-export const AdLocation = model<IAdLocation>('AdLocation', AdLocationSchema);
+export const AdLocation = createModelProxy<IAdLocation>('AdLocation', AdLocationSchema);

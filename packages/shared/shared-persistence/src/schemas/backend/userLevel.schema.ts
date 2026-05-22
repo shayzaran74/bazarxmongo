@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // UserLevel — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -36,4 +37,4 @@ export const UserLevelSchema = new Schema<IUserLevel>({
 
 UserLevelSchema.index({ userId: 1 }, { unique: true });
 
-export const UserLevel = model<IUserLevel>('UserLevel', UserLevelSchema);
+export const UserLevel = createModelProxy<IUserLevel>('UserLevel', UserLevelSchema);

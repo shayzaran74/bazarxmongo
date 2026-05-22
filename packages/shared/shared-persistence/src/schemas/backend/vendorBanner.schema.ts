@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VendorBanner — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -39,4 +40,4 @@ export const VendorBannerSchema = new Schema<IVendorBanner>({
 // Composite index
 VendorBannerSchema.index({ vendorId: 1 });
 
-export const VendorBanner = model<IVendorBanner>('VendorBanner', VendorBannerSchema);
+export const VendorBanner = createModelProxy<IVendorBanner>('VendorBanner', VendorBannerSchema);

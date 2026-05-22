@@ -33,7 +33,7 @@ export class MongoBlindPoolRepository {
     smartCapPct?: number;
     isActive?: boolean;
   }): Promise<BlindPoolDocument> {
-    const id = 'bp-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const id = 'bp-' + crypto.randomUUID();
     const doc = new this.model({
       _id: id,
       id,

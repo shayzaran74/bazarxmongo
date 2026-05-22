@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const LoyaltyTier = ['BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'] as const;
 export type LoyaltyTierType = typeof LoyaltyTier[number];
@@ -33,4 +34,4 @@ export const MembershipTierSchema = new Schema<IMembershipTier>({
 MembershipTierSchema.index({ tier: 1 }, { unique: true });
 MembershipTierSchema.index({ minXp: 1 });
 
-export const MembershipTier = model<IMembershipTier>('MembershipTier', MembershipTierSchema);
+export const MembershipTier = createModelProxy<IMembershipTier>('MembershipTier', MembershipTierSchema);

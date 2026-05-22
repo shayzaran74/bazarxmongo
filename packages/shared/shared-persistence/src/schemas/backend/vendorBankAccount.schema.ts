@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // VendorBankAccount — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -32,4 +33,4 @@ export const VendorBankAccountSchema = new Schema<IVendorBankAccount>({
   collection: 'vendor_bank_accounts',
 });
 
-export const VendorBankAccount = model<IVendorBankAccount>('VendorBankAccount', VendorBankAccountSchema);
+export const VendorBankAccount = createModelProxy<IVendorBankAccount>('VendorBankAccount', VendorBankAccountSchema);

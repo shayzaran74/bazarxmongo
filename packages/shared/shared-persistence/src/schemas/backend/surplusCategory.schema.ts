@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // SurplusCategory — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -38,4 +39,4 @@ SurplusCategorySchema.index({ parentId: 1 });
 // Composite index
 SurplusCategorySchema.index({ slug: 1 });
 
-export const SurplusCategory = model<ISurplusCategory>('SurplusCategory', SurplusCategorySchema);
+export const SurplusCategory = createModelProxy<ISurplusCategory>('SurplusCategory', SurplusCategorySchema);

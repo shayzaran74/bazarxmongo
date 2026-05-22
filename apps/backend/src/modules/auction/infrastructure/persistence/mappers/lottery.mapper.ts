@@ -18,7 +18,7 @@ export class LotteryMapper {
       title: doc.title,
       prizeDescription: doc.prizeDescription ?? undefined,
       ticketPrice: Number(doc.ticketPrice) || 0,
-      status: doc.status as any,
+      status: (doc.status as LotteryStatus) || LotteryStatus.ACTIVE,
       winnerId: doc.winnerId ?? undefined,
       endTime: doc.endTime,
       maxTicketsPerUser: doc.maxTicketsPerUser ?? 10,

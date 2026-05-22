@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-[#f8fafc] pb-20">
     <!-- Hero / Prize Section -->
-    <div class="relative h-[400px] overflow-hidden bg-[#0f172a]">
+    <div class="relative min-h-[450px] md:min-h-[550px] pt-12 pb-24 overflow-hidden bg-[#0f172a]">
       <div
         v-if="lottery?.Product || lottery?.imageUrl"
         class="absolute inset-0 opacity-40 blur-sm scale-110"
@@ -18,7 +18,7 @@
       >
         <div
           class="mb-6 px-6 py-2 rounded-full border border-white/20 backdrop-blur-md text-white text-sm font-bold uppercase tracking-[0.2em]"
-          :class="lottery?.status === 'Active' ? 'bg-green-500/20' : 'bg-red-500/20'"
+          :class="lottery?.status === 'ACTIVE' ? 'bg-green-500/20' : 'bg-red-500/20'"
         >
           {{ getStatusText(lottery?.status) }}
         </div>
@@ -29,7 +29,7 @@
 
         <!-- Countdown -->
         <div
-          v-if="lottery?.status === 'Active'"
+          v-if="lottery?.status === 'ACTIVE'"
           class="flex gap-4 md:gap-8 mb-8"
         >
           <div
@@ -48,7 +48,7 @@
         </div>
 
         <div
-          v-if="lottery?.status === 'Finished'"
+          v-if="lottery?.status === 'FINISHED'"
           class="bg-primary-600 px-8 py-4 rounded-3xl shadow-2xl animate-bounce"
         >
           <p class="text-white font-black text-xl uppercase tracking-widest">
@@ -108,7 +108,7 @@
 
           <!-- Selection Board -->
           <div
-            v-if="lottery?.status === 'Active'"
+            v-if="lottery?.status === 'ACTIVE'"
             class="bg-white rounded-[3rem] shadow-xl p-8 md:p-12 border border-gray-100"
           >
             <div class="text-center mb-12">
@@ -214,7 +214,7 @@
 
           <!-- Winner Section -->
           <div
-            v-if="lottery?.status === 'Finished'"
+            v-if="lottery?.status === 'FINISHED'"
             class="bg-primary-50 rounded-[3rem] p-8 border border-primary-100"
           >
             <div class="text-center space-y-6">
@@ -263,7 +263,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <span
-                    v-for="n in t.numbers"
+                    v-for="n in (typeof t.numbers === 'string' ? t.numbers.split(',') : t.numbers)"
                     :key="n"
                     class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-black text-gray-600 tracking-wider"
                   >{{
@@ -329,7 +329,7 @@ const fetchMyTickets = async () => {
 }
 
 const updateCountdown = () => {
-    if (!lottery.value || lottery.value.status !== 'Active') return
+    if (!lottery.value || lottery.value.status !== 'ACTIVE') return
     const end = new Date(lottery.value.endTime).getTime()
     const now = new Date().getTime()
     const diff = end - now
@@ -358,9 +358,9 @@ const handlePurchase = async () => {
     buying.value = true
     try {
         const { $api } = useApi()
-        const res = await $api(`/api/lotteries/${lottery.value.id}/buy`, {
+        const res = await $api(`/api/lotteries/${lottery.value.id}/participate`, {
             method: 'POST',
-            body: { count: Number(selectedCount.value) }
+            body: { quantity: Number(selectedCount.value) }
         })
 
         if (res.success) {
@@ -382,7 +382,7 @@ const formatPrice = (p) => {
 }
 
 const getStatusText = (s) => {
-    if (s === 'Active') return 'Katılıma Açık'; if (s === 'Finished') return 'Bitti'; return 'Kapalı'
+    if (s === 'ACTIVE') return 'Katılıma Açık'; if (s === 'FINISHED') return 'Bitti'; return 'Kapalı'
 }
 
 let timer = null

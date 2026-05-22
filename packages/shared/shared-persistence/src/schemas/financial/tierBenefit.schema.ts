@@ -1,6 +1,7 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/financial/tierBenefit.schema.ts
 
-import { Schema, model, Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 export const B2BTierValues = ['CORE', 'PRIME', 'ELITE', 'APEX'] as const;
 export type B2BTierType = typeof B2BTierValues[number];
@@ -46,4 +47,4 @@ export const TierBenefitSchema = new Schema<ITierBenefit>({
 
 TierBenefitSchema.index({ tier: 1 }, { unique: true });
 
-export const TierBenefit = model<ITierBenefit>('TierBenefit', TierBenefitSchema);
+export const TierBenefit = createModelProxy<ITierBenefit>('TierBenefit', TierBenefitSchema);

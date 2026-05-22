@@ -7,11 +7,22 @@ import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/
 import { User, UserProfile } from '@barterborsa/shared-persistence';
 import { Order } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
 
+interface ReviewLeanDoc {
+  id?: string; _id?: { toString(): string };
+  userId: string; catalogProductId: string; orderId?: string;
+  rating: number; comment?: string; isApproved: boolean; isVerified: boolean;
+  createdAt: Date;
+}
+interface ProductLeanDoc   { id?: string; _id?: { toString(): string }; name: string; }
+interface UserLeanDoc      { id?: string; _id?: { toString(): string }; email: string; }
+interface ProfileLeanDoc   { userId: string; firstName?: string; lastName?: string; }
+interface OrderLeanDoc     { id?: string; _id?: { toString(): string }; orderNumber?: string; }
+
 @QueryHandler(ListAdminReviewsQuery)
 export class ListAdminReviewsHandler implements IQueryHandler<ListAdminReviewsQuery> {
   async execute(query: ListAdminReviewsQuery) {
     const { page = 1, limit = 10, searchProduct, searchUser, isApproved } = query.filters;
-    const dbFilter: any = {};
+    const dbFilter: Record<string, unknown> = {};
 
     if (isApproved !== undefined) {
       dbFilter.isApproved = isApproved;
@@ -21,7 +32,7 @@ export class ListAdminReviewsHandler implements IQueryHandler<ListAdminReviewsQu
       const matchingProducts = await CatalogProduct.find({
         name: { $regex: searchProduct, $options: 'i' }
       }).select('id').lean().exec();
-      const productIds = matchingProducts.map((p: any) => p.id).filter(Boolean);
+      const productIds = (matchingProducts as ProductLeanDoc[]).map(p => p.id).filter(Boolean);
       dbFilter.catalogProductId = { $in: productIds };
     }
 
@@ -64,9 +75,10 @@ export class ListAdminReviewsHandler implements IQueryHandler<ListAdminReviewsQu
       Review.countDocuments(dbFilter).exec(),
     ]);
 
-    const productIds = rawItems.map((i: any) => i.catalogProductId).filter(Boolean);
-    const userIds = rawItems.map((i: any) => i.userId).filter(Boolean);
-    const orderIds = rawItems.map((i: any) => i.orderId).filter(Boolean);
+    const reviews = rawItems as ReviewLeanDoc[];
+    const productIds = reviews.map(i => i.catalogProductId).filter(Boolean);
+    const userIds    = reviews.map(i => i.userId).filter(Boolean);
+    const orderIds   = reviews.map(i => i.orderId).filter(Boolean);
 
     const [products, users, userProfiles, orders] = await Promise.all([
       CatalogProduct.find({ id: { $in: productIds } }).lean().exec(),
@@ -75,35 +87,39 @@ export class ListAdminReviewsHandler implements IQueryHandler<ListAdminReviewsQu
       Order.find({ id: { $in: orderIds } }).lean().exec(),
     ]);
 
-    const productMap = new Map(products.map((p: any) => [p.id || p._id?.toString(), p]));
-    const userMap = new Map(users.map((u: any) => [u.id || u._id?.toString(), u]));
-    const userEmailMap = new Map(users.map((u: any) => [u.email, u]));
-    const profileMap = new Map(userProfiles.map((p: any) => [p.userId, p]));
-    const orderMap = new Map(orders.map((o: any) => [o.id || o._id?.toString(), o]));
+    const productMap  = new Map((products as ProductLeanDoc[]).map(p => [p.id ?? p._id?.toString(), p]));
+    const userMap     = new Map((users as UserLeanDoc[]).map(u => [u.id ?? u._id?.toString(), u]));
+    const userEmailMap = new Map((users as UserLeanDoc[]).map(u => [u.email, u]));
+    const profileMap  = new Map((userProfiles as ProfileLeanDoc[]).map(p => [p.userId, p]));
+    const orderMap    = new Map((orders as OrderLeanDoc[]).map(o => [o.id ?? o._id?.toString(), o]));
 
-    const items = rawItems.map((r: any) => {
-      const p = productMap.get(r.catalogProductId);
-      const u = userMap.get(r.userId) || userEmailMap.get(r.userId);
-      const uProfile = u ? profileMap.get(u.id) || profileMap.get(u.email) : profileMap.get(r.userId);
-      const o = orderMap.get(r.orderId);
+    const items = reviews.map(r => {
+      const p       = productMap.get(r.catalogProductId);
+      const u       = userMap.get(r.userId) ?? userEmailMap.get(r.userId);
+      const uProfile = u
+        ? profileMap.get(u.id ?? '') ?? profileMap.get(u.email)
+        : profileMap.get(r.userId);
+      const o = r.orderId ? orderMap.get(r.orderId) : undefined;
 
       return {
-        id: r.id || r._id?.toString(),
-        userId: r.userId,
+        id:              r.id ?? r._id?.toString(),
+        userId:          r.userId,
         catalogProductId: r.catalogProductId,
-        orderId: r.orderId,
-        rating: r.rating,
-        comment: r.comment,
-        isApproved: r.isApproved,
-        isVerified: r.isVerified,
-        createdAt: r.createdAt,
-        CatalogProduct: p ? { id: p.id, name: p.name } : null,
+        orderId:         r.orderId,
+        rating:          r.rating,
+        comment:         r.comment,
+        isApproved:      r.isApproved,
+        isVerified:      r.isVerified,
+        createdAt:       r.createdAt,
+        CatalogProduct:  p ? { id: p.id, name: p.name } : null,
         User: u ? {
-          id: u.id || u._id?.toString(),
+          id:    u.id ?? u._id?.toString(),
           email: u.email,
-          name: uProfile ? `${(uProfile as any).firstName || ''} ${(uProfile as any).lastName || ''}`.trim() : u.email
+          name:  uProfile
+            ? `${uProfile.firstName ?? ''} ${uProfile.lastName ?? ''}`.trim()
+            : u.email,
         } : { email: r.userId, name: r.userId },
-        Order: o ? { id: o.id, orderNumber: o.orderNumber } : null
+        Order: o ? { id: o.id, orderNumber: o.orderNumber } : null,
       };
     });
 

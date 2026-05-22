@@ -21,6 +21,15 @@ export class CreateBarterShipmentsHandler implements ICommandHandler<CreateBarte
     const { props } = command;
     this.logger.log(`Creating dual shipments for Barter Session: ${props.sessionId}`);
 
+    const existing = await this.repository.findByBarterSessionId(props.sessionId);
+    if (existing.length > 0) {
+      this.logger.log(`Shipments already exist for Barter Session: ${props.sessionId}`);
+      return {
+        success: true,
+        shipmentIds: existing.map(s => s.id)
+      };
+    }
+
     const number1 = this.shipmentNumberService.generate();
     const number2 = this.shipmentNumberService.generate();
 

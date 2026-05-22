@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CatalogModule } from '../catalog/catalog.module';
+import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
 
 // Schemas
 import { Auction, AuctionSchema } from '@barterborsa/shared-persistence/schemas/backend/auction.schema';
@@ -36,6 +37,8 @@ import { MongoAuctionParticipationRepository } from './infrastructure/persistenc
 import { AuctionMapper } from './infrastructure/persistence/mappers/auction.mapper';
 import { LotteryMapper } from './infrastructure/persistence/mappers/lottery.mapper';
 
+import { AuditMongooseModule } from '../audit/audit-mongoose.module';
+
 const CommandHandlers = [
   PlaceBidHandler,
   DrawLotteryHandler,
@@ -53,6 +56,8 @@ const CommandHandlers = [
       { name: LotteryTicket.name, schema: LotteryTicketSchema },
     ]),
     CatalogModule,
+    FinancialGatewayModule,
+    AuditMongooseModule,
   ],
   controllers: [AuctionController, AuctionAdminController, LotteryController, LotteryAdminController],
   providers: [

@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 export const ParticipationStatus = ['PENDING','DEPOSIT_HELD','APPROVED','ACTIVE','WITHDRAWN'] as const;
 export type ParticipationStatusType = typeof ParticipationStatus[number];
@@ -33,4 +34,4 @@ export const AuctionParticipationSchema = new Schema<IAuctionParticipation>({
 AuctionParticipationSchema.index({ auctionId: 1, userId: 1 }, { unique: true });
 AuctionParticipationSchema.index({ userId: 1 });
 
-export const AuctionParticipation = model<IAuctionParticipation>('AuctionParticipation', AuctionParticipationSchema);
+export const AuctionParticipation = createModelProxy<IAuctionParticipation>('AuctionParticipation', AuctionParticipationSchema);

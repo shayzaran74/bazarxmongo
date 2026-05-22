@@ -32,10 +32,10 @@ export class ApplyBrandHandler implements ICommandHandler<ApplyBrandCommand> {
       vendorId: vendor.id,
       status: 'PENDING',
       submittedAt: new Date(),
-      image: (dto as any).image,
-      documentUrl: (dto as any).documentUrl,
-      invoiceChainUrl: (dto as any).invoiceChainUrl,
-      authorizationUrl: (dto as any).authorizationUrl,
+      image: dto.image,
+      documentUrl: dto.documentUrl,
+      invoiceChainUrl: dto.invoiceChainUrl,
+      authorizationUrl: dto.authorizationUrl,
     });
 
     this.logger.log('Marka başvurusu oluşturuldu', { brandId: brand.id, vendorId: vendor.id });

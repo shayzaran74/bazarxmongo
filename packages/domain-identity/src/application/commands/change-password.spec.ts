@@ -90,6 +90,6 @@ describe('ChangePasswordHandler', () => {
     const result = await handler.execute(command);
 
     expect(result.success).toBe(false);
-    expect((result as any).error?.message).toBe('Mevcut şifre hatalı.');
+    expect((result as any).error?.message).toBe('Mevcut şifre hatalı. Lütfen kontrol edip tekrar deneyin.');
   });
 });

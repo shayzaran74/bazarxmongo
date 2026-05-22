@@ -1,5 +1,6 @@
+import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/productMedia.schema.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 
 export const MediaType = ['IMAGE','VIDEO','360','AUDIO'] as const;
 export type MediaTypeType = typeof MediaType[number];
@@ -30,4 +31,4 @@ export const ProductMediaSchema = new Schema<IProductMedia>({
 ProductMediaSchema.index({ productId: 1 });
 ProductMediaSchema.index({ sortOrder: 1 });
 
-export const ProductMedia = model<IProductMedia>('ProductMedia', ProductMediaSchema);
+export const ProductMedia = createModelProxy<IProductMedia>('ProductMedia', ProductMediaSchema);

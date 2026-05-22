@@ -108,7 +108,7 @@ export class BuyboxRecalculateHandler extends WorkerHost {
     previousWinnerId?: string;
     reason?: string;
   }): Promise<void> {
-    const id = 'bh-' + data.listingId + '-' + Date.now();
+    const id = 'bh-' + data.listingId + '-' + crypto.randomUUID();
     await BuyboxHistory.create({
       id,
       productId: data.productId,

@@ -21,6 +21,11 @@ import { TrackingModule } from './modules/tracking/tracking.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('MONGODB_URI') || config.get<string>('uri'),
+        maxPoolSize: 50,
+        minPoolSize: 5,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 30000,
+        heartbeatFrequencyMS: 10000,
       }),
     }),
     RabbitMQModule,

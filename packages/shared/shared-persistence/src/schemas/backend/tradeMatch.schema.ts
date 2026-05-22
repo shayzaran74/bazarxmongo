@@ -1,4 +1,5 @@
-import { Schema, model, Types } from 'mongoose';
+import { createModelProxy } from '../../mongodb/model-proxy';
+import { Schema, Types } from 'mongoose';
 
 // TradeMatch — generated from Prisma schema
 // TODO: strict typing — codegen
@@ -24,4 +25,4 @@ export const TradeMatchSchema = new Schema<ITradeMatch>({
   collection: 'trade_matches',
 });
 
-export const TradeMatch = model<ITradeMatch>('TradeMatch', TradeMatchSchema);
+export const TradeMatch = createModelProxy<ITradeMatch>('TradeMatch', TradeMatchSchema);

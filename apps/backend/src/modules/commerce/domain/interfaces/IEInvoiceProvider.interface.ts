@@ -1,6 +1,7 @@
 // apps/backend/src/modules/commerce/domain/interfaces/IEInvoiceProvider.interface.ts
 
 import { EInvoiceStatus } from '../enums/einvoice-status.enum';
+import { UBLInvoiceData } from '../../infrastructure/adapters/efatura-com.adapter';
 
 export interface EInvoiceXmlResult {
   invoiceId: string;
@@ -27,7 +28,7 @@ export interface IEInvoiceProvider {
   /**
    * Fatura XML oluştur (GİB UBL 2.1 formatında)
    */
-  generateXml(invoiceData: any): Promise<EInvoiceXmlResult>;
+  generateXml(invoiceData: UBLInvoiceData): Promise<EInvoiceXmlResult>;
 
   /**
    * XML'e dijital imza ekle
