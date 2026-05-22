@@ -1,16 +1,16 @@
 <template>
   <section
     v-if="show !== 'false'"
-    class="w-full bg-slate-50 py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
+    class="w-full bg-background-md3 py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
   >
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div>
         <div>
           <div class="mb-8">
             <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
               {{
                 $t('performance.title') }}
-              <span class="text-indigo-400">{{ $t('performance.subtitle') }}</span>
+              <span class="text-primary-400">{{ $t('performance.subtitle') }}</span>
             </h2>
             <p class="text-slate-500 text-base font-medium mt-1">
               {{ $t('performance.description') }}
@@ -34,7 +34,7 @@
               </div>
               <NuxtLink
                 to="/products?sort=sales_desc"
-                class="group flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                class="group flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-primary-600 transition-colors"
               >
                 {{ $t('performance.seeAll') }}
                 <ArrowRightIcon class="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -165,9 +165,9 @@
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-3">
                 <div
-                  class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100/50"
+                  class="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shadow-lg shadow-primary-100/50"
                 >
-                  <ChatBubbleBottomCenterTextIcon class="h-5 w-5 text-indigo-600" />
+                  <ChatBubbleBottomCenterTextIcon class="h-5 w-5 text-primary-600" />
                 </div>
                 <h3 class="text-xl font-black text-black uppercase italic tracking-tight">
                   {{

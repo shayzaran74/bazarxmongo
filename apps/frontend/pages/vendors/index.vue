@@ -195,9 +195,11 @@ const fetchVendors = async () => {
                 status: 'APPROVED'
             })
 
-        if (response.success) {
-            vendors.value = response.data
-            totalPages.value = Math.ceil(response.pagination.total / limit)
+        if (response.success && response.data) {
+            // Handle both flat array and paginated object structures
+            vendors.value = response.data.items || (Array.isArray(response.data) ? response.data : [])
+            const totalCount = response.data.total || (Array.isArray(response.data) ? response.data.length : 0)
+            totalPages.value = Math.ceil(totalCount / limit) || 1
         }
     } catch (error) {
         console.error('Fetch vendors error:', error)

@@ -4,14 +4,14 @@
     v-motion
     :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
     :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
-    class="w-full bg-gradient-to-br from-indigo-700 via-indigo-900 to-slate-900 py-12 md:py-20 relative overflow-hidden mb-10 md:mb-16"
+    class="w-full bg-md3-primary py-12 md:py-20 relative overflow-hidden mb-10 md:mb-16"
   >
     <div class="absolute inset-0 opacity-20 pointer-events-none">
       <div class="absolute top-0 left-0 w-full h-full bg-[url('/noise.png')] opacity-30" />
       <div class="absolute -top-48 -left-48 w-96 h-96 bg-primary-500 rounded-full blur-[150px] animate-pulse" />
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col lg:flex-row items-center justify-between mb-12 gap-10">
         <div class="text-center lg:text-left">
           <SharedGhostBadge variant="ghost" glow custom-class="!bg-white/10 !border-white/20 !text-white px-5 py-2 text-xs mb-6 backdrop-blur-xl gap-3">
@@ -23,10 +23,10 @@
           <h2 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase italic leading-[0.8]">
             {{ $t('lotteriesHome.title') }}
             <span
-              class="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-purple-400 mt-2"
+              class="block text-accent-500 mt-2"
             >{{ $t('lotteriesHome.subtitle') }}</span>
           </h2>
-          <p class="text-indigo-200 text-lg md:text-xl max-w-xl mx-auto lg:mx-0 font-medium opacity-80 italic">
+          <p class="text-white/70 text-lg md:text-xl max-w-xl mx-auto lg:mx-0 font-medium opacity-80 italic">
             {{ $t('lotteriesHome.description') }}
           </p>
         </div>
@@ -102,7 +102,7 @@
                   </div>
                   <div class="h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-gradient-to-r from-primary-600 to-indigo-500"
+                      class="h-full bg-gradient-to-r from-primary-500 to-md3-secondary"
                       :style="{ width: ((lottery._count?.participants || 0) / lottery.totalTickets * 100) + '%' }"
                     />
                   </div>
@@ -116,7 +116,7 @@
                 </div>
                 <div class="text-right">
                   <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">{{ $t('lotteriesHome.drawDate') || 'Çekiliş Tarihi' }}</span>
-                  <span class="text-xs font-black text-indigo-300 uppercase italic">{{ formatDate(lottery.drawDate) }}</span>
+                  <span class="text-xs font-black text-white/60 uppercase italic">{{ formatDate(lottery.drawDate) }}</span>
                 </div>
               </div>
             </div>

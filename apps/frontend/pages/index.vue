@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 relative overflow-x-hidden">
+  <div class="min-h-screen bg-background-md3 relative overflow-x-hidden">
     <CommonAnnouncementBar page="homepage" />
 
     <div class="py-2 md:py-3" />
@@ -14,12 +14,12 @@
     <HomeQuickMenu :items="quickAccessMenuItems" />
 
     <!-- Personalized Feed -->
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
       <LayoutPersonalizedFeed v-if="settingsStore.homepageSettings.showPersonalized === 'true'" />
     </div>
 
     <!-- Dörtlü Vitrin (Quad Cards) -->
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <HomeQuadCards :show="settingsStore.homepageSettings.showQuadCards" />
     </div>
 

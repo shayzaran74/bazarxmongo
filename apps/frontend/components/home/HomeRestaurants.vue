@@ -1,14 +1,14 @@
 <template>
   <div
     v-if="show === 'true' && (loading || restaurants.length > 0)"
-    class="w-full bg-gradient-to-br from-rose-50 to-orange-50 py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
+    class="w-full bg-surface-container-low py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
   >
     <div class="absolute inset-0 opacity-40 pointer-events-none">
-      <div class="absolute top-0 right-0 w-96 h-96 bg-rose-200/50 rounded-full blur-[100px]" />
-      <div class="absolute bottom-0 left-0 w-96 h-96 bg-orange-200/50 rounded-full blur-[100px]" />
+      <div class="absolute top-0 right-0 w-96 h-96 bg-accent-100/60 rounded-full blur-[100px]" />
+      <div class="absolute bottom-0 left-0 w-96 h-96 bg-primary-100/60 rounded-full blur-[100px]" />
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
         <div class="flex items-center gap-6">
           <div

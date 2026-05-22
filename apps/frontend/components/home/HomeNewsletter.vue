@@ -1,20 +1,20 @@
 <template>
   <div
     v-if="show !== 'false'"
-    class="mb-10 mt-10 w-full max-w-5xl mx-auto px-4"
+    class="mb-10 mt-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
   >
     <div
-      class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[2rem] shadow-2xl p-6 md:p-10 text-white text-center relative overflow-hidden"
+      class="bg-md3-primary rounded-md3-xl shadow-premium-hover p-6 md:p-10 text-white text-center relative overflow-hidden border border-primary-container"
     >
       <!-- Decoration -->
       <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-      <div class="absolute bottom-0 left-0 w-24 h-24 bg-indigo-400/20 rounded-full -ml-12 -mb-12 blur-xl" />
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-accent-500/15 rounded-full -ml-12 -mb-12 blur-xl" />
 
       <div class="relative z-10 max-w-2xl mx-auto">
         <h2 class="text-xl md:text-2xl font-black mb-4 uppercase italic tracking-tighter">
           {{ $t('newsletter.title') }}
         </h2>
-        <p class="text-indigo-100 text-sm md:text-lg mb-8 opacity-90">
+        <p class="text-white/80 text-sm md:text-lg mb-8">
           {{ $t('newsletter.description') }}
         </p>
 
@@ -32,7 +32,7 @@
           <button
             type="submit"
             :disabled="loading"
-            class="px-8 py-4 bg-white text-indigo-600 font-extrabold rounded-2xl hover:bg-indigo-50 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+            class="px-8 py-4 bg-accent-500 text-slate-900 font-extrabold rounded-md3-lg hover:bg-accent-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
           >
             {{ loading ? $t('newsletter.waiting') : $t('newsletter.button') }}
           </button>

@@ -1,7 +1,7 @@
 <template>
   <section
     id="personalized-section"
-    class="w-full bg-slate-50 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-8"
+    class="w-full bg-background-md3 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-8"
   >
     <!-- Decorative Background Text -->
     <div
@@ -10,18 +10,18 @@
       AI
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div class="flex items-center gap-4">
           <div
-            class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-2xl shadow-indigo-100 rotate-3 transition-transform"
+            class="w-12 h-12 bg-md3-primary rounded-xl flex items-center justify-center shadow-premium rotate-3 transition-transform"
           >
             <SparklesIcon class="h-6 w-6 text-white" />
           </div>
           <div>
             <div class="flex items-center gap-2 mb-0.5">
               <span
-                class="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md"
+                class="text-[9px] font-black text-primary-600 uppercase tracking-widest bg-primary-50 px-1.5 py-0.5 rounded-md"
               >{{
                 $t('personalized.badge') }}</span>
               <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" />
@@ -29,7 +29,7 @@
             <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic">
               {{
                 $t('personalized.title') }}
-              <span class="text-indigo-600">{{ $t('personalized.subtitle') }}</span>
+              <span class="text-primary-600">{{ $t('personalized.subtitle') }}</span>
             </h2>
             <p class="text-slate-500 text-sm md:text-base font-medium mt-0.5">
               {{ $t('personalized.description') }}
@@ -71,7 +71,7 @@
         <div
           v-for="i in 4"
           :key="i"
-          class="bg-indigo-50/50 animate-pulse rounded-2xl h-72"
+          class="bg-primary-50/50 animate-pulse rounded-2xl h-72"
         />
       </div>
 
@@ -126,7 +126,7 @@
         </p>
         <NuxtLink
           to="/products"
-          class="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
+          class="inline-flex items-center gap-2 px-8 py-4 bg-md3-primary text-white rounded-md3-lg font-black text-sm uppercase tracking-widest hover:bg-primary-container transition-all shadow-premium hover:shadow-glow-primary"
         >
           {{ $t('personalized.exploreProducts') }}
           <ArrowRightIcon class="h-5 w-5" />
@@ -136,7 +136,7 @@
       <div class="mt-16 text-center">
         <NuxtLink
           to="/products?isFeatured=true"
-          class="inline-flex items-center gap-4 px-12 py-5 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-900 font-black text-sm uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-xl hover:shadow-indigo-100 group"
+          class="inline-flex items-center gap-4 px-12 py-5 bg-surface-container-lowest border border-outline-variant rounded-md3-xl text-on-surface font-black text-sm uppercase tracking-widest hover:border-md3-primary hover:text-md3-primary transition-all shadow-premium hover:shadow-premium-hover group"
         >
           {{ $t('personalized.exploreMore') }}
           <ArrowRightIcon class="h-5 w-5 group-hover:translate-x-3 transition-transform duration-500" />

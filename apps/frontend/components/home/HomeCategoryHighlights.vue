@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="Object.values(bestSellersByCategory).some(prods => prods.length > 0)"
-    class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 mb-10"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 mb-10"
   >
     <LayoutHorizontalProductScroll
       v-for="(prods, catId) in Object.fromEntries(Object.entries(bestSellersByCategory).slice(0, 4))"

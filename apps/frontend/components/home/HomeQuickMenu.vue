@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="items.length > 0"
-    class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mb-2"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mb-2"
   >
     <div class="flex justify-start md:justify-center md:gap-8 overflow-x-auto pb-4 hide-scrollbar snap-x">
       <NuxtLink

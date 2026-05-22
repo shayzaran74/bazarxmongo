@@ -5,6 +5,8 @@ import { GetVendorProductsQuery } from './get-vendor-products.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 import { Listing } from '../../../catalog/domain/entities/listing.entity';
+import { ListingImage } from '@barterborsa/shared-persistence/schemas/backend/listingImage.schema';
+import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 
 interface ListingImageDoc { listingId: string; url: string; order: number; }
 interface ProductMediaDoc { productId: string; url: string; order: number; }
@@ -49,10 +51,9 @@ export class GetVendorProductsHandler implements IQueryHandler<GetVendorProducts
     const listingIds = result.map(l => l.id);
     const catalogProductIds = result.map(l => l.getProps().catalogProductId).filter(Boolean);
 
-    const mongoose = require('mongoose');
     const [listingImages, productMedia] = await Promise.all([
-      listingIds.length ? mongoose.model('ListingImage').find({ listingId: { $in: listingIds } }).lean().exec() : [],
-      catalogProductIds.length ? mongoose.model('ProductMedia').find({ productId: { $in: catalogProductIds }, type: 'IMAGE' }).lean().exec() : [],
+      listingIds.length ? ListingImage.find({ listingId: { $in: listingIds } }).lean().exec() : [],
+      catalogProductIds.length ? ProductMedia.find({ productId: { $in: catalogProductIds }, type: 'IMAGE' }).lean().exec() : [],
     ]);
 
     const listingImageMap = new Map<string, ListingImageDoc>();

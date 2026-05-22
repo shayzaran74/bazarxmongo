@@ -54,7 +54,7 @@
           </div>
 
           <div
-            class="w-24 h-24 mb-4 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-primary-100 transition-all z-10 p-2 bg-gradient-to-br from-white to-gray-50"
+            class="w-24 h-24 mb-4 bg-surface-container-lowest rounded-2xl flex items-center justify-center overflow-hidden border border-outline-variant group-hover:border-primary-200 transition-all z-10 p-2"
           >
             <NuxtImg
               v-if="brand.image"

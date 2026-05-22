@@ -1,15 +1,15 @@
 <template>
   <div
     v-if="show !== 'false' && activeGroupBuy"
-    class="w-full bg-indigo-950 py-8 md:py-16 relative overflow-hidden group mb-8 md:mb-12"
+    class="w-full bg-md3-primary py-8 md:py-16 relative overflow-hidden group mb-8 md:mb-12"
   >
     <!-- Animated background patterns -->
     <div class="absolute inset-0 opacity-10 pointer-events-none">
-      <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary-500 rounded-full blur-[120px] animate-pulse" />
-      <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-500 rounded-full blur-[120px] animate-pulse delay-700" />
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-accent-500/10 rounded-full blur-[120px] animate-pulse" />
+      <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-primary-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center gap-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center gap-10">
       <!-- Left side: Product Visuals -->
       <div class="w-full lg:w-1/2 flex justify-center">
         <div class="relative group-hover:scale-105 transition-transform duration-700">
@@ -21,7 +21,7 @@
             image-class="object-cover rounded-2xl md:rounded-[2.5rem] shadow-2xl border-4 border-white/10"
           />
           <div
-            class="absolute -top-6 -right-6 bg-red-600 text-white font-black text-2xl w-24 h-24 rounded-full flex flex-col items-center justify-center rotate-12 shadow-2xl border-4 border-indigo-900 animate-bounce"
+            class="absolute -top-6 -right-6 bg-red-600 text-white font-black text-2xl w-24 h-24 rounded-full flex flex-col items-center justify-center rotate-12 shadow-2xl border-4 border-md3-primary animate-bounce"
           >
             <span class="text-xs md:text-sm">-%{{ calculateMaxDiscount() }}</span>
             <span class="text-base uppercase">{{ $t('specialOffers.dealOfDay') }}</span>
@@ -44,42 +44,42 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div class="bg-white/5 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
-            <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-2 flex items-center">
+            <p class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-2 flex items-center">
               <ClockIcon class="h-3 w-3 mr-1" /> {{ $t('groupBuy.timeLeft') }}
             </p>
             <div class="flex space-x-4 font-black text-lg md:text-2xl">
               <div class="flex flex-col items-center">
                 <span>{{ days }}</span><span
-                  class="text-[8px] text-indigo-300"
+                  class="text-[8px] text-white/60"
                 >{{ $t('groupBuy.days') }}</span>
               </div>
               <div class="flex flex-col items-center">
                 <span>{{ hours }}</span><span
-                  class="text-[8px] text-indigo-300"
+                  class="text-[8px] text-white/60"
                 >{{ $t('groupBuy.hours') }}</span>
               </div>
               <div class="flex flex-col items-center">
                 <span>{{ minutes }}</span><span
-                  class="text-[8px] text-indigo-300"
+                  class="text-[8px] text-white/60"
                 >{{ $t('groupBuy.minutes') }}</span>
               </div>
               <div class="flex flex-col items-center">
                 <span>{{ seconds }}</span><span
-                  class="text-[8px] text-indigo-300"
+                  class="text-[8px] text-white/60"
                 >{{ $t('groupBuy.seconds') }}</span>
               </div>
             </div>
           </div>
           <div class="bg-white/5 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
-            <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-2">
+            <p class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-2">
               {{
                 $t('home.targetProgress') }}
             </p>
             <div class="relative pt-1">
-              <div class="overflow-hidden h-3 text-xs flex rounded-full bg-indigo-950/50">
+              <div class="overflow-hidden h-3 text-xs flex rounded-full bg-black/30">
                 <div
                   :style="{ width: getProgressPercent() + '%' }"
-                  class="bg-gradient-to-r from-primary-500 to-purple-500 transition-all duration-1000"
+                  class="bg-gradient-to-r from-primary-500 to-md3-secondary transition-all duration-1000"
                 />
               </div>
               <div class="flex justify-between text-xs font-bold mt-2">

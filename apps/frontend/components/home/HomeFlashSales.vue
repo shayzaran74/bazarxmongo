@@ -4,17 +4,17 @@
     v-motion
     :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
     :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
-    class="w-full bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-700 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-8"
+    class="w-full bg-md3-primary py-6 md:py-10 relative overflow-hidden mb-6 md:mb-8"
   >
     <!-- Animated Background Decorations -->
     <div class="absolute inset-0 opacity-15 pointer-events-none">
-      <div class="absolute -top-20 -right-20 w-[400px] h-[400px] bg-yellow-400 rounded-full blur-[120px] animate-pulse" />
+      <div class="absolute -top-20 -right-20 w-[400px] h-[400px] bg-accent-500/15 rounded-full blur-[120px] animate-pulse" />
       <div
-        class="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-white rounded-full blur-[120px] animate-pulse delay-700"
+        class="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-primary-500/10 rounded-full blur-[120px] animate-pulse delay-700"
       />
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <!-- Header -->
       <div class="flex flex-col lg:flex-row items-center justify-between mb-6 gap-6 text-white">
         <div class="flex items-center gap-4">
@@ -29,7 +29,7 @@
                 $t('specialOffers.flashSales')
               }}
             </h2>
-            <p class="text-purple-100 text-xs md:text-sm font-medium opacity-80">
+            <p class="text-white/80 text-xs md:text-sm font-medium opacity-80">
               {{ $t('specialOffers.flashSubtitle') }}
             </p>
           </div>
@@ -37,7 +37,7 @@
 
         <!-- Countdown - Compact -->
         <div class="bg-black/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10 shadow-2xl flex items-center gap-4">
-          <span class="text-[9px] font-black uppercase tracking-widest text-purple-200">{{
+          <span class="text-[9px] font-black uppercase tracking-widest text-white/60">{{
             $t('specialOffers.timeLeft') }}</span>
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-1">
