@@ -9,17 +9,19 @@ export class BudgetManagerService {
     @Inject('IAdCampaignRepository') private readonly repository: IAdCampaignRepository,
   ) {}
 
-  async deductBudget(campaignId: string, amount: number): Promise<void> {
+  async deductBudget(campaignId: string, amount: number, event: 'click' | 'impression' = 'click'): Promise<void> {
     const campaign = await this.repository.findById(campaignId);
     if (!campaign || !campaign.hasBudget()) return;
 
-    if (campaign.getProps().pricingModel === 'CPC' || campaign.getProps().pricingModel === 'CPM') {
-      // Record at domain level
+    const model = campaign.getProps().pricingModel;
+    if (model === 'CPC' && event === 'click') {
       campaign.recordClick(amount);
       await this.repository.save(campaign);
-
-      // Also update actual tabular metrics for reporting
       await this.repository.updateMetric(campaignId, 'click', amount);
+    } else if (model === 'CPM' && event === 'impression') {
+      campaign.recordImpression(amount);
+      await this.repository.save(campaign);
+      await this.repository.updateMetric(campaignId, 'impression', amount);
     }
   }
 }

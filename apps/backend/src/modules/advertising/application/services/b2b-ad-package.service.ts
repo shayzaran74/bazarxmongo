@@ -3,6 +3,7 @@
 // Vendor Prime 1-4 paketi satın aldığında AdCampaign oluşturur ve fiyat/içeriği uygular.
 
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Types } from 'mongoose';
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { VendorB2BData } from '@barterborsa/shared-persistence/schemas/backend/vendorB2BData.schema';
@@ -96,7 +97,7 @@ export class B2BAdPackageService {
       );
     }
 
-    const campaignId = 'adcam-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    const campaignId = randomUUID();
     await AdCampaign.create({
       id: campaignId,
       name:            `${input.type} ${input.period === 'WEEKLY' ? 'Haftalık' : 'Aylık'}`,

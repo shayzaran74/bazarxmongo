@@ -39,17 +39,11 @@ export class GetSideAdsHandler implements IQueryHandler<GetSideAdsQuery> {
   constructor(@Inject('ISideAdRepository') private readonly repository: ISideAdRepository) {}
   async execute(query: GetSideAdsQuery) {
     const ads = await this.repository.findAllActive();
-    console.log('GetSideAdsHandler - ads found in DB:', ads.length);
-    if (ads.length > 0) {
-      console.log('GetSideAdsHandler - first ad props:', ads[0].getProps());
-    }
-    const filtered = ads.filter(ad => {
+    return ads.filter(ad => {
       const props = ad.getProps();
-      if (!props.ecosystems || props.ecosystems.length === 0) return true; // Ecosystems yoksa herkese göster
+      if (!props.ecosystems || props.ecosystems.length === 0) return true;
       return props.ecosystems.includes('GLOBAL') ||
              props.ecosystems.includes(query.ecosystem.toUpperCase());
     });
-    console.log('GetSideAdsHandler - ads after filter:', filtered.length);
-    return filtered;
   }
 }

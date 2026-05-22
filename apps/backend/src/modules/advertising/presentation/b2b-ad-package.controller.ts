@@ -1,7 +1,7 @@
 // apps/backend/src/modules/advertising/presentation/b2b-ad-package.controller.ts
 // Master Plan v4.3 §3.2 — B2B Reklam Paketleri (Prime 1-4) REST endpoint'leri
 
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
@@ -51,7 +51,7 @@ export class B2BAdPackageController {
     @Body() body: PurchasePackageBody,
   ) {
     if (!user.vendorId) {
-      throw new Error('Bu kullanıcının vendor bağlantısı yok.');
+      throw new BadRequestException('Bu kullanıcının vendor bağlantısı yok.');
     }
     return this.packageService.purchasePackage({
       vendorId:  user.vendorId,

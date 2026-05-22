@@ -8,13 +8,14 @@ import {
   ApiBody 
 } from '@nestjs/swagger';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { GetVendorCampaignsQuery } from '../application/queries/get-vendor-campaigns.query';
 import { CreateAdCampaignCommand } from '../application/commands/create-ad-campaign.command';
 import { CreateAdCampaignDto } from '../application/dtos/create-ad-campaign.dto';
 
 @ApiTags('Ad Campaigns')
 @ApiBearerAuth()
+@Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('vendors/me/campaigns')
 export class AdCampaignVendorController {

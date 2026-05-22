@@ -50,10 +50,10 @@ export class SettingsController {
   @ApiResponse({ status: 200, description: 'Reklam listesi.' })
   @Get('side-ads')
   async getSideAds(@Query('ecosystem') ecosystem: string = 'BAZARX') {
-    const ads = await this.queryBus.execute(new GetSideAdsQuery(ecosystem));
+    const ads = await this.queryBus.execute(new GetSideAdsQuery(ecosystem)) as { id: { toString(): string }; getProps(): Record<string, unknown> }[];
     return {
       success: true,
-      data: ads.map((ad: any) => {
+      data: ads.map(ad => {
         const p = ad.getProps();
         return {
           id: ad.id.toString(),
