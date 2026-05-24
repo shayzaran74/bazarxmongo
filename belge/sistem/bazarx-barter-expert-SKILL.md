@@ -97,6 +97,12 @@ Aynı anda birden fazla karşı teklif varsa sıralama şu şekilde yapılır:
 - Nakit fark hesabı: `(Teklif Değeri - Eşleşen Değer)` → `Money` API ile hesaplanır, escrow'a bloke edilir.
 - Kısmi eşleşmede kalan miktar aynı teklif altında `PENDING` kalır, bir sonraki batch'e girer.
 
+### 4.4.1 Batch Scheduler Implementasyonu
+- `@Cron('0 2 * * *')` dekoratörü ile her gece 02:00'de otomatik tetiklenir.
+- `BarterMatchScheduler` sınıfı `OnApplicationBootstrap` / `OnModuleDestroy` implementasyonu **gerektirmez** — NestJS scheduler modülü lifetime yönetimini yapar.
+- `runDailyBatch()` içinde 23 saatlik tekrar engeli **yoktur**; cron zaten günde bir kez tetikler.
+- Match skoru eşiği: **50 puan** (minimum), **80 puan** (`FULL_ONLY` tercihi için daha yüksek eşik).
+
 ### 4.5 Batch Akışı (Pseudocode)
 ```
 runDailyBatch():
@@ -190,7 +196,7 @@ interface GarageSale {
 - Aynı grup/holding içi takaslarda (pazaryerinde gerçekleşen) **%6 sistem yönetim bedeli** kesilir.
 
 ## 6. Güvenli Takas (Escrow & 5 Adım) Kuralları ⭐
-- **%20 Teminat (Blokaj):** Takas miktarının **%20'si** işlem başında **her iki taraftan da** bloke edilir.
+- **%20 Teminat (Blokaj):** Takas miktarının **%20'si** işlem başında **her iki taraftan da** bloke edilir. `CollateralCalculatorService` `DEFAULT_PERCENTAGE = 0.20` kullanır.
 - **5 Kademeli Teslimat:** Toplam takas miktarı **5 defada** gerçekleştirilerek tamamlanır.
 - **Teminat İadesi ve Komisyon:** Son gönderimde her iki taraf onay verdiğinde, 7 gün içinde üyelik seviyesine göre komisyon kesilerek kalan teminat iade edilir.
 - **Uyuşmazlık (Dispute):** Sorun çıkarsa süreç **Arabulucuya** gider. Haksız bulunan tarafın bloke edilen miktarı mağdur tarafın zararını karşılamak için kullanılır.
@@ -203,6 +209,7 @@ interface GarageSale {
 - **ORM:** Mongoose kullanılır. `@Schema()` + `@Prop()` dekoratörleri ile model tanımlanır. Ham `db.*` çağrısı yasaktır.
 - **Para hesapları:** `Decimal128` (MongoDB native) + `Money` API. JavaScript `number` ile para hesabı yapılmaz.
 - **Durum geçişleri:** `transitionTo` metodu kullanılır; `status` alanı doğrudan (`document.status = ...`) güncellenmez.
+- **`updatedAt` güncelleme:** SwapSession entity içinde domain metodlarda (`releaseCollateral`, `forfeitCollateral`) `this.props.updatedAt = new Date()` kullanılır, `this._updatedAt` değil. Entity üzerindeki tüm state mutation'larda `updatedAt` alanı güncellenir.
 - **Transactions:** Kritik işlemler (SwapSession oluşturma, escrow blokaj, Garaj Günü `soldQty` artışı, iade onayı, erken ödeme transferi) `mongoose.startSession()` + `session.withTransaction()` içinde çalışır.
 - **Race condition önlemi:** Stok ve kota kontrollerinde `findOneAndUpdate` + `$inc`/`$set` + optimistic locking (`__v`) kullanılır. `SERIALIZABLE` transaction yerine MongoDB'nin atomic operatörleri tercih edilir.
 - **16MB döküman limiti:** Embed array'lerde (`BarterPart[]`, `TradeOfferItem[]` vb.) `maxEmbedSize` kontrolü yapılır; büyük listeler ayrı collection'a taşınır.
