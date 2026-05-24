@@ -58,7 +58,10 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery, Result<any>> 
       // Vendor verisi
       vendor: vendorDoc ? {
         status: vendorDoc.status,
+        tier: (vendorDoc as any).tier,
         slug: (vendorDoc as any).slug,
+        barterEnabled: (vendorDoc as any).barterEnabled,
+        ecosystemId: (vendorDoc as any).ecosystemId,
         company: companyDoc ? {
           id: companyDoc.id,
           name: companyDoc.name,
