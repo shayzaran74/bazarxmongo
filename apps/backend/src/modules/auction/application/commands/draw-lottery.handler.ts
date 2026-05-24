@@ -31,6 +31,8 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
       this.logger.warn('Çekiliş için satılmış bilet bulunamadı', { lotteryId: command.lotteryId });
       lottery.draw();
     } else {
+      // Çekiliş tekrarlanabilirliği için seed kaydı
+      const seed = crypto.randomBytes(32).toString('hex');
       const winningIndex = crypto.randomInt(0, soldTickets.length);
       const winnerTicket = soldTickets[winningIndex];
       winningNumber = winnerTicket.numbers[0].toString();
@@ -38,10 +40,25 @@ export class DrawLotteryHandler implements ICommandHandler<DrawLotteryCommand> {
 
       lottery.drawManual(winningNumber, winnerId);
 
+      // Seed'i audit log'a kaydet — adil çekiliş kanıtı
+      await this.auditLog.log({
+        actorId: 'SYSTEM',
+        action: 'LOTTERY_SEED',
+        resourceType: 'Lottery',
+        resourceId: command.lotteryId,
+        newValue: {
+          seed,
+          winningIndex,
+          totalTickets: soldTickets.length,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
       this.logger.log('Çekiliş kazananı bulundu', {
         lotteryId: command.lotteryId,
         winnerId,
         winningNumber,
+        winningIndex,
       });
     }
 

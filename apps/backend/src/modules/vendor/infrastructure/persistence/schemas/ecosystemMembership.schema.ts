@@ -5,13 +5,13 @@ import { Schema, Types } from 'mongoose';
 
 export interface IEcosystemMembership {
   _id?: string;
-  dealerId: Types.ObjectId;
-  ecosystemId: Types.ObjectId;
+  dealerId: string;
+  ecosystemId: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'REMOVED';
   joinedAt: Date;
   suspendedAt?: Date;
   removedAt?: Date;
-  addedByUserId: Types.ObjectId;
+  addedByUserId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,13 +19,13 @@ export interface IEcosystemMembership {
 export const EcosystemMembershipSchema = new Schema<IEcosystemMembership>(
   {
     _id: { type: String },
-    dealerId: { type: Schema.Types.ObjectId, required: true },
-    ecosystemId: { type: Schema.Types.ObjectId, required: true },
+    dealerId: { type: String, required: true },
+    ecosystemId: { type: String, required: true },
     status: { type: String, enum: ['ACTIVE', 'SUSPENDED', 'REMOVED'], default: 'ACTIVE' },
     joinedAt: { type: Date, default: Date.now },
     suspendedAt: { type: Date },
     removedAt: { type: Date },
-    addedByUserId: { type: Schema.Types.ObjectId, required: true },
+    addedByUserId: { type: String, required: true },
   },
   {
     timestamps: true,

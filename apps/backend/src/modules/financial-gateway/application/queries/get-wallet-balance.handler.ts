@@ -1,6 +1,14 @@
+// apps/backend/src/modules/financial-gateway/application/queries/get-wallet-balance.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { FinancialGatewayService } from '../../financial-gateway.service';
 import { GetWalletBalanceQuery } from './get-wallet-balance.query';
+
+interface BalanceResponse {
+  balance: string;
+  availableBalance: string;
+  blockedBalance: string;
+}
 
 @QueryHandler(GetWalletBalanceQuery)
 export class GetWalletBalanceHandler
@@ -14,19 +22,19 @@ export class GetWalletBalanceHandler
     const balance = await this.financialGateway.getBalance(
       query.userId,
       query.accountType
-    ) as { balance: string; availableBalance: string; blockedBalance: string };
+    ) as BalanceResponse;
     return {
-      balance: parseFloat(balance.balance),
-      availableBalance: parseFloat(balance.availableBalance),
-      blockedBalance: parseFloat(balance.blockedBalance),
+      balance: balance.balance,
+      availableBalance: balance.availableBalance,
+      blockedBalance: balance.blockedBalance,
       currency: 'TRY',
       accounts: [
         {
           id: 'main-account',
           type: 'MAIN',
-          balance: parseFloat(balance.balance),
-          availableBalance: parseFloat(balance.availableBalance),
-          blockedBalance: parseFloat(balance.blockedBalance),
+          balance: balance.balance,
+          availableBalance: balance.availableBalance,
+          blockedBalance: balance.blockedBalance,
           currency: 'TRY'
         }
       ],

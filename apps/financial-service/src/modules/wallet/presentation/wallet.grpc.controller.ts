@@ -34,6 +34,26 @@ function extractError(error: unknown): string {
   return error instanceof Error ? error.message : 'Bilinmeyen hata oluştu.';
 }
 
+function validateIBAN(iban: string): { valid: boolean; error?: string } {
+  const cleaned = iban.replace(/\s/g, '').toUpperCase();
+  if (cleaned.length < 15 || cleaned.length > 34) {
+    return { valid: false, error: 'IBAN uzunluğu geçersiz (15-34 karakter olmalı).' };
+  }
+  // TR IBAN checksum (ISO 13616 mod97-10)
+  if (cleaned.startsWith('TR')) {
+    const rearranged = cleaned.slice(4) + cleaned.slice(0, 4);
+    const numeric = [...rearranged].map(c => (c >= 'A' ? (c.charCodeAt(0) - 55).toString() : c)).join('');
+    let remainder = 0;
+    for (const digit of numeric) {
+      remainder = (remainder * 10 + parseInt(digit, 10)) % 97;
+    }
+    if (remainder !== 1) {
+      return { valid: false, error: 'IBAN checksum geçersiz.' };
+    }
+  }
+  return { valid: true };
+}
+
 @Controller()
 export class WalletGrpcController {
   constructor(
@@ -235,6 +255,9 @@ export class WalletGrpcController {
       const amount = new Decimal(data.amount);
       if (!amount.isPositive()) return { success: false, error: 'Çekim tutarı sıfırdan büyük olmalıdır.' };
 
+      const ibanCheck = validateIBAN(data.iban);
+      if (!ibanCheck.valid) return { success: false, error: ibanCheck.error };
+
       const session = await this.connection.startSession();
       let withdrawalId: string;
       try {
@@ -256,7 +279,7 @@ export class WalletGrpcController {
 
           await this.accountModel.updateOne(
             { _id: mainAccount._id ?? mainAccount.id },
-            { $inc: { availableBalance: d128(-amount.toNumber()), blockedBalance: d128(amount.toNumber()) } },
+            { $inc: { availableBalance: d128(amount.negated().toFixed(2)), blockedBalance: d128(amount.toFixed(2)) } },
             { session },
           );
 

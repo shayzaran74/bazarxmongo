@@ -288,51 +288,55 @@ Bkz. [1.4] — Redis lock yok.
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRITIK)
+### Bu Sprint (KRİTİK) — 1 DÜZELTİLDİ, 1 KALAN
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 1 | `garage-sale.service.ts:86,92-100` | `campaignPrice` gerçek hesaplama — `originalPrice` Listing'den alınmalı |
-| 2 | `garage-sale.service.ts:181-204` | Dealer kota kontrolü atomic yap — aggregate + kontrol tek transaction'da |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `garage-sale.service.ts` | `campaignPrice` — Listing.price'dan gerçek hesaplama + BadRequestException | ✅ |
+| 2 | `garage-sale.service.ts:181-204` | Dealer kota kontrolü atomic yap | ⬜ Backlog |
 
-### Sonraki Sprint (YÜKSEK)
+### Sonraki Sprint (YÜKSEK) — 1 DÜZELTİLDİ, 1 KALAN
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 3 | `garage-sale.service.ts:166` | `listingId` → `productId` düzelt |
-| 4 | `garage-sale.scheduler.ts` | Redis distributed lock ekle |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 3 | `garage-sale.service.ts:166` | `listingId` → `productId` düzelt | ⬜ Backlog |
+| 4 | `garage-sale.scheduler.ts` | Redis distributed lock eklendi (activate + close ayrı lock) | ✅ |
 
-### Backlog (ORTA)
+### Backlog (ORTA) — 2 DÜZELTİLDİ, 2 KALAN
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 5 | `ecosystemOrder.schema.ts` | Dealer kota için compound index: `{ garageSaleId: 1, dealerId: 1, status: 1 }` |
-| 6 | `ecosystemOrder.schema.ts` | Watchover için compound index: `{ dealerId: 1, productId: 1, status: 1 }` |
-| 7 | `garage-sale.service.ts:220-224` | EXHAUSTED güncellemesi `findOneAndUpdate` ile atomic yap |
-| 8 | `watchover.service.ts:64-90` | SmartCap `totalStock` kaynağını belgele — EcosystemProduct.stock mı, yoksa hesaplanan mi |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 5 | `ecosystemOrder.schema.ts` | Compound index: `{ garageSaleId: 1, dealerId: 1, status: 1 }` | ✅ |
+| 6 | `ecosystemOrder.schema.ts` | Compound index: `{ dealerId: 1, productId: 1, status: 1 }` | ✅ |
+| 7 | `garage-sale.service.ts:220-224` | EXHAUSTED atomic güncellemesi | ⬜ Backlog |
+| 8 | `watchover.service.ts` | SmartCap `totalStock` kaynağı belgeleme | ⬜ Backlog |
 
-### Belgeleme (DÜŞÜK)
+### Belgeleme (DÜŞÜK) — KALAN
 
 | # | Dosya | Not |
 |---|-------|-----|
-| 9 | `garage-sale.service.ts` | `listingId` vs `productId` alan adı tutarsızlığı — hangisi doğru? Schema'yı kontrol et |
-| 10 | SmartCap | SmartCap hesabı için hangi stok kaynağı kullanılıyor? `maxTotalQty - soldQty` veya `EcosystemProduct.stock` |
+| 9 | `garage-sale.service.ts` | `listingId` vs `productId` alan adı tutarsızlığı |
+| 10 | SmartCap | Stok kaynağı belgelenmeli |
 
 ---
 
-## Sonuç
+## Sonuç — GÜNCELLEME (2026-05-24)
 
-Garage Sale ve SmartCap sistemi **yapısal olarak implement edilmiş** — atomic `findOneAndUpdate` + `$inc` + `$expr` doğru kullanılmış, scheduler mevcut, audit log tüm kritik eylemlerde var.
+| Seviye | Başlangıç | Düzeltildi | Kalan |
+|--------|-----------|------------|-------|
+| KRİTİK | 2 | 1 | 1 (dealer kota race) |
+| YÜKSEK | 2 | 1 | 1 (listingId/productId) |
+| ORTA | 4 | 2 | 2 (backlog) |
+| DÜŞÜK | 3 | 0 | 3 (backlog) |
 
-**En kritik iki sorun:**
-
-1. **`campaignPrice` placeholder** — `originalPrice` ve `campaignPrice` her zaman `0` olarak kaydediliyor. Siparişler 0 TL fiyatla oluşuyor. Bu acil düzeltilmeli.
-
-2. **Dealer kota kontrolü race condition** — aggregate sonucu ile EcosystemOrder yazma arasında race window. İki eş zamanlı sipariş aynı bayi için kota aşabilir.
+**Kapanan sorunlar:**
+1. ✅ `campaignPrice` placeholder → Listing fiyatından gerçek indirimli fiyat hesaplanıyor
+2. ✅ GarageSale scheduler → Redis distributed lock (activate + close ayrı key)
+3. ✅ EcosystemOrder compound index'ler eklendi (dealer kota + watchover sorguları)
 
 **İyi bulgular:**
 - Atomic `findOneAndUpdate` + `$expr` + `$inc` ✅
-- Redis lock Auction ve Lottery'de var ✅ (ama GarageSale scheduler'da yok ⚠️)
+- Redis lock artık GarageSale scheduler'da da var ✅
 - Audit log tüm kritik eylemlerde ✅
 - SmartCap iki ayrı kontrol olarak ayrı method'larda ✅
 

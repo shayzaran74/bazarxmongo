@@ -23,25 +23,25 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
     const doc = await this.orderModel.create(
       {
         _id: new Types.ObjectId().toString(),
-        dealerId: new Types.ObjectId(data.dealerId),
-        ecosystemId: new Types.ObjectId(data.ecosystemId),
-        productId: new Types.ObjectId(data.productId),
-        orderId: new Types.ObjectId(data.orderId),
+        dealerId: data.dealerId,
+        ecosystemId: data.ecosystemId,
+        productId: data.productId,
+        orderId: data.orderId,
         quantity: data.quantity,
         unitPrice: Types.Decimal128.fromString(data.unitPrice),
         isGarageSale: data.isGarageSale,
-        garageSaleId: data.garageSaleId ? new Types.ObjectId(data.garageSaleId) : undefined,
+        garageSaleId: data.garageSaleId,
         status: data.status,
         ...(options?.session ? { session: options.session } : {}),
       },
     );
 
-    const result = doc as unknown as { _id?: string; id: string; dealerId: { toString(): string }; ecosystemId: { toString(): string }; orderId: { toString(): string }; status: string };
+    const result = doc as unknown as { _id?: string; id: string; dealerId: string; ecosystemId: string; orderId: string; status: string };
     return {
       id: result._id?.toString() || result.id,
-      dealerId: result.dealerId.toString(),
-      ecosystemId: result.ecosystemId.toString(),
-      orderId: result.orderId.toString(),
+      dealerId: result.dealerId,
+      ecosystemId: result.ecosystemId,
+      orderId: result.orderId,
       status: result.status,
     };
   }
@@ -56,8 +56,8 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
       [
         {
           $match: {
-            dealerId: new Types.ObjectId(dealerId),
-            productId: new Types.ObjectId(productId),
+            dealerId: dealerId,
+            productId: productId,
             status: { $in: statuses },
           },
         },
@@ -78,7 +78,7 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
     isGarageSale: boolean; garageSaleId?: string; createdAt: Date;
   }>> {
     const docs = await this.orderModel
-      .find({ ecosystemId: new Types.ObjectId(ecosystemId) })
+      .find({ ecosystemId: ecosystemId })
       .sort({ createdAt: -1 })
       .limit(limit ?? 100)
       .lean()
@@ -86,14 +86,14 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
 
     return docs.map(d => ({
       id: d._id?.toString() || '',
-      dealerId: d.dealerId.toString(),
-      ecosystemId: d.ecosystemId.toString(),
-      productId: d.productId.toString(),
-      orderId: d.orderId.toString(),
+      dealerId: d.dealerId,
+      ecosystemId: d.ecosystemId,
+      productId: d.productId,
+      orderId: d.orderId,
       quantity: d.quantity,
       status: d.status,
       isGarageSale: d.isGarageSale,
-      garageSaleId: d.garageSaleId?.toString(),
+      garageSaleId: d.garageSaleId,
       createdAt: d.createdAt,
     }));
   }
@@ -106,8 +106,8 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
     orderId: string; quantity: number; status: string;
     isGarageSale: boolean; garageSaleId?: string; createdAt: Date;
   }>> {
-    const filter: Record<string, unknown> = { dealerId: new Types.ObjectId(dealerId) };
-    if (ecosystemId) filter.ecosystemId = new Types.ObjectId(ecosystemId);
+    const filter: Record<string, unknown> = { dealerId: dealerId };
+    if (ecosystemId) filter.ecosystemId = ecosystemId;
 
     const docs = await this.orderModel
       .find(filter)
@@ -117,14 +117,14 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
 
     return docs.map(d => ({
       id: d._id?.toString() || '',
-      dealerId: d.dealerId.toString(),
-      ecosystemId: d.ecosystemId.toString(),
-      productId: d.productId.toString(),
-      orderId: d.orderId.toString(),
+      dealerId: d.dealerId,
+      ecosystemId: d.ecosystemId,
+      productId: d.productId,
+      orderId: d.orderId,
       quantity: d.quantity,
       status: d.status,
       isGarageSale: d.isGarageSale,
-      garageSaleId: d.garageSaleId?.toString(),
+      garageSaleId: d.garageSaleId,
       createdAt: d.createdAt,
     }));
   }
@@ -135,7 +135,7 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
     options?: { session?: ClientSession },
   ): Promise<void> {
     await this.orderModel.updateOne(
-      { orderId: new Types.ObjectId(orderId) },
+      { orderId: orderId },
       { $set: { status } },
       options,
     );
@@ -144,7 +144,7 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
   async findEcosystemById(ecosystemId: string): Promise<{ id: string; internalCommRate: number } | null> {
     // EkosistemOrder'dan ecosystemId ile BrandEcosystem'a join
     const doc = await this.orderModel
-      .findOne({ ecosystemId: new Types.ObjectId(ecosystemId) })
+      .findOne({ ecosystemId: ecosystemId })
       .select('ecosystemId')
       .lean()
       .exec();

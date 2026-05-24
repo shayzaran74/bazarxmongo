@@ -8,7 +8,7 @@ import { Decimal } from 'decimal.js';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IVendorB2BDataRepository } from '../../../barter/domain/repositories/vendor-b2b-data.repository.interface';
 import { IUserLevelRepository } from '../../../barter/domain/repositories/user-level.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 
 export interface CommissionInput {
   vendorId:            string;
@@ -43,7 +43,7 @@ export class CommissionEngineService {
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('IVendorB2BDataRepository') private readonly b2bRepo: IVendorB2BDataRepository,
     @Inject('IUserLevelRepository') private readonly userLevelRepo: IUserLevelRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
   ) {}
 
   async calculate(input: CommissionInput): Promise<CommissionBreakdown> {

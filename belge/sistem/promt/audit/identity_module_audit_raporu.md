@@ -8,12 +8,12 @@
 
 ## Yönetici Özeti
 
-| Seviye | Bulgu |
-|--------|-------|
-| KRİTİK | 1 |
-| YÜKSEK | 2 |
-| ORTA | 4 |
-| DÜŞÜK | 3 |
+| Seviye | Bulgu | Düzeltildi | Kalan |
+|--------|-------|------------|-------|
+| KRİTİK | 1 | 1 | 0 |
+| YÜKSEK | 2 | 2 | 0 |
+| ORTA | 4 | 1 | 3 (backlog) |
+| DÜŞÜK | 3 | 0 | 3 (backlog) |
 
 ---
 
@@ -269,31 +269,31 @@ Token reuse detection için her token'ın bir "family ID" olmalı — aynı fami
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRİTİK)
+### Bu Sprint (KRİTİK) — ✅ TÜMÜ DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `jwt.strategy.ts` | `validate()` → `RequestUser` interface, cookie extractor `any` kaldırıldı | ✅ |
+
+### Sonraki Sprint (YÜKSEK) — ✅ TÜMÜ DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 2 | `auth.service.ts:107` | `updateMany` → `findOneAndUpdate` (atomic) + token reuse uyarısı | ✅ |
+| 3 | `google-oauth.controller.ts` | Token'lar httpOnly cookie ile — URL parametresinden kaldırıldı | ✅ |
+| 3b | `roles.guard.ts` | WebSocket context desteği + `RequestUser` tipi | ✅ |
+
+### Backlog (ORTA) — KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
-| 1 | `jwt.strategy.ts:36` | `validate()` return type → `RequestUser` interface |
-
-### Sonraki Sprint (YÜKSEK)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 2 | `auth.service.ts:107` | Session update atomic — `findOneAndUpdate` veya transaction |
-| 3 | `google-oauth.controller.ts:37` | Token'ları cookie ile gönder — URL parametresi kaldır |
-| 4 | `auth.service.ts` | Token family tracking — refresh token reuse detection ekle |
+| 4 | `auth.service.ts` | Token family tracking — refresh token reuse detection |
 | 5 | `auth.service.ts` | LoginHistory yazımı ekle |
-
-### Backlog (ORTA)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
 | 6 | `google-oauth.controller.ts` | `state` CSRF token ekle |
-| 7 | `roles.guard.ts` | WebSocket context için ayrı `WsRolesGuard` |
-| 8 | `register-user.handler.ts` | Email VO kullan veya kaldır (duplicate normalizasyon) |
+| 8 | `register-user.handler.ts` | Email VO kullan veya kaldır |
 | 9 | `admin-user.controller.ts` | Role change DTO'da SUPER_ADMIN ataması kontrolü |
 
-### Belgeleme (DÜŞÜK)
+### Belgeleme (DÜŞÜK) — KALAN
 
 | # | Dosya | Not |
 |---|-------|-----|

@@ -122,7 +122,7 @@ export class LotteryController {
 
     // ─── Harici ödeme: cüzdandan blokaj (gRPC — transaction dışında) ──────────
     const totalAmount = Number(props.ticketPrice) * quantity;
-    const idempotencyKey = `lottery-ticket-${id}-${user.id}-${crypto.randomUUID()}`;
+    const idempotencyKey = `lottery-ticket-${id}-${user.id}`;
     const holdResult = await this.financialGateway.holdFunds(
       user.id,
       totalAmount.toString(),

@@ -33,7 +33,7 @@ export class AuctionMapper {
       updatedAt: doc.updatedAt,
     };
     const domain = Auction.createFrom(props, doc.id);
-    (domain as any)._version = doc.version ?? 1;
+    (domain as unknown as { _version: number })._version = doc.version ?? 1;
     return domain;
   }
 

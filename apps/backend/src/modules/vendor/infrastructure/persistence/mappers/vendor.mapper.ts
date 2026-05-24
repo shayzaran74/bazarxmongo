@@ -37,7 +37,7 @@ export class VendorMapper {
       profile: undefined, // profile ayrı collection'da, populate gerektirir
     };
 
-    return Vendor.fromPersistence(props, doc.id);
+    return Vendor.fromPersistence(props, doc.id ?? (doc as { _id?: string })._id?.toString());
   }
 
   public static toPersistence(vendor: Vendor): Record<string, unknown> {

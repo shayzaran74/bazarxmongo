@@ -116,12 +116,12 @@ export class MongoXpBatchRepository implements repo.IXpBatchRepository {
       .find({ accountId, currentBalance: { $gt: 0 }, expiresAt: { $gt: new Date() }, isBurned: false })
       .sort({ createdAt: 1 })
       .lean();
-    return raws.map(raw => LoyaltyMappers.xpBatchToDomain(raw as any));
+    return raws.map(raw => LoyaltyMappers.xpBatchToDomain(raw as unknown as Parameters<typeof LoyaltyMappers.xpBatchToDomain>[0]));
   }
 
   async findExpiredBatches(now: Date) {
     const raws = await this.model.find({ expiresAt: { $lte: now }, isBurned: false }).lean();
-    return raws.map(raw => LoyaltyMappers.xpBatchToDomain(raw as any));
+    return raws.map(raw => LoyaltyMappers.xpBatchToDomain(raw as unknown as Parameters<typeof LoyaltyMappers.xpBatchToDomain>[0]));
   }
 }
 

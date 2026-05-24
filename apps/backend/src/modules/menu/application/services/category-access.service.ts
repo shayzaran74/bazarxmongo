@@ -46,7 +46,7 @@ export class CategoryAccessService {
     if (categoryLevel === fullAccessThreshold - 1) {
       const used = await this.previewUsedThisMonth(userId, categoryLevel);
       if (!used) {
-        return { allowed: true, mode: 'PREVIEW', previewRemainingThisMonth: 0 };
+        return { allowed: true, mode: 'PREVIEW', previewRemainingThisMonth: 1 };
       }
       return { allowed: false, mode: 'DENIED', previewRemainingThisMonth: 0 };
     }

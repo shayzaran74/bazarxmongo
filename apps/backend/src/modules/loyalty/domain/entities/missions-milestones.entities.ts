@@ -33,7 +33,9 @@ export interface UserMissionProps {
 export class UserMission extends AggregateRoot<UserMissionProps> {
   private constructor(props: UserMissionProps, id?: string) { super(props, id); }
   public static start(userId: string, missionId: string, target: number): UserMission {
-    const progress = (MissionProgress as any).create(0, target).data;
+    const result = MissionProgress.create(0, target);
+    if (!result.success) throw new Error('MissionProgress oluşturulamadı');
+    const progress = result.data;
     return new UserMission({
       userId,
       missionId,
@@ -43,7 +45,9 @@ export class UserMission extends AggregateRoot<UserMissionProps> {
   }
 
   public updateProgress(current: number): void {
-    const newProgress = (MissionProgress as any).create(current, this.props.progress.target).data;
+    const result = MissionProgress.create(current, this.props.progress.target);
+    if (!result.success) throw new Error('MissionProgress güncellenemedi');
+    const newProgress = result.data;
     this.props.progress = newProgress;
     if (this.isComplete() && this.props.status === MissionStatus.IN_PROGRESS) {
       this.complete();

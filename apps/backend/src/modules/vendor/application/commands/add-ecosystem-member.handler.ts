@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { AddEcosystemMemberCommand } from './add-ecosystem-member.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
 import { ECOSYSTEM_MEMBERSHIP_LIMITS, TIER_UPGRADE_MAP } from '../../domain/constants/ecosystem.constants';
@@ -20,7 +20,7 @@ import { AuditLogService } from '../../../audit/application/audit-log.service';
 export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMemberCommand> {
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     @Inject('IEcosystemMembershipRepository')
     private readonly membershipRepo: IEcosystemMembershipRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
@@ -41,7 +41,7 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
       throw new ForbiddenException('Bu ekosisteme üye ekleme yetkiniz yok.');
     }
 
-    // 2b. Üye limiti kontrolü
+    // 2b. Üye limiti kontrolü (pre-check — kesin kontrol create anında unique index ile)
     const currentMembers = await this.membershipRepo.findByEcosystemId(ecosystemId);
     const activeCount = currentMembers.filter(m => m.status === 'ACTIVE').length;
     const maxMembers = (ecosystem as unknown as { maxMembers?: number }).maxMembers ?? 50;
@@ -50,11 +50,13 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
         `Ekosistem üye limiti doldu (${maxMembers}). Daha fazla üye eklemek için limitinizi yükseltmeniz gerekiyor.`,
       );
     }
+    // Not: Unique compound index (dealerId+ecosystemId) duplicate üyeliği DB seviyesinde engeller.
+    // Limit kontrolü pre-check — son derece yüksek concurrent durumda 1 fazla üye olabilir ama duplicate olmaz.
 
     // 3. Eklenecek member vendor'ı bul
     const memberVendor = await this.vendorRepo.findById(memberVendorId);
     if (!memberVendor) throw new NotFoundException('Bayi bulunamadı.');
-    if (memberVendor.status !== 'APPROVED') {
+    if (!memberVendor.isActive()) {
       throw new BadRequestException('Sadece onaylanmış (APPROVED) bayiler ekosisteme eklenebilir.');
     }
 
@@ -63,7 +65,7 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
       throw new ForbiddenException({
         code: 'APEX_CANNOT_JOIN',
         message: 'APEX tier bayi başka bir ekosisteme üye olamaz.',
-      } as any);
+      });
     }
 
     // 5. Zaten üye mi kontrol et
@@ -73,13 +75,13 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
         throw new ConflictException({
           code: 'ALREADY_MEMBER',
           message: 'Bu bayi zaten bu ekosistemin aktif üyesidir.',
-        } as any);
+        });
       }
       if (existing.status === 'SUSPENDED') {
         throw new BadRequestException({
           code: 'MEMBER_SUSPENDED',
           message: 'Bu bayi askıya alınmış durumda. Üyelik aktifleştirilemez.',
-        } as any);
+        });
       }
       // REMOVED → yeniden aktifleştir
       await this.membershipRepo.updateStatus(memberVendorId, ecosystemId, 'ACTIVE', new Date());
@@ -104,7 +106,7 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
         currentCount: 0,
         limit: 0,
         upgradeRequired: TIER_UPGRADE_MAP[memberVendor.tier],
-      } as any);
+      });
     }
 
     const currentCount = await this.membershipRepo.countActiveByDealerId(memberVendorId);
@@ -118,12 +120,21 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
       });
     }
 
-    // 7. EcosystemMembership kaydı oluştur
-    const membership = await this.membershipRepo.create({
-      dealerId: memberVendorId,
-      ecosystemId,
-      addedByUserId: userId,
-    });
+    // 7. EcosystemMembership kaydı oluştur (unique index ile race condition korumalı)
+    let membership: { id: string; dealerId: string; ecosystemId: string; status: string; joinedAt: Date };
+    try {
+      membership = await this.membershipRepo.create({
+        dealerId: memberVendorId,
+        ecosystemId,
+        addedByUserId: userId,
+      });
+    } catch (err: unknown) {
+      const mongoErr = err as { code?: number };
+      if (mongoErr.code === 11000) {
+        throw new ConflictException('Bu bayi zaten bu ekosisteme kayıtlı (eşzamanlı istek algılandı).');
+      }
+      throw err;
+    }
 
     // 8. AuditLog yaz
     await this.auditLog.log({

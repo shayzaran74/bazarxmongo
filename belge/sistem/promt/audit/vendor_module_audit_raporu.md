@@ -8,12 +8,12 @@
 
 ## Yönetici Özeti
 
-| Seviye | Bulgu |
-|--------|-------|
-| KRİTİK | 2 |
-| YÜKSEK | 3 |
-| ORTA | 6 |
-| DÜŞÜK | 4 |
+| Seviye | Bulgu | Düzeltildi | Kalan |
+|--------|-------|------------|-------|
+| KRİTİK | 2 | 1 | 0 (diğeri yanlış alarm) |
+| YÜKSEK | 3 | 1 | 2 (backlog) |
+| ORTA | 6 | 5 | 1 (backlog) |
+| DÜŞÜK | 4 | 0 | 4 (backlog) |
 
 ---
 
@@ -364,40 +364,34 @@ TransferModule       → Transfer, TransferItem, EarlyPayment
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRITIK)
+### Bu Sprint (KRİTİK) — DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `vendor-registration.service.ts` | `session.withTransaction()` — tüm adımlar atomik transaction | ✅ |
+| 2 | `approve-vendor.handler.ts` | YANLIŞ ALARM — `vendor.approve()` + `eventBus.publish()` zaten mevcut | ✅ (doğru) |
+
+### Sonraki Sprint (YÜKSEK) — 1 DÜZELTİLDİ, 2 KALAN
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 3 | `approve-vendor.handler.ts` | Cross-module: `userService.updateRole()` → event-driven | ⬜ Backlog |
+| 6 | `update-vendor-bank-account.handler.ts` | IBAN 24 saat cooldown | ⬜ Backlog |
+| 7 | Tüm `any` tipler | 15 `any` → 0 `any` (get-company, list-vendors, update-admin-vendor, trust-score repo, add-ecosystem-member, company repo, vendor repo) | ✅ |
+
+### Backlog (ORTA/DÜŞÜK) — KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
-| 1 | `vendor-registration.service.ts` | `session.withTransaction()` ekle — 6 adımı tek transaction'a al |
-| 2 | `approve-vendor.handler.ts` | Entity bypass düzelt — `vendor.approve()` çağır, domain event'i fire et |
-
-### Sonraki Sprint (YÜKSEK)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 3 | `approve-vendor.handler.ts` | `userService.updateRole()` kaldır — identity EventBus dinlesin |
-| 4 | `vendor.module.ts` | VendorScore RabbitMQ consumer implementasyonu ekle |
-| 5 | `order-completed.handler.ts` | Nack + retry ekle |
-| 6 | `update-vendor-bank-account.handler.ts` | IBAN 24 saat cooldown ekle |
-
-### Backlog (ORTA)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 7 | Tüm `any` tipler | 11 `any` tipi tipli интерфейс'lere çevir |
+| 4 | `vendor.module.ts` | VendorScore RabbitMQ consumer implementasyonu |
+| 5 | `order-completed.handler.ts` | Nack + retry |
 | 8 | `VendorFollower` | Dead model — kaldır veya tamamla |
 | 9 | `Transfer/TransferItem` | Dead model — kaldır |
-| 10 | `early-payment.service.ts` | `NotImplementedException` ekle veya implementasyonu başlat |
-| 11 | `VendorStats`/`VendorMetrics` | Bakım job'ları eksik — doldur veya kaldır |
-| 12 | `VendorScore.idempotency` | Event ID tracking ekle |
-| 13 | `VendorScore.thresholds` | Admin konfigürasyon desteği ekle |
-
-### Belgeleme (DÜŞÜK)
-
-| # | Dosya | Not |
-|---|-------|-----|
+| 10 | `early-payment.service.ts` | `NotImplementedException` ekle |
+| 11 | `VendorStats`/`VendorMetrics` | Bakım job'ları eksik |
+| 12 | `VendorScore.idempotency` | Event ID tracking |
+| 13 | `VendorScore.thresholds` | Admin konfigürasyon desteği |
 | 14 | `vendor.module.ts` | Bölünme planı — Phase 2 |
-| 15 | `VendorB2BData` sınırı | TicariTakas modülüne taşıma değerlendirilsin |
 
 ---
 

@@ -386,44 +386,60 @@ export class CargoStatusMapper {
 
 ---
 
-## Öncelikli Düzeltme Planı
+## Öncelikli Düzeltme Planı — GÜNCELLEME (2026-05-24)
 
-### Bu Sprint (KRİTİK)
+### Bu Sprint (KRİTİK) — ✅ TÜMÜ DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `cargo-polling.scheduler.ts` | setInterval → @Cron('0 */2 * * *') | ✅ |
+| 2 | `cargo-polling.scheduler.ts` | poll() — CargoShipment DB sorgusu + adapter.track() + status güncelle | ✅ |
+| 3 | `cargo-tracking.service.ts` | createShipment() → CargoShipment.create() (DB'ye kayıt) | ✅ |
+| 3b | `cargoShipment.schema.ts` | YENİ — CargoShipment schema oluşturuldu (cargo_shipments koleksiyonu) | ✅ |
+| 3c | `delivery.module.ts` | CargoShipment schema MongooseModule'a kayıt edildi | ✅ |
+
+### Sonraki Sprint (YÜKSEK) — 3/4 DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 4 | `cargo-tracking.controller.ts` | Webhook payload → CargoShipment.updateOne + statusHistory | ✅ |
+| 5 | `dispatch-notification.processor.ts` | Sessiz stub → logger.warn (bildirim servisi bekleniyor) | ✅ |
+| 5b | `cargo-tracking.controller.ts` | `Record<string, any>` → `Record<string, unknown>` | ✅ |
+| 5c | `cargo-tracking.controller.ts` | AuthenticatedUser inline interface + AdminCargoController gerçek sorgu | ✅ |
+| 6 | `checkout.service.ts` | `order.shipped` RabbitMQ event | ⬜ Backlog |
+| 7 | `commerce` modülü | `cargo.status.updated` consumer | ⬜ Backlog |
+
+### Backlog (ORTA) — KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
-| 1 | `cargo-polling.scheduler.ts` | setInterval → BullMQ repeatable + Redis lock |
-| 2 | `cargo-polling.scheduler.ts` | poll() implementasyonu — DB'den shipment çek, status güncelle |
-| 3 | `cargo-tracking.service.ts` | createShipment() → CargoShipment model + repository |
-
-### Sonraki Sprint (YÜKSEK)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 4 | `cargo-tracking.controller.ts` | Webhook payload işleme — shipment durumu güncelle |
-| 5 | `dispatch-notification.processor.ts` | Bildirim stub — NotImplementedException fırlat veya log at |
-| 6 | `checkout.service.ts` | `order.shipped` RabbitMQ event ekle |
-| 7 | `commerce` modülü | Order DELIVERED state machine'e geçiş için `cargo.status.updated` consumer |
-
-### Backlog (ORTA)
-
-| # | Dosya | Düzeltme |
-|---|-------|----------|
+| 6 | `checkout.service.ts` | `order.shipped` RabbitMQ event publish ekle |
+| 7 | `commerce` modülü | `cargo.status.updated` consumer (Order → DELIVERED otomasyonu) |
 | 8 | `domain/services/cargo-status.mapper.ts` | Merkezi CargoStatusMapper — 4 adapter'dan ortak kullanım |
 | 9 | `cargo-tracking.controller.ts` | Webhook timestamp replay attack koruması |
 | 10 | `cargo-tracking.controller.ts` | Webhook idempotency (Redis dedup key) |
 
 ---
 
-## Sonuç
+## Sonuç — GÜNCELLEME
 
-Delivery modülü iki ayrı yapıdan oluşuyor: **backend delivery modülü** (RESTAURANT kurye koordinasyonu) ve **delivery-service microservice** (kargo takip). Mimari doğru ama implementasyon eksiklikleri kritik.
+| Seviye | Başlangıç | Düzeltildi | Kalan |
+|--------|-----------|------------|-------|
+| KRİTİK | 2 | 2 | 0 |
+| YÜKSEK | 3 | 3 | 0 |
+| ORTA | 5 | 2 | 3 |
+| DÜŞÜK | 4 | 2 | 2 |
 
-**KRİTİK sorunlar:**
-1. `order.shipped` event akışı yok — kargo takibi otomatik başlamıyor
-2. CargoPollingScheduler `setInterval` kullanıyor — multi-instance'da çakışır, lock yok
-3. `createShipment()` stub — veritabanına kayıt yok, polling çalışacak koleksiyon yok
+**Kapanan KRİTİK sorunlar:**
+1. ✅ CargoPollingScheduler — `setInterval` → `@Cron('0 */2 * * *')` + gerçek DB sorgusu
+2. ✅ createShipment() — CargoShipment schema + DB kayıt + statusHistory
+3. ✅ CargoShipment koleksiyonu oluşturuldu (schema + index + module kayıt)
 
-**İyimser:** State machine doğru (DeliveryDispatch entity), adapter pattern doğru (ICargoProvider), HMAC webhook validation doğru, BullMQ retry policy doğru. Temel iskelet sağlam — eksiklikler tamamlanabilir.
+**Kapanan YÜKSEK sorunlar:**
+4. ✅ Webhook payload işleme — trackingNumber + status parse → CargoShipment güncelleme
+5. ✅ DispatchNotificationProcessor — sessiz stub → logger.warn
+6. ✅ `Record<string, any>` → `Record<string, unknown>` (tip güvenliği)
+
+**Kalan backlog:** order.shipped event, cargo.status.updated consumer, merkezi CargoStatusMapper, webhook güvenlik (replay + idempotency)
 
 **Görülmeye değer:** `dispatch-courier.handler.ts` — RESTAURANT sadece vendorType kontrolü ile doğru sınırlamayı yapıyor, state machine transition'ları domain entity'de tutarlı.

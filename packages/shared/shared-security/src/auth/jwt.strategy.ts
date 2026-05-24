@@ -1,18 +1,23 @@
 // packages/shared/shared-security/src/auth/jwt.strategy.ts
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-// import type { Request } from 'express'; // Removed to fix frontend build errors
 
-/**
- * JWT Access Token doğrulama stratejisi.
- * Access Token ömrü: 15 dakika (Config üzerinden yönetilir).
- *
- * Token kaynak öncelikleri:
- *  1. Authorization: Bearer ... header (mobile / API client'lar için)
- *  2. httpOnly access_token cookie (web SSR / SPA için — XSS güvenli)
- */
+export interface RequestUser {
+  id: string;
+  email: string;
+  role: 'USER' | 'VENDOR' | 'ADMIN' | 'SUPER_ADMIN';
+  platform: 'BAZARX' | 'BARTERBORSA';
+}
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  platform: string;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
@@ -23,9 +28,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (req: any & { cookies?: Record<string, string> }) => {
-          const cookies = req.cookies;
-          return cookies?.access_token ?? null;
+        (req: { cookies?: Record<string, string> }) => {
+          return req.cookies?.access_token ?? null;
         },
       ]),
       ignoreExpiration: false,
@@ -33,18 +37,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  /**
-   * Token doğrulandıktan sonra payload içindeki verileri döner.
-   * Bu veri request nesnesine (req.user) eklenir.
-   */
-  async validate(payload: { sub: string; email: string; role: string; platform: string }): Promise<Record<string, unknown>> {
-    // Burada gerekirse Redis üzerinden token blacklist kontrolü yapılabilir.
-    
-    return { 
-      id: payload.sub, 
-      email: payload.email, 
-      role: payload.role,
-      platform: payload.platform 
+  async validate(payload: JwtPayload): Promise<RequestUser> {
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role as RequestUser['role'],
+      platform: payload.platform as RequestUser['platform'],
     };
   }
 }

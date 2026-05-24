@@ -13,7 +13,7 @@ export class GetCompanyHandler implements IQueryHandler<GetCompanyQuery> {
     private readonly companyRepository: ICompanyRepository,
   ) {}
 
-  async execute(query: GetCompanyQuery): Promise<any> {
+  async execute(query: GetCompanyQuery): Promise<unknown> {
     const company = await this.companyRepository.findById(query.id);
     if (!company) {
       throw new NotFoundException('Şirket bulunamadı.');

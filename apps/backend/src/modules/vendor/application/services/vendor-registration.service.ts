@@ -2,6 +2,8 @@
 // Vendor kayıt servisi — MongoDB migration (ADR-005 Faz 2a)
 
 import { Injectable, Logger, Inject } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IVendorProfileRepository } from '../../domain/repositories/vendor-profile.repository.interface';
 import { IVendorSettingsRepository } from '../../domain/repositories/vendor-settings.repository.interface';
@@ -19,6 +21,7 @@ export class VendorRegistrationService {
     @Inject('IVendorProfileRepository') private readonly profileRepo: IVendorProfileRepository,
     @Inject('IVendorSettingsRepository') private readonly settingsRepo: IVendorSettingsRepository,
     @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async registerAtomic(userId: string, body: Record<string, unknown>) {
@@ -36,52 +39,57 @@ export class VendorRegistrationService {
       return { success: false, error: 'Bu kullanıcı için zaten bir satıcı kaydı bulunmaktadır.' };
     }
 
+    const mongoSession = await this.connection.startSession();
     try {
-      // 1. Company oluştur
-      const companyId = 'co-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-      const companyDoc = new Company({
-        _id: companyId,
-        id: companyId,
-        name: businessName,
-        taxNumber: taxId || null,
-        phone,
-        email,
-        address,
-        companyType: businessType,
-        status: 'PENDING',
+      let vendorId = '';
+      let slug = '';
+
+      await mongoSession.withTransaction(async () => {
+        // 1. Company oluştur
+        const companyId = 'co-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+        await Company.create([{
+          _id: companyId,
+          id: companyId,
+          name: businessName,
+          taxNumber: taxId || null,
+          phone,
+          email,
+          address,
+          companyType: businessType,
+          status: 'PENDING',
+        }], { session: mongoSession });
+
+        // 2. Vendor oluştur
+        slug = this.slugify(businessName ?? 'vendor') + '-' + Math.random().toString(36).substring(7);
+        const vendor = await this.vendorRepo.create(Vendor.create(
+          userId,
+          companyId,
+          { value: slug } as VendorSlug,
+          businessName ?? 'Unknown',
+        ));
+        vendorId = vendor.id;
+
+        // 3. Profile oluştur
+        await this.profileRepo.updateByVendorId(vendorId, {
+          storeName: businessName ?? '',
+          city: city ?? '',
+          district: district ?? '',
+        });
+
+        // 4. Settings oluştur
+        await this.settingsRepo.create({ vendorId });
+
+        // 5. Kullanıcı rolünü güncelle
+        await this.userRepo.update(userId, { role: 'VENDOR' });
       });
-      await companyDoc.save();
-
-      // 2. Vendor oluştur
-      const slug = this.slugify(businessName ?? 'vendor') + '-' + Math.random().toString(36).substring(7);
-      // VendorSlug.create validation'ı bypass etmek için doğrudan props ile oluştur
-      const vendor = await this.vendorRepo.create(Vendor.create(
-        userId,
-        companyId,
-        { value: slug } as VendorSlug,
-        businessName ?? 'Unknown',
-      ));
-
-      const vendorProps = vendor.getProps();
-      const vendorId = vendor.id;
-
-      // 3. Profile oluştur
-      await this.profileRepo.updateByVendorId(vendorId, {
-        storeName: businessName ?? '',
-        city: city ?? '',
-        district: district ?? '',
-      });
-
-      // 4. Settings oluştur
-      await this.settingsRepo.create({ vendorId });
-
-      // 5. Kullanıcı rolünü güncelle
-      await this.userRepo.update(userId, { role: 'VENDOR' });
 
       return { success: true, data: { id: vendorId, slug } };
     } catch (error: unknown) {
-      this.logger.error('Vendor Atomic Application Error', error instanceof Error ? error.stack : String(error));
-      return { success: false, error: 'Kayıt sırasında bir hata oluştu: ' + ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Bilinmeyen hata') };
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error('Vendor kayıt hatası', { userId, error: msg });
+      return { success: false, error: 'Kayıt sırasında bir hata oluştu: ' + msg };
+    } finally {
+      await mongoSession.endSession();
     }
   }
 

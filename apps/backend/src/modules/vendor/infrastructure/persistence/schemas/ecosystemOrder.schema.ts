@@ -5,14 +5,14 @@ import { Schema, Types } from 'mongoose';
 
 export interface IEcosystemOrder {
   _id?: string;
-  dealerId: Types.ObjectId;
-  ecosystemId: Types.ObjectId;
-  productId: Types.ObjectId;
-  orderId: Types.ObjectId;
+  dealerId: string;
+  ecosystemId: string;
+  productId: string;
+  orderId: string;
   quantity: number;
   unitPrice: Types.Decimal128;
   isGarageSale: boolean;
-  garageSaleId?: Types.ObjectId;
+  garageSaleId?: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
   createdAt: Date;
   updatedAt: Date;
@@ -21,14 +21,14 @@ export interface IEcosystemOrder {
 export const EcosystemOrderSchema = new Schema<IEcosystemOrder>(
   {
     _id: { type: String },
-    dealerId: { type: Schema.Types.ObjectId, required: true },
-    ecosystemId: { type: Schema.Types.ObjectId, required: true },
-    productId: { type: Schema.Types.ObjectId, required: true },
-    orderId: { type: Schema.Types.ObjectId, required: true },
+    dealerId: { type: String, required: true },
+    ecosystemId: { type: String, required: true },
+    productId: { type: String, required: true },
+    orderId: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Schema.Types.Decimal128, required: true },
     isGarageSale: { type: Boolean, default: false },
-    garageSaleId: { type: Schema.Types.ObjectId },
+    garageSaleId: { type: String },
     status: { type: String, enum: ['PENDING', 'CONFIRMED', 'CANCELLED'], default: 'PENDING' },
   },
   {
@@ -39,6 +39,8 @@ export const EcosystemOrderSchema = new Schema<IEcosystemOrder>(
 
 // Indexes
 EcosystemOrderSchema.index({ dealerId: 1, productId: 1 }); // Watchover aggregate
+EcosystemOrderSchema.index({ dealerId: 1, productId: 1, status: 1 }); // Watchover kota sorgusu
+EcosystemOrderSchema.index({ garageSaleId: 1, dealerId: 1, status: 1 }); // GarageSale dealer kota
 EcosystemOrderSchema.index({ ecosystemId: 1, createdAt: -1 }); // Factory dashboard
 EcosystemOrderSchema.index({ garageSaleId: 1 }, { sparse: true }); // GarageSale orders
 EcosystemOrderSchema.index({ orderId: 1 }, { unique: true }); // One Order = one EcosystemOrder

@@ -53,7 +53,9 @@ const mapType = (type: string) => {
     const types: Record<string, string> = {
         'SPONSORED_PRODUCT': 'Sponsorlu Ürün',
         'SPONSORED_BRAND': 'Sponsorlu Marka',
-        'SPONSORED_DISPLAY': 'Görüntülü'
+        'SPONSORED_DISPLAY': 'Görüntülü',
+        'REWARD_DISTRIBUTION': 'Hediye Dağıtımı (Ad-Swap)',
+        'SAMPLING': 'Sampling (Ad-Swap)'
     }
     return types[type] || type
 }

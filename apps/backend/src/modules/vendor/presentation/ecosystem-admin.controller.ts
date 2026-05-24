@@ -302,7 +302,8 @@ export class EcosystemAdminController {
         oldScore,
         newScore,
         reason,
-        vendorId
+        vendorId,
+        adminId: admin.id,
       }
     });
     

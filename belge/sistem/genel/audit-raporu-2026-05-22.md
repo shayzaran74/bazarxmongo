@@ -1,8 +1,8 @@
 # BazarX Kapsamlı Denetim Özet Raporu
 
-**Tarih:** 22 Mayıs 2026  
-**Toplam Commit:** 7 (6 denetim + 1 iyileştirme)  
-**Toplam Bulgu:** 31 (12 Kritik · 10 Yüksek · 9 Orta/Düşük)  
+**Tarih:** 22 Mayıs 2026 (+ 24 Mayıs 2026 Takip)  
+**Toplam Commit:** 8 (6 denetim + 1 iyileştirme + 1 takip)  
+**Toplam Bulgu:** 36 (12 Kritik · 10 Yüksek · 14 Orta/Düşük)  
 **Durum:** Tüm bulgular kapatıldı ✅ · Tüm önerilen adımlar tamamlandı ✅
 
 ---
@@ -144,7 +144,9 @@
 | Açık Artırma | 1 | 1 | 2 | 4 |
 | Çekiliş | 1 | 2 | 1 | 4 |
 | Finansal | 2 | 2 | — | 4 |
-| **Toplam** | **12** | **10** | **9** | **31** |
+| Schedulers | — | — | 2 | 2 |
+| BazarX-GO | — | — | 3 | 3 |
+| **Toplam** | **12** | **10** | **14** | **36** |
 
 **Kapatılmamış açık: 0**
 
@@ -160,14 +162,39 @@
 | 2 | **Reconciliation servisi** | `WalletReconciliationScheduler` — her gece 03:00'te Wallet↔Account bakiye drift tespiti, 500'lük sayfalı tarama, StructuredLogger alarm | ✅ |
 | 3 | **`getParticipations` admin endpoint** | `findAllParticipations()` repository interface + MongoDB implementasyonu eklendi; `auctionId`/`status`/`page`/`limit` filtrelemeli sayfalı sorgu | ✅ |
 | 4 | **Integration test coverage** | `escrow-lifecycle.spec.ts` (create→release→refund, idempotency, yetersiz bakiye) + `swap-session-lifecycle.spec.ts` (teminat zinciri, SmartCap, telafi, %20 oranı, state machine) | ✅ |
+| 5 | **Takip denetimi (24 Mayıs)** | `AuctionCloseScheduler` + `LotteryDrawScheduler` setInterval → @Cron + Redis kilit; `checkProximity` wired; `RestaurantSettingsSection` teslimat toggle; `burnMonthlyRights` no-op; `previewRemainingThisMonth` sayaç düzeltmesi | ✅ |
+
+---
+
+## 7. 24 Mayıs 2026 Takip Denetimi — Ek Bulgular ve Düzeltmeler
+
+**Commit:** `1fbdcb92` (ts: derleme hataları giderildi)
+
+### 7.1 Schedulers — setInterval → @Cron + Redis Dağıtık Kilit
+
+| Bulgu | Dosya | Durum |
+|:---|:---|:---|
+| `AuctionCloseScheduler` — `OnApplicationBootstrap` + `setInterval` (60sn) çoklu instance'da mükerrer çalışır | `auction/application/services/auction-close.scheduler.ts` | ✅ `@Cron(EVERY_MINUTE)` + Redis kilit (`scheduler:auction-close:lock`, 55s TTL) |
+| `LotteryDrawScheduler` — aynı sorun | `auction/application/services/lottery-draw.scheduler.ts` | ✅ `@Cron(EVERY_MINUTE)` + Redis kilit (`scheduler:lottery-draw:lock`, 55s TTL) |
+| `BarterMatchScheduler` — zaten NestJS `@Cron` kullanıyordu | `barter/application/services/barter-match.scheduler.ts` | ✅ Değişiklik gerekmedi |
+
+### 7.2 BazarX-GO Düzeltmeleri (G1–G4)
+
+| Bulgu | Dosya | Durum |
+|:---|:---|:---|
+| `checkProximity` endpoint'i `GeofenceService` yerine boş array dönüyordu | `menu/presentation/menu.controller.ts:185` | ✅ `GeofenceService` constructor injection + `updateLocationAndFindNearby()` çağrısı |
+| Frontend'de `check-proximity` çağrısı yapılmıyordu | `bazarx-go/index.vue` | ✅ `watch(location)` → `loadNearbySurprises()` + `onMounted` tetikleyicisi |
+| `RestaurantSettingsSection` — teslimat ayarı eksik (toggle + fee input) | `vendor/settings/RestaurantSettingsSection.vue` | ✅ `hasDeliveryService` toggle + `deliveryFee` input (v-if ile göster/gizle) |
+| `MenuCronService.burnMonthlyRights` — no-op fonksiyon | `menu-cron.service.ts:82` | ✅ `logger.debug` mesajı + açıklama (işlem `MenuRightsCleanupService`'de) |
+| `CategoryAccessService.previewRemainingThisMonth` yanlış `0` döndürüyordu | `category-access.service.ts:49` | ✅ `1` olarak düzeltildi |
 
 ---
 
 ## Son Durum
 
-**Kapatılmamış açık: 0**  
-**Tamamlanmamış öneri: 0**  
-**Toplam commit: 7**
+**Kapatılmamış açık: 0**
+**Tamamlanmamış öneri: 0**
+**Toplam commit: 8**
 
 ```
 a7fab855  fix(security): path traversal, 5xx info disclosure, CSRF
@@ -177,4 +204,5 @@ c782e7ee  fix(ecosystem): owner kontrolü, null bypass, internalCommRate
 2003089d  fix(lottery): unique index, DomainException, ClientSession
 dc5f4ffc  fix(financial): d128 float precision, wallet-account drift
 30ea275d  feat: audit sonrası önerilen geliştirmeler uygulandı
+1fbdcb92  fix(ts): derleme hataları giderildi
 ```

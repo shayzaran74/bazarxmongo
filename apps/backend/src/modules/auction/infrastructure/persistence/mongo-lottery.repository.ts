@@ -26,7 +26,7 @@ export class MongoLotteryRepository
   }
 
   // session desteği ile ezip geçiyoruz (override)
-  async findById(id: string, session?: any): Promise<Lottery | null> {
+  async findById(id: string, session?: import("mongoose").ClientSession): Promise<Lottery | null> {
     const query = this.model.findOne({ id } as Record<string, unknown>);
     if (session) query.session(session);
     const doc = await query.exec();
@@ -66,7 +66,7 @@ export class MongoLotteryRepository
     await this.model.updateOne({ id }, { $set: { status } }).exec();
   }
 
-  async createTicket(ticket: { lotteryId: string; userId: string; numbers: string[] }, session?: any): Promise<ILotteryTicket> {
+  async createTicket(ticket: { lotteryId: string; userId: string; numbers: string[] }, session?: import("mongoose").ClientSession): Promise<ILotteryTicket> {
     const { randomUUID } = await import('crypto');
     const id = randomUUID();
     const data = {
@@ -88,7 +88,7 @@ export class MongoLotteryRepository
     };
   }
 
-  async countTickets(lotteryId: string, userId?: string, session?: any): Promise<number> {
+  async countTickets(lotteryId: string, userId?: string, session?: import("mongoose").ClientSession): Promise<number> {
     const filter: Record<string, unknown> = { lotteryId };
     if (userId) filter.userId = userId;
     const query = this.ticketModel.countDocuments(filter);
@@ -96,7 +96,7 @@ export class MongoLotteryRepository
     return query;
   }
 
-  async findTicketWithNumbers(lotteryId: string, numbers: string[], session?: any): Promise<ILotteryTicket | null> {
+  async findTicketWithNumbers(lotteryId: string, numbers: string[], session?: import("mongoose").ClientSession): Promise<ILotteryTicket | null> {
     const regexPattern = `(^|,)(${numbers.join('|')})(,|$)`;
     const query = this.ticketModel.findOne({ lotteryId, numbers: { $regex: regexPattern } });
     if (session) query.session(session);

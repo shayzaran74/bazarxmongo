@@ -29,6 +29,7 @@ import { XpCalculatorService } from './application/services/xp-calculator.servic
 import { LevelCalculatorService } from './application/services/level-calculator.service';
 import { SpendingLimitService } from './application/services/spending-limit.service';
 import { MilestoneCheckerService } from './application/services/milestone-checker.service';
+import { XpRulesService } from './application/services/xp-rules.service';
 
 import * as repos from './infrastructure/persistence/mongo-loyalty.repositories';
 import * as ruleRepos from './infrastructure/persistence/loyalty-rules.repositories';
@@ -90,7 +91,8 @@ import { AdminTierController } from './presentation/admin-tier.controller';
     LevelCalculatorService,
     SpendingLimitService,
     MilestoneCheckerService,
+    XpRulesService,
   ],
-  exports: [XpCalculatorService, LevelCalculatorService],
+  exports: [XpCalculatorService, LevelCalculatorService, XpRulesService],
 })
 export class LoyaltyModule {}

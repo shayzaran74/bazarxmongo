@@ -16,7 +16,7 @@ export class OpenDisputeDto {
 
   @ApiPropertyOptional({ description: 'Kanıt görselleri URL listesi', type: [String] })
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsUrl({ require_tld: false }, { each: true })
   @IsOptional()
   evidenceUrls?: string[];
 }

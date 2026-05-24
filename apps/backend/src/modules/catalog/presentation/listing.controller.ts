@@ -32,18 +32,16 @@ export class ListingController {
   async getCategories(@Query('all') all?: string) {
     const data = await this.queryBus.execute(new GetCategoryTreeQuery());
     if (all === 'true') {
-      const flat: any[] = [];
-      const traverse = (node: any) => {
+      interface FlatCategory { id: string; name: string; parentId: string | null; [key: string]: unknown }
+      const flat: FlatCategory[] = [];
+      const traverse = (node: Record<string, unknown>) => {
         const { children, ...rest } = node;
-        flat.push({
-          ...rest,
-          parentId: rest.parentId || null,
-        });
-        if (children && children.length > 0) {
+        flat.push({ ...rest, parentId: (rest.parentId as string) || null } as FlatCategory);
+        if (Array.isArray(children) && children.length > 0) {
           children.forEach(traverse);
         }
       };
-      data.forEach(traverse);
+      (data as Record<string, unknown>[]).forEach(traverse);
       return { success: true, data: flat };
     }
     return { success: true, data };

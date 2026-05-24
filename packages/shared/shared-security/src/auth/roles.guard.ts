@@ -3,11 +3,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
+import type { RequestUser } from './jwt.strategy';
 
-/**
- * Rol tabanlı erişim kontrolü. 
- * @Roles('ADMIN') gibi kullanımları denetler.
- */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
@@ -22,12 +19,18 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    if (context.getType() !== 'http') {
+    // HTTP ve WebSocket context'leri için kullanıcı bilgisi al
+    let user: RequestUser | undefined;
+
+    if (context.getType() === 'http') {
+      const request = context.switchToHttp().getRequest<{ user?: RequestUser }>();
+      user = request?.user;
+    } else if (context.getType() === 'ws') {
+      const client = context.switchToWs().getClient<{ user?: RequestUser }>();
+      user = client?.user;
+    } else {
       return true;
     }
-
-    const request = context.switchToHttp().getRequest<{ user?: { role: string; email: string } }>();
-    const user = request?.user;
 
     if (!user || !user.role) {
       return false;

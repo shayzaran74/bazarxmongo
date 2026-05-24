@@ -5,6 +5,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ICargoProvider } from '../../domain/interfaces/ICargoProvider.interface';
 import { CargoProvider } from '../../domain/enums/cargo-provider.enum';
+import { CargoShipment } from '@barterborsa/shared-persistence/schemas/backend/cargoShipment.schema';
 
 export interface ShipmentDto {
   orderId: string;
@@ -55,8 +56,18 @@ export class CargoTrackingService {
    * Vendor kargo gönderisi oluşturur (gönderim anında)
    */
   async createShipment(dto: ShipmentDto): Promise<{ shipmentId: string }> {
-    // TODO: Shipment'ı veritabanına kaydet (CargoShipment model + repository)
     const shipmentId = `ship-${Date.now()}-${dto.orderId}`;
+
+    await CargoShipment.create({
+      _id: shipmentId,
+      id: shipmentId,
+      orderId: dto.orderId,
+      vendorId: dto.vendorId,
+      provider: dto.provider,
+      trackingNumber: dto.trackingNumber,
+      status: 'CREATED',
+      statusHistory: [{ status: 'CREATED', timestamp: new Date() }],
+    });
 
     this.logger.log('Kargo gönderisi oluşturuldu', {
       shipmentId,

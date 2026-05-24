@@ -4,7 +4,7 @@ import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { BadRequestException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { RemoveEcosystemMemberCommand } from './remove-ecosystem-member.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
@@ -14,7 +14,7 @@ import { EcosystemMemberRemovedEvent } from '../../domain/events/ecosystem-membe
 export class RemoveEcosystemMemberHandler implements ICommandHandler<RemoveEcosystemMemberCommand> {
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     @Inject('IEcosystemMembershipRepository')
     private readonly membershipRepo: IEcosystemMembershipRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,

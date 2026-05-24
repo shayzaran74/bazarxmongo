@@ -274,6 +274,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     MongoInventoryLogRepository,
     MongoListingImageRepository,
     MongoBrandEcosystemRepository,
+    { provide: 'IBrandEcosystemRepository', useExisting: MongoBrandEcosystemRepository },
     MongoEcosystemAuditLogRepository,
     MongoEcosystemMembershipRepository,
     MongoEcosystemOrderRepository,

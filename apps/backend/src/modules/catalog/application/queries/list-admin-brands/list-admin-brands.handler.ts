@@ -1,18 +1,19 @@
 // apps/backend/src/modules/catalog/application/queries/list-admin-brands/list-admin-brands.handler.ts
 
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { FilterQuery } from 'mongoose';
 import { ListAdminBrandsQuery } from './list-admin-brands.query';
-import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
+import { Brand, IBrand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
 
 @QueryHandler(ListAdminBrandsQuery)
 export class ListAdminBrandsHandler implements IQueryHandler<ListAdminBrandsQuery> {
   async execute(query: ListAdminBrandsQuery) {
     const { search, status, letter, page = 1, limit = 50 } = query.filters;
     const skip = (page - 1) * limit;
-    const filter: any = {};
+    const filter: FilterQuery<IBrand> = {};
     if (search) filter.name = { $regex: search, $options: 'i' };
     if (status) filter.status = status;
-    if (letter && letter !== 'ALL') filter.name = { ...filter.name, $regex: `^${letter}`, $options: 'i' };
+    if (letter && letter !== 'ALL') filter.name = { ...filter.name as object, $regex: `^${letter}`, $options: 'i' };
 
     const [rawItems, total, pending] = await Promise.all([
       Brand.find(filter)
@@ -25,10 +26,9 @@ export class ListAdminBrandsHandler implements IQueryHandler<ListAdminBrandsQuer
       Brand.countDocuments({ status: 'PENDING' }).exec()
     ]);
 
-    // Normalize: bazı markalar id alanı olmadan sadece _id ile kaydedilmiş
-    const items = rawItems.map((b: any) => ({
+    const items = rawItems.map((b: Record<string, unknown>) => ({
       ...b,
-      id: b.id || b._id?.toString(),
+      id: (b.id as string) || String(b._id),
     }));
 
     return { items, total, pending, page, limit };

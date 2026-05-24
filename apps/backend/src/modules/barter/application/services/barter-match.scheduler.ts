@@ -1,9 +1,9 @@
 // apps/backend/src/modules/barter/application/services/barter-match.scheduler.ts
 // BarterMatchScheduler — Master Plan v4.3 §4.4 Batch Matching Engine
-// Her gece 02:00'de çalışır. Cron tetikleyici: SwapSchedulerService'ten önce.
-// import { Cron } from '@nestjs/schedule';
+// Her gece 02:00'de çalışır (@Cron tetikleyici).
 
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { ISurplusItemRepository } from '../../domain/repositories/surplus-item.repository.interface';
 import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
@@ -13,15 +13,15 @@ import { CollateralCalculatorService } from './collateral-calculator.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { SurplusItem, SurplusItemProps } from '../../domain/entities/surplus-item.entity';
 import { WantedItem } from '../../domain/entities/wanted-item.entity';
+import { RedisService } from '@barterborsa/shared-security';
 
-const BATCH_CHECK_INTERVAL_MS = 60_000; // 1 dakika (tekrar eden cron yerine setInterval)
 const BATCH_SIZE = 100;
+const LOCK_KEY = 'scheduler:barter-match:lock';
+const LOCK_TTL_SECONDS = 110;
 
 @Injectable()
-export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDestroy {
+export class BarterMatchScheduler {
   private readonly logger = new Logger(BarterMatchScheduler.name);
-  private intervalHandle: ReturnType<typeof setInterval> | null = null;
-  private lastRunAt: Date | null = null;
 
   constructor(
     @Inject('ISurplusItemRepository') private readonly surplusRepo: ISurplusItemRepository,
@@ -31,44 +31,34 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     private readonly matchingService: MatchingService,
     private readonly collateralCalc: CollateralCalculatorService,
     private readonly auditLog: AuditLogService,
+    private readonly redisService: RedisService,
   ) {}
-
-  onApplicationBootstrap(): void {
-    // İlk çalışma: 1 dakika gecikme ile (sistem tam yüklenene kadar bekle)
-    setTimeout(() => void this.runDailyBatch(), 60_000);
-    // Periyodik kontrol
-    this.intervalHandle = setInterval(() => void this.runDailyBatch(), BATCH_CHECK_INTERVAL_MS);
-    this.logger.log('BarterMatchScheduler başlatıldı (periyodik kontrol modu)');
-  }
-
-  onModuleDestroy(): void {
-    if (this.intervalHandle) {
-      clearInterval(this.intervalHandle);
-      this.intervalHandle = null;
-    }
-  }
 
   /**
    * runDailyBatch — Master Plan v4.3 §4.4
-   * 1. ACTIVE surplus item'ları TrustScore DESC, createdAt ASC sırasıyla çek
-   * 2. Her teklif için MatchPreference'a göre eşleşme kararı ver
-   * 3. PARTIAL_CASH_DIFF ise nakit farkı escrow'a bloke et
-   * 4. MongoDB session (transaction) içinde SwapSession PENDING_COLLATERAL olarak oluştur
-   * 5. BatchMatchLog'a sonucu yaz
+   * Her gece 02:00'de otomatik çalışır.
    */
+  @Cron('0 2 * * *')
   async runDailyBatch(): Promise<void> {
-    const now = new Date();
-
-    // Son çalışmadan bu yana 23 saat geçmediyse atla (günde sadece 1 kez çalışsın)
-    if (this.lastRunAt && now.getTime() - this.lastRunAt.getTime() < 23 * 60 * 60 * 1000) {
+    const locked = await this.redisService.get(LOCK_KEY);
+    if (locked === '1') {
+      this.logger.debug('Kilit meşgul — diğer instance çalışıyor, atlanıyor');
       return;
     }
+    await this.redisService.set(LOCK_KEY, '1', LOCK_TTL_SECONDS);
 
-    this.lastRunAt = now;
+    try {
+      await this.runDailyBatchUnsafe();
+    } finally {
+      await this.redisService.del(LOCK_KEY);
+    }
+  }
+
+  async runDailyBatchUnsafe(): Promise<void> {
+    const now = new Date();
     this.logger.log('BarterMatchScheduler: Günlük batch matching başlatıldı');
 
     try {
-      // 1. ACTIVE surplus item'ları çek — TrustScore DESC, createdAt ASC (FIFO)
       const surplusResult = await this.surplusRepo.findWithFilters(
         { status: 'ACTIVE' },
         0,
@@ -122,26 +112,28 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
     }
   }
 
+  /** Manuel tetikleme — admin endpoint'ten çağrılır */
+  async runManually(): Promise<void> {
+    this.logger.log('BarterMatchScheduler: Manuel batch matching tetiklendi');
+    await this.runDailyBatchUnsafe();
+  }
+
   private async processSurplusForMatch(surplus: SurplusItem): Promise<{ matched: boolean; reason?: string }> {
     const surplusProps: SurplusItemProps = surplus.getProps();
-
-    // MatchPreference kontrolü — FULL_ONLY ise tam eşleşme bekle, kısmi kabul etme
     const matchPreference = surplusProps.matchPreference ?? 'FULL_ONLY';
 
-    // Wanted item'ları bul (kullanıcının istediği ürünler)
     const wantedItems = await this.findWantedItemsForSurplus(surplusProps);
 
     if (wantedItems.length === 0) {
       return { matched: false, reason: 'Eşleşen wanted item yok' };
     }
 
-    // En iyi eşleşmeyi seç
     let bestMatch: WantedItem | null = null;
     let bestScore = 0;
 
     for (const wanted of wantedItems) {
       const score = this.matchingService.calculateMatchScore(surplus, wanted);
-      if (score > bestScore && score >= 50) { // Minimum eşik: 50 puan
+      if (score > bestScore && score >= 50) {
         bestScore = score;
         bestMatch = wanted;
       }
@@ -151,12 +143,10 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
       return { matched: false, reason: 'Yeterli eşleşme skoru yok (min: 50)' };
     }
 
-    // MatchPreference kontrolü
     if (matchPreference === 'FULL_ONLY' && bestScore < 80) {
       return { matched: false, reason: 'FULL_ONLY: Eşleşme skoru yeterli değil (min: 80)' };
     }
 
-    // SwapSession oluştur — PENDING_COLLATERAL
     const collateralAmount = this.collateralCalc.calculateCollateral(
       surplusProps.estimatedValue ?? surplusProps.unitPrice ?? 0,
     );
@@ -167,11 +157,9 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
   }
 
   private async findWantedItemsForSurplus(surplusProps: SurplusItemProps): Promise<WantedItem[]> {
-    // Kategori bazlı wanted item'ları bul
     const category = surplusProps.category;
     if (!category) return [];
 
-    // IWantedItemRepository inject edilmiş durumda — categoryId ile sorgula
     try {
       const wantedItems = await this.wantedRepo.findAll();
       return wantedItems.filter(w => {
@@ -203,20 +191,18 @@ export class BarterMatchScheduler implements OnApplicationBootstrap, OnModuleDes
       return;
     }
 
-    // Aynı şirketler arasında takas yasak — Master Plan v4.3 §5.5
     if (initiatorId === receiverId) {
       this.logger.warn('Ekonomi içi takas engellendi', { initiatorId, receiverId });
       return;
     }
 
-    // SwapSession oluştur
     const { SwapSession } = await import('../../domain/entities/swap-session.entity');
     const session = SwapSession.create(
-      'batch-match', // tradeOfferId — batch matching'den geliyor
+      'batch-match',
       initiatorId,
       receiverId,
       collateralAmount,
-      30, // timeoutInDays — Master Plan §2
+      30,
     );
 
     await this.swapRepo.save(session);

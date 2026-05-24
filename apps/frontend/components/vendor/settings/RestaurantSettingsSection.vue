@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ClockIcon, MapPinIcon, BanknotesIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { ClockIcon, MapPinIcon, BanknotesIcon, CheckCircleIcon, TruckIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   form: any
@@ -102,6 +102,45 @@ const updateField = (field: string, value: any) => {
             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
             placeholder="30"
             @input="e => form.avgDeliveryTime = Number((e.target as HTMLInputElement).value)"
+          >
+        </div>
+      </div>
+
+      <!-- Delivery Service Toggle -->
+      <div class="flex items-center justify-between p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+            <TruckIcon class="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p class="text-xs font-black text-gray-900 uppercase">Teslimat Hizmeti</p>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Restoran kendi teslimatını yapar</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          :class="form.hasDeliveryService ? 'bg-blue-500' : 'bg-gray-300'"
+          class="relative inline-flex h-7 w-12 rounded-full border-2 border-transparent transition-colors duration-300 outline-none"
+          @click="form.hasDeliveryService = !form.hasDeliveryService"
+        >
+          <span :class="form.hasDeliveryService ? 'translate-x-5' : 'translate-x-0'" class="inline-block h-6 w-6 transform rounded-full bg-white shadow-xl transition duration-300" />
+        </button>
+      </div>
+
+      <!-- Delivery Fee (only when hasDeliveryService is true) -->
+      <div v-if="form.hasDeliveryService" class="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div class="space-y-3">
+          <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1">
+            <BanknotesIcon class="h-4 w-4" /> Sabit Teslimat Ücreti (₺)
+          </label>
+          <input
+            :value="form.deliveryFee"
+            type="number"
+            step="1"
+            min="0"
+            class="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500"
+            placeholder="15"
+            @input="e => form.deliveryFee = Number((e.target as HTMLInputElement).value)"
           >
         </div>
       </div>

@@ -13,6 +13,6 @@ export class GetFavoritesHandler implements IQueryHandler<GetFavoritesQuery> {
       .populate('product')
       .exec();
 
-    return favorites.map((f: any) => f.product);
+    return favorites.map(f => (f as unknown as { product: unknown }).product);
   }
 }

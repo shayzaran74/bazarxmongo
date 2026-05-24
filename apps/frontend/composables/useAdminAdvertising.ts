@@ -30,21 +30,23 @@ export const useAdminAdvertising = () => {
     try {
       // Fix: Corrected API path to match AdvertisingAdminController
       const res = await $api<any>('/api/v1/admin/ads/campaigns')
+      console.log('[useAdminAdvertising] fetchCampaigns response:', JSON.stringify(res, null, 2))
       const allAds = res.data || []
       
-      // Separate product ads and banner ads
-      campaigns.value = allAds.filter((ad: any) => ad.adType === 'SPONSORED_PRODUCT')
-      bannerAds.value = allAds.filter((ad: any) => ad.adType === 'BANNER' || ad.adType === 'SIDE_AD')
+      // Separate product ads (including Ad-Swap) and banner ads (API uses 'type', not 'adType')
+      campaigns.value = allAds.filter((ad: any) => ad.type !== 'BANNER' && ad.type !== 'SIDE_AD')
+      bannerAds.value = allAds.filter((ad: any) => ad.type === 'BANNER' || ad.type === 'SIDE_AD')
       
       // Update Stats
       stats.totalCampaigns = allAds.length
-      stats.activeCampaigns = allAds.filter((c: any) => c.adStatus === 'ENABLED').length
+      stats.activeCampaigns = allAds.filter((c: any) => c.status === 'ENABLED').length
       stats.totalSpend = allAds.reduce((acc: number, c: any) => {
         const spent = parseFloat(c.budget) - parseFloat(c.remainingBudget)
         return acc + (isNaN(spent) ? 0 : spent)
       }, 0)
       stats.totalPlatformRevenue = stats.totalSpend // Simplification
     } catch (e) {
+      console.error('[useAdminAdvertising] fetchCampaigns error:', JSON.stringify(e, null, 2))
       $toast.error('Reklam kampanyaları yüklenemedi')
     } finally {
       loading.value = false
@@ -59,7 +61,7 @@ export const useAdminAdvertising = () => {
   const filteredCampaigns = computed(() => {
     let filtered = [...campaigns.value]
     if (activeFilter.value !== 'ALL') {
-      filtered = filtered.filter(c => c.adStatus === activeFilter.value)
+      filtered = filtered.filter(c => c.status === activeFilter.value)
     }
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
@@ -86,14 +88,17 @@ export const useAdminAdvertising = () => {
 
   const updateStatus = async (id: string, status: string) => {
     try {
+      console.log('[useAdminAdvertising] updateStatus called:', { id, status })
       if (status === 'ENABLED') {
-        await $api(`/api/v1/admin/ads/campaigns/${id}/approve`, { method: 'POST' })
+        const res = await $api(`/api/v1/admin/ads/campaigns/${id}/approve`, { method: 'POST' })
+        console.log('[useAdminAdvertising] approve response:', JSON.stringify(res, null, 2))
         $toast.success('Reklam onaylandı')
       } else if (status === 'REJECTED') {
         // Handled by rejectAd
       }
       await fetchCampaigns()
-    } catch {
+    } catch (e) {
+      console.error('[useAdminAdvertising] updateStatus error:', JSON.stringify(e, null, 2))
       $toast.error('İşlem başarısız')
     }
   }
@@ -104,14 +109,17 @@ export const useAdminAdvertising = () => {
 
   const rejectAd = async (id: string, reason: string, isBanner: boolean = false) => {
     try {
-      await $api(`/api/v1/admin/ads/campaigns/${id}/reject`, {
+      console.log('[useAdminAdvertising] rejectAd called:', { id, reason, isBanner })
+      const res = await $api(`/api/v1/admin/ads/campaigns/${id}/reject`, {
         method: 'POST',
         body: { reason }
       })
+      console.log('[useAdminAdvertising] reject response:', JSON.stringify(res, null, 2))
       $toast.success('Reklam reddedildi')
       selectedAd.value = null
       await fetchCampaigns()
-    } catch {
+    } catch (e) {
+      console.error('[useAdminAdvertising] rejectAd error:', JSON.stringify(e, null, 2))
       $toast.error('Red işlemi başarısız')
     }
   }

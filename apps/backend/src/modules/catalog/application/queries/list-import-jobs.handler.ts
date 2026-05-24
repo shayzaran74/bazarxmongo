@@ -29,7 +29,7 @@ export class ListImportJobsHandler implements IQueryHandler<ListImportJobsQuery>
     ]);
 
     return {
-      items: jobs.map((j: any) => ({
+      items: jobs.map(j => ({
         id: j.id,
         status: j.status,
         totalRows: j.totalRows,

@@ -4,7 +4,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetMyEcosystemQuery } from './get-my-ecosystem.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
 import { ECOSYSTEM_MEMBERSHIP_LIMITS } from '../../domain/constants/ecosystem.constants';
 
@@ -12,7 +12,7 @@ import { ECOSYSTEM_MEMBERSHIP_LIMITS } from '../../domain/constants/ecosystem.co
 export class GetMyEcosystemHandler implements IQueryHandler<GetMyEcosystemQuery> {
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     @Inject('IEcosystemMembershipRepository')
     private readonly membershipRepo: IEcosystemMembershipRepository,
   ) {}
@@ -23,6 +23,7 @@ export class GetMyEcosystemHandler implements IQueryHandler<GetMyEcosystemQuery>
 
     const vendorProps = vendor.getProps();
     const vendorId = vendor.id;
+    if (!vendorId) return null;
 
     // Kurucu olarak ekosistemi var mı?
     const owned = await this.ecosystemRepo.findByOwnerId(vendorId);

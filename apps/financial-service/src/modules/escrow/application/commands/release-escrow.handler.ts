@@ -16,7 +16,7 @@ import {
 } from '@barterborsa/shared-persistence';
 
 const d128 = (v: number | string): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 @CommandHandler(ReleaseEscrowCommand)
 export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowCommand> {
@@ -84,7 +84,7 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
         await this.walletModel.findOneAndUpdate(
           { userId: escrow.sellerId },
           {
-            $inc: { balanceTL: d128(netAmount.toNumber()) },
+            $inc: { balanceTL: d128(netAmount.toFixed(2)) },
             $setOnInsert: {
               _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), userId: escrow.sellerId,
               barterBalance: d128(0), xpPoints: 0,
@@ -98,7 +98,7 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
         await this.walletModel.findOneAndUpdate(
           { userId: 'SYSTEM_PLATFORM_ACCOUNT' },
           {
-            $inc: { balanceTL: d128(commissionAmount.toNumber()) },
+            $inc: { balanceTL: d128(commissionAmount.toFixed(2)) },
             $setOnInsert: {
               _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), userId: 'SYSTEM_PLATFORM_ACCOUNT',
               barterBalance: d128(0), xpPoints: 0,
@@ -115,7 +115,7 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
             $set: {
               status: 'RELEASED',
               releasedAt: escrowEntity.releasedAt,
-              releasedAmount: d128(netAmount.toNumber()),
+              releasedAmount: d128(netAmount.toFixed(2)),
               updatedAt: escrowEntity.updatedAt,
               payoutLog: { grossAmount: grossAmount.toFixed(2), commissionAmount: commissionAmount.toFixed(2), netAmount: netAmount.toFixed(2), vendorTier, commissionRate: rate },
             },
@@ -126,8 +126,8 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
         // Muhasebe kayıtları
         await this.ledgerModel.create(
           [
-            { _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: 'SYSTEM_ESCROW_ACCOUNT', creditAccountId: escrow.sellerId, amount: d128(grossAmount.toNumber()), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} emanet çözüldü (Brüt: ${grossAmount.toFixed(2)})` },
-            ...(commissionAmount.gt(0) ? [{ _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: escrow.sellerId, creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT', amount: d128(commissionAmount.toNumber()), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} komisyon kesintisi (%${rate})` }] : []),
+            { _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: 'SYSTEM_ESCROW_ACCOUNT', creditAccountId: escrow.sellerId, amount: d128(grossAmount.toFixed(2)), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} emanet çözüldü (Brüt: ${grossAmount.toFixed(2)})` },
+            ...(commissionAmount.gt(0) ? [{ _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), type: 'DEBIT', debitAccountId: escrow.sellerId, creditAccountId: 'SYSTEM_PLATFORM_ACCOUNT', amount: d128(commissionAmount.toFixed(2)), referenceId: orderId, refType: 'ORDER', note: `Order ${orderId} komisyon kesintisi (%${rate})` }] : []),
           ],
           { session },
         );
@@ -138,7 +138,7 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
               [{
                 _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(),
                 accountId: sellerAccount._id ?? sellerAccount.id,
-                type: 'RELEASE', direction: 'CREDIT', amount: d128(netAmount.toNumber()),
+                type: 'RELEASE', direction: 'CREDIT', amount: d128(netAmount.toFixed(2)),
                 description: `Sipariş #${orderId} ödemesi (Komisyon: ${commissionAmount.toFixed(2)})`,
                 referenceId: orderId, referenceType: 'ORDER', status: 'COMPLETED',
               }],
@@ -146,7 +146,7 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
             ),
             this.accountModel.updateOne(
               { _id: sellerAccount._id ?? sellerAccount.id },
-              { $inc: { balance: d128(netAmount.toNumber()), availableBalance: d128(netAmount.toNumber()) } },
+              { $inc: { balance: d128(netAmount.toFixed(2)), availableBalance: d128(netAmount.toFixed(2)) } },
               { session },
             ),
           ]);

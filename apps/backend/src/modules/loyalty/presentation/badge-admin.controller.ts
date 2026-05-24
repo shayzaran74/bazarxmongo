@@ -71,7 +71,7 @@ export class BadgeAdminController {
 
   @ApiOperation({ summary: 'Preview badge rule listing impact count' })
   @Post('preview')
-  async previewBadgeRuleImpact(@Body() body: { conditionJson: any; targetEcosystem?: string[] }) {
+  async previewBadgeRuleImpact(@Body() body: { conditionJson: Record<string, unknown>; targetEcosystem?: string[] }) {
     const { conditionJson, targetEcosystem } = body;
     
     const query = buildMongoQuery(conditionJson);

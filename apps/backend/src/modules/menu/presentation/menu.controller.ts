@@ -20,6 +20,7 @@ import { TransferMenuCommand }   from '../application/commands/transfer-menu.com
 import { CreateReservationCommand } from '../application/commands/create-reservation.command';
 import { UpdateSurpriseMenuCommand, SurpriseMenuTimeBlock } from '../application/commands/update-surprise-menu.command';
 import { MenuUsageTrackerService } from '../application/services/menu-usage-tracker.service';
+import { GeofenceService }         from '../application/services/geofence.service';
 
 interface AuthenticatedUser { id: string; role: string }
 
@@ -58,6 +59,7 @@ export class MenuController {
     private readonly commandBus:   CommandBus,
     private readonly queryBus:     QueryBus,
     private readonly usageTracker: MenuUsageTrackerService,
+    private readonly geofence:     GeofenceService,
   ) {}
 
   // ── QR Listesi & Kredi ────────────────────────────────────────────────────
@@ -186,8 +188,8 @@ export class MenuController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: { lat: number; lng: number; vendorCoords?: { vendorId: string; lat: number; lng: number }[] },
   ) {
-    const { GeofenceService } = require('../application/services/geofence.service');
-    return { success: true, data: [] };
+    const nearby = await this.geofence.updateLocationAndFindNearby(user.id, dto.lat, dto.lng);
+    return { success: true, data: nearby };
   }
 
   // ── §7 Referans Sistemi ───────────────────────────────────────────────────

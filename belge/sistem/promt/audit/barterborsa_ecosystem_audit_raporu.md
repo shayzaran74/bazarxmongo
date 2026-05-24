@@ -8,12 +8,12 @@
 
 ## Yönetici Özeti
 
-| Seviye | Bulgu Sayısı |
-|--------|-------------|
-| KRİTİK | 1 (race condition) |
-| YÜKSEK | 2 |
-| ORTA | 4 |
-| DÜŞÜK | 3 |
+| Seviye | Bulgu | Düzeltildi | Kalan |
+|--------|-------|------------|-------|
+| KRİTİK | 1 | 1 | 0 |
+| YÜKSEK | 2 | 2 | 0 |
+| ORTA | 4 | 2 | 2 (backlog) |
+| DÜŞÜK | 3 | 2 | 1 (backlog) |
 
 > **Önemli:** Sorun #1–#7 (ekosistem.md'de belgelenmiş 9 açık sorun) kod doğrulamasında 6'sı **doğru implement edilmiş** çıktı. Aşağıda gerçek bulgular raporlanmıştır.
 
@@ -301,35 +301,34 @@ ecosystem.module.ts → EcosystemModule
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRİTİK)
+### Bu Sprint (KRİTİK) — ✅ TÜMÜ DÜZELTİLDİ
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 1 | `add-ecosystem-member.handler.ts:44-126` | Atomic upsert ile race condition düzelt — MongoDB `findOneAndUpdate` ile limit kontrolü atomik yap |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `add-ecosystem-member.handler.ts` | Race condition: MongoDB unique index (11000) catch + pre-check limit | ✅ |
 
-### Sonraki Sprint (YÜKSEK)
+### Sonraki Sprint (YÜKSEK) — ✅ TÜMÜ DÜZELTİLDİ
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 2 | `get-ecosystem-dashboard.handler.ts:125-126` | `recentTradeCount` ve `lastActivityAt` anonymous viewer için maskele |
-| 3 | Handler dosyaları | `MongoBrandEcosystemRepository` → `@Inject('IBrandEcosystemRepository')` string token ile inject et |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 2 | `get-ecosystem-dashboard.handler.ts:125-126` | `recentTradeCount` ve `lastActivityAt` anonymous viewer için maskelendi | ✅ |
+| 3 | 7 handler dosyası | `MongoBrandEcosystemRepository` → `@Inject('IBrandEcosystemRepository')` token inject | ✅ |
+| 3b | `vendor.module.ts` | `{ provide: 'IBrandEcosystemRepository', useExisting: MongoBrandEcosystemRepository }` eklendi | ✅ |
 
-### Backlog (ORTA)
+### Backlog (ORTA) — 2 KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
 | 4 | `update-ecosystem-settings.handler.ts:36` | Optimistic locking — version field ile atomic update |
 | 5 | `remove-ecosystem-member.handler.ts` | Transaction boundary — event publish hatasında compensate |
-| 6 | `ecosystem.controller.ts:100-109` | Dashboard endpoint — sadece owner veya ecosystem üyesi erişebilmeli |
-| 7 | `useAdminEcosystems.ts` | Tüm tipler `any` → strict TypeScript interface'leri |
 
-### Belgeleme (DÜŞÜK)
+### Belgeleme (DÜŞÜK) — 2 DÜZELTİLDİ, 1 KALAN
 
-| # | Dosya | Not |
-|---|-------|-----|
-| 8 | `brand-ecosystem.entity.ts:34-37` | `setCommissionRate` validasyon ekle (1-20 arası) |
-| 9 | `ecosystem-created.event.ts` | Payload'a `isBlindPool`, `internalCommRate` ekle — gelecek consumer için |
-| 10 | `ecosystem-admin.controller.ts` | Trust score override'da admin ID'yi `auditLog.details`'a ekle |
+| # | Dosya | Not | Durum |
+|---|-------|-----|-------|
+| 8 | `brand-ecosystem.entity.ts:34-37` | `setCommissionRate` 1-20 arası validasyon eklendi | ✅ |
+| 9 | `ecosystem-created.event.ts` | Payload'a `isBlindPool`, `internalCommRate` ekle | ⬜ |
+| 10 | `ecosystem-admin.controller.ts` | Trust score override'da `adminId` details'a eklendi | ✅ |
 
 ---
 

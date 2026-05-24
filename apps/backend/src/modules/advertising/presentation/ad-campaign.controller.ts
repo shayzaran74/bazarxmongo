@@ -44,7 +44,8 @@ export class AdCampaignController {
     @Query('keywords') keywords?: string,
   ) {
     const context = { keywords: keywords ? keywords.split(',') : [] };
-    return this.queryBus.execute(new GetAdsForSlotQuery(slotType, platform, context));
+    const result = await this.queryBus.execute(new GetAdsForSlotQuery(slotType, platform, context));
+    return { success: true, data: result };
   }
 
   // Görüntülenme izleme (public — frontend reklamı gördüğünde çağırır)
@@ -58,7 +59,8 @@ export class AdCampaignController {
     const cost = campaign.getProps().pricingModel === 'CPM'
       ? (campaign.getProps().maxBidPerMille ?? campaign.getProps().bidAmount) / 1000
       : 0;
-    return this.commandBus.execute(new RecordImpressionCommand(id, cost));
+    const result = await this.commandBus.execute(new RecordImpressionCommand(id, cost));
+    return { success: true, data: result };
   }
 
   // Tıklama izleme (public — frontend reklamı tıkladığında çağırır)
@@ -72,6 +74,7 @@ export class AdCampaignController {
     const cost = campaign.getProps().pricingModel === 'CPC'
       ? (campaign.getProps().maxBidPerClick ?? campaign.getProps().bidAmount)
       : 0;
-    return this.commandBus.execute(new RecordClickCommand(id, cost));
+    const result = await this.commandBus.execute(new RecordClickCommand(id, cost));
+    return { success: true, data: result };
   }
 }

@@ -4,7 +4,6 @@ import { Controller, Get, Post, Param, Body, UseGuards, BadRequestException, Not
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Public, JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
-import { randomUUID } from 'crypto';
 import { GroupBuy, IGroupBuyTier } from '@barterborsa/shared-persistence/schemas/backend/groupBuy.schema';
 import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
@@ -163,7 +162,7 @@ export class GroupBuyController {
     // 2. Finansal bloke — opsiyonel (servis kapalıysa sadece log)
     let holdId: string | null = null;
     try {
-      const idempotencyKey = `groupbuy-${id}-${user.id}-${randomUUID()}`;
+      const idempotencyKey = `groupbuy-commit-${id}-${user.id}`;
       const holdResult = await this.financialGateway.holdFunds(
         user.id,
         totalAmount.toString(),

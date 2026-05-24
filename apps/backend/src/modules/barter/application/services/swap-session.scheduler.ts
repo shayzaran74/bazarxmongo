@@ -15,9 +15,14 @@ import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.rep
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
+import { SurplusItem as SurplusItemModel } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
+import { BarterPart as BarterPartModel } from '@barterborsa/shared-persistence/schemas/backend/barterPart.schema';
+import { RedisService } from '@barterborsa/shared-security';
 import type { SwapSession } from '../../domain/entities/swap-session.entity';
 
 const BATCH_SIZE = 50;
+const LOCK_KEY = 'scheduler:swap-session:lock';
+const LOCK_TTL_SECONDS = 55;
 
 const TIMEOUT_ELIGIBLE_STATUSES: SwapSessionStatus[] = [
   SwapSessionStatus.PENDING_COLLATERAL,
@@ -35,10 +40,26 @@ export class SwapSchedulerService {
     @Inject('ITradeOfferRepository')  private readonly offerRepo: ITradeOfferRepository,
     private readonly auditLog:        AuditLogService,
     private readonly financialGateway:FinancialGatewayService,
+    private readonly redisService:    RedisService,
   ) {}
 
   @Cron('5 2 * * *', { name: 'swapSessionTimeout', timeZone: 'Europe/Istanbul' })
   async checkTimeouts(): Promise<void> {
+    const locked = await this.redisService.get(LOCK_KEY);
+    if (locked === '1') {
+      this.logger.debug('Kilit meşgul — diğer instance çalışıyor, atlanıyor');
+      return;
+    }
+    await this.redisService.set(LOCK_KEY, '1', LOCK_TTL_SECONDS);
+
+    try {
+      await this.checkTimeoutsUnsafe();
+    } finally {
+      await this.redisService.del(LOCK_KEY);
+    }
+  }
+
+  async checkTimeoutsUnsafe(): Promise<void> {
     const now = new Date();
     this.logger.log(`SwapSession timeout taraması başladı — ${now.toISOString()}`);
 
@@ -141,6 +162,9 @@ export class SwapSchedulerService {
         await this.refundCollateral(session.id, props.fromCollateralHoldId!, props.toCollateralHoldId!);
       }
 
+      // Timeout'ta SurplusItem.blockedQuantity düşür — session'a ait surplusItemId'leri bul
+      await this.releaseBlockedQuantities(session.id);
+
       session.markTimeout();
       await this.swapRepo.save(session);
 
@@ -170,6 +194,29 @@ export class SwapSchedulerService {
         resourceId:   session.id,
         newValue:     { reason, error: err instanceof Error ? err.message : String(err) },
       });
+    }
+  }
+
+  private async releaseBlockedQuantities(swapSessionId: string): Promise<void> {
+    const parts = await BarterPartModel.find({ swapSessionId }).lean();
+    for (const part of parts) {
+      const surplusItemId = (part as unknown as { surplusItemId?: string }).surplusItemId;
+      if (!surplusItemId) continue;
+      try {
+        await SurplusItemModel.updateOne(
+          { _id: surplusItemId },
+          {
+            $inc: { blockedQuantity: -1 },
+            $set: { status: 'ACTIVE' },
+          },
+        );
+      } catch (err: unknown) {
+        this.logger.error('blockedQuantity düşürme hatası', {
+          surplusItemId,
+          swapSessionId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
   }
 

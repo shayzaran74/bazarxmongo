@@ -109,6 +109,18 @@ export class Vendor extends AggregateRoot<VendorProps> {
     return this.props.status === VendorStatus.APPROVED;
   }
 
+  public canListProduct(): boolean {
+    return this.props.status === VendorStatus.APPROVED;
+  }
+
+  public canEarlyPay(): boolean {
+    return this.props.status === VendorStatus.APPROVED && this.props.tier !== undefined;
+  }
+
+  public isSuspended(): boolean {
+    return this.props.status === VendorStatus.SUSPENDED;
+  }
+
   public isRestaurant(): boolean {
     return this.props.vendorType === VendorType.RESTAURANT;
   }

@@ -67,9 +67,15 @@ export const useApi = () => {
 
           if (refreshRes.success && refreshRes.data) {
             // Yeni access_token cookie backend tarafından set edildi
-            // Retry original request — yeni cookie ile
+            authStore.token = refreshRes.data.accessToken
+            const retryHeaders = {
+              ...headers,
+              'Authorization': `Bearer ${refreshRes.data.accessToken}`
+            }
+            // Retry original request — yeni cookie ve header ile
             return await $fetch<ApiResponse<T>>(normalizedPath, {
               ...options,
+              headers: retryHeaders,
               credentials: 'include',
             })
           }

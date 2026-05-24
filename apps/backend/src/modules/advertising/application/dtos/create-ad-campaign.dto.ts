@@ -30,7 +30,8 @@ export class CreateAdCampaignDto {
   startDate!: string;
 
   @IsDateString()
-  endDate!: string;
+  @IsOptional()
+  endDate?: string;
 
   @IsArray()
   @IsString({ each: true })
@@ -65,7 +66,7 @@ export class CreateAdCampaignDto {
   @IsOptional()
   targetUrl?: string;
 
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   @IsOptional()
   mediaUrl?: string;
 

@@ -81,7 +81,7 @@ export class MongoSwapSessionRepository
           recipientId: doc.initiatorId,
           status: 'PENDING',
         },
-      ] as any;
+      ] as unknown as typeof parts;
     }
     
     const tradeOfferRaw = await TradeOfferModel.findOne({ id: doc.tradeOfferId }).lean().exec() as Record<string, unknown> | null;

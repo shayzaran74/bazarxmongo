@@ -43,5 +43,6 @@ export const DemandMatchSchema = new Schema<IDemandMatch>({
 DemandMatchSchema.index({ buyerItemId: 1 });
 DemandMatchSchema.index({ sellerItemId: 1 });
 DemandMatchSchema.index({ status: 1 });
+DemandMatchSchema.index({ buyerItemId: 1, sellerItemId: 1 }, { unique: true });
 
 export const DemandMatch = createModelProxy<IDemandMatch>('DemandMatch', DemandMatchSchema);

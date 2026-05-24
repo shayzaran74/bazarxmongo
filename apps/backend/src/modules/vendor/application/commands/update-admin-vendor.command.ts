@@ -7,7 +7,7 @@ export class UpdateAdminVendorCommand {
       description?: string;
       city?: string;
       district?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     }
   ) {}
 }

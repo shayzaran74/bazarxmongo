@@ -15,7 +15,7 @@ import {
 } from '@barterborsa/shared-persistence';
 
 const d128 = (v: number | string): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(2));
+  Types.Decimal128.fromString(new Decimal(v).toFixed(2));
 
 @CommandHandler(RefundEscrowCommand)
 export class RefundEscrowHandler implements ICommandHandler<RefundEscrowCommand> {

@@ -75,8 +75,9 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     } else if (offerProps.offeredItemId) {
       const surplus = await SurplusItemModel.findOne({ id: offerProps.offeredItemId }).lean();
       if (surplus) {
-        totalOfferedValue = parseFloat((surplus as any).price?.toString() ?? '0') || 0;
-        const surplusQty = parseFloat((surplus as any).quantity?.toString() ?? '0');
+        const sd = surplus as Record<string, unknown>;
+        totalOfferedValue = parseFloat(sd.price?.toString() ?? '0') || 0;
+        const surplusQty = parseFloat(sd.quantity?.toString() ?? '0');
         await this.reserveSurplusPartially(offerProps.offeredItemId, surplusQty);
       }
     }
@@ -323,22 +324,21 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
   }
 
   private async reserveSurplusPartially(surplusItemId: string, requestedQty: number): Promise<void> {
-    const surplus = await SurplusItemModel.findOne({ id: surplusItemId }).lean();
-    if (!surplus) return;
-
-    const totalQty = parseFloat((surplus as any).quantity?.toString() ?? '0');
-    const currentBlocked = parseFloat((surplus as any).blockedQuantity?.toString() ?? '0');
-    const newBlocked = currentBlocked + requestedQty;
-
-    const update: Record<string, unknown> = {
-      blockedQuantity: Types.Decimal128.fromString(String(newBlocked)),
-    };
-
-    // Tüm stok bloke edildi → ilan RESERVED
-    if (newBlocked >= totalQty) {
-      update.status = 'RESERVED';
+    // Atomik compare-and-swap: blockedQuantity'yu $inc ile artır, yeterli stok kontrolü yap
+    const updated = await SurplusItemModel.findOneAndUpdate(
+      {
+        _id: surplusItemId,
+        $expr: { $lte: [{ $add: [{ $ifNull: ['$blockedQuantity', 0] }, requestedQty] }, '$quantity'] },
+      },
+      {
+        $inc: { blockedQuantity: requestedQty },
+        $set: { status: 'RESERVED' },
+      },
+      { new: true },
+    );
+    if (!updated) {
+      // Eşzamanlı bloke kazandı — yeterli stok yok
+      this.logger.warn('Kısmi blokaj başarısız: yetersiz stok veya eşzamanlı bloke', { surplusItemId, requestedQty });
     }
-
-    await SurplusItemModel.updateOne({ id: surplusItemId }, { $set: update });
   }
 }

@@ -127,7 +127,12 @@ const formatType = (type) => {
   const types = {
     'FIXED': 'SABİT',
     'CPM': 'BİN GÖSTERİM BAŞI',
-    'CPC': 'TIKLAMA BAŞI'
+    'CPC': 'TIKLAMA BAŞI',
+    'SPONSORED_PRODUCT': 'SPONSORLU ÜRÜN',
+    'SPONSORED_BRAND': 'SPONSORLU MARKA',
+    'SPONSORED_DISPLAY': 'GÖRÜNTÜLÜ',
+    'REWARD_DISTRIBUTION': 'HEDİYE DAĞITIMI (AD-SWAP)',
+    'SAMPLING': 'SAMPLING (AD-SWAP)'
   }
   return types[type] || type
 }
@@ -136,7 +141,12 @@ const formatTypeLabel = (type) => {
   const labels = {
     'FIXED': 'Sabit Ödeme',
     'CPM': 'Maliyet / 1K Gösterim',
-    'CPC': 'Maliyet / Tıklama'
+    'CPC': 'Maliyet / Tıklama',
+    'SPONSORED_PRODUCT': 'Sponsorlu Ürün',
+    'SPONSORED_BRAND': 'Sponsorlu Marka',
+    'SPONSORED_DISPLAY': 'Görüntülü',
+    'REWARD_DISTRIBUTION': 'Hediye Dağıtımı (Ad-Swap)',
+    'SAMPLING': 'Sampling (Ad-Swap)'
   }
   return labels[type] || ''
 }

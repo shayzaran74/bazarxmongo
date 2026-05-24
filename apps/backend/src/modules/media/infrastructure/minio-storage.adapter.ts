@@ -189,17 +189,12 @@ export class MinioStorageAdapter implements IStorageAdapter, OnModuleInit {
     const sizeFile = sizeMap[size] ?? 'medium';
     const objectKey = `${mediaId}/${sizeFile}.webp`;
 
-    if (this.isProd) {
-      // Production: Uygulamanın ana domaini üzerinden /bazarx-media/ path'i ile eriş
-      const appUrl = process.env.APP_BASE_URL || '';
-      if (appUrl) {
-        return `${appUrl}/bazarx-media/${objectKey}`;
-      }
-      return `${this.cdnBase}/${objectKey}`;
+    // Her zaman CDN/APP_BASE_URL kullan — MinIO internal adresi tarayıcıya döndürülmez
+    const appUrl = process.env.APP_BASE_URL;
+    if (appUrl) {
+      return `${appUrl}/bazarx-media/${objectKey}`;
     }
-
-    // Development: MinIO'nun doğrudan adresi — bucket adını da ekle
-    return `${this.minioPublicEndpoint}/${this.bucketName}/${objectKey}`;
+    return `${this.cdnBase}/${objectKey}`;
   }
 
   /** Presigned URL üret (private bucket'lar için) */

@@ -1,38 +1,44 @@
 // apps/backend/src/modules/auction/application/services/lottery-draw.scheduler.ts
 
-import { Injectable, Logger, OnModuleDestroy, OnApplicationBootstrap, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, OnModuleDestroy } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { CommandBus } from '@nestjs/cqrs';
 import { DrawLotteryCommand } from '../commands/draw-lottery.command';
 import { ILotteryRepository } from '../../domain/repositories/lottery.repository.interface';
+import { RedisService } from '@barterborsa/shared-security';
 
-const CHECK_INTERVAL_MS = 60_000;
+const LOCK_KEY = 'scheduler:lottery-draw:lock';
+const LOCK_TTL_SECONDS = 55;
 
 @Injectable()
-export class LotteryDrawScheduler implements OnApplicationBootstrap, OnModuleDestroy {
+export class LotteryDrawScheduler implements OnModuleDestroy {
   private readonly logger = new Logger(LotteryDrawScheduler.name);
-  private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject('ILotteryRepository') private readonly lotteryRepository: ILotteryRepository,
     private readonly commandBus: CommandBus,
+    private readonly redisService: RedisService,
   ) {}
 
-  onApplicationBootstrap(): void {
-    void this.drawExpiredLotteries();
-    this.intervalHandle = setInterval(
-      () => void this.drawExpiredLotteries(),
-      CHECK_INTERVAL_MS,
-    );
-  }
+  @Cron(CronExpression.EVERY_MINUTE, { name: 'lotteryDraw', timeZone: 'Europe/Istanbul' })
+  async drawExpiredLotteriesWithLock(): Promise<void> {
+    const locked = await this.redisService.get(LOCK_KEY);
+    if (locked === '1') {
+      this.logger.debug('Kilit meşgul — diğer instance çalışıyor, atlanıyor');
+      return;
+    }
+    await this.redisService.set(LOCK_KEY, '1', LOCK_TTL_SECONDS);
 
-  onModuleDestroy(): void {
-    if (this.intervalHandle) {
-      clearInterval(this.intervalHandle);
-      this.intervalHandle = null;
+    try {
+      await this.runDrawExpiredLotteries();
+    } finally {
+      await this.redisService.del(LOCK_KEY);
     }
   }
 
-  async drawExpiredLotteries(): Promise<void> {
+  onModuleDestroy(): void {}
+
+  private async runDrawExpiredLotteries(): Promise<void> {
     const expired = await this.lotteryRepository.findExpiredActive();
 
     if (expired.length === 0) return;

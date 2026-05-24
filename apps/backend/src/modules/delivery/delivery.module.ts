@@ -16,6 +16,7 @@ import { CommerceModule } from '../commerce/commerce.module';
 import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 import { DELIVERY_DISPATCH_QUEUE } from '@barterborsa/shared-queue';
 import { DeliveryDispatch, DeliveryDispatchSchema } from '@barterborsa/shared-persistence/schemas/backend/deliveryDispatch.schema';
+import { CargoShipmentSchema } from '@barterborsa/shared-persistence/schemas/backend/cargoShipment.schema';
 import { CargoTrackingService } from './application/services/cargo-tracking.service';
 import { CargoPollingScheduler } from './application/services/cargo-polling.scheduler';
 import { MngCargoAdapter } from './infrastructure/adapters/mng-cargo.adapter';
@@ -40,6 +41,7 @@ const Processors = [DispatchNotificationProcessor];
     AuditMongooseModule,
     MongooseModule.forFeature([
       { name: DeliveryDispatch.name, schema: DeliveryDispatchSchema },
+      { name: 'CargoShipment', schema: CargoShipmentSchema },
     ]),
     ClientsModule.register(deliveryGrpcClientOptions),
     BullModule.registerQueue({

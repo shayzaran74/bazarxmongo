@@ -41,8 +41,8 @@ export class EcosystemMembershipBackfill {
       const existing = await this.connection
         .model<IEcosystemMembership>('EcosystemMembership')
         .findOne({
-          dealerId: new Types.ObjectId(vendor.id || (vendor as any)._id),
-          ecosystemId: new Types.ObjectId(ecosystemId),
+          dealerId: vendor.id || (vendor as any)._id,
+          ecosystemId: ecosystemId,
         })
         .lean()
         .exec();
@@ -58,11 +58,11 @@ export class EcosystemMembershipBackfill {
         .model<IEcosystemMembership>('EcosystemMembership')
         .create({
           _id: new Types.ObjectId().toString(),
-          dealerId: new Types.ObjectId(vendor.id || (vendor as any)._id),
-          ecosystemId: new Types.ObjectId(ecosystemId),
+          dealerId: vendor.id || (vendor as any)._id,
+          ecosystemId: ecosystemId,
           status: 'ACTIVE',
           joinedAt: (vendor as any).updatedAt || (vendor as any).createdAt || new Date(),
-          addedByUserId: new Types.ObjectId(vendor.id || (vendor as any)._id),
+          addedByUserId: vendor.id || (vendor as any)._id,
         });
 
       processed++;

@@ -31,9 +31,13 @@ export class DispatchNotificationProcessor extends WorkerHost {
   async process(job: Job<DispatchNotificationJob>): Promise<void> {
     const { dispatchId, orderId, restaurantName, customerName, customerPhone, pickupAddress } = job.data;
 
-    // TODO: Gerçek bildirim mekanizması — SMS (Netgsm/Twilio), Push Notification (FCM), veya harici API
-    // RabbitMQ veya harici bildirim servisi burada çağrılır:
-    // await this.notificationService.sendCourierNotification(courierId, { orderId, pickupAddress });
+    this.logger.warn('Kurye bildirim servisi henüz entegre edilmedi — SMS/Push gönderilmedi', {
+      dispatchId,
+      orderId,
+      restaurantName,
+      customerName,
+      pickupAddress,
+    });
   }
 
   // Job başarısız olursa

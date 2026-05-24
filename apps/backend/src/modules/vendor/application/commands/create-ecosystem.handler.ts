@@ -4,7 +4,7 @@ import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { BadRequestException, ForbiddenException, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { CreateEcosystemCommand } from './create-ecosystem.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 import { VendorTier } from '../../domain/enums/vendor-tier.enum';
 import { BrandEcosystem } from '../../domain/entities/brand-ecosystem.entity';
@@ -16,7 +16,7 @@ export class CreateEcosystemHandler
 
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
     private readonly eventBus: EventBus,
   ) {}

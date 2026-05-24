@@ -16,9 +16,9 @@ export class MongoCompanyRepository
   implements ICompanyRepository
 {
   constructor() {
-    super(CompanyModel as any, {
-      toDomain: CompanyMapper.toDomain as any,
-      toPersistence: CompanyMapper.toPersistence as any,
+    super(CompanyModel as unknown as Parameters<typeof Object>[0], {
+      toDomain: CompanyMapper.toDomain as unknown as Parameters<typeof Object>[0],
+      toPersistence: CompanyMapper.toPersistence as unknown as Parameters<typeof Object>[0],
     });
   }
 

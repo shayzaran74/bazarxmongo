@@ -9,7 +9,7 @@ import { GetEcosystemDashboardQuery } from './get-ecosystem-dashboard.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { ITrustScoreRepository } from '../../domain/repositories/trust-score.repository.interface';
 import { ISwapSessionRepository } from '../../../barter/domain/repositories/swap-session.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 import { scoreToLevel } from '../../../barter/domain/trust-level.constants';
 
@@ -50,7 +50,7 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
     @Inject('ISwapSessionRepository') private readonly swapRepo: ISwapSessionRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     @Inject('IListingRepository') private readonly listingRepo: IListingRepository,
   ) {}
 
@@ -122,8 +122,8 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
         violationCount:   isAnonymousViewer ? 0 : (trustRecord?.violationCount ?? 0),
         isFrozen:         isAnonymousViewer ? false : (trustRecord?.isFrozen ?? false),
         activeListings:   isAnonymousViewer ? 0 : listingsResult.total,
-        recentTradeCount: recentTrades,
-        lastActivityAt:   lastActivityAt,
+        recentTradeCount: isAnonymousViewer ? 0 : recentTrades,
+        lastActivityAt:   isAnonymousViewer ? null : lastActivityAt,
       });
     }
 

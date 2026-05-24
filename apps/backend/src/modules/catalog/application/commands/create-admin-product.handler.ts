@@ -7,7 +7,7 @@ import { BadRequestException } from '@nestjs/common';
 import { SystemVendorService } from '../../infrastructure/services/system-vendor.service';
 import { MediaService } from '../../../media/application/services/media.service';
 import { randomBytes } from 'crypto';
-import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
+import { CatalogProduct, ICatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
 import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
 import { Brand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
@@ -31,7 +31,7 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    let catalogProduct: any;
+    let catalogProduct: ICatalogProduct | undefined = undefined;
     let attempts = 0;
     const maxAttempts = 3;
 
@@ -70,7 +70,7 @@ export class CreateAdminProductHandler implements ICommandHandler<CreateAdminPro
 
     const vendorId = this.systemVendorService.getSystemVendorId();
 
-    if (data.price !== undefined || data.stock !== undefined) {
+    if ((data.price !== undefined || data.stock !== undefined) && catalogProduct) {
       const id = 'listing-' + crypto.randomUUID();
       await Listing.create({
         id,

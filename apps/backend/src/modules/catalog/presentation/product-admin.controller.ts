@@ -34,7 +34,7 @@ class CreateAdminProductDto {
   @IsOptional() @IsNumber() @Min(0) stock?: number;
   @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
-  @IsOptional() @IsObject() specs?: Record<string, unknown>;
+  @IsOptional() @IsObject() specs?: Record<string, string | number | boolean>;
   @IsOptional() @IsBoolean() isFeatured?: boolean;
 }
 
@@ -48,7 +48,7 @@ class UpdateAdminProductDto {
   @IsOptional() @IsNumber() @Min(0) stock?: number;
   @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
-  @IsOptional() @IsObject() specs?: Record<string, unknown>;
+  @IsOptional() @IsObject() specs?: Record<string, string | number | boolean>;
   @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @IsBoolean() isSpecialOffer?: boolean;
   @IsOptional() @IsBoolean() isFlashSale?: boolean;

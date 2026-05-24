@@ -42,7 +42,7 @@ export class MongoCategoryRepository implements ICategoryRepository {
     parentId?: string;
     order?: number;
     isActive?: boolean;
-  }): Promise<any> {
+  }): Promise<ICategory> {
     const id = 'cat-' + crypto.randomUUID();
     const doc = await this.model.create({
       id,
@@ -55,7 +55,7 @@ export class MongoCategoryRepository implements ICategoryRepository {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    return doc.toObject();
+    return doc.toObject() as unknown as ICategory;
   }
 
   async update(id: string, data: Partial<{
@@ -65,13 +65,13 @@ export class MongoCategoryRepository implements ICategoryRepository {
     parentId?: string;
     order?: number;
     isActive?: boolean;
-  }>): Promise<any> {
+  }>): Promise<ICategory> {
     const doc = await this.model.findOneAndUpdate(
       { id },
       { $set: { ...data, updatedAt: new Date() } },
       { new: true },
     ).exec();
-    return doc ? doc.toObject() : null;
+    return (doc ? doc.toObject() : null) as unknown as ICategory;
   }
 
   async delete(id: string): Promise<void> {

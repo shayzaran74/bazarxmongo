@@ -16,9 +16,9 @@ export class MongoVendorRepository
   implements IVendorRepository
 {
   constructor() {
-    super(VendorModel as any, {
-      toDomain: VendorMapper.toDomain as any,
-      toPersistence: VendorMapper.toPersistence as any,
+    super(VendorModel as unknown as Model<IVendor>, {
+      toDomain: VendorMapper.toDomain as unknown as (doc: IVendor) => Vendor,
+      toPersistence: VendorMapper.toPersistence as unknown as (entity: Vendor) => Partial<IVendor>,
     });
   }
 

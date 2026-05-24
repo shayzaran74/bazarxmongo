@@ -35,7 +35,7 @@ export class MongoTrustScoreRepository implements ITrustScoreRepository {
     return doc ? doc.toObject() : null;
   }
 
-  async save(score: any): Promise<void> {
+  async save(score: ITrustScore): Promise<void> {
     await this.model.findOneAndUpdate(
       { vendorId: score.vendorId },
       { $set: score },

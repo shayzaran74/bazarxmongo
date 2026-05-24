@@ -32,8 +32,11 @@ export class BrandEcosystem extends AggregateRoot<BrandEcosystemProps> {
   }
 
   public setCommissionRate(rate: number): void {
+    if (rate < 1 || rate > 20) {
+      throw new Error('Komisyon oranı 1-20 arasında olmalıdır');
+    }
     this.props.internalCommRate = rate;
-    this._updatedAt = new Date();
+    (this as unknown as { _updatedAt: Date })._updatedAt = new Date();
   }
 
   get name(): string { return this.props.name; }

@@ -3,7 +3,7 @@
 import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout, catchError } from 'rxjs';
 import { DomainException } from '@barterborsa/shared-core';
 import { CircuitBreakerService } from '../../../common/resilience/circuit-breaker.service';
 
@@ -63,7 +63,7 @@ export class EscrowGrpcService implements OnModuleInit {
         const response: EscrowResponse = await firstValueFrom(
           this.financialService.holdFunds({
             userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId,
-          }),
+          }).pipe(timeout(this.TIMEOUT_MS), catchError((err) => { throw err; })),
         );
         if (!response.success) {
           throw new DomainException(response.error || 'Hold funds failed');
@@ -79,7 +79,7 @@ export class EscrowGrpcService implements OnModuleInit {
       'escrow.releaseFunds',
       async () => {
         const response: EscrowResponse = await firstValueFrom(
-          this.financialService.releaseFunds({ holdId, idempotencyKey }),
+          this.financialService.releaseFunds({ holdId, idempotencyKey }).pipe(timeout(this.TIMEOUT_MS), catchError((err) => { throw err; })),
         );
         return response;
       },
@@ -92,7 +92,7 @@ export class EscrowGrpcService implements OnModuleInit {
       'escrow.refundFunds',
       async () => {
         const response: EscrowResponse = await firstValueFrom(
-          this.financialService.refundFunds({ holdId, idempotencyKey }),
+          this.financialService.refundFunds({ holdId, idempotencyKey }).pipe(timeout(this.TIMEOUT_MS), catchError((err) => { throw err; })),
         );
         return response;
       },

@@ -42,8 +42,16 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
       throw new DomainException(`Yetersiz bakiye. Mevcut: ${balance} TL, Teklif: ${amount} TL`);
     }
 
-    // Domain logic: validate and update current price
+    // Domain logic: validate (entity side — status, min increment kontrolü)
     auction.placeBid(command.userId, amount);
+
+    // Atomic currentPrice güncelleme — race condition koruması
+    const updated = await this.repository.atomicBidUpdate(
+      auction.id, amount, command.userId,
+    );
+    if (!updated) {
+      throw new DomainException('Teklif geçersiz — başka bir teklif sizden önce kabul edildi');
+    }
 
     // 1. Önceki en yüksek teklifi bul (iade için)
     const previousBids = await this.repository.findBidsByAuctionId(auction.id, 1);
@@ -69,9 +77,6 @@ export class PlaceBidHandler implements ICommandHandler<PlaceBidCommand> {
         `release-bid-${(previousBid as { id?: string }).id}`,
       );
     }
-
-    // 4. Teklifi ve artırmayı kaydet
-    await this.repository.save(auction);
 
     const bid = AuctionBid.create(
       auction.id,

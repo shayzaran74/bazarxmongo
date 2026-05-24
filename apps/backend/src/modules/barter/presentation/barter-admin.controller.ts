@@ -20,6 +20,7 @@ import { ISwapSessionRepository } from '../domain/repositories/swap-session.repo
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 import { SwapSchedulerService } from '../application/services/swap-session.scheduler';
+import { BarterMatchScheduler } from '../application/services/barter-match.scheduler';
 import { SwapSessionStatus } from '../domain/enums/swap-session-status.enum';
 import { TrustScoreRecalculationService } from '../application/services/trust-score-recalculation.service';
 import { ITrustScoreRepository } from '../../vendor/domain/repositories/trust-score.repository.interface';
@@ -50,6 +51,7 @@ export class BarterAdminController {
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly financialGateway:    FinancialGatewayService,
     private readonly swapScheduler:       SwapSchedulerService,
+    private readonly batchMatchScheduler:  BarterMatchScheduler,
     private readonly trustScoreSvc:       TrustScoreRecalculationService,
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
     @InjectModel('DemandMatch') private readonly demandMatchModel: Model<IDemandMatch>,
@@ -64,29 +66,7 @@ export class BarterAdminController {
 
     const docs = await TradeOffer.find(filter).sort({ createdAt: -1 }).limit(100).lean();
     
-    const populated = await Promise.all(docs.map(async (doc: any) => {
-      const fromCompany = await Company.findOne({ id: doc.fromCompanyId }).lean();
-      const toCompany = await Company.findOne({ id: doc.toCompanyId }).lean();
-      
-      const offeredItems = await TradeOfferItem.find({ $or: [{ offered_offer_id: doc.id }, { offered_offer_id: doc.id }] }).lean() || [];
-      const requestedItems = await TradeOfferItem.find({ $or: [{ requested_offer_id: doc.id }, { requested_offer_id: doc.id }] }).lean() || [];
-      
-      for (const item of offeredItems) {
-        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
-      }
-      for (const item of requestedItems) {
-        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
-      }
-
-      return {
-        ...doc,
-        fromCompany: fromCompany || { name: 'Bilinmeyen Şirket' },
-        toCompany: toCompany || { name: 'Bilinmeyen Şirket' },
-        offeredItems,
-        requestedItems,
-      };
-    }));
-
+    const populated = await Promise.all(docs.map(doc => this.populateOffer(doc as Record<string, unknown>)));
     return { success: true, data: populated };
   }
 
@@ -95,30 +75,37 @@ export class BarterAdminController {
   async getPendingOffers() {
     const docs = await TradeOffer.find({ status: 'PENDING' }).sort({ createdAt: -1 }).limit(100).lean();
 
-    const populated = await Promise.all(docs.map(async (doc: any) => {
-      const fromCompany = await Company.findOne({ id: doc.fromCompanyId }).lean();
-      const toCompany = await Company.findOne({ id: doc.toCompanyId }).lean();
-
-      const offeredItems = await TradeOfferItem.find({ $or: [{ offered_offer_id: doc.id }, { offered_offer_id: doc.id }] }).lean() || [];
-      const requestedItems = await TradeOfferItem.find({ $or: [{ requested_offer_id: doc.id }, { requested_offer_id: doc.id }] }).lean() || [];
-
-      for (const item of offeredItems) {
-        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
-      }
-      for (const item of requestedItems) {
-        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
-      }
-
-      return {
-        ...doc,
-        fromCompany: fromCompany || { name: 'Bilinmeyen Şirket' },
-        toCompany: toCompany || { name: 'Bilinmeyen Şirket' },
-        offeredItems,
-        requestedItems,
-      };
-    }));
-
+    const populated = await Promise.all(docs.map(doc => this.populateOffer(doc as Record<string, unknown>)));
     return { success: true, data: populated };
+  }
+
+  // Tekrarlanan offer populate mantığı — shared private metod
+  private async populateOffer(doc: Record<string, unknown>) {
+    const fromCompany = await Company.findOne({ id: doc.fromCompanyId as string }).lean();
+    const toCompany = await Company.findOne({ id: doc.toCompanyId as string }).lean();
+
+    const offeredItems = await TradeOfferItem.find({ offered_offer_id: doc.id }).lean() || [];
+    const requestedItems = await TradeOfferItem.find({ requested_offer_id: doc.id }).lean() || [];
+
+    const enrichItems = async (items: Record<string, unknown>[]) => {
+      for (const item of items) {
+        if (item.listingId) {
+          item.listing = await Listing.findOne({ id: item.listingId as string }).lean();
+        }
+      }
+      return items;
+    };
+
+    await enrichItems(offeredItems as Record<string, unknown>[]);
+    await enrichItems(requestedItems as Record<string, unknown>[]);
+
+    return {
+      ...doc,
+      fromCompany: fromCompany || { name: 'Bilinmeyen Şirket' },
+      toCompany: toCompany || { name: 'Bilinmeyen Şirket' },
+      offeredItems,
+      requestedItems,
+    };
   }
 
   @ApiOperation({ summary: 'Approve/Accept trade offer (Admin)' })
@@ -328,6 +315,13 @@ export class BarterAdminController {
   async runTimeoutCheck() {
     await this.swapScheduler.runManually();
     return { success: true, message: 'Timeout taraması tamamlandı — loglara bakın' };
+  }
+
+  @ApiOperation({ summary: 'Batch matching\'i manuel tetikle' })
+  @Post('run-batch-match')
+  async runBatchMatch() {
+    await this.batchMatchScheduler.runManually();
+    return { success: true, message: 'Batch matching tamamlandı — loglara bakın' };
   }
 
   // ── TrustScore Yönetimi ───────────────────────────────────────────────────

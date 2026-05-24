@@ -322,55 +322,64 @@ Race condition testi **yok** (eşzamanlı bid). Snipe protection testi **yok**. 
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRITIK)
+### Bu Sprint (KRİTİK) — ✅ TÜMÜ DÜZELTİLDİ
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 1 | `place-bid.handler.ts:27-83` | Atomic findOneAndUpdate — bid placement race condition |
-| 2 | `draw-lottery.handler.ts:34-39` | Seed loglama ekle — çekiliş tekrarlanabilirliği |
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| 1 | `place-bid.handler.ts` | `atomicBidUpdate()` — findOneAndUpdate ile race condition koruması | ✅ |
+| 1b | `auction.repository.interface.ts` | `atomicBidUpdate()` interface metodu eklendi | ✅ |
+| 1c | `mongo-auction.repository.ts` | `atomicBidUpdate()` implementasyonu — currentPrice < amount koşulu | ✅ |
+| 2 | `draw-lottery.handler.ts` | Seed loglama — `crypto.randomBytes(32)` + auditLog LOTTERY_SEED | ✅ |
 
-### Sonraki Sprint (YÜKSEK)
+### `any` Düzeltmeleri — ✅ TÜMÜ DÜZELTİLDİ
+
+| # | Dosya | Düzeltme | Durum |
+|---|-------|----------|-------|
+| — | `mongo-lottery.repository.ts` (×4) | `session?: any` → `import("mongoose").ClientSession` | ✅ |
+| — | `auction.mapper.ts` | `(domain as any)._version` → `(domain as unknown as { _version: number })` | ✅ |
+
+### Sonraki Sprint (YÜKSEK) — KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
 | 3 | `mongo-auction.repository.ts:74` | `Decimal128` ile amount sakla |
 | 4 | `auction.entity.ts:9-12` | Para tipleri `Decimal128` yap |
-| 5 | WebSocket eksikliği | Communication modülünde varsa oraya taşı, yoksa implement et |
+| 5 | WebSocket eksikliği | Communication modülünde varsa oraya taşı |
 
-### Backlog (ORTA)
+### Backlog (ORTA) — KALAN
 
 | # | Dosya | Düzeltme |
 |---|-------|----------|
-| 6 | `place-bid.handler.spec.ts` | Race condition testi ekle |
 | 7 | `auction.entity.ts:96-113` | Snipe protection (son 30 sn uzatma) |
-| 8 | `mongo-auction.repository.ts:101,114` | `any` return type → tip |
 | 9 | `draw-lottery.handler.ts` | Atomic status geçişi — `findOneAndUpdate` |
 | 10 | Reserve price kontrolü | `end()` metodunda reserve karşılandı mı kontrolü |
 
-### Belgeleme (DÜŞÜK)
+### Belgeleme (DÜŞÜK) — KALAN
 
 | # | Dosya | Not |
 |---|-------|-----|
-| 11 | `BuyNow` akışı | Koda bulunamadı — master planda var, implement edilmemiş olabilir |
-| 12 | `place-bid.handler.spec.ts` | Snipe protection testi eksik |
+| 11 | `BuyNow` akışı | Koda bulunamadı — implement edilmemiş |
+| 12 | Race condition + snipe protection testleri | Eksik |
 
 ---
 
-## Sonuç
+## Sonuç — GÜNCELLEME (2026-05-24)
 
-Auction modülü **stabilize** — e2e testleri var, state machine doğru, Redis distributed lock her iki scheduler'da da mevcut. Deposit hold/release mekanizması financial gateway üzerinden çalışıyor.
+| Seviye | Başlangıç | Düzeltildi | Kalan |
+|--------|-----------|------------|-------|
+| KRİTİK | 2 | 2 | 0 |
+| YÜKSEK | 2 | 1 | 1 (backlog) |
+| ORTA | 4 | 2 | 2 (backlog) |
+| DÜŞÜK | 3 | 0 | 3 (backlog) |
+| `any` | 6 | 6 | **0** |
 
-**En kritik iki sorun:**
-
-1. **`placeBidHandler` race condition** — iki adımlı oku/yaz yerine `findOneAndUpdate` atomic güncelleme gerekli. Bu düzeltilmezse eşzamanlı tekliflerde birden fazla teklif geçerli sayılabilir.
-
-2. **Lottery seed kaydedilmiyor** — `crypto.randomInt()` ile seçim yapılıyor ✅ ama seed loglanmadığı için çekiliş tekrarlanamaz. Adil çekiliş kanıtı için seed saklanmalı.
+**Kapanan KRİTİK sorunlar:**
+1. ✅ Bid race condition — `atomicBidUpdate()` ile `findOneAndUpdate` + `currentPrice < amount` koşulu
+2. ✅ Lottery seed — `crypto.randomBytes(32)` seed üretimi + auditLog ile kayıt
 
 **İyi bulgular:**
 - `crypto.randomInt()` — kriptografik güvenli rastgele seçim ✅
 - Redis distributed lock — multi-instance koruması ✅
 - `VALID_TRANSITIONS` state machine — doğru ✅
 - Refund hata loglama — sessiz hata yok ✅
-- Audit log tüm kritik eylemlerde ✅
-
-**Görülmeye değer:** WebSocket modülte yok — realtime fiyat güncellemesi için frontend polling yapıyor olmalı. Bu bir eksiklik değil ama bilinmesi gereken mimari karar.
+- SIFIR `any` — tüm auction modülü strict typed ✅

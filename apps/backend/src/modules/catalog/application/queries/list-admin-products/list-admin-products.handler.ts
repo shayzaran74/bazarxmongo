@@ -37,7 +37,8 @@ export class ListAdminProductsHandler implements IQueryHandler<ListAdminProducts
 
     const filter = conditions.length > 0 ? { $and: conditions } : {};
 
-    const pipeline: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Mongoose aggregate pipeline PipelineStage[] gerektiriyor
+    const pipeline: Array<Record<string, unknown>> = [];
     if (conditions.length > 0) {
       pipeline.push({ $match: { $and: conditions } });
     } else {
@@ -98,25 +99,27 @@ export class ListAdminProductsHandler implements IQueryHandler<ListAdminProducts
     );
 
     const [rawItems, countResult] = await Promise.all([
-      CatalogProduct.aggregate(pipeline).exec(),
-      CatalogProduct.aggregate(countPipeline).exec(),
+      CatalogProduct.aggregate(pipeline as unknown as Parameters<typeof CatalogProduct.aggregate>[0]).exec(),
+      CatalogProduct.aggregate(countPipeline as unknown as Parameters<typeof CatalogProduct.aggregate>[0]).exec(),
     ]);
 
     const total = countResult[0]?.total || 0;
 
-    const items = rawItems.map((item: any) => {
-      const listing = item.listings?.[0] ?? null;
-      const totalStock = item.listings?.reduce((sum: number, l: any) => {
+    const items = rawItems.map((item: Record<string, unknown>) => {
+      const listings = item.listings as Record<string, unknown>[] | undefined;
+      const listing = listings?.[0] ?? null;
+      const totalStock = listings?.reduce((sum: number, l: Record<string, unknown>) => {
         const qty = Number(l.availableQuantity) || Number(l.stock) || 0;
         return sum + qty;
       }, 0) ?? 0;
+      const media = item.media as Array<{ url: string }> | undefined;
       return {
         ...item,
-        Brand: item.brands?.[0] || (item.brand ? { name: item.brand } : null),
+        Brand: (item.brands as unknown[])?.[0] || (item.brand ? { name: item.brand } : null),
         Category: item.category ?? null,
-        Vendor: listing?.vendor ?? null,
-        image: item.media?.[0]?.url ?? null,
-        images: item.media?.map((m: any) => m.url) ?? [],
+        Vendor: (listing as Record<string, unknown> | null)?.vendor ?? null,
+        image: media?.[0]?.url ?? null,
+        images: media?.map(m => m.url) ?? [],
         price: listing ? Number(listing.price) : 0,
         stock: totalStock,
         sku: listing?.sku ?? '',

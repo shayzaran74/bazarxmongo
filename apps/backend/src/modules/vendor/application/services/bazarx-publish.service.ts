@@ -83,7 +83,7 @@ export class BazarXPublishService {
         $set: {
           'bazarxPublished.published': true,
           'bazarxPublished.publishedAt': new Date(),
-          'bazarxPublished.publishedBy': new Types.ObjectId(dealerId),
+          'bazarxPublished.publishedBy': dealerId,
           'bazarxPublished.ecosystemId': ecosystemId,
           'bazarxPublished.minMarketPrice': dto.minMarketPrice ? Types.Decimal128.fromString(String(dto.minMarketPrice)) : null,
         },
@@ -134,7 +134,7 @@ export class BazarXPublishService {
         $set: {
           'bazarxPublished.published': false,
           'bazarxPublished.unpublishedAt': new Date(),
-          'bazarxPublished.unpublishedBy': new Types.ObjectId(dealerId),
+          'bazarxPublished.unpublishedBy': dealerId,
         },
       },
       { new: true, session },
@@ -162,7 +162,7 @@ export class BazarXPublishService {
    */
   async getDealerPublishedListings(dealerId: string, ecosystemId: string): Promise<IListing[]> {
     return this.listingModel.find({
-      'bazarxPublished.publishedBy': new Types.ObjectId(dealerId),
+      'bazarxPublished.publishedBy': dealerId,
       'bazarxPublished.ecosystemId': ecosystemId,
       'bazarxPublished.published': true,
     }).lean().exec();

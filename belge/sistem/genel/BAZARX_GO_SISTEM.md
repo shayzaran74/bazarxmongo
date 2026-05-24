@@ -1,7 +1,7 @@
 # BazarX-GO — Sistem Tasarımı & İş Modeli
 > **Durum:** Geliştirme & Optimizasyon
 > **URL:** `http://localhost:3002/bazarx-go`
-> **Son güncelleme:** Mayıs 2026 (Düzeltmeler 2–8 + Faz 5–7 sonrası)
+> **Son güncelleme:** Mayıs 2026 (G1–G4 Düzeltmeleri + Faz 5–7 sonrası)
 
 ---
 
@@ -664,3 +664,7 @@ Referans sistemi var ama kullanıcı bunu hissedemiyor. Çözüm gamification de
 | **FCM token + bildirim tercihleri** | ✅ | user.fcmToken, silentHoursStart/End (Faz 5) |
 | **QR tip ayrımı (PLATFORM / INSTANT_OPPORTUNITY)** | ✅ | MenuPurchase.qrType, platformExpiresAt, activationDate (Düzeltme 5) |
 | **GO Rezervasyon modülü** | ✅ | GoReservation schema + endpoint'ler (Faz 7) |
+| **Geofencing endpoint entegrasyonu (G1)** | ✅ | check-proximity → GeofenceService.updateLocationAndFindNearby, frontend watcher (Mayıs 2026) |
+| **Restoran teslimat ayarları toggle (G2)** | ✅ | hasDeliveryService toggle + deliveryFee input (RestaurantSettingsSection.vue, Mayıs 2026) |
+| **MenuCronService burnMonthlyRights temizliği (G3)** | ✅ | no-op → logger.debug, işlem MenuRightsCleanupService'de (Mayıs 2026) |
+| **CategoryAccessService preview sayaç düzeltmesi (G4)** | ✅ | previewRemainingThisMonth: 0 → 1 (Mayıs 2026) |

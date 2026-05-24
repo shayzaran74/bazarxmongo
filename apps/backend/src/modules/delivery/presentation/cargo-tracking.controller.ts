@@ -1,35 +1,28 @@
-import { CurrentUser } from '@barterborsa/shared-nest';
 // apps/backend/src/modules/delivery/presentation/cargo-tracking.controller.ts
 
+import { CurrentUser } from '@barterborsa/shared-nest';
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  Request,
-  Headers,
-  HttpCode,
-  HttpStatus,
+  Controller, Get, Post, Body, Param, UseGuards,
+  Headers, HttpCode, HttpStatus, Logger,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CargoTrackingService } from '../application/services/cargo-tracking.service';
 import { CargoProvider } from '../domain/enums/cargo-provider.enum';
 import { DeliveryGrpcService } from '../grpc/delivery-grpc.service';
+import { CargoShipment } from '@barterborsa/shared-persistence/schemas/backend/cargoShipment.schema';
+
+interface AuthenticatedUser { id: string; role: string; vendorId?: string; }
 
 @Controller('orders/:id/tracking')
 @UseGuards(JwtAuthGuard)
 export class CargoTrackingController {
+  private readonly logger = new Logger(CargoTrackingController.name);
+
   constructor(
     private readonly cargoTrackingService: CargoTrackingService,
     private readonly deliveryGrpcService: DeliveryGrpcService,
   ) {}
 
-  /**
-   * GET /orders/:id/tracking
-   * Siparişin kargo takip bilgilerini getir
-   */
   @Get()
   async getTracking(@Param('id') orderId: string) {
     try {
@@ -41,10 +34,6 @@ export class CargoTrackingController {
     }
   }
 
-  /**
-   * POST /orders/:id/tracking/ship
-   * Satıcı kargo gönderisini kayıt eder
-   */
   @Post('ship')
   @HttpCode(HttpStatus.CREATED)
   async createShipment(
@@ -57,7 +46,7 @@ export class CargoTrackingController {
         orderId,
         provider: body.provider,
         trackingNumber: body.trackingNumber,
-        vendorId: user.vendorId!,
+        vendorId: user.vendorId ?? user.id,
       });
       return { success: true, data: result };
     } catch (err: unknown) {
@@ -67,11 +56,10 @@ export class CargoTrackingController {
   }
 }
 
-/**
- * Kargo firmalarından gelen webhook'ları karşılar
- */
 @Controller('cargo/webhook/:provider')
 export class CargoWebhookController {
+  private readonly logger = new Logger(CargoWebhookController.name);
+
   constructor(private readonly cargoTrackingService: CargoTrackingService) {}
 
   @Post()
@@ -79,7 +67,7 @@ export class CargoWebhookController {
   async handleWebhook(
     @Param('provider') provider: string,
     @Headers('x-signature') signature: string,
-    @Body() body: Record<string, any>,
+    @Body() body: Record<string, unknown>,
   ) {
     const cargoProvider = provider as CargoProvider;
     const payload = JSON.stringify(body);
@@ -88,23 +76,40 @@ export class CargoWebhookController {
       return { success: false, error: 'Invalid signature' };
     }
 
-    // TODO: Webhook payload'ını işle, shipment durumunu güncelle
+    const trackingNumber = (body.trackingNumber ?? body.tracking_number ?? body.barcode) as string | undefined;
+    const rawStatus = (body.status ?? body.event) as string | undefined;
+
+    if (!trackingNumber || !rawStatus) {
+      this.logger.warn('Webhook payload eksik alan', { provider, body });
+      return { success: false, error: 'trackingNumber ve status zorunlu' };
+    }
+
+    const adapter = this.cargoTrackingService.getAdapter(cargoProvider);
+    const mappedStatus = adapter ? rawStatus : rawStatus;
+
+    await CargoShipment.updateOne(
+      { trackingNumber, provider: cargoProvider },
+      {
+        $set: { status: mappedStatus, updatedAt: new Date() },
+        $push: { statusHistory: { status: mappedStatus, timestamp: new Date(), rawData: payload } },
+        ...(mappedStatus === 'DELIVERED' ? { $set: { deliveredAt: new Date() } } : {}),
+      },
+    ).exec();
+
+    this.logger.log('Webhook ile kargo durumu güncellendi', { trackingNumber, provider, status: mappedStatus });
+
     return { success: true };
   }
 }
 
-/**
- * Admin kargo yönetimi
- */
 @Controller('admin/cargo')
 @UseGuards(JwtAuthGuard)
 export class AdminCargoController {
-  constructor(private readonly cargoTrackingService: CargoTrackingService) {}
-
-  @Get()
-  async listAll(@CurrentUser() user: AuthenticatedUser) {
-    // TODO: Tüm cargo shipments'ı listele (admin)
-    return { success: true, data: { items: [], total: 0 } };
+  async listAll(): Promise<{ success: boolean; data: { items: Record<string, unknown>[]; total: number } }> {
+    const [items, total] = await Promise.all([
+      CargoShipment.find().sort({ createdAt: -1 }).limit(100).lean().exec(),
+      CargoShipment.countDocuments().exec(),
+    ]);
+    return { success: true, data: { items: items as unknown as Record<string, unknown>[], total } };
   }
 }
-export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }

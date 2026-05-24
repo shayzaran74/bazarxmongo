@@ -179,4 +179,23 @@ export class MongoAuctionRepository
       total,
     };
   }
+
+  async atomicBidUpdate(auctionId: string, amount: number, userId: string): Promise<boolean> {
+    const result = await this.model.findOneAndUpdate(
+      {
+        id: auctionId,
+        status: 'ACTIVE',
+        currentPrice: { $lt: amount },
+      },
+      {
+        $set: {
+          currentPrice: amount,
+          currentWinnerUserId: userId,
+          updatedAt: new Date(),
+        },
+      },
+      { new: true },
+    ).exec();
+    return !!result;
+  }
 }

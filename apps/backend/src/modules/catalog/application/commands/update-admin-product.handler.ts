@@ -1,7 +1,7 @@
 // apps/backend/src/modules/catalog/application/commands/update-admin-product.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -12,6 +12,8 @@ import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/pr
 
 @CommandHandler(UpdateAdminProductCommand)
 export class UpdateAdminProductHandler implements ICommandHandler<UpdateAdminProductCommand> {
+  private readonly logger = new Logger(UpdateAdminProductHandler.name);
+
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -93,8 +95,9 @@ export class UpdateAdminProductHandler implements ICommandHandler<UpdateAdminPro
         await (manager.clear() as Promise<void>);
       }
       await manager.del('category-tree');
-    } catch (e) {
-      // Cache manager hataları kritik değil
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Bilinmeyen hata';
+      this.logger.warn('Cache temizleme başarısız (kritik değil)', { error: msg });
     }
 
     return { success: true, message: 'Ürün başarıyla güncellendi' };

@@ -25,10 +25,11 @@ export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
   async execute(command: RedeemMenuCommand) {
     const { qrCode, staffUserId } = command;
 
+    // Atomic QR doğrulama — race condition korumalı
     const purchase = await this.purchaseModel
       .findOne({
         $or: [
-          { qrCode, status: { $ne: 'CANCELLED' } },
+          { qrCode, status: { $nin: ['CANCELLED', 'EXPIRED'] } },
           { oneFreeQrCode: qrCode, oneFreeActivatedAt: { $ne: null, $exists: true } },
         ],
       })
@@ -64,29 +65,32 @@ export class RedeemMenuHandler implements ICommandHandler<RedeemMenuCommand> {
       }
     }
 
+    // Atomic status geçişi — findOneAndUpdate ile race condition koruması
     const session = await this.connection.startSession();
     try {
       await session.withTransaction(async () => {
+        if (isOneFree) {
+          const updated = await this.purchaseModel.findOneAndUpdate(
+            { _id: purchase._id ?? purchase.id, oneFreeUsedAt: null },
+            { $set: { oneFreeUsedAt: new Date(), status: 'REDEEMED' } },
+            { new: true, session },
+          ).exec();
+          if (!updated) throw new BadRequestException('Bu bedava QR zaten kullanılmış (eşzamanlı tarama)');
+        } else {
+          const newStatus = purchase.oneFreeActivatedAt ? 'PARTIALLY_REDEEMED' : 'REDEEMED';
+          const updated = await this.purchaseModel.findOneAndUpdate(
+            { _id: purchase._id ?? purchase.id, status: { $in: ['ACTIVE', 'PARTIALLY_REDEEMED'] } },
+            { $set: { status: newStatus, qrUsedAt: new Date() } },
+            { new: true, session },
+          ).exec();
+          if (!updated) throw new BadRequestException('Bu QR zaten kullanılmış (eşzamanlı tarama)');
+        }
+
         const redId = new Types.ObjectId().toString();
         await this.redemptionModel.create(
           [{ _id: redId, id: redId, purchaseId: purchase.id, isOneFree, scannedByStaff: staffUserId }],
           { session },
         );
-
-        if (isOneFree) {
-          await this.purchaseModel.updateOne(
-            { _id: purchase._id ?? purchase.id },
-            { $set: { oneFreeUsedAt: new Date(), status: 'REDEEMED' } },
-            { session },
-          );
-        } else {
-          const newStatus = purchase.oneFreeActivatedAt ? 'PARTIALLY_REDEEMED' : 'REDEEMED';
-          await this.purchaseModel.updateOne(
-            { _id: purchase._id ?? purchase.id },
-            { $set: { status: newStatus, qrUsedAt: new Date() } },
-            { session },
-          );
-        }
       });
     } finally {
       await session.endSession();

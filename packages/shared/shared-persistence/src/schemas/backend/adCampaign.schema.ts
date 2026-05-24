@@ -2,10 +2,10 @@ import { createModelProxy } from '../../mongodb/model-proxy';
 // packages/shared/shared-persistence/src/schemas/backend/adCampaign.schema.ts
 import { Schema, Types } from 'mongoose';
 
-export const AdCampaignStatus = ['PENDING','ACTIVE','PAUSED','REJECTED','COMPLETED'] as const;
+export const AdCampaignStatus = ['PENDING','ACTIVE','PAUSED','REJECTED','COMPLETED','EXPIRED'] as const;
 export type AdCampaignStatusType = typeof AdCampaignStatus[number];
 
-export const AdType = ['SEARCH','DISPLAY','SOCIAL','RETARGETING'] as const;
+export const AdType = ['BANNER','SPONSORED_PRODUCT','SEARCH_AD','SIDE_AD','VIDEO','REWARD_DISTRIBUTION','SAMPLING','SEARCH','DISPLAY','SOCIAL','RETARGETING'] as const;
 export type AdTypeType = typeof AdType[number];
 
 export interface IAdCampaign {
@@ -31,6 +31,12 @@ export interface IAdCampaign {
   maxBidPerClick?: Types.Decimal128;
   maxBidPerMille?: Types.Decimal128;
   rejectionReason?: string;
+  targetCategories?: string[];
+  targetKeywords?: string[];
+  targetCities?: string[];
+  targetDistricts?: string[];
+  targetSlots?: string[];
+  negativeKeywords?: string[];
   metadata?: Schema.Types.Mixed;
   createdAt: Date;
   updatedAt: Date;
@@ -59,6 +65,12 @@ export const AdCampaignSchema = new Schema<IAdCampaign>({
   maxBidPerClick: { type: Types.Decimal128 },
   maxBidPerMille: { type: Types.Decimal128 },
   rejectionReason: { type: String },
+  targetCategories: { type: [String], default: [] },
+  targetKeywords: { type: [String], default: [] },
+  targetCities: { type: [String], default: [] },
+  targetDistricts: { type: [String], default: [] },
+  targetSlots: { type: [String], default: [] },
+  negativeKeywords: { type: [String], default: [] },
   metadata: { type: Schema.Types.Mixed },
   createdAt: { type: Date },
   updatedAt: { type: Date },

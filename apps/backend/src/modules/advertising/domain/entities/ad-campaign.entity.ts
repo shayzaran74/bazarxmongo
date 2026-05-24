@@ -47,6 +47,10 @@ export class AdCampaign extends AggregateRoot<AdCampaignProps> {
     super(props, id);
   }
 
+  public static reconstitute(props: AdCampaignProps, id: string): AdCampaign {
+    return new AdCampaign(props, id);
+  }
+
   public static create(props: Omit<AdCampaignProps, 'createdAt' | 'updatedAt' | 'adStatus' | 'remainingBudget' | 'qualityScore' | 'historicCTR'>, id?: string): AdCampaign {
     const campaign = new AdCampaign({
       ...props,

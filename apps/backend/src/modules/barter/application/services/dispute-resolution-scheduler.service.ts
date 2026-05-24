@@ -7,6 +7,7 @@ import { Inject } from '@nestjs/common';
 import { IDisputeRepository } from '../../domain/repositories/dispute.repository.interface';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { DisputeResolutionStatus, DISPUTE_TIMINGS } from '../../domain/enums/dispute-resolution-status.enum';
+import { IBarterDisputeLog } from '@barterborsa/shared-persistence/schemas/backend/barterDisputeLog.schema';
 
 const TICK_INTERVAL_MS = 15 * 60 * 1000;
 const BATCH_SIZE = 50;
@@ -150,7 +151,7 @@ export class DisputeResolutionSchedulerService implements OnApplicationBootstrap
     }
   }
 
-  private autoDecide(row: any):
+  private autoDecide(row: IBarterDisputeLog):
     | { kind: 'AUTO_RESOLVED'; resolution: string; note: string }
     | { kind: 'ESCALATE'; note: string }
   {

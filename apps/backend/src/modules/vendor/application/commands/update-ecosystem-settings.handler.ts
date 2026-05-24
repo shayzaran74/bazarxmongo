@@ -4,7 +4,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateEcosystemSettingsCommand } from './update-ecosystem-settings.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
+import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 
 @CommandHandler(UpdateEcosystemSettingsCommand)
@@ -13,7 +13,7 @@ export class UpdateEcosystemSettingsHandler
 
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
   ) {}
 

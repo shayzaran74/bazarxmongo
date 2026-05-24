@@ -829,15 +829,17 @@ const products = ref<any[]>([])
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const { fetchVendors } = useVendors()
-const { 
-  detectLocation, 
-  loadSavedLocation, 
-  displayLocation, 
+const {
+  location,
+  detectLocation,
+  loadSavedLocation,
+  displayLocation,
   loading: locationLoading,
   error: locationError
 } = useGeolocation()
 
 const restaurants = ref<RestaurantItem[]>([])
+const nearbySurprises = ref<NearbySurprise[]>([])
 const isLocationModalOpen = ref(false)
 
 const { $api } = useApi()
@@ -885,10 +887,36 @@ const loadRestaurants = async () => {
   }
 }
 
+const loadNearbySurprises = async (lat: number, lng: number) => {
+  try {
+    const res = await $api('/api/v1/menu/check-proximity', {
+      method: 'POST',
+      body: { lat, lng }
+    })
+    if (res?.success && Array.isArray(res.data)) {
+      nearbySurprises.value = res.data as NearbySurprise[]
+    }
+  } catch (e) {
+    // Sessiz hata — sürpriz menü bulunamadıysa sadece boş göster
+    nearbySurprises.value = []
+  }
+}
+
+// Konum değiştiğinde yakın sürpriz menüleri tara
+watch(() => location.value, (newLoc) => {
+  if (newLoc && newLoc.latitude && newLoc.longitude) {
+    loadNearbySurprises(newLoc.latitude, newLoc.longitude)
+  }
+}, { immediate: false })
+
 onMounted(() => {
   loadSettings()
   loadRestaurants()
   loadSavedLocation()
+  // Kayıtlı konum varsa hemen sürpriz menü kontrolü yap
+  if (location.value && location.value.latitude && location.value.longitude) {
+    loadNearbySurprises(location.value.latitude, location.value.longitude)
+  }
 })
 
 const logout = async () => {
@@ -967,6 +995,13 @@ interface RestaurantItem {
   image: string
   sponsored: boolean
   verified?: boolean
+}
+
+interface NearbySurprise {
+  vendorId: string
+  listingId: string
+  distanceKm: number
+  radiusMeters: number
 }
 
 

@@ -15,18 +15,30 @@ import { UserLevel }                from '../../domain/entities/user-level.entit
 import { XpTransaction, XpBatch }   from '../../domain/entities/loyalty-misc.entities';
 import { LevelCalculatorService }   from '../services/level-calculator.service';
 import { SpendingLimitService }     from '../services/spending-limit.service';
+import { XpRulesService }           from '../services/xp-rules.service';
+import { Logger }                   from '@nestjs/common';
 
 @CommandHandler(EarnXpCommand)
 export class EarnXpHandler implements ICommandHandler<EarnXpCommand> {
+  private readonly logger = new Logger(EarnXpHandler.name);
+
   constructor(
     @Inject('IUserLevelRepository')    private readonly userLevelRepo: IUserLevelRepository,
     @Inject('IXpTransactionRepository')private readonly txRepo:        IXpTransactionRepository,
     @Inject('IXpBatchRepository')      private readonly batchRepo:     IXpBatchRepository,
     private readonly levelCalc: LevelCalculatorService,
+    private readonly xpRules: XpRulesService,
   ) {}
 
   async execute(command: EarnXpCommand) {
     const { userId, amount, sourceType, referenceId, referenceType, metadata } = command;
+
+    // İlk işlem kontrolü — ilk siparişte XP kazanılmaz
+    const isFirstOrder = await this.xpRules.checkFirstOrderBlock(userId);
+    if (isFirstOrder) {
+      this.logger.debug('İlk işlem — XP kazanımı engellendi', { userId });
+      return { success: true, blocked: true };
+    }
 
     let userLevel = await this.userLevelRepo.findByUserId(userId);
     if (!userLevel) userLevel = UserLevel.create(userId);

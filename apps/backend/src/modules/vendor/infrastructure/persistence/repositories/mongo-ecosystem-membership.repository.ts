@@ -18,12 +18,12 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
 
   async findActiveByDealerId(dealerId: string): Promise<Array<{ dealerId: string; ecosystemId: string; status: string; joinedAt: Date }>> {
     const docs = await this.membershipModel
-      .find({ dealerId: new Types.ObjectId(dealerId), status: 'ACTIVE' })
+      .find({ dealerId: dealerId, status: 'ACTIVE' })
       .lean()
       .exec();
     return docs.map(d => ({
-      dealerId: d.dealerId.toString(),
-      ecosystemId: d.ecosystemId.toString(),
+      dealerId: d.dealerId,
+      ecosystemId: d.ecosystemId,
       status: d.status,
       joinedAt: d.joinedAt,
     }));
@@ -31,12 +31,12 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
 
   async findByEcosystemId(ecosystemId: string): Promise<Array<{ dealerId: string; ecosystemId: string; status: string; joinedAt: Date }>> {
     const docs = await this.membershipModel
-      .find({ ecosystemId: new Types.ObjectId(ecosystemId) })
+      .find({ ecosystemId: ecosystemId })
       .lean()
       .exec();
     return docs.map(d => ({
-      dealerId: d.dealerId.toString(),
-      ecosystemId: d.ecosystemId.toString(),
+      dealerId: d.dealerId,
+      ecosystemId: d.ecosystemId,
       status: d.status,
       joinedAt: d.joinedAt,
     }));
@@ -45,15 +45,15 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
   async findOne(dealerId: string, ecosystemId: string): Promise<{ dealerId: string; ecosystemId: string; status: string; joinedAt: Date } | null> {
     const doc = await this.membershipModel
       .findOne({
-        dealerId: new Types.ObjectId(dealerId),
-        ecosystemId: new Types.ObjectId(ecosystemId),
+        dealerId: dealerId,
+        ecosystemId: ecosystemId,
       })
       .lean()
       .exec();
     if (!doc) return null;
     return {
-      dealerId: doc.dealerId.toString(),
-      ecosystemId: doc.ecosystemId.toString(),
+      dealerId: doc.dealerId,
+      ecosystemId: doc.ecosystemId,
       status: doc.status,
       joinedAt: doc.joinedAt,
     };
@@ -61,7 +61,7 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
 
   async countActiveByDealerId(dealerId: string): Promise<number> {
     return this.membershipModel.countDocuments({
-      dealerId: new Types.ObjectId(dealerId),
+      dealerId: dealerId,
       status: 'ACTIVE',
     });
   }
@@ -69,16 +69,16 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
   async create(data: CreateMembershipDto): Promise<{ id: string; dealerId: string; ecosystemId: string; status: string; joinedAt: Date }> {
     const doc = await this.membershipModel.create({
       _id: new Types.ObjectId().toString(),
-      dealerId: new Types.ObjectId(data.dealerId),
-      ecosystemId: new Types.ObjectId(data.ecosystemId),
+      dealerId: data.dealerId,
+      ecosystemId: data.ecosystemId,
       status: 'ACTIVE',
       joinedAt: new Date(),
-      addedByUserId: new Types.ObjectId(data.addedByUserId),
+      addedByUserId: data.addedByUserId,
     });
     return {
       id: doc._id?.toString() || doc.id,
-      dealerId: doc.dealerId.toString(),
-      ecosystemId: doc.ecosystemId.toString(),
+      dealerId: doc.dealerId,
+      ecosystemId: doc.ecosystemId,
       status: doc.status,
       joinedAt: doc.joinedAt,
     };
@@ -96,8 +96,8 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
 
     await this.membershipModel.updateOne(
       {
-        dealerId: new Types.ObjectId(dealerId),
-        ecosystemId: new Types.ObjectId(ecosystemId),
+        dealerId: dealerId,
+        ecosystemId: ecosystemId,
       },
       { $set: update },
     );
@@ -105,8 +105,8 @@ export class MongoEcosystemMembershipRepository implements IEcosystemMembershipR
 
   async delete(dealerId: string, ecosystemId: string): Promise<void> {
     await this.membershipModel.deleteOne({
-      dealerId: new Types.ObjectId(dealerId),
-      ecosystemId: new Types.ObjectId(ecosystemId),
+      dealerId: dealerId,
+      ecosystemId: ecosystemId,
     });
   }
 }

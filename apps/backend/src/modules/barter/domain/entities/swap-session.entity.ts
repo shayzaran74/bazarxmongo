@@ -146,14 +146,14 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
     // Teminat serbest bırakıldı — COMPLETED veya TIMEOUT durumlarında kullanılır
     this.props.collateralStatus = 'RELEASED';
     this.props.collateralReleasedAt = new Date();
-    this._updatedAt = new Date();
+    this.props.updatedAt = new Date();
   }
 
   public forfeitCollateral(): void {
     // Teminat iade edildi — BUYER_WINS / REFUND_ALL ihtilaf çözümünde kullanılır
     this.props.collateralStatus = 'REFUNDED';
     this.props.collateralForfeitedAt = new Date();
-    this._updatedAt = new Date();
+    this.props.updatedAt = new Date();
   }
 
   public cancel(): void {

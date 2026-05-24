@@ -18,7 +18,11 @@ export class VendorBankAccount extends Entity<VendorBankAccountProps> {
   }
 
   public static create(props: VendorBankAccountProps): VendorBankAccount {
-    return new VendorBankAccount(props);
+    const ibanResult = IBAN.create(props.iban.value);
+    if (!ibanResult.success) {
+      throw new Error(ibanResult.error?.message ?? 'Geçersiz IBAN');
+    }
+    return new VendorBankAccount({ ...props, iban: ibanResult.data as IBAN });
   }
 
   public setAsPrimary(): void {

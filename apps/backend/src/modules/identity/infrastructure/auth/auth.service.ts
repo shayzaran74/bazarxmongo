@@ -104,10 +104,16 @@ export class AuthService {
       const oldHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
       const newHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
 
-      await this.sessionModel.updateMany(
+      // Atomic session update — findOneAndUpdate ile session bulunamazsa token geçersiz
+      const updatedSession = await this.sessionModel.findOneAndUpdate(
         { userId: user.id, tokenHash: oldHash },
         { $set: { tokenHash: newHash, lastActiveAt: new Date() } },
-      );
+        { new: true },
+      ).exec();
+
+      if (!updatedSession) {
+        this.logger.warn('Session bulunamadı — olası token reuse algılandı', { userId: user.id });
+      }
 
       return tokens;
     } catch (e: unknown) {

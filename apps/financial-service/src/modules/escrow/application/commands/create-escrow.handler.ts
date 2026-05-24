@@ -62,16 +62,16 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
         if (!mainAccount) throw new Error('Kullanıcının ana hesabı bulunamadı.');
 
         const amountDec = new Decimal(amount.toFixed(2));
-        if (new Decimal(wallet.balanceTL.toString()).lt(amountDec)) {
-          throw new Error('Yetersiz bakiye.');
-        }
 
-        // Cüzdan düşüm
-        await this.walletModel.updateOne(
-          { userId: buyerId },
+        // Atomik compare-and-swap: yeterli bakiye kontrolü + düşüm tek operasyonda
+        const updated = await this.walletModel.findOneAndUpdate(
+          { userId: buyerId, balanceTL: { $gte: amountDec.toString() } },
           { $inc: { balanceTL: d128(-amountDec.toNumber()) } },
-          { session },
+          { new: true, session },
         );
+        if (!updated) {
+          throw new Error('Yetersiz bakiye veya cüzdan bulunamadı.');
+        }
 
         // Account senkronizasyonu
         await this.accountModel.updateOne(

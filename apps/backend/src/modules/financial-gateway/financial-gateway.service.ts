@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { WalletGrpcService } from './grpc/wallet-grpc.service';
 import { EscrowGrpcService } from './grpc/escrow-grpc.service';
 
@@ -20,11 +21,13 @@ export class FinancialGatewayService {
 
   async checkBalance(userId: string, requiredAmount: string, accountType: string = 'MAIN'): Promise<{ sufficient: boolean; currentBalance: string }> {
     const balanceResponse = await this.walletService.getBalance(userId, accountType);
-    const currentBalance = (balanceResponse as any)?.balance ?? '0';
-    const balance = parseFloat(currentBalance);
-    const required = parseFloat(requiredAmount);
+    const typed = balanceResponse as { balance?: string };
+    const currentBalance = typed?.balance ?? '0';
+    // Decimal128 string olarak saklanır — doğrudan string karşılaştırması
+    const balanceDec = new Decimal(currentBalance);
+    const requiredDec = new Decimal(requiredAmount);
     return {
-      sufficient: balance >= required,
+      sufficient: balanceDec.gte(requiredDec),
       currentBalance,
     };
   }

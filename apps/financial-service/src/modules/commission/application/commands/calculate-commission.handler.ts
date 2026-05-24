@@ -12,7 +12,7 @@ import {
 } from '@barterborsa/shared-persistence';
 
 const d128 = (v: number | string): Types.Decimal128 =>
-  Types.Decimal128.fromString(Number(v).toFixed(4));
+  Types.Decimal128.fromString(typeof v === 'string' ? v : v.toFixed(4));
 
 @CommandHandler(CalculateCommissionCommand)
 export class CalculateCommissionHandler implements ICommandHandler<CalculateCommissionCommand> {

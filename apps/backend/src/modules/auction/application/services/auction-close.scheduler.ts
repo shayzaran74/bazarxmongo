@@ -1,41 +1,50 @@
 // apps/backend/src/modules/auction/application/services/auction-close.scheduler.ts
 
-import { Injectable, Logger, OnModuleDestroy, OnApplicationBootstrap, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, OnModuleDestroy } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { IAuctionRepository } from '../../domain/repositories/auction.repository.interface';
 import { IAuctionBidRepository } from '../../domain/repositories/auction-bid.repository.interface';
+import { RedisService } from '@barterborsa/shared-security';
 
-const CHECK_INTERVAL_MS = 60_000;
+const LOCK_KEY = 'scheduler:auction-close:lock';
+const LOCK_TTL_SECONDS = 55;
 
 @Injectable()
-export class AuctionCloseScheduler implements OnApplicationBootstrap, OnModuleDestroy {
+export class AuctionCloseScheduler implements OnModuleDestroy {
   private readonly logger = new Logger(AuctionCloseScheduler.name);
-  private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject('IAuctionRepository') private readonly auctionRepository: IAuctionRepository,
     @Inject('IAuctionBidRepository') private readonly bidRepository: IAuctionBidRepository,
     private readonly financialGateway: FinancialGatewayService,
     private readonly auditLog: AuditLogService,
+    private readonly redisService: RedisService,
   ) {}
 
-  onApplicationBootstrap(): void {
-    void this.closeExpiredAuctions();
-    this.intervalHandle = setInterval(
-      () => void this.closeExpiredAuctions(),
-      CHECK_INTERVAL_MS,
-    );
-  }
+  @Cron(CronExpression.EVERY_MINUTE, { name: 'auctionClose', timeZone: 'Europe/Istanbul' })
+  async closeExpiredAuctions(): Promise<void> {
+    // Dağıtık kilit: sadece bir instance kilidi alabilir
+    const locked = await this.redisService.get(LOCK_KEY);
+    if (locked === '1') {
+      this.logger.debug('Kilit meşgul — diğer instance çalışıyor, atlanıyor');
+      return;
+    }
+    await this.redisService.set(LOCK_KEY, '1', LOCK_TTL_SECONDS);
 
-  onModuleDestroy(): void {
-    if (this.intervalHandle) {
-      clearInterval(this.intervalHandle);
-      this.intervalHandle = null;
+    try {
+      await this.runCloseExpiredAuctions();
+    } finally {
+      await this.redisService.del(LOCK_KEY);
     }
   }
 
-  async closeExpiredAuctions(): Promise<void> {
+  onModuleDestroy(): void {
+    // NestJS Scheduler interval'ları Otomatik temizler, ek işlem gerekmez
+  }
+
+  private async runCloseExpiredAuctions(): Promise<void> {
     const now = new Date();
 
     // MongoDB'de süresi dolmuş aktif açık artırmaları bul

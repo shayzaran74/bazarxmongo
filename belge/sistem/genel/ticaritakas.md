@@ -18,7 +18,7 @@ TİCARİ TAKAS (B2B Barter) Ekosistemi
 │
 ├── 🏗️  DOMAIN ENTITIES
 │   ├── trade-offer.entity.ts          ✅ accept() / reject() durum makinesi
-│   ├── swap-session.entity.ts         ✅ DÜZELTİLDİ — releaseCollateral() + initiatorHoldId/receiverHoldId/pendingReleaseAt/autoReleasedAt
+│   ├── swap-session.entity.ts         ✅ DÜZELTİLDİ — releaseCollateral() + this.props.updatedAt (Oturum 3)
 │   ├── barter-part.entity.ts          ✅ İyi
 │   └── surplus-item.entity.ts         ✅ lastReactivatedAt alanı — reactivate() domain metodu set ediyor
 │

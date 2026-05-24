@@ -175,7 +175,10 @@ export class WalletGrpcService implements OnModuleInit {
       'wallet.topUpWallet',
       async () => {
         const response: GrpcSuccessResponse = await firstValueFrom(
-          this.financialService.topUpWallet({ userId, amount, paymentMethod, idempotencyKey }),
+          this.financialService.topUpWallet({ userId, amount, paymentMethod, idempotencyKey }).pipe(
+            timeout(this.TIMEOUT_MS),
+            catchError((err) => { throw err; }),
+          ),
         );
         if (!response.success) {
           throw new DomainException(response.error || 'TopUp failed');
@@ -198,7 +201,10 @@ export class WalletGrpcService implements OnModuleInit {
       'wallet.requestWithdrawal',
       async () => {
         const response: GrpcSuccessResponse = await firstValueFrom(
-          this.financialService.requestWithdrawal(data),
+          this.financialService.requestWithdrawal(data).pipe(
+            timeout(this.TIMEOUT_MS),
+            catchError((err) => { throw err; }),
+          ),
         );
         if (!response.success) {
           throw new DomainException(response.error || 'Withdrawal failed');
@@ -325,7 +331,18 @@ export class WalletGrpcService implements OnModuleInit {
   }) {
     return this.circuitBreaker.execute(
       'wallet.transferBetweenAccounts',
-      async () => firstValueFrom(this.financialService.transferBetweenAccounts(data)),
+      async () => {
+        const response: GrpcSuccessResponse = await firstValueFrom(
+          this.financialService.transferBetweenAccounts(data).pipe(
+            timeout(this.TIMEOUT_MS),
+            catchError((err) => { throw err; }),
+          ),
+        );
+        if (!response.success) {
+          throw new DomainException(response.error || 'Transfer failed');
+        }
+        return response;
+      },
       { fallbackResponse: { success: false, error: 'Servis şu an kullanılamıyor' } },
     );
   }

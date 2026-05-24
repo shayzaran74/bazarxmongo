@@ -1,7 +1,8 @@
 // apps/backend/src/modules/loyalty/application/services/xp-rules.service.ts
 // Master Plan v4.3 §2.5 — XP kazanım ve harcama kuralları
 
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUserLevel, IUserSubscription, IMembershipPlan, IXpTransaction } from '@barterborsa/shared-persistence';
@@ -20,6 +21,8 @@ const SYSTEM_PAYMENT_MAX_XP_PCT = 0.20;
 
 @Injectable()
 export class XpRulesService {
+  private readonly logger = new Logger(XpRulesService.name);
+
   constructor(
     @InjectModel('UserLevel')        private readonly userLevelModel: Model<IUserLevel>,
     @InjectModel('UserSubscription') private readonly subModel:       Model<IUserSubscription>,
@@ -73,7 +76,9 @@ export class XpRulesService {
     return count < 3;
   }
 
+  @Cron('0 0 1 * *', { name: 'xpDecay', timeZone: 'Europe/Istanbul' })
   async erodeExpiredBatches(): Promise<number> {
+    this.logger.log('XP erozyon cron başlatıldı');
     const now = new Date();
     let totalEroded = 0;
 

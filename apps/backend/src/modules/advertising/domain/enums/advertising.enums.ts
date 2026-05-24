@@ -7,6 +7,7 @@ export enum AdType {
   SIDE_AD = 'SIDE_AD',
   VIDEO = 'VIDEO',
   REWARD_DISTRIBUTION = 'REWARD_DISTRIBUTION',
+  SAMPLING = 'SAMPLING',
 }
 
 export enum AdSlotType {

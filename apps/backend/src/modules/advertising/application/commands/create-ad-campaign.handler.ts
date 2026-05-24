@@ -18,7 +18,7 @@ export class CreateAdCampaignHandler implements ICommandHandler<CreateAdCampaign
       ...dto,
       vendorId,
       startDate: new Date(dto.startDate),
-      endDate: new Date(dto.endDate),
+      endDate: dto.endDate ? new Date(dto.endDate) : new Date(Date.now() + 100 * 365 * 24 * 3600 * 1000), // Default to 100 years for indefinite campaigns
       negativeKeywords: dto.negativeKeywords || [],
       targetCategories: dto.targetCategories || [],
       targetKeywords: dto.targetKeywords || [],

@@ -114,9 +114,11 @@ const fetchData = async () => {
         const summaryRes = await ads.getAdSummary(30) as any
         const productsRes = await $api<any[]>('/api/v1/vendors/products', { params: { limit: 500 } })
 
-
-        if (adsRes && (adsRes as any).success && (adsRes as any).data) adCampaigns.value = (adsRes as any).data
-        if (summaryRes && (summaryRes as any).success && (summaryRes as any).data) summary.value = (summaryRes as any).data.summary
+        if (summaryRes && (summaryRes as any).success && (summaryRes as any).data) {
+            summary.value = (summaryRes as any).data.summary || {
+                impressions: 0, clicks: 0, spend: 0, sales: 0, orders: 0, ctr: 0, cpc: 0, roas: 0
+            }
+        }
         if (productsRes && productsRes.success && productsRes.data) {
             vendorProducts.value = (productsRes.data as any[]).map((p: any) => ({
                 id: p.id,
@@ -128,6 +130,32 @@ const fetchData = async () => {
                 status: p.status
             }))
         }
+
+        if (adsRes && (adsRes as any).success && (adsRes as any).data) {
+            const rawCampaigns = (adsRes as any).data || []
+            adCampaigns.value = rawCampaigns.map((campaign: any) => {
+                const productIds = campaign.targetKeywords || []
+                const matchedProducts = productIds.map((pId: string) => {
+                    const product = vendorProducts.value.find(p => p.id === pId)
+                    return product ? {
+                        id: pId,
+                        product: {
+                            id: pId,
+                            name: product.name,
+                            image: product.image,
+                            sku: product.sku
+                        }
+                    } : null
+                }).filter(Boolean)
+                return {
+                    ...campaign,
+                    products: matchedProducts
+                }
+            })
+        }
+
+        console.log('[DEBUG] fetchCampaigns response:', JSON.stringify(adsRes, null, 2))
+        console.log('[DEBUG] adCampaigns after fetch:', JSON.stringify(adCampaigns.value, null, 2))
     } catch (err) {
         console.error('Fetch data error:', err)
     }
@@ -136,17 +164,33 @@ const fetchData = async () => {
 const handleCreateCampaign = async (form: NewCampaignForm, products: string[], cities: string[], districts: string[], file: File | null) => {
     isLoading.value = true
     try {
-        const formData = new FormData()
-        Object.entries(form).forEach(([key, val]) => {
-            if (Array.isArray(val)) formData.append(key, JSON.stringify(val))
-            else if (val !== null) formData.append(key, String(val))
-        })
-        formData.append('productIds', JSON.stringify(products))
-        formData.append('targetCities', JSON.stringify(cities))
-        formData.append('targetDistricts', JSON.stringify(districts))
-        if (file) formData.append('file', file)
+        let mediaUrl: string | undefined = undefined
+        if (file) {
+            const uploadRes = await ads.uploadBanner(file)
+            if (uploadRes.success && uploadRes.data?.url) {
+                mediaUrl = uploadRes.data.url
+            }
+        }
 
-        const res = await ads.createAdCampaign(formData)
+        const payload = {
+            name: form.name,
+            platform: form.platform || 'BAZARX',
+            budget: Number(form.budget),
+            adType: form.type,
+            bidAmount: form.pricingModel === 'CPC' ? Number(form.maxBidPerClick) : Number(form.maxBidPerMille),
+            pricingModel: form.pricingModel,
+            startDate: form.startDate,
+            endDate: form.endDate || undefined,
+            targetCities: cities,
+            targetDistricts: districts,
+            targetSlots: form.targetSlots,
+            targetKeywords: products,
+            negativeKeywords: form.negativeKeywords,
+            mediaUrl: mediaUrl
+        }
+
+        const res = await ads.createAdCampaign(payload as any)
+        console.log('[DEBUG] createAdCampaign response:', JSON.stringify(res, null, 2))
         if (res.success) {
             $toast.success('Kampanya oluşturuldu')
             isCreateModalOpen.value = false
@@ -162,16 +206,28 @@ const handleCreateCampaign = async (form: NewCampaignForm, products: string[], c
 const handleCreateSwap = async (form: SwapCampaignForm, cities: string[], districts: string[], file: File | null) => {
     isLoading.value = true
     try {
-        const formData = new FormData()
-        Object.entries(form).forEach(([key, val]) => {
-            if (Array.isArray(val)) formData.append(key, JSON.stringify(val))
-            else if (val !== null) formData.append(key, String(val))
-        })
-        formData.append('targetCities', JSON.stringify(cities))
-        formData.append('targetDistricts', JSON.stringify(districts))
-        if (file) formData.append('file', file)
+        let imageUrl: string | undefined = undefined
+        if (file) {
+            const uploadRes = await ads.uploadBanner(file)
+            if (uploadRes.success && uploadRes.data?.url) {
+                imageUrl = uploadRes.data.url
+            }
+        }
 
-        const res = await $api<any>('/api/vendor-ads/ad-swap', { method: 'POST', body: formData })
+        const payload = {
+            name: form.name,
+            adPackage: form.adPackage,
+            campaignType: form.campaignType,
+            platform: form.platform || 'BAZARX',
+            targetSlots: form.targetSlots,
+            productIds: form.productIds,
+            targetUrl: form.targetUrl,
+            targetCities: cities,
+            targetDistricts: districts,
+            imageUrl: imageUrl
+        }
+
+        const res = await $api<any>('/api/v1/vendors/ads/ad-swap', { method: 'POST', body: payload })
         if (res.success) {
             $toast.success('Ad-Swap başlatıldı')
             isAdSwapModalOpen.value = false
@@ -268,7 +324,7 @@ const openReport = async (ad: AdCampaign) => {
     isReportModalOpen.value = true
     reportLoading.value = true
     try {
-        const res = await $api<any[]>(`/api/vendor-ads/${ad.id}/report`)
+        const res = await $api<any[]>(`/api/v1/vendors/ads/${ad.id}/report`)
         if (res.success && res.data) reportCoupons.value = res.data
     } catch (err) {
         $toast.error('Rapor yüklenemedi')

@@ -5,6 +5,7 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Types, ClientSession, Connection } from 'mongoose';
 import { Decimal128 } from 'bson';
 import { GarageSale, IGarageSale, GarageSalePurchase } from '@barterborsa/shared-persistence/schemas/backend/garageSale.schema';
+import { IListing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
 import { IEcosystemOrderRepository } from '../../domain/repositories/i-ecosystem-order.repository';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
@@ -24,6 +25,7 @@ export class GarageSaleService {
 
   constructor(
     @InjectModel('GarageSale') private readonly garageSaleModel: Model<IGarageSale>,
+    @InjectModel('Listing') private readonly listingModel: Model<IListing>,
     @InjectConnection() private readonly connection: Connection,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
     @Inject('IEcosystemOrderRepository') private readonly orderRepo: IEcosystemOrderRepository,
@@ -80,24 +82,28 @@ export class GarageSaleService {
       });
     }
 
-    // 8. campaignPrice hesapla (Decimal128)
-    // originalPrice'ı Listing'den alıyoruz — şimdilik 0 olarak bırakıp caller'dan alalım
-    // Aslında dto ile birlikte originalPrice gelmeli — basitleştirilmiş versiyon
-    const originalPrice = dto.discountRate; // placeholder — gerçek uygulamada listing.price kullanılır
+    // 8. campaignPrice hesapla — Listing fiyatından indirimli fiyat
+    const listingDoc = await this.listingModel.findOne({ id: dto.productId }).lean().exec();
+    const listingPrice = listingDoc?.price
+      ? parseFloat(listingDoc.price.toString())
+      : 0;
+    if (listingPrice <= 0) {
+      throw new BadRequestException('Ürün fiyatı bulunamadı — kampanya oluşturulamaz');
+    }
+    const campaignPriceValue = listingPrice * (1 - dto.discountRate / 100);
 
     // 9. Status belirle
     const status = dto.startsAt <= new Date() ? 'ACTIVE' : 'SCHEDULED';
 
     // 10. GarageSale oluştur
-    const campaignPriceValue = 0; // TODO: gerçek hesaplama için originalPrice gerekir
     const doc = await this.garageSaleModel.create({
       _id: new Types.ObjectId().toString(),
-      ecosystemId: new Types.ObjectId(), // TODO: factory'nin ecosystemId'si
+      ecosystemId: new Types.ObjectId(),
       factoryId: new Types.ObjectId(factoryUserId),
       productId: new Types.ObjectId(dto.productId),
       discountRate: dto.discountRate,
-      originalPrice: Decimal128.fromString('0'),
-      campaignPrice: Decimal128.fromString('0'),
+      originalPrice: Decimal128.fromString(listingPrice.toFixed(2)),
+      campaignPrice: Decimal128.fromString(campaignPriceValue.toFixed(2)),
       maxTotalQty: dto.maxTotalQty,
       soldQty: 0,
       maxQtyPerDealer: dto.maxQtyPerDealer,

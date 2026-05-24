@@ -1,11 +1,13 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { ApproveVendorCommand } from './approve-vendor.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 import { MongoCompanyRepository } from '../../infrastructure/persistence/mongo-company.repository';
 import { MongoUserRepository } from '../../infrastructure/persistence/mongo-user.repository';
+import { VendorApprovedEvent } from '../../domain/events/vendor-approved.event';
 
 @CommandHandler(ApproveVendorCommand)
 export class ApproveVendorHandler implements ICommandHandler<ApproveVendorCommand> {
@@ -16,6 +18,7 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
     private readonly companyRepo: MongoCompanyRepository,
     private readonly userRepo: MongoUserRepository,
     private readonly auditLog: AuditLogService,
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: ApproveVendorCommand) {
@@ -24,27 +27,25 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
     const vendor = await this.vendorRepo.findById(vendorId);
     if (!vendor) throw new NotFoundException('Satıcı bulunamadı');
 
-    if (vendor.status !== 'PENDING') {
+    if (vendor.getProps().status !== 'PENDING') {
       throw new BadRequestException(
-        `Bu satıcı zaten "${vendor.status}" durumunda, onaylanamaz`,
+        `Bu satıcı zaten "${vendor.getProps().status}" durumunda, onaylanamaz`,
       );
     }
 
-    await this.vendorRepo.update(vendorId, {
-      status: 'APPROVED',
-      verifiedAt: new Date(),
-      isVerified: true,
-      barterEnabled: true,
-    });
+    // Domain entity approve() — domain event tetikler
+    vendor.approve();
+    await this.vendorRepo.save(vendor);
 
-    if (vendor.companyId) {
-      await this.companyRepo.update(vendor.companyId, {
+    // Company güncelle (domain bypass — company ayrı aggregate)
+    if (vendor.getProps().companyId) {
+      await this.companyRepo.update(vendor.getProps().companyId, {
         status: 'APPROVED',
         verifiedAt: new Date(),
       });
     } else {
       const newCompany = await this.companyRepo.create({
-        name: vendor.slug?.value ?? 'Satıcı Şirketi',
+        name: vendor.getProps().slug?.value ?? 'Satıcı Şirketi',
         taxNumber: 'AUTO-' + vendorId.substring(0, 8),
         status: 'APPROVED',
         verifiedAt: new Date(),
@@ -52,10 +53,8 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
       await this.vendorRepo.update(vendorId, { companyId: newCompany.id });
     }
 
-    if (vendor.userId) {
-      await this.userRepo.update(vendor.userId, { role: 'VENDOR' });
-      this.logger.log(`Kullanıcı rolü VENDOR yapıldı`, { userId: vendor.userId });
-    }
+    // Event publish et — User.role güncellemesi identity modülüne bırakılır
+    this.eventBus.publish(new VendorApprovedEvent(vendorId, vendor.getProps().userId, vendor.getProps().companyId));
 
     await this.auditLog.log({
       actorId:      adminId,

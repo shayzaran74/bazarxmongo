@@ -1,6 +1,15 @@
 // apps/backend/src/modules/catalog/application/dtos/create-catalog-product.dto.ts
 
-import { IsString, IsNotEmpty, IsOptional, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsObject, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ProductAttributeDto {
+  @IsString()
+  name!: string;
+
+  @IsString()
+  value!: string;
+}
 
 export class CreateCatalogProductDto {
   @IsString()
@@ -29,9 +38,11 @@ export class CreateCatalogProductDto {
 
   @IsObject()
   @IsOptional()
-  specs?: any;
+  specs?: Record<string, string | number | boolean>;
 
-  @IsObject()
+  @IsArray()
   @IsOptional()
-  attributes?: any;
+  @ValidateNested({ each: true })
+  @Type(() => ProductAttributeDto)
+  attributes?: ProductAttributeDto[];
 }

@@ -75,13 +75,13 @@ export class MenuCronService {
 
   /**
    * Menü hakkı ay sonu sıfırlama — her gün 23:55
-   * Ay sonunda kalan allowance'ı sıfırlar (burn).
-   * MenuRightsCleanupService zaten bu işi yapıyor, bu cron tetikleyicidir.
+   * Aylık hak sıfırlama MenuRightsCleanupService.cleanupExpiredRights() tarafından
+   * her gece 03:00'da yapılır. Bu tetikleyiciyadır — işlem MenuRightsCleanupService'dedir.
    */
   @Cron('55 23 * * *', { name: 'menuRightsBurn', timeZone: 'Europe/Istanbul' })
   async burnMonthlyRights(): Promise<void> {
-    this.logger.log('Aylık menü hakkı burn kontrolü başlatıldı');
-    // MenuRightsCleanupService.cleanup() çağrısı menu.module.ts üzerinden inject edilecek
+    // İşlem MenuRightsCleanupService.cleanupExpiredRights() içinde her gece 03:00'da çalışır.
+    this.logger.debug('menuRightsBurn tetikleyicisi — esas işlem MenuRightsCleanupService\'dedir.');
   }
 
   /**
