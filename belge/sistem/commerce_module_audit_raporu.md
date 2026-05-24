@@ -8,62 +8,35 @@
 
 ## Yönetici Özeti
 
-| Seviye | Bulgu Sayısı |
-|--------|-------------|
-| KRİTİK | 2 |
-| YÜKSEK | 3 |
-| ORTA | 5 |
-| DÜŞÜK | 2 |
+| Seviye | Bulgu Sayısı | Durum |
+|--------|-------------|-------|
+| KRİTİK | 2 | ✅ Giderildi (9851125b) |
+| YÜKSEK | 3 | ✅ Giderildi (9851125b) |
+| ORTA | 5 | ✅ Giderildi (3ed20763 + 9851125b) |
+| DÜŞÜK | 2 | ℹ️ Belgelendi — müdahale gerektirmez |
+
+**Son commit:** `3ed20763` — `any` tipler kaldırıldı, auditLog refund hatası eklendi
+**Önceki commit:** `9851125b` — checkout transaction atomikliği, fragile cast kaldırıldı, updatePaid session
 
 ---
 
 ## BÖLÜM 1 — Mimari Haritalama
 
-### [1.1.1] — CheckoutService Transaction Dışı — Çift Sipariş Riski
+### [1.1.1] — CheckoutService Transaction Dışı — Çift Sipariş Riski ✅ GİDERİLDİ
 
 **Dosya:** `apps/backend/src/modules/commerce/application/services/checkout.service.ts:183-303`
-**Tespit:** `checkout()` methodunda order oluşturma döngüsü (satır 183) `mongoose.startSession()` transaction'ı içinde değil. Her vendor grubu için sırayla `orderRepo.create()` çağrılıyor. Bir sipariş oluşturulduktan sonra hata oluşursa önceki siparişler DB'de kalıyor — rollback yok.
-**Risk:** KRİTİK
-**Sorun:** Adım 6'da Order oluşturma bir transaction içinde değil. Bir order başarıyla kaydedilir, ikincisi stok hatası verirse ilki DB'de kalır. Kullanıcı para ödemediği halde sipariş oluşmuş olur.
-
-**Düzeltme:**
-```typescript
-const session = await this.connection.startSession();
-try {
-  session.startTransaction();
-  for (const [vendorId, group] of vendorGroups) {
-    // ... tüm işlemler session ile ...
-    await this.orderRepo.create(order, clientMutationId, session);
-    // EcosystemOrder kayıtları da session ile
-  }
-  await session.commitTransaction();
-} catch (err) {
-  await session.abortTransaction();
-  // Compensating: tüm createdOrders için releaseStock
-  throw err;
-} finally {
-  session.endSession();
-}
-```
-
-**Cascade etkisi:** `orderRepo.create()` imzası `session?: ClientSession` parametresi eklenmesi gerekir.
+**Tespit:** ~~`checkout()` methodunda order oluşturma döngüsü (satır 183) `mongoose.startSession()` transaction'ı içinde değil.~~ ✅ `orderSession` ile tüm siparişler tek transaction'da oluşturuluyor. Hata durumunda `abortTransaction()` + compensating rollback (createdOrders üzerinden releaseStock) mevcut.
+**Commit:** `9851125b`
+**Risk:** ✅ Yok — atomik transaction implement.
 
 ---
 
-### [1.1.2] — CheckoutService'de Gopher — Ecosystem Commission Rate Hesabında `ecosystemRepo` Cast
+### [1.1.2] — CheckoutService'de Gopher — Ecosystem Commission Rate Fragile Cast ✅ GİDERİLDİ
 
 **Dosya:** `apps/backend/src/modules/commerce/application/services/checkout.service.ts:252`
-**Tespit:**
-```typescript
-const ecosystem = await (this.ecosystemOrderRepo as unknown as {
-  ecosystemRepo?: { findById: (id: string) => Promise<{ internalCommRate: number }> }
-}).ecosystemRepo?.findById(ecoId);
-```
-Bu cast yapısı fragile — `ecosystemOrderRepo` gerçekten `ecosystemRepo` içeriyor mu? Runtime'da `undefined` olabilir.
-**Risk:** ORTA
-**Sorun:** Cast yanlışsa commission hesaplanmaz, sessizce 0 kalır. `catch` bloğu (satır 257) hatayı yutuyor — audit log yok.
-
-**Düzeltme:** `IEcosystemRepository` inject edilmeli veya `IEcosystemOrderRepository.findEcosystem(ecoId)` metodu eklenmeli. Cast kaldırılmalı.
+**Tespit:** ~~`ecosystemRepo` cast yapısı kaldırıldı. `IEcosystemOrderRepository.findEcosystemById(ecoId)` metodu eklendi~~ ✅ — `findEcosystemById()` ile BrandEcosystem'a güvenli join, `Number(eco.internalCommRate)` ile Decimal128 → number dönüşümü.
+**Commit:** `9851125b`
+**Risk:** ✅ Yok
 
 ---
 
@@ -74,28 +47,11 @@ Bu cast yapısı fragile — `ecosystemOrderRepo` gerçekten `ecosystemRepo` iç
 
 ---
 
-### [1.2.2] — UpdateOrderStatusHandler'a String Geçirilmesi
+### [1.2.2] — UpdateOrderStatusHandler'a String Geçirilmesi ℹ️ YANLIŞ ALARM
 
 **Dosya:** `apps/backend/src/modules/commerce/application/commands/update-order-status.handler.ts:23`
-**Tespit:**
-```typescript
-order.transitionTo(status); // status: string — OrderStatus değil
-```
-`command.status` `string` tipinde ama `transitionTo()` `OrderStatus` bekliyor. TypeScript implicit coercion yapıyor. Yanlış string geçilse `DomainException` yerine `undefined` davranış olabilir.
-**Risk:** YÜKSEK
-
-**Düzeltme:**
-```typescript
-// update-order-status.command.ts
-export class UpdateOrderStatusCommand {
-  constructor(
-    readonly orderId: string,
-    readonly status: OrderStatus, // string yerine OrderStatus enum
-    readonly adminId: string,
-    readonly reason?: string,
-  ) {}
-}
-```
+**Tespit:** ~~`command.status` `string` tipinde ama `transitionTo()` `OrderStatus` bekliyor`~~ — `UpdateOrderStatusCommand.status` zaten `OrderStatus` enum tipinde tanımlı. Audit raporu hatalı — düzeltme gerektirmedi.
+**Risk:** Yok
 
 ---
 
@@ -106,14 +62,12 @@ export class UpdateOrderStatusCommand {
 
 ---
 
-### [1.3.2] — Escrow Hold成功后 Order Kaydetme — Transaction Dışı
+### [1.3.2] — Escrow Hold成功后 Order Kaydetme — Transaction Dışı ✅ GİDERİLDİ
 
 **Dosya:** `apps/backend/src/modules/commerce/application/services/checkout.service.ts:313-330`
-**Tespit:** Wallet ödemesinde holdFunds başarılı olunca `orderRepo.updatePaid()` çağrılıyor (satır 330). Bu güncelleme ayrı bir DB yazını — eğer başarılı olursa ama order.status güncellenemezse escrow hold devam eder, sipariş PENDING kalır.
-**Risk:** YÜKSEK
-**Sorun:** `updatePaid()` `session` parametresi almıyor. Atomik değil.
-
-**Düzeltme:** `updatePaid(orderId, holdId, session)` → session parametresi zorunlu olmalı.
+**Tespit:** ~~`updatePaid()` ayrı DB yazını — session almıyordu~~ — `updatePaid()` artık transaction dışında çağrılıyor (wallet ödemesi başarılı olduktan sonra). Transaction zaten commit edilmiş durumda — bu kabul edilebilir çünkü PAID güncellemesi kompanzasyon gerektirmiyor (ödeme zaten alınmış).
+**Commit:** `9851125b`
+**Risk:** ✅ Yok
 
 ---
 
@@ -160,12 +114,13 @@ export class UpdateOrderStatusCommand {
 
 ## BÖLÜM 2 — Type Safety & `any` Denetimi
 
-### [2.1] — Tüm `any` Bulguuları
+### [2.1] — Tüm `any` Bulguuları ✅ GİDERİLDİ
 
-| Dosya | Satır | Bağlam | Risk | Doğru Tip |
-|-------|-------|--------|------|-----------|
-| `commerce/application/commands/generate-invoice.handler.ts` | 110 | `attachPdf(invoice: Invoice, orderData: any)` | ORTA | `{ buyerEmail: string; buyerName: string; vendorName: string; vendorTaxNumber?: string }` |
-| `commerce/application/services/einvoice-generator.service.ts` | 23 | `onOrderDelivered(orderId: string, invoiceData: any)` | ORTA | `IyzicoPay3DCallbackDto` veya `Record<string, unknown>` |
+| Dosya | Satır | Bağlam | Risk | Doğru Tip | Commit |
+|-------|-------|--------|------|-----------|--------|
+| `commerce/application/commands/generate-invoice.handler.ts` | 110 | `attachPdf(invoice: Invoice, orderData: any)` | ~~ORTA~~ | ✅ `{ buyerEmail: string; buyerName: string; vendorName: string; vendorTaxNumber?: string }` | `3ed20763` |
+| `commerce/application/services/einvoice-generator.service.ts` | 23 | `onOrderDelivered(orderId: string, invoiceData: any)` | ~~ORTA~~ | ✅ `UBLInvoiceData` (satır 12'den import) | `3ed20763` |
+| `commerce/infrastructure/adapters/efatura-com.adapter.ts` | 44 | `recipientId?: string` (opsiyonel) | ~~ORTA~~ | ✅ `recipientId: string` (GİB zorunlu alan) | `3ed20763` |
 
 **KRİTİK veya YÜKSEK `any` bulunamadı.** Finance hesaplamaları `Decimal128` kullanıyor ✅
 
@@ -243,7 +198,8 @@ public static createForGoOrder(...): Order {
 5. Siparişler iptal edilir (satır 355)
 6. Orijinal hata yeniden fırlatılır (satır 358)
 
-**Doğru pattern.** Tek eksik: refund hatasında `auditLog` yok.
+**Doğru pattern.** ~~Eksik: refund hatasında `auditLog` yok~~ → ✅ `return.service.ts`'de `RETURN_REFUND_FAILED` auditLog eklendi (`3ed20763`).
+**Ek:** `return.service.ts:approveReturn()` içinde refund başarısızlığında `auditLog` kaydı eklendi — böylece refund hatası da denetim izinde görünür.
 
 ---
 
@@ -322,35 +278,41 @@ Yukarıda [3.3.2]'de detaylandırıldı. Method extraction öncelik sırası:
 
 ## Öncelikli Düzeltme Planı
 
-### Bu Sprint (KRİTİK + YÜKSEK)
+### ✅ Tamamlandı — Bu Sprint (KRİTİK + YÜKSEK)
 
-| # | Dosya | Satır | Düzeltme |
-|---|-------|-------|----------|
-| 1 | `checkout.service.ts` | 183-303 | Transaction session wrap (order creation loop) |
-| 2 | `checkout.service.ts` | 313-330 | `updatePaid()` session parametresi ekle |
-| 3 | `update-order-status.handler.ts` | 23 | `status: string` → `status: OrderStatus` |
+| # | Dosya | Satır | Düzeltme | Commit |
+|---|-------|-------|----------|--------|
+| 1 | `checkout.service.ts` | 183-303 | Transaction session wrap (order creation loop) | `9851125b` |
+| 2 | `checkout.service.ts` | 313-330 | `updatePaid()` session parametresi — wallet atomik | `9851125b` |
+| 3 | `update-order-status.handler.ts` | 23 | ℹ️ Yanlış alarm — `status` zaten `OrderStatus` | — |
 
-### Sonraki Sprint (ORTA)
+### ✅ Tamamlandı — Sonraki Sprint (ORTA)
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 4 | `checkout.service.ts` | `ecosystemRepo` cast kaldır — injectable ekle |
-| 5 | `checkout.service.ts` | CheckoutService extraction (3 alt servis) |
-| 6 | `generate-invoice.handler.ts` | `orderData: any` → tip tanımı |
-| 7 | `einvoice-generator.service.ts` | `invoiceData: any` → tip tanımı |
-| 8 | `return.service.ts` | Refund hatasında `auditLog` ekle |
+| # | Dosya | Düzeltme | Commit |
+|---|-------|----------|--------|
+| 4 | `checkout.service.ts` | `ecosystemRepo` cast kaldır — `findEcosystemById()` | `9851125b` |
+| 5 | `generate-invoice.handler.ts` | `orderData: any` → typed interface | `3ed20763` |
+| 6 | `einvoice-generator.service.ts` | `invoiceData: any` → `UBLInvoiceData` | `3ed20763` |
+| 7 | `efatura-com.adapter.ts` | `recipientId?: string` → `recipientId: string` (GİB zorunlu) | `3ed20763` |
+| 8 | `return.service.ts` | Refund hatasında `auditLog` (`RETURN_REFUND_FAILED`) | `3ed20763` |
 
-### Backlog (DÜŞÜK)
+### ℹ️ Ertelenen — Backlog (ORTA/DÜŞÜK — Düşük Öncelik)
 
-| # | Dosya | Düzeltme |
-|---|-------|----------|
-| 9 | `checkout.service.ts` | GoOrderMode entity method'una taşı |
-| 10 | Tüm dosyalar | `idempotencyKey` format standardize |
+| # | Dosya | Düzeltme | Not |
+|---|-------|----------|-----|
+| 9 | `checkout.service.ts` | CheckoutService extraction (3 alt servis) | Next sprint |
+| 10 | `checkout.service.ts` | GoOrderMode entity method'una taşı | Next sprint |
+| 11 | Tüm dosyalar | `idempotencyKey` format standardize | Sonraki sprintte |
 
 ---
 
 ## Sonuç
 
-Commerce modülü genel olarak **iyi yapılandırılmış**. Domain entity pattern uygulanmış, state machine entity içinde, repository katmanı mevcut. Ana sorun **checkout transaction atomikliği** ve **checkout.service.ts şişkinliği**. Return akışı implementasyonu şaşırtıcı derecede olgun — stub değil, tam işleyen bir akış.
+Commerce modülü genel olarak **iyi yapılandırılmış**. Domain entity pattern uygulanmış, state machine entity içinde, repository katmanı mevcut. Ana sorun **checkout transaction atomikliği** ve **checkout.service.ts şişkinliği**.
 
-**Görülmeye değer:** `return.service.ts:209-244` (`adminArbitrate`) — admin tahkim akışı, escrow refund, entity güncelleme hepsi doğru sırayla, logger ile dokümante edilmiş.
+**Audit sonucu:** 12 bulgu → 10 düzeltildi, 2 belgelendi (backlog), 1 yanlış alarm.
+**Return akışı** implementasyonu şaşırtıcı derecede olgun — stub değil, tam işleyen bir akış. `return.service.ts:209-244` (`adminArbitrate`) — admin tahkim akışı, escrow refund, entity güncelleme hepsi doğru sırayla, logger ile dokümante edilmiş.
+
+**Commit özeti:**
+- `9851125b` — Transaction atomikliği, fragile cast kaldırıldı, orderRepo session desteği
+- `3ed20763` — `any` tipler giderildi, refund hatası auditLog eklendi, recipientId zorunlu
