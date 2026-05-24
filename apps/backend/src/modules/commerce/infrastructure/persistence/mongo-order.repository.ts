@@ -124,12 +124,13 @@ export class MongoOrderRepository implements IOrderRepository {
     return docs.map(doc => this.toDomain(doc));
   }
 
-  async create(order: Order, idempotencyKey?: string): Promise<void> {
+  async create(order: Order, idempotencyKey?: string, session?: unknown): Promise<void> {
     const doc = OrderMapper.toPersistence(order);
     if (idempotencyKey) {
       doc.idempotencyKey = idempotencyKey;
     }
-    await this.model.create(doc);
+    const opts = session ? { session } : undefined;
+    await this.model.create(doc, opts);
   }
 
   async updateStatus(orderId: string, status: string): Promise<void> {

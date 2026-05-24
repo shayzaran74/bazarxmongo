@@ -10,9 +10,9 @@ export interface IOrderRepository extends IRepository<Order> {
   findByIdempotencyKey(userId: string, key: string): Promise<Order[]>;
   findAll(): Promise<Order[]>;
   findAllFiltered(params: { status?: string; vendorId?: string; skip?: number; limit?: number }): Promise<{ items: Order[]; total: number }>;
-  create(order: Order): Promise<void>;
+  create(order: Order, idempotencyKey?: string, session?: unknown): Promise<void>;
   updateStatus(orderId: string, status: string): Promise<void>;
-  updatePaid(orderId: string, escrowHoldId: string): Promise<void>;
+  updatePaid(orderId: string, escrowHoldId: string, session?: unknown): Promise<void>;
   updateOne(orderId: string, data: Record<string, unknown>): Promise<void>;
   decrementStock(listingId: string, quantity: number): Promise<boolean>;
   incrementStock(listingId: string, quantity: number): Promise<void>;

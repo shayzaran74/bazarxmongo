@@ -20,6 +20,12 @@ export interface IEcosystemOrderRepository {
     options?: { session?: ClientSession },
   ): Promise<{ id: string; dealerId: string; ecosystemId: string; orderId: string; status: string }>;
 
+  /**
+   * Ekosistem detaylarını getirir — internalCommRate için kullanılır.
+   * CheckoutService'deki fragile cast yerine bu metod kullanılmalı.
+   */
+  findEcosystemById(ecosystemId: string): Promise<{ id: string; internalCommRate: number } | null>;
+
   sumQuantityByDealerAndProduct(
     dealerId: string,
     productId: string,

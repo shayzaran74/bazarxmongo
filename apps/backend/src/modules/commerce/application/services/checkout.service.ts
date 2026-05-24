@@ -179,11 +179,15 @@ export class CheckoutService {
       await session.endSession();
     }
 
-    // FAZE 1: Stok rezervasyonu + sipariş oluşturma (sıralı, non-transactional)
-    for (const [vendorId, group] of vendorGroups) {
-      // Atomik stok rezervasyonu
-      for (const g of group) {
-        const quantity = g.item.getProps().quantity;
+    // FAZE 1: Stok rezervasyonu + sipariş oluşturma — tek transaction içinde atomik
+    const orderSession = await this.connection.startSession();
+    try {
+      await orderSession.startTransaction();
+
+      for (const [vendorId, group] of vendorGroups) {
+        // Atomik stok rezervasyonu
+        for (const g of group) {
+          const quantity = g.item.getProps().quantity;
         const listingId = g.item.getProps().listingId;
         const reserved = await this.listingRepository.reserveStock(listingId, quantity);
         if (!reserved) {
@@ -248,14 +252,10 @@ export class CheckoutService {
       const firstListingProps = group[0]?.listing.getProps();
       const ecoId = firstListingProps?.ecosystemId;
       if (ecoId) {
-        try {
-          const ecosystem = await (this.ecosystemOrderRepo as unknown as { ecosystemRepo?: { findById: (id: string) => Promise<{ internalCommRate: number }> } }).ecosystemRepo?.findById(ecoId);
-          if (ecosystem) {
-            platformCommissionRate = ecosystem.internalCommRate;
-            platformCommissionAmount = totals.subtotal * (ecosystem.internalCommRate / 100);
-          }
-        } catch {
-          // ecosystemRepo bulunamazsa commission hesaplama
+        const ecosystem = await this.ecosystemOrderRepo.findEcosystemById(ecoId);
+        if (ecosystem) {
+          platformCommissionRate = ecosystem.internalCommRate;
+          platformCommissionAmount = totals.subtotal * (ecosystem.internalCommRate / 100);
         }
       }
 
@@ -279,8 +279,8 @@ export class CheckoutService {
         goOrderMode,
       );
 
-      // Order'ı kaydet (items embed olarak)
-      await this.orderRepo.create(order, clientMutationId);
+      // Order'ı kaydet — transaction session ile
+      await this.orderRepo.create(order, clientMutationId, orderSession);
 
       // EcosystemOrder kaydı oluştur (ekosistem ürünleri için)
       if (ecoId) {
@@ -295,11 +295,29 @@ export class CheckoutService {
             unitPrice: lProps.price.amount.toString(),
             isGarageSale: false,
             status: 'PENDING',
-          });
+          }, { session: orderSession });
         }
       }
 
       createdOrders.push(order);
+    }
+
+    await orderSession.commitTransaction();
+    } catch (err) {
+      await orderSession.abortTransaction();
+      // Compensating: başarılı siparişlerin stoklarını geri al
+      for (const order of createdOrders) {
+        const items = order.getProps().items ?? [];
+        for (const item of items) {
+          await this.listingRepository.releaseStock(
+            item.getProps().listingId,
+            item.getProps().quantity,
+          ).catch(() => undefined);
+        }
+      }
+      throw err;
+    } finally {
+      await orderSession.endSession();
     }
 
     // FAZE 2: Sepeti temizle

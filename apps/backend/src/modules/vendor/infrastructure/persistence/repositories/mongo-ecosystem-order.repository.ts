@@ -140,4 +140,25 @@ export class MongoEcosystemOrderRepository implements IEcosystemOrderRepository 
       options,
     );
   }
+
+  async findEcosystemById(ecosystemId: string): Promise<{ id: string; internalCommRate: number } | null> {
+    // EkosistemOrder'dan ecosystemId ile BrandEcosystem'a join
+    const doc = await this.orderModel
+      .findOne({ ecosystemId: new Types.ObjectId(ecosystemId) })
+      .select('ecosystemId')
+      .lean()
+      .exec();
+
+    if (!doc) return null;
+
+    // BrandEcosystem'dan internalCommRate'yi al
+    const { BrandEcosystem } = await import('@barterborsa/shared-persistence/schemas/backend/brandEcosystem.schema');
+    const eco = await BrandEcosystem.findOne({ id: ecosystemId }).lean();
+    if (!eco) return null;
+
+    return {
+      id: eco.id,
+      internalCommRate: Number(eco.internalCommRate) ?? 4.0,
+    };
+  }
 }
