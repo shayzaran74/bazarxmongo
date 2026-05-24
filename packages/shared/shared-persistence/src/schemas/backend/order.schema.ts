@@ -65,6 +65,14 @@ export interface IOrder {
   escrowHoldId?: string;
   deliveryType: DeliveryTypeType;
   items?: IOrderItem[];
+  // BazarX Köprüsü — Sprint 3
+  isEcosystemOrder?: boolean;
+  ecosystemId?: string;
+  platformCommissionRate?: Types.Decimal128; // Ekosistem internalCommRate
+  platformCommissionAmount?: Types.Decimal128;
+  // GO Sipariş — Düzeltme 7/8
+  isGoOrder?: boolean;
+  goOrderMode?: 'QR_PICKUP' | 'RESTAURANT_DELIVERY';
 }
 
 export const OrderSchema = new Schema<IOrder>({
@@ -110,6 +118,9 @@ export const OrderSchema = new Schema<IOrder>({
   escrowHoldId: { type: String },
   deliveryType: { type: String, enum: DeliveryType, default: 'CARGO' },
   items: { type: [OrderItemSchema], default: [] },
+  // GO Sipariş — Düzeltme 7/8
+  isGoOrder: { type: Boolean, default: false },
+  goOrderMode: { type: String, enum: ['QR_PICKUP', 'RESTAURANT_DELIVERY'] },
 }, {
   timestamps: true,
   collection: 'orders',

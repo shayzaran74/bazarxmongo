@@ -162,7 +162,7 @@ export class OrderMapper {
 
   public static toPersistence(domain: Order): Record<string, unknown> {
     const props = domain.getProps();
-    return {
+    const result: Record<string, unknown> = {
       _id: domain.id,
       id: domain.id,
       userId: props.userId,
@@ -206,6 +206,23 @@ export class OrderMapper {
         };
       }),
     };
+    // BazarX Köprüsü — Sprint 3
+    if (props.isEcosystemOrder) {
+      result.isEcosystemOrder = props.isEcosystemOrder;
+      result.ecosystemId = props.ecosystemId;
+      if (props.platformCommissionRate !== undefined) {
+        result.platformCommissionRate = props.platformCommissionRate;
+      }
+      if (props.platformCommissionAmount !== undefined) {
+        result.platformCommissionAmount = props.platformCommissionAmount;
+      }
+    }
+    // GO Sipariş — Düzeltme 7/8
+    if (props.isGoOrder) {
+      result.isGoOrder = props.isGoOrder;
+      if (props.goOrderMode) result.goOrderMode = props.goOrderMode;
+    }
+    return result;
   }
 
   public static async populateImages<T extends PopulatableOrder | PopulatableOrder[]>(response: T): Promise<T> {

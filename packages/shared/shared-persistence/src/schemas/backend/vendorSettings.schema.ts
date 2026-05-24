@@ -22,6 +22,14 @@ export interface IVendorSettings {
   commissionAdjustments?: Record<string, unknown>;
   holidayMode: boolean;
   acceptingOrders: boolean;
+  // GO Rezervasyon kapasitesi — Faz 7
+  goCapacitySettings?: {
+    maxDailyReservations: number;
+    maxPartySize: number;
+    slotDurationMinutes: number;
+    openingHours: Record<string, { open: string; close: string }>;
+    closedDates: Date[];
+  };
 }
 
 export const VendorSettingsSchema = new Schema<IVendorSettings>({
@@ -42,6 +50,8 @@ export const VendorSettingsSchema = new Schema<IVendorSettings>({
   commissionAdjustments: { type: Object, alias: 'commission_adjustments' },
   holidayMode: { type: Boolean, default: false, alias: 'holiday_mode' },
   acceptingOrders: { type: Boolean, default: true, alias: 'accepting_orders' },
+  // GO Rezervasyon kapasitesi — Faz 7
+  goCapacitySettings: { type: Schema.Types.Mixed },
 }, {
   timestamps: true,
   collection: 'vendor_settings',

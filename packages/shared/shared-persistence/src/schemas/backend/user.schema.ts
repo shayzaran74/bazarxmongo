@@ -25,6 +25,16 @@ export interface IUser {
   referredById?: string;
   referralCode?: string;
   deletedAt?: Date;
+  // FCM Push Token — Faz 5
+  fcmToken?: string;
+  fcmTokenUpdatedAt?: Date;
+  notificationPreferences?: {
+    geofence: boolean;
+    menuExpiry: boolean;
+    instantOpportunity: boolean;
+    silentHoursStart: number;
+    silentHoursEnd: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +56,16 @@ export const UserSchema = new Schema<IUser>({
   referredById: { type: String },
   referralCode: { type: String },
   deletedAt: { type: Date },
+  // FCM Push Token — Faz 5
+  fcmToken: { type: String },
+  fcmTokenUpdatedAt: { type: Date },
+  notificationPreferences: {
+    geofence: { type: Boolean, default: true },
+    menuExpiry: { type: Boolean, default: true },
+    instantOpportunity: { type: Boolean, default: true },
+    silentHoursStart: { type: Number, default: 22 },
+    silentHoursEnd: { type: Number, default: 8 },
+  },
   createdAt: { type: Date },
   updatedAt: { type: Date },
 }, {

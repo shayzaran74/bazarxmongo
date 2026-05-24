@@ -39,6 +39,14 @@ export interface OrderProps {
   couponCode?: string;
   expiresAt?: Date;
   items?: OrderItem[];
+  // BazarX Köprüsü — Sprint 3
+  isEcosystemOrder?: boolean;
+  ecosystemId?: string;
+  platformCommissionRate?: number;
+  platformCommissionAmount?: number;
+  // GO Sipariş — Düzeltme 7/8
+  isGoOrder?: boolean;
+  goOrderMode?: 'QR_PICKUP' | 'RESTAURANT_DELIVERY';
 }
 
 // State geçiş haritası — hem COMMERCE (kargo) hem RESTAURANT (mutfak+kurye) akışlarını kapsar
@@ -98,6 +106,11 @@ export class Order extends AggregateRoot<OrderProps> {
     couponCode?: string,
     expiresAt?: Date,
     deliveryType: DeliveryType = DeliveryType.CARGO,
+    ecosystemId?: string,
+    platformCommissionRate?: number,
+    platformCommissionAmount?: number,
+    isGoOrder?: boolean,
+    goOrderMode?: 'QR_PICKUP' | 'RESTAURANT_DELIVERY',
   ): Order {
     const order = new Order({
       userId,
@@ -120,6 +133,12 @@ export class Order extends AggregateRoot<OrderProps> {
       deliveryType,
       couponCode,
       expiresAt,
+      isEcosystemOrder: !!ecosystemId,
+      ecosystemId,
+      platformCommissionRate,
+      platformCommissionAmount,
+      isGoOrder,
+      goOrderMode,
     });
 
     // Add Domain Event: OrderCreatedEvent here later

@@ -3,10 +3,12 @@
 // NOT: Phase 3 transaction pattern (session.withTransaction) BURADA KULLANILMADI.
 //      Atomik checkout için ayrı bir checkout handler'da session kullanılabilir.
 
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, ForbiddenException } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { DomainException } from '@barterborsa/shared-core';
 import { RabbitMQService } from '@barterborsa/shared-messaging';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Types, ClientSession, Connection } from 'mongoose';
 import { ICartRepository } from '../../domain/repositories/cart.repository.interface';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
@@ -21,6 +23,10 @@ import { ORDER_PAYMENT_EXPIRY_MS } from '@barterborsa/shared-core';
 import { GenerateInvoiceCommand } from '../commands/generate-invoice.command';
 import { MongoVendorRepository } from '../../../vendor/infrastructure/persistence/mongo-vendor.repository';
 import { MongoOrderRepository } from '../../infrastructure/persistence/mongo-order.repository';
+import { WatchoverService } from '../../../vendor/application/services/watchover.service';
+import { GarageSaleService } from '../../../vendor/application/services/garage-sale.service';
+import { IEcosystemMembershipRepository } from '../../../vendor/domain/repositories/i-ecosystem-membership.repository';
+import { IEcosystemOrderRepository } from '../../../vendor/domain/repositories/i-ecosystem-order.repository';
 import * as mongoose from 'mongoose';
 
 @Injectable()
@@ -36,6 +42,13 @@ export class CheckoutService {
     private readonly vendorRepo: MongoVendorRepository,
     private readonly rabbitMQ: RabbitMQService,
     private readonly commandBus: CommandBus,
+    @Inject('IEcosystemMembershipRepository')
+    private readonly membershipRepo: IEcosystemMembershipRepository,
+    @Inject('IEcosystemOrderRepository')
+    private readonly ecosystemOrderRepo: IEcosystemOrderRepository,
+    private readonly watchoverService: WatchoverService,
+    private readonly garageSaleService: GarageSaleService,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async checkout(
@@ -101,12 +114,15 @@ export class CheckoutService {
       vendorGroups.get(vendorId)!.push(entry);
     }
 
-    // Vendor tiplerini al
+    // Vendor tiplerini ve profillerini al
     const vendorTypeMap = new Map<string, string>();
+    const vendorProfiles = new Map<string, Record<string, unknown>>();
     for (const vendorId of vendorGroups.keys()) {
       const vendor = await this.vendorRepo.findById(vendorId);
       if (vendor) {
         vendorTypeMap.set(vendorId, vendor.getProps().vendorType);
+        const profile = (vendor.getProps() as unknown as Record<string, unknown>).restaurantProfile as Record<string, unknown> | undefined;
+        if (profile) vendorProfiles.set(vendorId, profile as Record<string, unknown>);
       }
     }
 
@@ -117,6 +133,51 @@ export class CheckoutService {
     const orderExpiresAt = isWalletPayment
       ? undefined
       : new Date(Date.now() + ORDER_PAYMENT_EXPIRY_MS);
+
+    // WATCHOVER: Ekosistem kontrolü — sipariş oluşturmadan önce
+    const session = await this.connection.startSession();
+    try {
+      for (const entry of itemsWithListings) {
+        const listingProps = entry.listing.getProps();
+        if (!listingProps.ecosystemId) continue; // ekosistem dışı ürün — kontrol yok
+
+        // Bayi ekosistem üyesi mi?
+        const membership = await this.membershipRepo.findOne(
+          userId,
+          listingProps.ecosystemId,
+        );
+        if (!membership || membership.status !== 'ACTIVE') {
+          throw new ForbiddenException({
+            code: 'NOT_ECOSYSTEM_MEMBER',
+            message: 'Bu ürünü satın almak için ekosistem üyesi olmanız gerekmektedir.',
+          });
+        }
+
+        // maxOrderQtyPerDealer kota kontrolü
+        if (listingProps.maxOrderQtyPerDealer != null) {
+          await this.watchoverService.checkDealerQuota(
+            userId,
+            entry.listing.id,
+            entry.item.getProps().quantity,
+            listingProps.maxOrderQtyPerDealer,
+            session,
+          );
+        }
+
+        // Smart Cap kontrolü
+        const totalStock = listingProps.stock ?? 0;
+        if (totalStock > 0) {
+          await this.watchoverService.checkSmartCap(
+            entry.listing.id,
+            entry.item.getProps().quantity,
+            totalStock,
+            session,
+          );
+        }
+      }
+    } finally {
+      await session.endSession();
+    }
 
     // FAZE 1: Stok rezervasyonu + sipariş oluşturma (sıralı, non-transactional)
     for (const [vendorId, group] of vendorGroups) {
@@ -169,6 +230,35 @@ export class CheckoutService {
         ? DeliveryType.LOCAL_COURIER
         : DeliveryType.CARGO;
 
+      // GO sipariş flag — Düzeltme 7/8
+      const isGoOrder = vendorTypeMap.get(vendorId) === 'RESTAURANT';
+      let goOrderMode: 'QR_PICKUP' | 'RESTAURANT_DELIVERY' | undefined;
+      if (isGoOrder) {
+        // hasDeliveryService varsa RESTAURANT_DELIVERY, yoksa QR_PICKUP
+        // VendorProfile zaten vendorTypeMap injeksiyonunda yükleniyor
+        const profile = vendorProfiles.get(vendorId);
+        goOrderMode = (profile as Record<string, unknown>)?.hasDeliveryService
+          ? 'RESTAURANT_DELIVERY'
+          : 'QR_PICKUP';
+      }
+
+      // Ekosistem commission rate hesapla (BazarX Köprüsü — Sprint 3)
+      let platformCommissionRate = 0;
+      let platformCommissionAmount = 0;
+      const firstListingProps = group[0]?.listing.getProps();
+      const ecoId = firstListingProps?.ecosystemId;
+      if (ecoId) {
+        try {
+          const ecosystem = await (this.ecosystemOrderRepo as unknown as { ecosystemRepo?: { findById: (id: string) => Promise<{ internalCommRate: number }> } }).ecosystemRepo?.findById(ecoId);
+          if (ecosystem) {
+            platformCommissionRate = ecosystem.internalCommRate;
+            platformCommissionAmount = totals.subtotal * (ecosystem.internalCommRate / 100);
+          }
+        } catch {
+          // ecosystemRepo bulunamazsa commission hesaplama
+        }
+      }
+
       // Order domain entity oluştur
       const order = Order.create(
         userId,
@@ -182,10 +272,32 @@ export class CheckoutService {
         couponCode,
         orderExpiresAt,
         deliveryType,
+        ecoId,
+        platformCommissionRate,
+        platformCommissionAmount,
+        isGoOrder || undefined,
+        goOrderMode,
       );
 
       // Order'ı kaydet (items embed olarak)
       await this.orderRepo.create(order, clientMutationId);
+
+      // EcosystemOrder kaydı oluştur (ekosistem ürünleri için)
+      if (ecoId) {
+        for (const g of group) {
+          const lProps = g.listing.getProps();
+          await this.ecosystemOrderRepo.create({
+            dealerId: userId,
+            ecosystemId: ecoId,
+            productId: g.item.getProps().listingId,
+            orderId: order.id,
+            quantity: g.item.getProps().quantity,
+            unitPrice: lProps.price.amount.toString(),
+            isGarageSale: false,
+            status: 'PENDING',
+          });
+        }
+      }
 
       createdOrders.push(order);
     }

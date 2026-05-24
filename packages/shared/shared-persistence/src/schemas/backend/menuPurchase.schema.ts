@@ -35,6 +35,17 @@ export interface IMenuPurchase {
   // XP ve metadata
   xpEarned: number;
   menuCategory?: number;      // 1-6 kategori numarası
+  // QR tip ayrımı — Düzeltme 5
+  qrType?: 'PLATFORM' | 'INSTANT_OPPORTUNITY';
+  platformExpiresAt?: Date;        // üyelik başı + 45 gün (sabit)
+  activationDate?: Date;           // üyelik başı + 15 gün (kupon açılma)
+  restaurantExpiresAt?: Date;     // restoran belirledi
+  instantQrDurationHours?: number;
+  instantQrSlotId?: string;
+  // Preview hakları — Düzeltme 4
+  purchaseType?: 'STANDARD' | 'PREVIEW';
+  previewCategoryId?: number;
+  previewUsedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +72,17 @@ export const MenuPurchaseSchema = new Schema<IMenuPurchase>({
   transferredAt:      { type: Date },
   xpEarned:           { type: Number, default: 0 },
   menuCategory:       { type: Number, min: 1, max: 6 },
+  // QR tip ayrımı — Düzeltme 5
+  qrType:             { type: String, enum: ['PLATFORM', 'INSTANT_OPPORTUNITY'] },
+  platformExpiresAt:  { type: Date },
+  activationDate:     { type: Date },
+  restaurantExpiresAt:{ type: Date },
+  instantQrDurationHours: { type: Number },
+  instantQrSlotId:    { type: String },
+  // Preview hakları — Düzeltme 4
+  purchaseType:       { type: String, enum: ['STANDARD', 'PREVIEW'] },
+  previewCategoryId:  { type: Number },
+  previewUsedAt:      { type: Date },
   createdAt:          { type: Date },
   updatedAt:          { type: Date },
 }, {
@@ -74,5 +96,6 @@ MenuPurchaseSchema.index({ status: 1, qrExpiresAt: 1 });
 MenuPurchaseSchema.index({ qrCode: 1 }, { unique: true });
 MenuPurchaseSchema.index({ oneFreeQrCode: 1 }, { sparse: true });
 MenuPurchaseSchema.index({ transferredTo: 1 });
+MenuPurchaseSchema.index({ qrType: 1, status: 1 });
 
 export const MenuPurchase = createModelProxy<IMenuPurchase>('MenuPurchase', MenuPurchaseSchema);

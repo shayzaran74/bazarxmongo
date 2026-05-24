@@ -42,6 +42,11 @@ export interface IVendorProfile {
   // Geofencing koordinatları (BazarX-GO §10)
   lat?: number;
   lng?: number;
+  // GO Restoran Teslimat — Düzeltme 7/8
+  hasDeliveryService?: boolean;
+  deliveryRadiusKm?: number;
+  deliveryFee?: Types.Decimal128;
+  minOrderForFreeDelivery?: Types.Decimal128;
 }
 
 export const VendorProfileSchema = new Schema<IVendorProfile>({
@@ -83,6 +88,11 @@ export const VendorProfileSchema = new Schema<IVendorProfile>({
   // Geofencing
   lat:               { type: Number },
   lng:               { type: Number },
+  // GO Restoran Teslimat — Düzeltme 7/8
+  hasDeliveryService:   { type: Boolean, default: false },
+  deliveryRadiusKm:      { type: Number },
+  deliveryFee:           { type: Types.Decimal128 },
+  minOrderForFreeDelivery: { type: Types.Decimal128 },
 }, {
   timestamps: true,
   collection: 'vendor_profiles',
