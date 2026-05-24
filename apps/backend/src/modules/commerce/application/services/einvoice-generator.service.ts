@@ -20,7 +20,10 @@ export class EInvoiceGeneratorService {
   /**
    * Sipariş teslim edildiğinde e-fatura oluştur ve GİB'e gönder
    */
-  async onOrderDelivered(orderId: string, invoiceData: any): Promise<void> {
+  /**
+   * e-Fatura oluşturma arayüzü — order.delivered event listener
+   */
+  async onOrderDelivered(orderId: string, invoiceData: UBLInvoiceData): Promise<void> {
     this.logger.log('e-Fatura oluşturma tetiklendi', { orderId });
 
     try {

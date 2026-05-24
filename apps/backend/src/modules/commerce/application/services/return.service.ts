@@ -151,6 +151,13 @@ export class ReturnService {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
       this.logger.error('Refund çağrısı başarısız — iade onaylanamadı', { returnId, holdId, error: msg });
+      await this.auditLog.log({
+        actorId: vendorId,
+        action: 'RETURN_REFUND_FAILED',
+        resourceType: 'ReturnRequest',
+        resourceId: returnId,
+        newValue: { holdId, error: msg },
+      });
       return { success: false, error: 'Finansal iade işlemi başarısız. Lütfen tekrar deneyin.' };
     }
 

@@ -41,7 +41,7 @@ export interface UBLInvoiceData {
   paymentMeansCode?: string;
   paymentDueDate?: string;
   orderReference?: string;
-  recipientId?: string;
+  recipientId: string;
 }
 
 export interface UBLInvoiceLine {

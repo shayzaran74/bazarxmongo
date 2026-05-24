@@ -107,7 +107,10 @@ export class GenerateInvoiceHandler
     return invoice;
   }
 
-  private async attachPdf(invoice: Invoice, orderData: any): Promise<void> {
+  private async attachPdf(
+    invoice: Invoice,
+    orderData: { buyerEmail: string; buyerName: string; vendorName: string; vendorTaxNumber?: string },
+  ): Promise<void> {
     try {
       const buffer = await this.invoicePdfService.generate(invoice, orderData);
       const key = `${invoice.id}/${invoice.invoiceNumber}.pdf`;
