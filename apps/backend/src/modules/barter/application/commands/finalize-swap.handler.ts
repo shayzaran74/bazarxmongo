@@ -6,10 +6,14 @@ import { FinalizeSwapCommand } from './finalize-swap.command';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
 import { IBarterPartRepository } from '../../domain/repositories/barter-part.repository.interface';
 import { IVendorB2BDataRepository } from '../../domain/repositories/vendor-b2b-data.repository.interface';
+import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
+import { TradeOfferStatus } from '../../domain/enums/trade-offer-status.enum';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { DomainException } from '@barterborsa/shared-core';
+import { BarterPart as BarterPartModel } from '@barterborsa/shared-persistence/schemas/backend/barterPart.schema';
+import { SwapSession as SwapSessionModel } from '@barterborsa/shared-persistence/schemas/backend/swapSession.schema';
 
 @CommandHandler(FinalizeSwapCommand)
 export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand> {
@@ -19,6 +23,7 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
     @Inject('IBarterPartRepository') private readonly partRepository: IBarterPartRepository,
     @Inject('IVendorB2BDataRepository') private readonly b2bDataRepository: IVendorB2BDataRepository,
+    @Inject('ITradeOfferRepository') private readonly offerRepository: ITradeOfferRepository,
     private readonly auditLog: AuditLogService,
     private readonly financialGateway: FinancialGatewayService,
   ) {}
@@ -45,36 +50,54 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
 
     const allParts = await this.partRepository.findAllBySwapSession(command.sessionId);
     const now = new Date();
-    const pendingParts = allParts.filter(p => p.disputeWindowEndsAt && p.disputeWindowEndsAt > now);
+    const allConfirmed = allParts.every(p => p.status === 'CONFIRMED');
 
-    if (pendingParts.length > 0) {
-      const latestEndsAt = new Date(Math.max(...pendingParts.map(p => p.disputeWindowEndsAt!.getTime())));
-      throw new BadRequestException(
-        `İnceleme süresi henüz dolmadı. Teminatlar ${latestEndsAt.toLocaleString('tr-TR')} tarihinde serbest bırakılabilir.`,
+    if (!allConfirmed) {
+      // Henüz tüm part'lar onaylanmadı — onaylanmamış part'ların süresini kontrol et
+      const pendingParts = allParts.filter(
+        p => p.status !== 'CONFIRMED' && p.disputeWindowEndsAt && p.disputeWindowEndsAt > now,
       );
+      if (pendingParts.length > 0) {
+        const latestEndsAt = new Date(Math.max(...pendingParts.map(p => p.disputeWindowEndsAt!.getTime())));
+        throw new BadRequestException(
+          `İnceleme süresi henüz dolmadı. Teminatlar ${latestEndsAt.toLocaleString('tr-TR')} tarihinde serbest bırakılabilir.`,
+        );
+      }
     }
 
-    const idempotencyBase = `finalize-${command.sessionId}`;
-
-    try {
-      await this.financialGateway.releaseFunds(props.fromCollateralHoldId, `${idempotencyBase}-from`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      this.logger.error('From collateral iadesi başarısız', { holdId: props.fromCollateralHoldId, msg });
+    // Tüm part'lar onaylandıysa inceleme sürelerini sıfırla
+    for (const part of allParts) {
+      if (part.disputeWindowEndsAt && part.disputeWindowEndsAt > now) {
+        await BarterPartModel.updateOne(
+          { id: part.id },
+          { $set: { disputeWindowEndsAt: now, updatedAt: now } },
+        ).exec();
+      }
     }
 
-    try {
-      await this.financialGateway.releaseFunds(props.toCollateralHoldId, `${idempotencyBase}-to`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      this.logger.error('To collateral iadesi başarısız', { holdId: props.toCollateralHoldId, msg });
+    // Teminatları hemen serbest bırakmak yerine admin onayına al
+    await SwapSessionModel.updateOne(
+      { id: command.sessionId },
+      { $set: { collateralStatus: 'PENDING_RELEASE', pendingReleaseAt: now, updatedAt: now } },
+    ).exec();
+
+    // Session durumunu COMPLETED'a güncelle
+    if (props.status !== SwapSessionStatus.COMPLETED) {
+      await this.sessionRepository.updateStatus(command.sessionId, SwapSessionStatus.COMPLETED);
     }
 
-    session['props'].collateralStatus = 'RELEASED';
-    session['props'].collateralReleasedAt = new Date();
-    await this.sessionRepository.save(session);
-
-    await this.b2bDataRepository.updateFirstTransaction([props.initiatorId, props.receiverId]);
+    // Swap tamamlandığında TradeOffer'ı da COMPLETED yap
+    if (props.tradeOfferId) {
+      try {
+        const offer = await this.offerRepository.findById(props.tradeOfferId);
+        if (offer && offer.getProps().status !== TradeOfferStatus.COMPLETED) {
+          await this.offerRepository.updateStatus(props.tradeOfferId, TradeOfferStatus.COMPLETED);
+          this.logger.log('TradeOffer COMPLETED olarak güncellendi', { tradeOfferId: props.tradeOfferId });
+        }
+      } catch (err) {
+        this.logger.warn('TradeOffer güncelleme hatası (kritik değil)', { tradeOfferId: props.tradeOfferId, error: err });
+      }
+    }
 
     await this.auditLog.log({
       actorId:      command.actorUserId,
@@ -85,8 +108,13 @@ export class FinalizeSwapHandler implements ICommandHandler<FinalizeSwapCommand>
         vendorId:           command.vendorId,
         fromCollateralHoldId: props.fromCollateralHoldId,
         toCollateralHoldId:   props.toCollateralHoldId,
-        collateralStatus:    'RELEASED',
+        collateralStatus:    'PENDING_RELEASE',
       },
+    });
+
+    this.logger.log('Takas onaylandı, admin onayı bekleniyor', {
+      sessionId: command.sessionId,
+      collateralStatus: 'PENDING_RELEASE',
     });
 
     return { success: true };

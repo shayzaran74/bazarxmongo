@@ -1,16 +1,19 @@
 // apps/backend/src/modules/barter/domain/trust-level.constants.ts
 // Master Plan v4.3 §3.3 — TrustLevel belirleme kuralları
 
-export type TrustLevelType = 'GOOD' | 'FAIR' | 'POOR' | 'SUSPENDED' | 'FROZEN';
+export type TrustLevelType = 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'FROZEN';
 
 /** score → TrustLevel eşleşmesi */
-export function scoreToLevel(score: number, isFrozen = false): TrustLevelType {
-  if (isFrozen) return 'FROZEN';
-  if (score >= 80) return 'GOOD';
-  if (score >= 60) return 'FAIR';
-  if (score >= 40) return 'POOR';
-  if (score >= 20) return 'SUSPENDED';
-  return 'FROZEN';
+export function scoreToLevel(score: number): TrustLevelType {
+  if (score >= 80) return 'EXCELLENT';
+  if (score >= 60) return 'GOOD';
+  if (score >= 40) return 'FAIR';
+  return 'POOR';
+}
+
+/** Dondurma adayı mı? */
+export function isFreezeCandidate(score: number): boolean {
+  return score < 40;
 }
 
 /** Uyumluluk ihlal eşiği — 3 ihlalde dondurma */

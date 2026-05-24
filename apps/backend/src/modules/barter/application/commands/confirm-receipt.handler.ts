@@ -22,6 +22,7 @@ export class ConfirmReceiptHandler implements ICommandHandler<ConfirmReceiptComm
     if (!session) throw new DomainException('Swap session bulunamadı.');
 
     const props = session.getProps();
+    const disputeWindowHours = props.shipmentMode === 'DIGITAL' ? 24 : 72;
 
     if (props.status !== SwapSessionStatus.SHIPPING && props.status !== SwapSessionStatus.PARTIALLY_COMPLETED) {
       throw new BadRequestException(`Teslimat onayı için session 'SHIPPING' veya 'PARTIALLY_COMPLETED' olmalı. Mevcut: ${props.status}`);
@@ -43,7 +44,7 @@ export class ConfirmReceiptHandler implements ICommandHandler<ConfirmReceiptComm
     }
 
     const disputeWindowEndsAt = new Date();
-    disputeWindowEndsAt.setDate(disputeWindowEndsAt.getDate() + 3);
+    disputeWindowEndsAt.setHours(disputeWindowEndsAt.getHours() + disputeWindowHours);
 
     const now = new Date();
     await this.partRepository.updateConfirmation(myReceivedPart.id, {

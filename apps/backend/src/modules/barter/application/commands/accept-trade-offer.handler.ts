@@ -4,6 +4,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
+import { randomUUID } from 'crypto';
 import { AcceptTradeOfferCommand } from './accept-trade-offer.command';
 import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
@@ -12,12 +13,17 @@ import { BarterPart } from '../../domain/entities/barter-part.entity';
 import { CollateralCalculatorService } from '../services/collateral-calculator.service';
 import { WatchtowerService } from '../services/watchtower.service';
 import { DomainException } from '@barterborsa/shared-core';
+import { TradeOffer as TradeOfferModel } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
+import { TradeOfferItem as TradeOfferItemModel, ITradeOfferItem } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
 import { SwapSession as SwapSessionModel } from '@barterborsa/shared-persistence/schemas/backend/swapSession.schema';
+import { SurplusItem as SurplusItemModel } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
 import { BarterPart as BarterPartModel } from '@barterborsa/shared-persistence/schemas/backend/barterPart.schema';
 import { OutboxMessage } from '@barterborsa/shared-persistence/schemas/backend/outbox-message.schema';
 import { RabbitMQService } from '@barterborsa/shared-messaging';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { Company as CompanyModel } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { Vendor as VendorModel } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 
 @CommandHandler(AcceptTradeOfferCommand)
 export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOfferCommand> {
@@ -38,13 +44,60 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     const offer = await this.offerRepository.findById(command.offerId);
     if (!offer) throw new DomainException('Trade offer not found');
 
+    this.logger.log('Teklif bulundu', { offerId: offer.id, status: offer.getProps().status });
+
     offer.accept();
 
-    // Teklif edilen ürünlerin toplam değeri üzerinden teminat hesapla
-    const totalOfferedValue = offer.getProps().offeredItems.reduce(
-      (acc, item) => Number(acc) + Number(item.getProps().estimatedValue),
-      0,
-    );
+    // Teklif edilen ürünleri ayrı koleksiyondan yükle (trade_offer_items)
+    const offeredItems = await TradeOfferItemModel
+      .find({ offeredOfferId: offer.id })
+      .lean()
+      .exec() as ITradeOfferItem[];
+
+    this.logger.log('TradeOfferItem sorgusu', { offerId: offer.id, foundCount: offeredItems.length });
+
+    // Geriye dönük uyumluluk: TradeOfferItem yoksa surplusItem üzerinden hesapla
+    let totalOfferedValue = 0;
+    const offerProps = offer.getProps();
+
+    if (offeredItems.length > 0) {
+      totalOfferedValue = offeredItems.reduce(
+        (acc, item) => acc + parseFloat(item.estimatedValue?.toString() ?? '0'),
+        0,
+      );
+      // Teklif edilen miktar kadar blockedQuantity artır; tamamı bloke ise RESERVED yap
+      for (const item of offeredItems) {
+        if (item.surplusItemId) {
+          const itemQty = parseFloat(item.quantity?.toString() ?? '0');
+          await this.reserveSurplusPartially(item.surplusItemId, itemQty);
+        }
+      }
+    } else if (offerProps.offeredItemId) {
+      const surplus = await SurplusItemModel.findOne({ id: offerProps.offeredItemId }).lean();
+      if (surplus) {
+        totalOfferedValue = parseFloat((surplus as any).price?.toString() ?? '0') || 0;
+        const surplusQty = parseFloat((surplus as any).quantity?.toString() ?? '0');
+        await this.reserveSurplusPartially(offerProps.offeredItemId, surplusQty);
+      }
+    }
+
+    // İstenen (requested) ürünleri de kısmi blokaja al
+    const requestedItems = await TradeOfferItemModel
+      .find({ requestedOfferId: offer.id })
+      .lean()
+      .exec() as ITradeOfferItem[];
+
+    for (const item of requestedItems) {
+      if (item.surplusItemId) {
+        const itemQty = parseFloat(item.quantity?.toString() ?? '0');
+        await this.reserveSurplusPartially(item.surplusItemId, itemQty);
+      }
+    }
+
+    if (totalOfferedValue <= 0) {
+      throw new DomainException('Teklif edilen ürünlerin toplam değeri sıfır olamaz');
+    }
+
     const collateralAmount = this.collateralCalculator.calculateCollateral(totalOfferedValue);
 
     // SmartCap: teminat firma limitini aşıyorsa DomainException
@@ -64,10 +117,41 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
 
     const idempotencyBase = `barter-collateral-${session.id}`;
 
+    // ─── receiverId (companyId) → userId çözümlemesi ────────────────────────
+    const initiatorUserId = offer.getProps().initiatorId;
+    let receiverUserId = offer.getProps().receiverId;
+
+    const receiverVendor = await VendorModel
+      .findOne({ companyId: receiverUserId })
+      .select('userId')
+      .lean()
+      .exec() as { userId?: string } | null;
+
+    if (receiverVendor?.userId) {
+      receiverUserId = receiverVendor.userId;
+    }
+
+    // ─── Bakiye Kontrolü ─────────────────────────────────────────────────────
+    const { sufficient: initiatorHasBalance, currentBalance: initiatorBalance } =
+      await this.financialGateway.checkBalance(initiatorUserId, collateralAmount.toString());
+    if (!initiatorHasBalance) {
+      throw new DomainException(
+        `Teklifçinin cüzdanında yeterli bakiye yok. Mevcut: ${initiatorBalance} ₺, Gerekli: ${collateralAmount.toString()} ₺`,
+      );
+    }
+
+    const { sufficient: receiverHasBalance, currentBalance: receiverBalance } =
+      await this.financialGateway.checkBalance(receiverUserId, collateralAmount.toString());
+    if (!receiverHasBalance) {
+      throw new DomainException(
+        `Alıcının cüzdanında yeterli bakiye yok. Mevcut: ${receiverBalance} ₺, Gerekli: ${collateralAmount.toString()} ₺`,
+      );
+    }
+
     // ─── Sıralı holdFunds + Telafi ─────────────────────────────────────────────
     // 1. Initiator (teklifçi) teminat blokajı
     const initiatorHoldResult = await this.financialGateway.holdFunds(
-      offer.getProps().initiatorId,
+      initiatorUserId,
       collateralAmount.toString(),
       'BARTER_COLLATERAL',
       session.id,
@@ -80,7 +164,7 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     let toHoldId: string;
     try {
       const receiverHoldResult = await this.financialGateway.holdFunds(
-        offer.getProps().receiverId,
+        receiverUserId,
         collateralAmount.toString(),
         'BARTER_COLLATERAL',
         session.id,
@@ -121,34 +205,45 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
       offer.getProps().fromCompanyId,
     );
 
-    // ─── Atomik DB yazımı — Outbox ile event'ler session içinde yazılır ───
+    // ─── Atomik DB yazımı — tüm belgeler aynı transaction içinde ────────────
     const mongoSession = await this.connection.startSession();
     try {
       await mongoSession.withTransaction(async () => {
-        await this.offerRepository.save(offer);
+        // Teklif statüsünü session ile güncelle; hata olursa rollback'e dahil olur
+        await TradeOfferModel.findOneAndUpdate(
+          { id: offer.id },
+          { $set: { status: 'ACCEPTED', acceptedAt: new Date() } },
+          { session: mongoSession },
+        ).exec();
 
         await SwapSessionModel.create(
-          {
-            id: session.id,
-            tradeOfferId: offer.id,
-            initiatorId: session.getProps().initiatorId,
-            receiverId: session.getProps().receiverId,
-            collateralAmount: Types.Decimal128.fromString(session.getProps().collateralAmount.toString()),
-            collateralCurrency: session.getProps().collateralCurrency,
-            collateralStatus: session.getProps().collateralStatus,
-            collateralLockedAt: session.getProps().collateralLockedAt,
-            fromCollateralHoldId: session.getProps().fromCollateralHoldId,
-            toCollateralHoldId: session.getProps().toCollateralHoldId,
-            status: session.getProps().status,
-            timeoutAt: session.getProps().timeoutAt,
-            shipmentMode: session.getProps().shipmentMode,
-          },
+          [
+            {
+              _id: session.id,
+              id: session.id,
+              tradeOfferId: offer.id,
+              initiatorId: session.getProps().initiatorId,
+              receiverId: session.getProps().receiverId,
+              collateralAmount: Types.Decimal128.fromString(session.getProps().collateralAmount.toString()),
+              collateralCurrency: session.getProps().collateralCurrency,
+              collateralStatus: session.getProps().collateralStatus,
+              collateralLockedAt: session.getProps().collateralLockedAt,
+              fromCollateralHoldId: session.getProps().fromCollateralHoldId,
+              toCollateralHoldId: session.getProps().toCollateralHoldId,
+              initiatorHoldId: fromHoldId,
+              receiverHoldId: toHoldId,
+              status: session.getProps().status,
+              timeoutAt: session.getProps().timeoutAt,
+              shipmentMode: session.getProps().shipmentMode,
+            },
+          ],
           { session: mongoSession },
         );
 
         await BarterPartModel.create(
           [
             {
+              _id: part1.id,
               id: part1.id,
               swapSessionId: session.id,
               partNumber: 1,
@@ -157,6 +252,7 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
               status: part1.getProps().status,
             },
             {
+              _id: part2.id,
               id: part2.id,
               swapSessionId: session.id,
               partNumber: 2,
@@ -165,32 +261,35 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
               status: part2.getProps().status,
             },
           ],
-          { session: mongoSession },
+          { session: mongoSession, ordered: true },
         );
 
         // Outbox event — session içinde kaydedilir
         await OutboxMessage.create(
-          {
-            aggregateId: offer.id,
-            aggregateType: 'TradeOffer',
-            eventType: 'offer.accepted',
-            exchange: 'barter.events',
-            routingKey: 'offer.accepted',
-            payload: {
-              offerId: offer.id,
-              sessionId: session.id,
-              fromCompanyId: offer.getProps().fromCompanyId,
-              toCompanyId: offer.getProps().toCompanyId,
-              initiatorId: offer.getProps().initiatorId,
-              receiverId: offer.getProps().receiverId,
-              fromAddress: {},
-              toAddress: {},
-              collateralAmount: session.getProps().collateralAmount.toString(),
-              fromCollateralHoldId: fromHoldId,
-              toCollateralHoldId: toHoldId,
+          [
+            {
+              _id: randomUUID(),
+              aggregateId: offer.id,
+              aggregateType: 'TradeOffer',
+              eventType: 'offer.accepted',
+              exchange: 'barter.events',
+              routingKey: 'offer.accepted',
+              payload: {
+                offerId: offer.id,
+                sessionId: session.id,
+                fromCompanyId: offer.getProps().fromCompanyId,
+                toCompanyId: offer.getProps().toCompanyId,
+                initiatorId: offer.getProps().initiatorId,
+                receiverId: offer.getProps().receiverId,
+                fromAddress: {},
+                toAddress: {},
+                collateralAmount: session.getProps().collateralAmount.toString(),
+                fromCollateralHoldId: fromHoldId,
+                toCollateralHoldId: toHoldId,
+              },
+              status: 'PENDING',
             },
-            status: 'PENDING',
-          },
+          ],
           { session: mongoSession },
         );
       });
@@ -221,5 +320,25 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     });
 
     return { success: true, sessionId: session.id };
+  }
+
+  private async reserveSurplusPartially(surplusItemId: string, requestedQty: number): Promise<void> {
+    const surplus = await SurplusItemModel.findOne({ id: surplusItemId }).lean();
+    if (!surplus) return;
+
+    const totalQty = parseFloat((surplus as any).quantity?.toString() ?? '0');
+    const currentBlocked = parseFloat((surplus as any).blockedQuantity?.toString() ?? '0');
+    const newBlocked = currentBlocked + requestedQty;
+
+    const update: Record<string, unknown> = {
+      blockedQuantity: Types.Decimal128.fromString(String(newBlocked)),
+    };
+
+    // Tüm stok bloke edildi → ilan RESERVED
+    if (newBlocked >= totalQty) {
+      update.status = 'RESERVED';
+    }
+
+    await SurplusItemModel.updateOne({ id: surplusItemId }, { $set: update });
   }
 }

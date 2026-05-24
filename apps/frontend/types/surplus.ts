@@ -38,16 +38,24 @@ export interface SurplusItem {
   company?:          SurplusCompany
 }
 
+export interface TradeOfferItem {
+  id?:    string
+  title?: string
+  images?: string[]
+}
+
 export interface TradeOffer {
-  id:            string
-  fromCompanyId: string
-  toCompanyId:   string
-  status:        string
-  cashAmount?:   string | number
-  message?:      string
-  createdAt:     string
-  fromCompany?:  SurplusCompany
-  toCompany?:    SurplusCompany
+  id:              string
+  fromCompanyId:   string
+  toCompanyId:     string
+  status:          string
+  cashAmount?:     string | number
+  message?:        string
+  createdAt:       string
+  fromCompany?:    SurplusCompany
+  toCompany?:      SurplusCompany
+  offeredItems?:   TradeOfferItem[]
+  requestedItems?: TradeOfferItem[]
 }
 
 export interface BarterChain {

@@ -22,7 +22,7 @@ interface ReferralStats {
 }
 
 export function useReferral() {
-  const { apiBase } = useRuntimeConfig().public
+  const { $api } = useApi()
   const stats: Ref<ReferralStats | null> = ref(null)
   const pending = ref(false)
   const error   = ref<string | null>(null)
@@ -31,8 +31,8 @@ export function useReferral() {
     pending.value = true
     error.value   = null
     try {
-      const data = await $fetch<ReferralStats>(`${apiBase}/api/v1/users/me/referral-stats`)
-      stats.value = data
+      const res = await $api<ReferralStats>('/api/v1/users/me/referral-stats')
+      stats.value = (res.data ?? res) as ReferralStats
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Referral bilgileri alınamadı'
     } finally {
@@ -42,12 +42,13 @@ export function useReferral() {
 
   async function generateCode(): Promise<string | null> {
     try {
-      const data = await $fetch<{ referralCode: string }>(
-        `${apiBase}/api/v1/users/me/referral-code`,
+      const res = await $api<{ referralCode: string }>(
+        '/api/v1/users/me/referral-code',
         { method: 'POST' },
       )
-      if (stats.value) stats.value.referralCode = data.referralCode
-      return data.referralCode
+      const code = ((res.data ?? res) as { referralCode: string }).referralCode
+      if (stats.value) stats.value.referralCode = code
+      return code
     } catch {
       return null
     }

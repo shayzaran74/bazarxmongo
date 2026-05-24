@@ -7,7 +7,7 @@ import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.re
 import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.repository.interface';
 import { ITrustScoreRepository } from '../../../vendor/domain/repositories/trust-score.repository.interface';
 import { IUserLevelRepository } from '../../domain/repositories/user-level.repository.interface';
-import { scoreToLevel } from '../../domain/trust-level.constants';
+import { scoreToLevel, isFreezeCandidate } from '../../domain/trust-level.constants';
 
 // Ağırlıklar (toplam: %100)
 const WEIGHT_TRADING    = 0.40;
@@ -53,7 +53,8 @@ export class TrustScoreCalculatorService {
     );
 
     const existing = await this.trustScoreRepo.findByVendorId(vendorId);
-    const level    = scoreToLevel(overall, existing?.isFrozen ?? false);
+    const level    = scoreToLevel(overall);
+    const shouldFreeze = isFreezeCandidate(overall);
 
     await this.trustScoreRepo.upsert(vendorId, {
       score:              overall,
@@ -64,6 +65,13 @@ export class TrustScoreCalculatorService {
       isFrozen:           existing?.isFrozen ?? false,
       inactiveDays:       existing?.inactiveDays ?? 0,
     });
+
+    if (shouldFreeze && !(existing?.isFrozen ?? false)) {
+      this.logger.warn(
+        `Vendor ${vendorId} dondurma adayı — skor: ${overall}`,
+        TrustScoreCalculatorService.name,
+      );
+    }
 
     this.logger.debug('TrustScore güncellendi', { vendorId, overall, level, trading, xpLoyalty, compliance });
     return { trading, xpLoyalty, compliance, overall };

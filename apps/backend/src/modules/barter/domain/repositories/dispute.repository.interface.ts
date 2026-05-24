@@ -11,6 +11,7 @@ export interface IDisputeRepository {
     reason: string;
     status: string;
     resolutionDeadlineAt: Date;
+    tradeValueInKurus?: number;
   }): Promise<void>;
   updateStatus(id: string, status: string): Promise<void>;
   updateResolved(swapSessionId: string, data: {

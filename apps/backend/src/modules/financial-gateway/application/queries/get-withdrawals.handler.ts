@@ -20,9 +20,8 @@ export class GetWithdrawalsHandler
   constructor(private readonly financialGateway: FinancialGatewayService) {}
 
   async execute(query: GetWithdrawalsQuery) {
-    if (!query.userId) throw new Error('userId zorunludur');
     const result = (await this.financialGateway.getWithdrawals(
-      query.userId,
+      query.userId ?? '',
       query.status,
       query.page,
       query.limit

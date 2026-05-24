@@ -1,11 +1,10 @@
 // apps/financial-service/src/modules/wallet/application/services/wallet-reconciliation.scheduler.ts
 // Her gece 03:00'te walletModel.balanceTL ↔ accountModel.balance drift tespiti yapar.
 
-import { Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, OnModuleDestroy, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Decimal } from 'decimal.js';
-import { StructuredLogger } from '@barterborsa/shared-observability';
 import { IWallet, IFinancialAccount } from '@barterborsa/shared-persistence';
 
 const RECONCILE_INTERVAL_MS = 60 * 60 * 1000; // 1 saatte bir kontrol (ilk run 03:00'e denk getirilir)
@@ -13,7 +12,7 @@ const DRIFT_THRESHOLD = new Decimal('0.01'); // 1 kuruştan büyük fark alarm t
 
 @Injectable()
 export class WalletReconciliationScheduler implements OnApplicationBootstrap, OnModuleDestroy {
-  private readonly logger = new StructuredLogger(WalletReconciliationScheduler.name);
+  private readonly logger = new Logger(WalletReconciliationScheduler.name);
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(

@@ -11,7 +11,7 @@ import {
 
 // Güvenli subPath'ler: sadece harf, rakam, tire ve alt çizgi
 const SAFE_SUBPATH_RE = /^[a-zA-Z0-9_-]+$/;
-const ALLOWED_SUBPATHS = new Set(['products', 'avatars', 'documents', 'surplus', 'banners', 'categories']);
+const ALLOWED_SUBPATHS = new Set(['products', 'avatars', 'documents', 'surplus', 'banners', 'categories', 'brands']);
 
 function sanitizeSubPath(subPath: string): string {
   const cleaned = subPath.trim().toLowerCase();

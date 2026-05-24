@@ -35,7 +35,7 @@ export const useWallet = () => {
   const mainAccount = computed(() => accounts.value.find((a: any) => a.type === 'MAIN'))
   const barterAccount = computed(() => accounts.value.find((a: any) => a.type === 'BARTER'))
   const commissionAccount = computed(() => accounts.value.find((a: any) => a.type === 'XP_COMMISSION'))
-  const adAccount = computed(() => accounts.value.find((a: any) => a.type === 'XP_AD'))
+  const adAccount = computed(() => accounts.value.find((a: any) => a.type === 'XP_ADS' || a.type === 'XP_AD'))
   const serviceAccount = computed(() => accounts.value.find((a: any) => a.type === 'XP_SERVICE'))
 
   // Computed tier info

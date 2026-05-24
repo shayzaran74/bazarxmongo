@@ -4,17 +4,14 @@
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { EcosystemAuditLog as EcosystemAuditLogModel, IEcosystemAuditLog } from '@barterborsa/shared-persistence/schemas/backend/ecosystemAuditLog.schema';
-
-export interface EcosystemAuditLogDocument extends IEcosystemAuditLog {
-  _id?: string;
-}
+import { IEcosystemAuditLogRepository, EcosystemAuditLogDocument } from '../../domain/repositories/ecosystem-audit-log.repository.interface';
 
 @Injectable()
-export class MongoEcosystemAuditLogRepository {
+export class MongoEcosystemAuditLogRepository implements IEcosystemAuditLogRepository {
   private readonly model: Model<EcosystemAuditLogDocument>;
 
   constructor() {
-    this.model = EcosystemAuditLogModel as Model<EcosystemAuditLogDocument>;
+    this.model = EcosystemAuditLogModel as unknown as Model<EcosystemAuditLogDocument>;
   }
 
   async create(data: {

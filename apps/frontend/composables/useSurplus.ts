@@ -54,8 +54,8 @@ export const useSurplus = () => {
         $api<{ data?: BarterChain[] }>('/api/v1/barter/my-chains'),
       ])
 
-      if (itemsRes.success) items.value = itemsRes.items ?? []
-      if (chainsRes.data)   myChains.value = chainsRes.data ?? []
+      if (itemsRes.success) items.value = itemsRes.data ?? itemsRes.items ?? []
+      if (chainsRes.data) myChains.value = Array.isArray(chainsRes.data) ? chainsRes.data : (chainsRes.data as any).items ?? []
     } catch {
       items.value = []
     }
@@ -66,9 +66,19 @@ export const useSurplus = () => {
     loading.value = true
     try {
       const response = await $api<OfferListResponse>('/api/v1/offers/my', {
-        query: { companyId: myCompany.value.id, type: activeTab.value },
+        query: { companyId: myCompany.value.id },
       })
-      if (response.success) offers.value = response.offers ?? []
+      if (response.success) {
+        const all = (response.data ?? response.offers ?? []) as TradeOffer[]
+        const companyId = myCompany.value.id
+        if (activeTab.value === 'received') {
+          offers.value = all.filter(o => o.toCompanyId === companyId)
+        } else if (activeTab.value === 'sent') {
+          offers.value = all.filter(o => o.fromCompanyId === companyId)
+        } else {
+          offers.value = all
+        }
+      }
     } catch {
       offers.value = []
     } finally {
@@ -173,7 +183,7 @@ export const useSurplus = () => {
     },
     getItemChain: (itemId: string): BarterChain | undefined => {
       return myChains.value.find(chain =>
-        chain.offers.some(o => o.offeredItemId === itemId),
+        (chain.offers ?? []).some(o => o.offeredItemId === itemId),
       )
     },
   }

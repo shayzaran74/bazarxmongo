@@ -41,14 +41,13 @@ export class SwapSessionController {
   @ApiParam({ name: 'id', description: 'SwapSession ID' })
   @Get(':id')
   async getSession(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    const vendorId = await this.resolveVendorId(user);
+    const companyId = await this.resolveCompanyId(user);
 
     const session = await this.swapSessionRepository.findByIdWithRelations(id);
 
     if (!session) throw new NotFoundException('Swap session bulunamadı.');
 
-    // Sadece session'a dahil olan vendor görebilir
-    if (session.initiatorId !== vendorId && session.receiverId !== vendorId) {
+    if (session.initiatorId !== companyId && session.receiverId !== companyId) {
       throw new ForbiddenException('Bu swap session\'a erişim yetkiniz yok.');
     }
 
@@ -63,9 +62,9 @@ export class SwapSessionController {
     @Param('id') id: string,
     @Body() dto: SwapShippingDto,
   ) {
-    const vendorId = await this.resolveVendorId(user);
+    const companyId = await this.resolveCompanyId(user);
     return this.commandBus.execute(
-      new SubmitShippingCommand(id, user.id, vendorId, dto.trackingCode, dto.carrier),
+      new SubmitShippingCommand(id, user.id, companyId, dto.trackingCode, dto.carrier),
     );
   }
 
@@ -73,16 +72,16 @@ export class SwapSessionController {
   @ApiParam({ name: 'id' })
   @Post(':id/confirm')
   async confirmReceipt(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    const vendorId = await this.resolveVendorId(user);
-    return this.commandBus.execute(new ConfirmReceiptCommand(id, user.id, vendorId));
+    const companyId = await this.resolveCompanyId(user);
+    return this.commandBus.execute(new ConfirmReceiptCommand(id, user.id, companyId));
   }
 
   @ApiOperation({ summary: 'Swap\'ı sonlandır ve teminatları serbest bırak' })
   @ApiParam({ name: 'id' })
   @Post(':id/finalize')
   async finalizeSwap(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    const vendorId = await this.resolveVendorId(user);
-    return this.commandBus.execute(new FinalizeSwapCommand(id, user.id, vendorId));
+    const companyId = await this.resolveCompanyId(user);
+    return this.commandBus.execute(new FinalizeSwapCommand(id, user.id, companyId));
   }
 
   @ApiOperation({ summary: 'Anlaşmazlık bildir' })
@@ -93,8 +92,8 @@ export class SwapSessionController {
     @Param('id') id: string,
     @Body() dto: SwapDisputeDto,
   ) {
-    const vendorId = await this.resolveVendorId(user);
-    return this.commandBus.execute(new OpenDisputeCommand(id, user.id, vendorId, dto.reason));
+    const companyId = await this.resolveCompanyId(user);
+    return this.commandBus.execute(new OpenDisputeCommand(id, user.id, companyId, dto.reason));
   }
 
   @ApiOperation({ summary: 'Anlaşmazlığı çözümle (Sadece Admin)' })
@@ -114,14 +113,14 @@ export class SwapSessionController {
 
   // ─── Yardımcı ─────────────────────────────────────────────────────────────
 
-  private async resolveVendorId(user: AuthenticatedUser): Promise<string> {
-    if (user.vendorId) return user.vendorId;
-
+  private async resolveCompanyId(user: AuthenticatedUser): Promise<string> {
     const vendor = await this.vendorRepository.findByUserId(user.id);
     if (!vendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
     if (vendor.getProps().status !== 'APPROVED') {
       throw new ForbiddenException('Satıcı hesabınız onaylanmamış.');
     }
-    return vendor.id;
+    const companyId = vendor.getProps().companyId;
+    if (!companyId) throw new ForbiddenException('Şirket kaydınız bulunamadı. Lütfen şirket profilinizi tamamlayın.');
+    return companyId;
   }
 }

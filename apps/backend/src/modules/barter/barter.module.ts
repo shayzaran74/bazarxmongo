@@ -1,13 +1,14 @@
 // apps/backend/src/modules/barter/barter.module.ts
 // BarterModule — Mongoose migration (ADR-005 Faz 2a)
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from '@barterborsa/shared-messaging';
 import { CatalogModule } from '../catalog/catalog.module';
 import { VendorModule } from '../vendor/vendor.module';
 import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.module';
+import { MongoEcosystemMembershipRepository } from '../vendor/infrastructure/persistence/repositories/mongo-ecosystem-membership.repository';
 
 // Schemas
 import { SurplusItem, SurplusItemSchema } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
@@ -18,9 +19,14 @@ import { BarterPart, BarterPartSchema } from '@barterborsa/shared-persistence/sc
 import { WantedItem, WantedItemSchema } from '@barterborsa/shared-persistence/schemas/backend/wantedItem.schema';
 import { SurplusCategory, SurplusCategorySchema } from '@barterborsa/shared-persistence/schemas/backend/surplusCategory.schema';
 import { Company, CompanySchema } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { CategoryAttribute, CategoryAttributeSchema } from '@barterborsa/shared-persistence/schemas/backend/categoryAttribute.schema';
+import { DemandMatch, DemandMatchSchema } from '@barterborsa/shared-persistence/schemas/backend/demandMatch.schema';
+import { VendorB2BData, VendorB2BDataSchema } from '@barterborsa/shared-persistence/schemas/backend/vendorB2BData.schema';
+import { TradeReview, TradeReviewSchema } from '@barterborsa/shared-persistence/schemas/backend/tradeReview.schema';
 import { MongoBlindPoolRepository } from '../barterborsa/infrastructure/persistence/mongo-blind-pool.repository';
 import { MongoVendorB2BDataRepository as BarterBorsaVendorB2BDataRepository } from '../barterborsa/infrastructure/persistence/mongo-vendor-b2b-data.repository';
 import { AuditLogRepository } from '@barterborsa/shared-persistence/mongodb/audit/audit-log.repository';
+import { EcosystemMembership, EcosystemMembershipSchema } from '../vendor/infrastructure/persistence/schemas/ecosystemMembership.schema';
 
 // Controllers
 import { BarterAdminController } from './presentation/barter-admin.controller';
@@ -30,6 +36,7 @@ import { WantedItemsController } from './presentation/wanted-items.controller';
 import { BarterController } from './presentation/barter.controller';
 import { TrustScoreController } from './presentation/trust-score.controller';
 import { SwapSessionController } from './presentation/swap-session.controller';
+import { TradeReviewController } from './presentation/trade-review.controller';
 
 // Command handlers
 import { AcceptTradeOfferHandler } from './application/commands/accept-trade-offer.handler';
@@ -119,9 +126,14 @@ const QueryHandlers = [
       { name: 'WantedItem', schema: WantedItemSchema },
       { name: 'SurplusCategory', schema: SurplusCategorySchema },
       { name: 'Company', schema: CompanySchema },
+      { name: 'CategoryAttribute', schema: CategoryAttributeSchema },
+      { name: 'DemandMatch', schema: DemandMatchSchema },
+      { name: 'VendorB2BData', schema: VendorB2BDataSchema },
+      { name: 'TradeReview', schema: TradeReviewSchema },
+      { name: 'EcosystemMembership', schema: EcosystemMembershipSchema },
     ]),
     CatalogModule,
-    VendorModule,
+    forwardRef(() => VendorModule),
     AuditMongooseModule,
   ],
   controllers: [
@@ -132,6 +144,7 @@ const QueryHandlers = [
     BarterController,
     TrustScoreController,
     SwapSessionController,
+    TradeReviewController,
   ],
   providers: [
     // Domain services
@@ -168,7 +181,8 @@ const QueryHandlers = [
     MongoBlindPoolRepository,
     BarterBorsaVendorB2BDataRepository,
     AuditLogRepository,
+    { provide: 'IEcosystemMembershipRepository', useClass: MongoEcosystemMembershipRepository },
   ],
-  exports: [MatchingService, TrustScoreCalculatorService, WatchtowerService],
+  exports: [MatchingService, TrustScoreCalculatorService, WatchtowerService, 'IEcosystemMembershipRepository'],
 })
 export class BarterModule {}

@@ -24,12 +24,14 @@ export class MongoDisputeRepository implements IDisputeRepository {
     reason: string;
     status: string;
     resolutionDeadlineAt: Date;
+    tradeValueInKurus?: number;
   }): Promise<void> {
-    const id = 'dispute-' + crypto.randomUUID();
+    const { randomUUID } = await import('crypto');
+    const id = 'dispute-' + randomUUID();
     await this.model.create({
       id,
       ...data,
-      tradeValueInKurus: 0,
+      tradeValueInKurus: data.tradeValueInKurus ?? 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

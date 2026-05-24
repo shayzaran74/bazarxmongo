@@ -152,7 +152,7 @@ export class TrustScoreRecalculationService {
           action:       'TRUST_SCORE_AUTO_FROZEN',
           resourceType: 'TrustScore',
           resourceId:   vendorId,
-          oldValue:     { isFrozen: false, level: scoreToLevel(newScore, false) },
+          oldValue:     { isFrozen: false, level: scoreToLevel(newScore) },
           newValue:     { isFrozen: true, level: 'FROZEN', violationCount, reason: `${violationCount}. uyumluluk ihlali` },
         });
 

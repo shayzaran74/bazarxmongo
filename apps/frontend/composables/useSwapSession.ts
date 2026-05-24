@@ -52,7 +52,6 @@ interface SwapSessionDto {
 export const useSwapSession = (sessionId: string | Ref<string>) => {
   const nuxt = useNuxtApp()
   const { $api } = useApi()
-  const config = useRuntimeConfig()
 
   const resolvedId = computed(() => toValue(sessionId))
 
@@ -62,16 +61,16 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
   const shippingCode = ref('')
   const disputeReason = ref('')
 
-  // ─── Yardımcı: vendor ID'mi bul ─────────────────────────────────────────
-  const currentVendorId = ref<string | null>(null)
+  // ─── Yardımcı: company ID'mi bul ─────────────────────────────────────────
+  const currentCompanyId = ref<string | null>(null)
 
   const fetchMyCompany = async (): Promise<void> => {
     try {
-      const res = await $api<{ success: boolean; data: { id: string } }>(
-        `${config.public.apiBase}/api/v1/vendor/me`
+      const res = await $api<{ success: boolean; company?: { id: string } }>(
+        '/api/v1/companies/me'
       )
-      currentVendorId.value = res.data?.id ?? null
-    } catch { /* vendor bilgisi yüklenemedi */ }
+      currentCompanyId.value = res.company?.id ?? null
+    } catch { /* company bilgisi yüklenemedi */ }
   }
 
   // ─── Session yükle ───────────────────────────────────────────────────────
@@ -80,7 +79,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
     loading.value = true
     try {
       const res = await $api<{ success: boolean; data: SwapSessionDto }>(
-        `${config.public.apiBase}/api/v1/barter/swap/${resolvedId.value}`
+        `/api/v1/barter/swap/${resolvedId.value}`
       )
       session.value = res.data ?? null
     } catch { /* hata filtresi tarafından işlenir */ } finally {
@@ -90,16 +89,16 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
 
   // ─── Computed: Taraf belirleme ────────────────────────────────────────────
   const isFromCompany = computed((): boolean => {
-    if (!session.value || !currentVendorId.value) return false
-    return session.value.initiatorId === currentVendorId.value
+    if (!session.value || !currentCompanyId.value) return false
+    return session.value.initiatorId === currentCompanyId.value
   })
 
   const myPart = computed((): BarterPartDto | undefined =>
-    session.value?.parts.find(p => p.senderId === currentVendorId.value)
+    session.value?.parts.find(p => p.senderId === currentCompanyId.value)
   )
 
   const myReceivedPart = computed((): BarterPartDto | undefined =>
-    session.value?.parts.find(p => p.recipientId === currentVendorId.value)
+    session.value?.parts.find(p => p.recipientId === currentCompanyId.value)
   )
 
   const isMyCollateralLocked = computed((): boolean => {
@@ -117,7 +116,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
 
   const isMyFinalized = computed((): boolean => {
     if (!session.value) return false
-    return ['COMPLETED'].includes(session.value.status) && session.value.collateralStatus === 'RELEASED'
+    return ['COMPLETED'].includes(session.value.status) && ['RELEASED', 'PENDING_RELEASE'].includes(session.value.collateralStatus)
   })
 
   const getMyShippingCode = computed((): string =>
@@ -129,7 +128,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
     if (!shippingCode.value) return
     actionLoading.value = true
     try {
-      await $api(`${config.public.apiBase}/api/v1/barter/swap/${resolvedId.value}/ship`, {
+      await $api(`/api/v1/barter/swap/${resolvedId.value}/ship`, {
         method: 'POST',
         body: { trackingCode: shippingCode.value, carrier: 'Kargo' },
       })
@@ -147,7 +146,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
   const confirmReceipt = async (): Promise<void> => {
     actionLoading.value = true
     try {
-      await $api(`${config.public.apiBase}/api/v1/barter/swap/${resolvedId.value}/confirm`, {
+      await $api(`/api/v1/barter/swap/${resolvedId.value}/confirm`, {
         method: 'POST',
       })
       nuxt.$toast?.success('Teslimat onaylandı.')
@@ -164,7 +163,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
   const finalizeSwap = async (): Promise<void> => {
     actionLoading.value = true
     try {
-      await $api(`${config.public.apiBase}/api/v1/barter/swap/${resolvedId.value}/finalize`, {
+      await $api(`/api/v1/barter/swap/${resolvedId.value}/finalize`, {
         method: 'POST',
       })
       nuxt.$toast?.success('Takas tamamlandı, teminatlar iade edildi.')
@@ -182,7 +181,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
     if (!disputeReason.value) return
     actionLoading.value = true
     try {
-      await $api(`${config.public.apiBase}/api/v1/barter/swap/${resolvedId.value}/dispute`, {
+      await $api(`/api/v1/barter/swap/${resolvedId.value}/dispute`, {
         method: 'POST',
         body: { reason: disputeReason.value },
       })
@@ -208,7 +207,7 @@ export const useSwapSession = (sessionId: string | Ref<string>) => {
     actionLoading,
     shippingCode,
     disputeReason,
-    currentVendorId,
+    currentCompanyId,
     isFromCompany,
     isMyCollateralLocked,
     isMyShippingInfoProvided,

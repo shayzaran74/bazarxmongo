@@ -18,6 +18,7 @@ export interface IBarterDisputeLog {
   arbitratorId?: string;
   resolution?: string;
   resolutionNote?: string;
+  resolvedById?: string;
   costChargedToId?: string;
   resolutionDeadlineAt?: Date;
   resolvedAt?: Date;
@@ -39,6 +40,7 @@ export const BarterDisputeLogSchema = new Schema<IBarterDisputeLog>({
   arbitratorId: { type: String },
   resolution: { type: String },
   resolutionNote: { type: String },
+  resolvedById: { type: String },
   costChargedToId: { type: String },
   resolutionDeadlineAt: { type: Date },
   resolvedAt: { type: Date },

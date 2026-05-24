@@ -22,7 +22,7 @@ import {
 
 // Controllers
 import { ListingController } from './presentation/listing.controller';
-import { SurplusController } from './presentation/surplus.controller';
+
 import { CategoryController } from './presentation/category.controller';
 import { CatalogProductController } from './presentation/catalog-product.controller';
 import { BrandController } from './presentation/brand.controller';
@@ -145,7 +145,7 @@ const QueryHandlers = [
   ],
   controllers: [
     ListingController,
-    SurplusController,
+
     CategoryController,
     CatalogProductController,
     BrandController,

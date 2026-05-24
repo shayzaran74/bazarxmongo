@@ -3,7 +3,7 @@
 
 import {
   Controller, Get, Post, Body, UseGuards,
-  BadRequestException,
+  BadRequestException, Inject, Logger,
 } from '@nestjs/common';
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse,
@@ -11,11 +11,16 @@ import {
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { randomUUID } from 'crypto';
 import { GetBarterInfoQuery } from '../application/queries/get-barter-info.query';
 import { GetMyBarterChainsQuery } from '../application/queries/get-my-barter-chains.query';
 import { GetMyBarterOffersQuery } from '../application/queries/get-my-barter-offers.query';
 import { RegisterBarterCommand } from '../application/commands/register-barter.command';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
+import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
+import { ICompany } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
 
 interface AuthenticatedUser {
   id: string;
@@ -25,16 +30,22 @@ interface AuthenticatedUser {
   lastName?: string;
 }
 
+interface IVendorLean { id: string; userId: string; }
+
 @ApiTags('Barter')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('VENDOR', 'ADMIN', 'SUPER_ADMIN')
 @Controller('barter')
 export class BarterController {
+  private readonly logger = new Logger(BarterController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly financialGateway: FinancialGatewayService,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
   ) {}
 
   // ─── Barter bilgisi ───────────────────────────────────────────────────────
@@ -114,19 +125,65 @@ export class BarterController {
   async transfer(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { toCompanyId: string; amount: number; note?: string },
-  ) {
+  ): Promise<{ success: boolean; data?: { transferId: string; holdId: string; amount: number; toCompanyId: string; status: string }; message?: string }> {
     if (!body.toCompanyId || !body.amount || body.amount <= 0) {
       throw new BadRequestException('Geçersiz transfer parametreleri');
     }
-    // TODO: FinancialGatewayService.transfer(...)
+
+    // Alıcı firma → vendor → userId çözümlemesi
+    const receiverCompany = await this.companyModel
+      .findOne({ id: body.toCompanyId })
+      .select('id vendorId')
+      .lean()
+      .exec();
+
+    if (!receiverCompany?.vendorId) {
+      throw new BadRequestException('Alıcı firma bulunamadı veya vendor kaydı yok');
+    }
+
+    const receiverVendor = await this.vendorRepository.findById(receiverCompany.vendorId) as IVendorLean | null;
+    if (!receiverVendor?.userId) {
+      throw new BadRequestException('Alıcı firmanın kullanıcı kaydı bulunamadı');
+    }
+
+    const transferId    = randomUUID();
+    const idempotencyHold    = `barter-transfer-hold-${transferId}`;
+    const idempotencyRelease = `barter-transfer-release-${transferId}`;
+
+    // 1. Göndericinin BARTER hesabından blokaj al — alıcı sellerId olarak atanır
+    const holdResult = await this.financialGateway.holdFunds(
+      user.id,
+      body.amount.toString(),
+      'BARTER_TRANSFER',
+      transferId,
+      'BARTER_TRANSFER',
+      idempotencyHold,
+      receiverVendor.userId,
+    );
+
+    const holdId = (holdResult as { holdId?: string })?.holdId;
+    if (!holdId) {
+      throw new BadRequestException('Teminat blokajı oluşturulamadı');
+    }
+
+    // 2. Blokajı hemen alıcıya serbest bırak (P2P transfer tamamlanır)
+    await this.financialGateway.releaseFunds(holdId, idempotencyRelease);
+
+    this.logger.log('Barter transferi tamamlandı', {
+      transferId,
+      fromUserId: user.id,
+      toUserId: receiverVendor.userId,
+      amount: body.amount,
+    });
+
     return {
       success: true,
-      message: 'Transfer isteği alındı',
       data: {
-        transactionId: `transfer_${crypto.randomUUID()}`,
-        amount:        body.amount,
-        toCompanyId:   body.toCompanyId,
-        status:        'PENDING',
+        transferId,
+        holdId,
+        amount:      body.amount,
+        toCompanyId: body.toCompanyId,
+        status:      'COMPLETED',
       },
     };
   }

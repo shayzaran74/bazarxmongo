@@ -1,9 +1,9 @@
 <template>
-  <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
+  <SharedAccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
     <NuxtPage />
-  </AccessGuard>
+  </SharedAccessGuard>
 </template>
 
 <script setup>
-// Bu parent route, /barterborsa/* altındaki tüm sayfalara otomatik olarak AccessGuard uygular.
+// Bu parent route, /barterborsa/* altındaki tüm sayfalara otomatik olarak SharedAccessGuard uygular.
 </script>

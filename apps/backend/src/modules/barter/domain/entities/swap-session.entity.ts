@@ -20,6 +20,10 @@ export interface SwapSessionProps {
   status: SwapSessionStatus;
   fromCollateralHoldId?: string;
   toCollateralHoldId?: string;
+  initiatorHoldId?: string;
+  receiverHoldId?: string;
+  pendingReleaseAt?: Date;
+  autoReleasedAt?: Date;
   timeoutAt: Date;
   completedAt?: Date;
   cancelledAt?: Date;

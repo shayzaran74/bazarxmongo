@@ -76,8 +76,8 @@ export const useChatStore = defineStore('chat', {
                 this.isConnected = false;
             });
 
-            // Yeni mesaj geldiğinde
-            socket.on('newMessage', (message: Message) => {
+            // Yeni mesaj geldiğinde (backend message:new emit eder)
+            socket.on('message:new', (message: Message) => {
                 const authStore = useAuthStore();
                 this.addMessage({
                     ...message,
@@ -148,15 +148,17 @@ export const useChatStore = defineStore('chat', {
             this.messages = [];
 
             return new Promise((resolve, reject) => {
-                socket?.emit('joinTradeRoom', { tradeOfferId }, (response: { status: string; data?: Message[]; message?: string }) => {
-                    if (response.status === 'ok') {
+                socket?.emit('joinTradeRoom', { tradeOfferId }, (response: { success: boolean; chatRoomId?: string; data?: Message[]; message?: string }) => {
+                    if (response.success && response.chatRoomId) {
                         const authStore = useAuthStore();
+                        this.activeRoomId = response.chatRoomId;
                         if (response.data) {
                             this.messages = response.data.map((msg: Message) => ({
                                 ...msg,
                                 isFromMe: msg.senderId === authStore.user?.id
                             }));
                         } else {
+                            this.messages = [];
                         }
                         resolve(response.data || []);
                     } else {
@@ -196,13 +198,13 @@ export const useChatStore = defineStore('chat', {
         /**
          * Başarısız olan mesajı tekrar gönder
          */
-        resendMessage(tempId: string, tradeOfferId: string) {
+        resendMessage(tempId: string, chatRoomId: string) {
             const message = this.messages.find(m => m.tempId === tempId);
             if (!message) return;
 
             message.status = 'pending';
-            socket?.emit('sendMessage',
-                { tradeOfferId, content: message.content, tempId },
+            socket?.emit('message:send',
+                { roomId: chatRoomId, content: message.content, tempId },
                 (response: { status: string; message?: string }) => {
                     if (response.status === 'ok') {
                         this.updateMessageStatus(tempId, 'sent');

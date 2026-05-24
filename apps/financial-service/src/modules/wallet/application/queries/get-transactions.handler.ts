@@ -42,7 +42,7 @@ export class GetTransactionsHandler implements IQueryHandler<GetTransactionsQuer
   private parseDate(dateVal: unknown, idVal?: string): Date {
     if (dateVal instanceof Date) return dateVal;
     if (dateVal) {
-      const d = new Date(dateVal);
+      const d = new Date(dateVal as string | number);
       if (!isNaN(d.getTime())) return d;
     }
     if (idVal && idVal.length === 24) {

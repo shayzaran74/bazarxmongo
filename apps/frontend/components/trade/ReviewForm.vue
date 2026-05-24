@@ -201,7 +201,7 @@ const submitReview = async () => {
     const config = useRuntimeConfig()
 
     try {
-        const response = await $fetch('/api/trade-reviews', {
+        const response = await $fetch('/api/v1/trade-reviews', {
             method: 'POST',
             baseURL: config.public.apiBase,
             headers: { Authorization: `Bearer ${authStore.token}` },

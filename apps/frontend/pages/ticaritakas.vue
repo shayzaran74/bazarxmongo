@@ -1,9 +1,9 @@
 <template>
-  <AccessGuard :requiresAuth="true" :requiresVendor="true">
+  <SharedAccessGuard :requiresAuth="true" :requiresVendor="true">
     <NuxtPage />
-  </AccessGuard>
+  </SharedAccessGuard>
 </template>
 
 <script setup>
-// Bu parent route, /ticaritakas/* altındaki tüm sayfalara otomatik olarak AccessGuard uygular.
+// Bu parent route, /ticaritakas/* altındaki tüm sayfalara otomatik olarak SharedAccessGuard uygular.
 </script>

@@ -19,6 +19,6 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc"
+    "build": "rm -rf dist tsconfig.tsbuildinfo && tsc"
   }
 }

@@ -39,7 +39,8 @@ export class VendorRegistrationService {
     try {
       // 1. Company oluştur
       const companyId = 'co-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-      await Company.create({
+      const companyDoc = new Company({
+        _id: companyId,
         id: companyId,
         name: businessName,
         taxNumber: taxId || null,
@@ -48,9 +49,8 @@ export class VendorRegistrationService {
         address,
         companyType: businessType,
         status: 'PENDING',
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
+      await companyDoc.save();
 
       // 2. Vendor oluştur
       const slug = this.slugify(businessName ?? 'vendor') + '-' + Math.random().toString(36).substring(7);

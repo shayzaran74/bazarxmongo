@@ -24,8 +24,8 @@ export class MongoUserProfileRepository implements IUserProfileRepository {
   async save(profile: UserProfile): Promise<void> {
     const data = MongoUserProfileMapper.toPersistence(profile);
     await this.model.findOneAndUpdate(
-      { userId: profile.id },
-      data,
+      { userId: profile.userId },
+      { $set: data },
       { upsert: true, new: true }
     ).exec();
   }
@@ -33,8 +33,8 @@ export class MongoUserProfileRepository implements IUserProfileRepository {
   async update(profile: UserProfile): Promise<void> {
     const data = MongoUserProfileMapper.toPersistence(profile);
     await this.model.findOneAndUpdate(
-      { userId: profile.id },
-      data
+      { userId: profile.userId },
+      { $set: data }
     ).exec();
   }
 }

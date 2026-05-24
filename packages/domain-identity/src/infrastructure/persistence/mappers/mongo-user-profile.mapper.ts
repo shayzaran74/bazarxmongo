@@ -20,10 +20,9 @@ export class MongoUserProfileMapper {
     }, doc.id);
   }
 
-  static toPersistence(profile: UserProfile): any {
+  static toPersistence(profile: UserProfile): Record<string, unknown> {
     const props = profile.getProps();
     return {
-      id: profile.id,
       userId: props.userId,
       firstName: props.firstName,
       lastName: props.lastName,

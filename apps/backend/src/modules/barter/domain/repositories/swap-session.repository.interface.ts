@@ -41,4 +41,5 @@ export interface ISwapSessionRepository extends IRepository<SwapSession> {
   findByIdWithRelations(id: string): Promise<SwapSessionWithRelations | null>;
   updateStatus(id: string, status: string): Promise<void>;
   findByStatusAndDeadlineBefore(status: SwapSessionStatus, deadline: Date, limit: number): Promise<SwapSession[]>;
+  findByStatusAndPendingReleaseBefore(deadline: Date, limit: number): Promise<SwapSession[]>;
 }

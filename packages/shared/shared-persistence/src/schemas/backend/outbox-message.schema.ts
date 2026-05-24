@@ -27,7 +27,7 @@ export interface IOutboxMessage {
 }
 
 export const OutboxMessageSchema = new Schema<IOutboxMessage>({
-  _id: { type: String },
+  _id: { type: String, default: () => { const { randomUUID } = require('crypto'); return randomUUID(); } },
   aggregateId: { type: String, required: true },
   aggregateType: { type: String, required: true },
   eventType: { type: String, required: true },

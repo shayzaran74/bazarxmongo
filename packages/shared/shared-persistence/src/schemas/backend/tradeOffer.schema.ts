@@ -4,8 +4,11 @@ import { Schema, Types } from 'mongoose';
 export const TradeOfferStatus = ['PENDING','ACCEPTED','REJECTED','COUNTER_OFFERED','COMPLETED','CANCELLED','EXPIRED'] as const;
 export type TradeOfferStatusType = typeof TradeOfferStatus[number];
 
-export const CashDirection = ['NONE',' initiator_to_receiver','receiver_to_initiator','BOTH'] as const;
+export const CashDirection = ['NONE', 'TO_INITIATOR', 'TO_RECEIVER', 'BOTH'] as const;
 export type CashDirectionType = typeof CashDirection[number];
+
+export const OfferSource = ['MANUAL', 'BATCH_MATCH', 'COUNTER'] as const;
+export type OfferSourceType = typeof OfferSource[number];
 
 export interface ITradeOffer {
   _id?: string;
@@ -32,6 +35,8 @@ export interface ITradeOffer {
   cancelledAt?: Date;
   completedAt?: Date;
   expiresAt: Date;
+  offerSource?: OfferSourceType;
+  batchMatchRunId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +66,8 @@ export const TradeOfferSchema = new Schema<ITradeOffer>({
   cancelledAt: { type: Date },
   completedAt: { type: Date },
   expiresAt: { type: Date },
+  offerSource: { type: String, enum: OfferSource, default: 'MANUAL' },
+  batchMatchRunId: { type: String },
   createdAt: { type: Date },
   updatedAt: { type: Date },
 }, {

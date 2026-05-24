@@ -64,7 +64,8 @@ export class MongoTradeOfferRepository
 
   async create(data: CreateTradeOfferData): Promise<TradeOffer> {
     const { randomUUID } = await import('crypto');
-    const doc = await this.model.create({ id: randomUUID(), ...data, createdAt: new Date() });
+    const newId = randomUUID();
+    const doc = await this.model.create({ _id: newId, id: newId, ...data, createdAt: new Date() });
     return this.mapper.toDomain(doc);
   }
 

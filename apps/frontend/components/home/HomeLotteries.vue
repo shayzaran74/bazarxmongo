@@ -4,12 +4,8 @@
     v-motion
     :initial="{ opacity: 0, y: 32, filter: 'blur(14px)' }"
     :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 750, ease: [0.25, 0.46, 0.45, 0.94] } }"
-    class="w-full bg-md3-primary py-12 md:py-20 relative overflow-hidden mb-10 md:mb-16"
+    class="mx-4 md:mx-6 xl:mx-auto max-w-7xl rounded-[1.5rem] md:rounded-[2rem] bg-neutral-800 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-10 shadow-xl border border-white/5"
   >
-    <div class="absolute inset-0 opacity-20 pointer-events-none">
-      <div class="absolute top-0 left-0 w-full h-full bg-[url('/noise.png')] opacity-30" />
-      <div class="absolute -top-48 -left-48 w-96 h-96 bg-primary-500 rounded-full blur-[150px] animate-pulse" />
-    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col lg:flex-row items-center justify-between mb-12 gap-10">
@@ -20,13 +16,13 @@
             </template>
             {{ $t('lotteriesHome.badge') }}
           </SharedGhostBadge>
-          <h2 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase italic leading-[0.8]">
+          <h2 class="text-3xl md:text-4xl font-black text-white mb-4 tracking-tighter uppercase italic leading-[0.8]">
             {{ $t('lotteriesHome.title') }}
             <span
               class="block text-accent-500 mt-2"
             >{{ $t('lotteriesHome.subtitle') }}</span>
           </h2>
-          <p class="text-white/70 text-lg md:text-xl max-w-xl mx-auto lg:mx-0 font-medium opacity-80 italic">
+          <p class="text-white/70 text-base md:text-lg max-w-xl mx-auto lg:mx-0 font-medium opacity-80 italic">
             {{ $t('lotteriesHome.description') }}
           </p>
         </div>
@@ -44,25 +40,25 @@
 
       <div
         v-if="loading"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         <div
           v-for="i in 3"
           :key="'lottery-loading-' + i"
-          class="aspect-[4/5] bg-white/5 backdrop-blur-md rounded-[3rem] animate-pulse border border-white/10"
+          class="aspect-[4/5] bg-white/5 backdrop-blur-md rounded-[2rem] animate-pulse border border-white/10"
         />
       </div>
 
       <div
         v-else-if="lotteries.length > 0"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in"
       >
         <SharedGlassCard
           v-for="lottery in lotteries"
           :key="lottery.id"
           variant="watchtower"
           :glow="true"
-          custom-class="group flex flex-col h-[30rem] cursor-pointer hover:border-primary-500/50 active:scale-95"
+          custom-class="group flex flex-col h-[20rem] cursor-pointer hover:border-primary-500/50 active:scale-95"
           @click="navigateTo(`/lotteries/${lottery.id}`)"
         >
           <!-- Background Image with Overlay -->
@@ -78,7 +74,7 @@
           </div>
 
           <!-- Content Wrapper -->
-          <div class="relative z-10 p-10 flex flex-col h-full">
+          <div class="relative z-10 p-5 flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
               <SharedGhostBadge :variant="getLotteryStatusVariant(lottery.status || 'Active')" glow>
                 {{ getLotteryStatusText(lottery.status || 'Active') }}
@@ -90,11 +86,11 @@
             </div>
 
             <div class="mt-auto">
-              <h3 class="text-2xl font-black text-white mb-4 line-clamp-2 uppercase italic leading-tight group-hover:text-primary-400 transition-colors">
+              <h3 class="text-lg font-black text-white mb-3 line-clamp-2 uppercase italic leading-tight group-hover:text-primary-400 transition-colors">
                 {{ lottery.title }}
               </h3>
 
-              <div class="flex items-center gap-4 py-6 border-y border-white/10 mb-6">
+              <div class="flex items-center gap-4 py-4 border-y border-white/10 mb-4">
                 <div class="flex-grow">
                   <div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
                     <span>{{ lottery._count?.participants || 0 }} {{ $t('lotteriesHome.entries') || 'Katılım' }}</span>
@@ -153,12 +149,11 @@ const fetchLotteries = async () => {
     }) as ApiResponse<HomeLottery[]>
     if (data.success && data.data) {
       lotteries.value = data.data.map((lottery: any) => {
-        const media = lottery.listing?.catalogProduct?.media || []
-        const image = media.find((m: any) => m.type === 'IMAGE')?.url || media[0]?.url || '/placeholder.png'
+        const image = lottery.Product?.image || '/placeholder.png'
         return {
           ...lottery,
-          Product: { image },
-          title: lottery.title || lottery.listing?.title || 'Çekiliş'
+          Product: { ...lottery.Product, image },
+          title: lottery.title || lottery.Product?.name || 'Çekiliş'
         }
       })
     }

@@ -38,6 +38,18 @@ export class WalletQueryDto {
   accountType?: string;
 
   @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  user?: string;
+
+  @IsOptional()
+  @IsNumber()
+  minAmount?: number;
+
+  @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
   page?: number;
 

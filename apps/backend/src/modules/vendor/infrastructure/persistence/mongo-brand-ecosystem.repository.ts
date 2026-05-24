@@ -4,17 +4,15 @@
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { BrandEcosystem as BrandEcosystemModel, IBrandEcosystem } from '@barterborsa/shared-persistence/schemas/backend/brandEcosystem.schema';
-
-export interface BrandEcosystemDocument extends IBrandEcosystem {
-  _id?: string;
-}
+import { BrandEcosystem } from '../../domain/entities/brand-ecosystem.entity';
+import { IBrandEcosystemRepository, BrandEcosystemDocument } from '../../domain/repositories/brand-ecosystem.repository.interface';
 
 @Injectable()
-export class MongoBrandEcosystemRepository {
+export class MongoBrandEcosystemRepository implements IBrandEcosystemRepository {
   private readonly model: Model<BrandEcosystemDocument>;
 
   constructor() {
-    this.model = BrandEcosystemModel as Model<BrandEcosystemDocument>;
+    this.model = BrandEcosystemModel as unknown as Model<BrandEcosystemDocument>;
   }
 
   async findById(id: string): Promise<BrandEcosystemDocument | null> {
@@ -64,5 +62,22 @@ export class MongoBrandEcosystemRepository {
       { $set: data },
       { new: true }
     ).exec();
+  }
+
+  async save(entity: BrandEcosystem): Promise<BrandEcosystemDocument> {
+    const id = entity.id;
+    const props = entity.getProps();
+    const existing = await this.model.findOne({ id }).exec();
+    if (existing) {
+      const updated = await this.model.findOneAndUpdate(
+        { id },
+        { $set: { ...props, updatedAt: new Date() } },
+        { new: true }
+      ).exec();
+      return updated!;
+    }
+    const doc = new this.model({ _id: id, id, ...props });
+    await doc.save();
+    return doc;
   }
 }

@@ -37,6 +37,8 @@ export interface SurplusItemUpdateData {
   tradeModes?: string[];
   technicalSpecs?: Record<string, unknown>;
   status?: string;
+  reactivationCount?: number;
+  lastReactivatedAt?: Date;
 }
 
 export interface ISurplusItemRepository extends IRepository<SurplusItem> {

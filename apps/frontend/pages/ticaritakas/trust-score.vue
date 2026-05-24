@@ -52,10 +52,10 @@ function componentColor(score: number): string {
 
 function levelBadge(level: string): string {
   const map: Record<string, string> = {
-    EXCELLENT: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    GOOD:      'text-blue-400 bg-blue-500/10 border-blue-500/30',
-    FAIR:      'text-amber-400 bg-amber-500/10 border-amber-500/30',
-    POOR:      'text-red-400 bg-red-500/10 border-red-500/30',
+    EXCELLENT: 'text-purple-600 bg-purple-50 border-purple-200',
+    GOOD:      'text-green-600 bg-green-50 border-green-200',
+    FAIR:      'text-amber-600 bg-amber-50 border-amber-200',
+    POOR:      'text-red-600 bg-red-50 border-red-200',
   }
   return map[level] ?? 'text-slate-400 bg-white/5 border-white/10'
 }

@@ -55,7 +55,7 @@
         </NuxtLink>
       </template>
 
-      <!-- ACCEPTED → Swap Paneli (swapSessionId ile) -->
+      <!-- ACCEPTED → Swap Paneli (aktif takas) -->
       <template v-else-if="normalizedStatus === 'ACCEPTED'">
         <NuxtLink
           :to="`/my/offers?offerId=${offer.id}&type=${activeTab}`"
@@ -65,6 +65,14 @@
           :to="swapLink"
           class="flex-1 md:flex-none h-12 px-6 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black flex items-center justify-center transition-all shadow-xl italic"
         >SWAP PANELİ</NuxtLink>
+      </template>
+
+      <!-- COMPLETED → Tamamlandı, swap geçmişi -->
+      <template v-else-if="normalizedStatus === 'COMPLETED'">
+        <NuxtLink
+          :to="swapLink"
+          class="flex-1 md:flex-none h-12 px-6 bg-green-50 text-green-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-100 flex items-center justify-center transition-all italic border border-green-100"
+        >TAMAMLANDI ✓</NuxtLink>
       </template>
 
       <!-- Diğer durumlar: işlem tarihi -->
@@ -106,6 +114,7 @@ interface TradeOfferRow {
 const props = defineProps<{
   offer: TradeOfferRow
   activeTab: string
+  myCompanyId?: string
 }>()
 
 defineEmits<{
@@ -115,7 +124,14 @@ defineEmits<{
 
 const config = useRuntimeConfig()
 
-const isReceived = computed((): boolean => props.activeTab === 'received')
+// activeTab 'received' DEĞİLSE kesinlikle gönderen taraftayız — buton yok
+// activeTab 'received' İSE de şirket kontrolü yapılmalı (kendi şirketine teklif gelmediyse)
+const isReceived = computed((): boolean => {
+  if (props.activeTab !== 'received') return false
+  // Eğer myCompanyId biliniyorsa, teklifin alıcısı biz olmalıyız
+  if (props.myCompanyId) return props.offer.toCompany?.id === props.myCompanyId
+  return true // Fallback: tabreceived = true
+})
 
 // Büyük/küçük harf normalizasyonu — tek kaynaktan karşılaştır
 const normalizedStatus = computed((): string => (props.offer.status ?? '').toUpperCase())
@@ -128,8 +144,9 @@ const itemImage = computed((): string => {
   if (item?.images?.length) {
     const img = item.images[0]
     const url = typeof img === 'string' ? img : img.url
-    if (url.startsWith('http')) return url
-    return `${config.public.apiBase}${url}`
+    if (url && url.startsWith('data:')) return url  // base64 data URI — directly use
+    if (url && url.startsWith('http')) return url
+    if (url && !url.startsWith('/')) return `${config.public.apiBase}${url}`
   }
   return '/placeholder-surplus.jpg'
 })
@@ -138,7 +155,7 @@ const itemTitle = computed((): string => {
   const item = isReceived.value
     ? (props.offer.offeredItems?.[0] as OfferItem | undefined)
     : (props.offer.requestedItems?.[0] as OfferItem | undefined)
-  return item?.title ?? '—'
+  return item?.title || '—'
 })
 
 // Swap paneli linki — offer ID değil, session ID kullan

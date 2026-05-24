@@ -116,11 +116,6 @@ export const useProductForm = (params: { productId?: string | null; initialData?
     $toast.info('Görsel yükleniyor...')
     const uploadLimit = Math.min(files.length, 5 - (form.productImages?.length || 0))
     
-    const config = useRuntimeConfig()
-    const backendUrl = config.public.apiBase || 'http://localhost:3001'
-    const authStore = useAuthStore()
-    const token = authStore.token || useCookie('access_token').value
-    
     for (let i = 0; i < uploadLimit; i++) {
       const file = files[i]
       if (file.size > 5 * 1024 * 1024) {
@@ -130,36 +125,20 @@ export const useProductForm = (params: { productId?: string | null; initialData?
 
       const body = new FormData()
       body.append('file', file)
-      let baseUrl = config.public.apiBase || '/api'
-      if (!baseUrl.startsWith('/') && !baseUrl.startsWith('http')) {
-        baseUrl = '/' + baseUrl
-      }
-      
-      const uploadUrl = baseUrl.endsWith('/api') 
-        ? `${baseUrl}/v1/upload?subPath=products` 
-        : `${baseUrl}/api/v1/upload?subPath=products`
-        
-      try {
-        const res = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body
-        })
 
-        if (!res.ok) throw new Error('Upload failed')
-        
-        const json = await res.json()
-        if (json.success && json.data) {
-          const url = json.data.url || json.data
+      try {
+        const res = await $api<{ url?: string; data?: { url?: string } | string }>(
+          '/api/v1/upload?subPath=products',
+          { method: 'POST', body },
+        )
+        const url = res.url ?? (typeof res.data === 'string' ? res.data : res.data?.url)
+        if (res.success && url) {
           if (!form.productImages) form.productImages = []
           form.productImages.push(url)
-          
           if (!form.image) form.image = url
           $toast.success(`${file.name} yüklendi`)
         }
-      } catch (error) {
+      } catch {
         $toast.error(`${file.name} yüklenirken hata oluştu`)
       }
     }

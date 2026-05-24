@@ -54,10 +54,10 @@
               {{ new Date(offer.createdAt).toLocaleDateString() }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              {{ offer.fromCompany.name }}
+              {{ offer.fromCompany?.name || 'Bilinmiyor' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ offer.toCompany.name }}
+              {{ offer.toCompany?.name || 'Bilinmiyor' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               <div v-for="item in offer.offeredItems" :key="item.id">

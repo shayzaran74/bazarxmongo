@@ -80,6 +80,7 @@ import MyOfferItem from '~/components/trade/MyOfferItem.vue'
 import OfferDetailModal from '~/components/trade/OfferDetailModal.vue'
 import TradeOfferModal from '~/components/modals/TradeOfferModal.vue'
 import ReviewForm from '~/components/trade/ReviewForm.vue'
+import { ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
 
 interface TradeOfferRow {
   id: string
@@ -161,8 +162,12 @@ const reviewTradeInfo = computed(() => {
 
 watch(activeTab, fetchMyOffers)
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.type) activeTab.value = route.query.type as string
-  fetchMyOffers()
+  await fetchMyOffers()
+  if (route.query.offerId) {
+    const found = offers.value.find(o => o.id === route.query.offerId)
+    if (found) selectedOffer.value = found as TradeOfferRow
+  }
 })
 </script>

@@ -79,10 +79,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() roomId: string
   ) {
     const userId = (client as ExtendedSocket).userId;
-    // Check if user is participant (can be done via query or repository)
-    // For now we assume they can join if they know the ID (add security later)
     client.join(`chat:${roomId}`);
     return { success: true, roomId };
+  }
+
+  @SubscribeMessage('joinTradeRoom')
+  async handleJoinTradeRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { tradeOfferId: string }
+  ) {
+    const userId = (client as ExtendedSocket).userId;
+    if (!userId) return { success: false, message: 'Unauthorized' };
+
+    try {
+      const room = await this.commandBus.execute(
+        new (require('../commands/create-chat-room.command').CreateChatRoomCommand)(data.tradeOfferId, null)
+      );
+
+      if (room.success && room.data?.id) {
+        const chatRoomId = room.data.id;
+        client.join(`chat:${chatRoomId}`);
+        this.logger.log(`User ${userId} joined trade room ${data.tradeOfferId} → chat room ${chatRoomId}`);
+        return { success: true, chatRoomId };
+      }
+
+      return { success: false, message: 'Chat room not found' };
+    } catch (err) {
+      this.logger.error('joinTradeRoom error', { tradeOfferId: data.tradeOfferId, error: err });
+      return { success: false, message: 'Failed to join room' };
+    }
   }
 
   @SubscribeMessage('message:send')

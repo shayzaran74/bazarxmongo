@@ -30,16 +30,35 @@ const note          = ref('')
 const barterAmount = computed((): number => (totalAmount.value * barterRatio.value) / 100)
 const cashAmount   = computed((): number => totalAmount.value - barterAmount.value)
 
+const originalItemsTotal = computed(() => {
+  if (!originalOffer.value?.offeredItems) return 0
+  return originalOffer.value.offeredItems.reduce((acc: number, i: any) => acc + Number(i.estimatedValue ?? 0), 0)
+})
+
+const originalBarterRatio = computed(() => {
+  if (totalAmount.value === 0) return 0
+  return Math.round((originalItemsTotal.value / totalAmount.value) * 100)
+})
+
+const originalCashRatio = computed(() => {
+  if (totalAmount.value === 0) return 0
+  return Math.round((Number(originalOffer.value?.cashAmount ?? 0) / totalAmount.value) * 100)
+})
+
 const fetchOffer = async (): Promise<void> => {
   loading.value = true
   try {
-    const res = await $api<{ success: boolean; data: OfferData }>(`/api/v1/offers/${originalOfferId}`)
+    const res = await $api<OfferData>(`/api/v1/offers/${originalOfferId}`)
     if (res.success && res.data) {
       originalOffer.value = res.data
       const itemsTotal = res.data.offeredItems?.reduce(
-        (acc, i) => acc + Number(i.estimatedValue ?? 0), 0,
+        (acc: number, i: any) => acc + Number(i.estimatedValue ?? 0), 0,
       ) ?? 0
-      totalAmount.value = Number(res.data.cashAmount ?? 0) + itemsTotal
+      const cAmount = Number(res.data.cashAmount ?? 0)
+      totalAmount.value = cAmount + itemsTotal
+      if (totalAmount.value > 0) {
+        barterRatio.value = Math.round((itemsTotal / totalAmount.value) * 100)
+      }
     }
   } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
@@ -255,7 +274,7 @@ onMounted(() => {
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Gelen Teklif Özeti</p>
-                <p class="font-black text-[#002444]">{{ originalOffer?.fromCompany?.name || 'Aras Endüstriyel Ltd.' }}</p>
+                <p class="font-black text-[#002444]">{{ originalOffer?.fromCompany?.name || 'Bilinmeyen Firma' }}</p>
               </div>
             </div>
             <div class="space-y-4">
@@ -265,15 +284,15 @@ onMounted(() => {
               </div>
               <div class="flex justify-between items-center py-1 text-xs">
                 <span class="text-slate-400 font-medium italic">Barter Payı</span>
-                <span class="font-black text-[#002444]">%66</span>
+                <span class="font-black text-[#002444]">%{{ originalBarterRatio }}</span>
               </div>
               <div class="flex justify-between items-center py-1 text-xs">
                 <span class="text-slate-400 font-medium italic">Nakit Payı</span>
-                <span class="font-black text-[#002444]">%34</span>
+                <span class="font-black text-[#002444]">%{{ originalCashRatio }}</span>
               </div>
               <div class="flex justify-between items-center py-3 text-xs">
                 <span class="text-slate-400 font-bold uppercase tracking-widest">Teslimat</span>
-                <span class="font-black text-amber-600">7 Gün (Acil)</span>
+                <span class="font-black text-amber-600">Standart Teslimat</span>
               </div>
             </div>
             <div class="bg-amber-50 text-amber-900 p-5 rounded-2xl flex gap-4 border border-amber-100/50">

@@ -7,11 +7,11 @@
       <div class="flex items-center space-x-4 lg:w-1/3">
         <div class="flex flex-col items-center">
           <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 mb-2">
-            <img v-if="offer.offeredItem?.images?.[0]" :src="getMainImage(offer.offeredItem)" class="w-full h-full object-cover rounded-xl">
+            <img v-if="offeredItem?.images?.[0]" :src="getMainImage(offeredItem)" class="w-full h-full object-cover rounded-xl">
             <ArchiveBoxIcon v-else class="h-6 w-6 text-gray-300" />
           </div>
           <p class="text-[9px] font-black text-gray-400 uppercase tracking-tighter truncate max-w-[80px]">
-            {{ offer.offeredItem?.title || 'NAKİT' }}
+            {{ offeredItem?.title || 'NAKİT' }}
           </p>
         </div>
 
@@ -22,11 +22,11 @@
 
         <div class="flex flex-col items-center">
           <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 mb-2">
-            <img v-if="offer.requestedItem?.images?.[0]" :src="getMainImage(offer.requestedItem)" class="w-full h-full object-cover rounded-xl">
+            <img v-if="requestedItem?.images?.[0]" :src="getMainImage(requestedItem)" class="w-full h-full object-cover rounded-xl">
             <ArchiveBoxIcon v-else class="h-6 w-6 text-gray-300" />
           </div>
           <p class="text-[9px] font-black text-gray-400 uppercase tracking-tighter truncate max-w-[80px]">
-            {{ offer.requestedItem?.title }}
+            {{ requestedItem?.title || '—' }}
           </p>
         </div>
       </div>
@@ -38,7 +38,7 @@
             {{ getStatusText(offer.status) }}
           </span>
           <ReviewStatusBadge v-if="offer.status === 'COMPLETED' || offer.status === 'ACCEPTED'" :trade-offer-id="offer.id" />
-          <span class="text-xs font-bold text-gray-400 italic">{{ formatDate(offer.createdAt) }}</span>
+          <span class="text-xs font-bold text-gray-400 italic">{{ formatDate(offer.createdAt as string) }}</span>
         </div>
 
         <h4 class="text-xl font-black text-gray-900 mb-2 uppercase italic tracking-tight">
@@ -50,10 +50,10 @@
         </p>
 
         <div class="flex flex-wrap gap-4">
-          <div class="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-xl">
+          <div v-if="Number(offer.cashAmount) > 0" class="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-xl">
             <span class="text-[10px] font-black text-gray-400">NAKİT FARK:</span>
-            <span class="text-xs font-black" :class="offer.cashDifference > 0 ? 'text-red-500' : 'text-green-500'">
-              {{ (offer.cashDifference || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) }}
+            <span class="text-xs font-black text-red-500">
+              {{ Number(offer.cashAmount).toLocaleString('tr-TR', { style: 'currency', currency: (offer.cashCurrency as string) || 'TRY' }) }}
             </span>
           </div>
         </div>
@@ -120,35 +120,67 @@
   </div>
 </template>
 
-<script setup>
-import { 
-  ArchiveBoxIcon, 
-  ArrowsRightLeftIcon, 
-  StarIcon, 
-  CheckIcon 
+<script setup lang="ts">
+import {
+  ArchiveBoxIcon,
+  ArrowsRightLeftIcon,
+  StarIcon,
+  CheckIcon,
 } from '@heroicons/vue/24/outline'
 import ReviewStatusBadge from '~/components/trade/ReviewStatusBadge.vue'
 
-defineProps({
-  offer: Object,
-  activeTab: String,
-  updatingStatus: [String, Number],
-  hasReviewed: Boolean
-})
+interface OfferItem {
+  title?: string
+  images?: (string | { url: string })[]
+}
+
+interface Company { name?: string }
+
+interface Offer {
+  id: string
+  status: string
+  message?: string
+  cashAmount?: number | string
+  cashCurrency?: string
+  createdAt?: string
+  fromCompany?: Company
+  toCompany?: Company
+  offeredItems?: OfferItem[]
+  requestedItems?: OfferItem[]
+  offeredItem?: OfferItem
+  requestedItem?: OfferItem
+  swapSession?: { id: string } | null
+  requestedItemId?: string
+  offeredItemId?: string
+  [key: string]: unknown
+}
+
+const props = defineProps<{
+  offer: Offer
+  activeTab: string
+  updatingStatus?: string | number | null
+  hasReviewed: boolean
+}>()
 
 defineEmits(['view', 'counter', 'update-status', 'review'])
 
-const getMainImage = (item) => {
-  if (item?.images && item.images.length > 0) {
+const offeredItem = computed((): OfferItem | undefined =>
+  props.offer.offeredItems?.[0] ?? props.offer.offeredItem
+)
+const requestedItem = computed((): OfferItem | undefined =>
+  props.offer.requestedItems?.[0] ?? props.offer.requestedItem
+)
+
+const getMainImage = (item: OfferItem | undefined): string => {
+  if (item?.images?.length) {
     const img = item.images[0]
     return typeof img === 'string' ? img : img.url
   }
   return '/placeholder-surplus.jpg'
 }
 
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
+const formatDate = (date: string): string =>
+  new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
 
 const getStatusText = (status) => {
   const labels = {

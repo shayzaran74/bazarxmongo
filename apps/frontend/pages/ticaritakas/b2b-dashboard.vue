@@ -285,10 +285,10 @@ const TIER_LIMITS: Record<string, number> = {
 }
 
 const metrics = ref([
-  { label: 'TAKAS HAVUZU BAKİYESİ', value: '0 TL', icon: 'account_balance_wallet', color: 'bg-primary-container', iconColor: 'text-blue-600', bar: true, barPct: 0, sub: 'Limit: 1.500.000 TL' },
-  { label: 'BEKLEYEN TEKLİFLER',    value: '0',    icon: 'stars',                  color: 'bg-tertiary-container', iconColor: 'text-tertiary-container', sub: 'İşlem bekleniyor' },
-  { label: 'AKTİF İLANLAR',        value: '0',    icon: 'gavel',                  color: 'bg-primary-container', iconColor: 'text-primary-container',  sub: 'Takas havuzunda' },
-  { label: 'XP BAKİYESİ',          value: '0 XP', icon: 'savings',                color: 'bg-secondary-container', iconColor: 'text-md3-secondary',    sub: 'Komisyon indiriminde kullanılır' },
+  { label: 'TAKAS HAVUZU BAKİYESİ', value: '—', icon: 'account_balance_wallet', color: 'bg-primary-container', iconColor: 'text-blue-600', bar: true, barPct: 0, sub: 'Veri yükleniyor...' },
+  { label: 'BEKLEYEN TEKLİFLER',    value: '—', icon: 'stars',                  color: 'bg-tertiary-container', iconColor: 'text-tertiary-container', sub: 'Veri yükleniyor...' },
+  { label: 'AKTİF İLANLAR',        value: '—', icon: 'gavel',                  color: 'bg-primary-container', iconColor: 'text-primary-container',  sub: 'Veri yükleniyor...' },
+  { label: 'XP BAKİYESİ',          value: '—', icon: 'savings',                color: 'bg-secondary-container', iconColor: 'text-md3-secondary',    sub: 'Veri yükleniyor...' },
 ])
 
 const opportunities = ref<any[]>([])

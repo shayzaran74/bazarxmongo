@@ -2,19 +2,21 @@
 
 import {
   Controller, Get, Post, Delete,
-  Body, Param, UseGuards, NotFoundException,
-  HttpCode, HttpStatus,
+  Body, Param, UseGuards, NotFoundException, ForbiddenException,
+  HttpCode, HttpStatus, Inject,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
+import { ISurplusCategory } from '@barterborsa/shared-persistence';
 import { WantedItem } from '../domain/entities/wanted-item.entity';
 import { WantedItemType } from '../domain/enums/wanted-item-type.enum';
 import { IWantedItemRepository } from '../domain/repositories/wanted-item.repository.interface';
-import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
-import { Inject } from '@nestjs/common';
+import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 
 interface AuthenticatedUser { id: string; role: string; vendorId?: string; }
 
@@ -36,7 +38,8 @@ interface WantedItemCreateBody {
 export class WantedItemsController {
   constructor(
     @Inject('IWantedItemRepository') private readonly wantedItemRepo: IWantedItemRepository,
-    @Inject('ISurplusItemRepository') private readonly surplusItemRepo: ISurplusItemRepository,
+    @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
+    @InjectModel('SurplusCategory') private readonly surplusCategoryModel: Model<ISurplusCategory>,
   ) {}
 
   @ApiOperation({ summary: 'Kullanıcının aradıkları listesi' })
@@ -50,14 +53,20 @@ export class WantedItemsController {
   @ApiResponse({ status: 201 })
   @Post()
   async create(@CurrentUser() user: AuthenticatedUser, @Body() body: WantedItemCreateBody) {
-    const category = await this.surplusItemRepo.findById(body.categoryId);
+    // Kategori geçerlilik kontrolü — doğru surplusCategory modelinden yapılır
+    const category = await this.surplusCategoryModel.findOne({ _id: body.categoryId }).lean().exec();
     if (!category) throw new NotFoundException('Kategori bulunamadı');
 
-    // Şirket ID — vendor hesabından al (surplusItem'tan companyId çekilir)
+    // companyId — vendor profili üzerinden çözümlenir
+    const vendor = await this.vendorRepository.findByUserId(user.id);
+    if (!vendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
+    const companyId = vendor.getProps().companyId;
+    if (!companyId) throw new ForbiddenException('Şirket kaydınız bulunamadı.');
+
     const item = WantedItem.create(
       body.categoryId,
       body.keywords || [],
-      undefined, // companyId — surplus category'den çekilebilir ama şimdilik undefined
+      companyId,
       user.id,
       (body.type as WantedItemType) || WantedItemType.PRODUCT,
     );
@@ -67,13 +76,13 @@ export class WantedItemsController {
       categoryId:  body.categoryId,
       keywords:    body.keywords ?? [],
       description: body.description,
-      companyId:   undefined,
+      companyId,
       userId:      user.id,
       type:        (body.type || 'PRODUCT'),
       minPrice:    body.minPrice,
       maxPrice:    body.maxPrice,
       latitude:    body.latitude,
-      longitude:    body.longitude,
+      longitude:   body.longitude,
       status:      'ACTIVE',
       isActive:    true,
     });

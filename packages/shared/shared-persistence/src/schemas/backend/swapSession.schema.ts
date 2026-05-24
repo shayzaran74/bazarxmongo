@@ -4,6 +4,9 @@ import { Schema, Types } from 'mongoose';
 export const CollateralStatus = ['NONE','DEPOSITED','HELD','RELEASED','FORFEITED'] as const;
 export type CollateralStatusType = typeof CollateralStatus[number];
 
+export const ShipmentMode = ['STANDARD','CARRIER','HAND_DELIVERY','DIGITAL'] as const;
+export type ShipmentModeType = typeof ShipmentMode[number];
+
 // PENDING_COLLATERAL: teminat bekleniyor (Master Plan v4.3 §2 — barter-rules.md)
 export const SwapSessionStatus = ['PENDING_COLLATERAL','PENDING','ACTIVE','SHIPPING','PARTIALLY_COMPLETED','COMPLETED','DISPUTED','CANCELLED','TIMEOUT'] as const;
 export type SwapSessionStatusType = typeof SwapSessionStatus[number];
@@ -15,8 +18,8 @@ export interface ISwapSession {
   initiatorId: string;
   receiverId: string;
   status: SwapSessionStatusType;
-  shipmentMode: string;
-  shipments?: Schema.Types.Mixed;
+  shipmentMode: ShipmentModeType;
+  shipments?: Record<string, unknown>[];
   escrowId?: string;
   collateralAmount: Types.Decimal128;
   collateralCurrency: string;
@@ -26,6 +29,10 @@ export interface ISwapSession {
   collateralForfeitedAt?: Date;
   fromCollateralHoldId?: string;
   toCollateralHoldId?: string;
+  initiatorHoldId?: string;    // holdFunds response — accept-trade-offer set eder
+  receiverHoldId?: string;    // holdFunds response — accept-trade-offer set eder
+  pendingReleaseAt?: Date;     // finalize-swap anında set edilir — SLA scheduler referansı
+  autoReleasedAt?: Date;       // scheduler tarafından set edilir
   timeoutAt: Date;
   completedAt?: Date;
   cancelledAt?: Date;
@@ -42,7 +49,7 @@ export const SwapSessionSchema = new Schema<ISwapSession>({
   initiatorId: { type: String },
   receiverId: { type: String },
   status: { type: String, enum: SwapSessionStatus, default: 'PENDING' },
-  shipmentMode: { type: String },
+  shipmentMode: { type: String, enum: ShipmentMode, default: 'STANDARD' },
   shipments: { type: Schema.Types.Mixed },
   escrowId: { type: String },
   collateralAmount: { type: Types.Decimal128 },
@@ -53,6 +60,10 @@ export const SwapSessionSchema = new Schema<ISwapSession>({
   collateralForfeitedAt: { type: Date },
   fromCollateralHoldId: { type: String },
   toCollateralHoldId: { type: String },
+  initiatorHoldId: { type: String },
+  receiverHoldId: { type: String },
+  pendingReleaseAt: { type: Date },
+  autoReleasedAt: { type: Date },
   timeoutAt: { type: Date },
   completedAt: { type: Date },
   cancelledAt: { type: Date },
@@ -69,6 +80,7 @@ SwapSessionSchema.index({ receiverId: 1 });
 SwapSessionSchema.index({ initiatorId: 1 });
 SwapSessionSchema.index({ tradeOfferId: 1 });
 SwapSessionSchema.index({ status: 1, timeoutAt: 1 });
+SwapSessionSchema.index({ status: 1, pendingReleaseAt: 1 }); // SLA auto-release
 SwapSessionSchema.index({ timeoutAt: 1 }, { expireAfterSeconds: 0 }); // TTL — otomatik silme
 
 export const SwapSession = createModelProxy<ISwapSession>('SwapSession', SwapSessionSchema);

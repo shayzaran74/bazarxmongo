@@ -9,7 +9,7 @@ import { IStorageAdapter, StorageUploadResult } from '../domain/storage.adapter.
 
 // local-storage.adapter.ts ile aynı whitelist — bucket prefix injection önleme
 const SAFE_SUBPATH_RE = /^[a-zA-Z0-9_-]+$/;
-const ALLOWED_SUBPATHS = new Set(['products', 'avatars', 'documents', 'surplus', 'banners', 'categories']);
+const ALLOWED_SUBPATHS = new Set(['products', 'avatars', 'documents', 'surplus', 'banners', 'categories', 'brands']);
 
 function sanitizeSubPath(subPath: string): string {
   const cleaned = subPath.trim().toLowerCase();

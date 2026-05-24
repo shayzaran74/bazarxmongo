@@ -97,7 +97,7 @@ const image = computed((): string => {
   const img = props.item.images[0]
   const url = typeof img === 'string' ? img : img.url
   if (!url) return '/placeholder-surplus.jpg'
-  return url.startsWith('http') ? url : `${config.public.apiBase}${url}`
+  return (url.startsWith('http') || url.startsWith('data:')) ? url : `${config.public.apiBase}${url}`
 })
 
 const statusClass = computed((): string => {

@@ -1,18 +1,19 @@
 <!-- apps/frontend/pages/vendor/advertising/components/AdSwapModal.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { 
-  XMarkIcon, 
-  GiftIcon, 
-  MapPinIcon, 
-  ChevronDownIcon, 
+import {
+  XMarkIcon,
+  GiftIcon,
+  MapPinIcon,
+  ChevronDownIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
   TrashIcon,
   InformationCircleIcon as InfoIcon,
   ArrowPathIcon,
   SparklesIcon,
-  ArchiveBoxIcon as PackageIcon
+  ArchiveBoxIcon as PackageIcon,
+  MegaphoneIcon
 } from '@heroicons/vue/24/outline'
 import { useGeoSelector } from '~/composables/advertising/useGeoSelector'
 import type { SwapCampaignForm, VendorProduct, TargetSlot } from '~/types/advertising'

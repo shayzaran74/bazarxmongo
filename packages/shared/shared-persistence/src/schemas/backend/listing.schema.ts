@@ -15,6 +15,17 @@ export type DealerVisibilityType = typeof DealerVisibility[number];
 export const ProductCondition = ['NEW','SECOND_HAND','REFURBISHED','OPEN_BOX'] as const;
 export type ProductConditionType = typeof ProductCondition[number];
 
+// BazarX Publish — Master Plan v4.3 §4.2 (Sprint 3)
+export interface BazarXPublishedFields {
+  published: boolean;
+  publishedAt?: Date;
+  publishedBy?: string;
+  minMarketPrice?: Types.Decimal128;
+  ecosystemId?: string;
+  unpublishedAt?: Date;
+  unpublishedBy?: string;
+}
+
 export interface IListing {
   _id?: string;
   id: string;
@@ -75,6 +86,9 @@ export interface IListing {
   allowOnlineResale?: boolean;
   maxOrderQtyPerDealer?: number;
   selectedDealerIds?: string[];
+  // BazarX Publish — Sprint 3
+  bazarxPublished?: BazarXPublishedFields;
+  internetSalesEnabled?: boolean; // bayilerin ecosystem dışında satış yapabilmesi
 }
 
 export const ListingSchema = new Schema<IListing>({
@@ -137,6 +151,13 @@ export const ListingSchema = new Schema<IListing>({
   allowOnlineResale: { type: Boolean, default: false, alias: 'allow_online_resale' },
   maxOrderQtyPerDealer: { type: Number, alias: 'max_order_qty_per_dealer' },
   selectedDealerIds: { type: [String], default: [], alias: 'selected_dealer_ids' },
+  // BazarX Publish — Sprint 3
+  bazarxPublished: {
+    type: Object,
+    default: { published: false },
+    alias: 'bazarx_published',
+  },
+  internetSalesEnabled: { type: Boolean, default: false, alias: 'internet_sales_enabled' },
 }, {
   timestamps: true,
   collection: 'listings',
@@ -149,6 +170,7 @@ ListingSchema.index({ status: 1, createdAt: -1 });
 ListingSchema.index({ categoryId: 1, status: 1 });
 ListingSchema.index({ ecosystemId: 1, isActive: 1 });
 ListingSchema.index({ ecosystemId: 1, visibleTo: 1, availableFrom: 1, availableTo: 1 });
+ListingSchema.index({ 'bazarxPublished.ecosystemId': 1, 'bazarxPublished.published': 1 });
 
 // Master Plan v4.3 §4.2 — Ekosistem listing'leri için doğrulamalar
 ListingSchema.pre('validate', function (next) {

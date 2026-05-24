@@ -20,18 +20,17 @@
         <div class="pt-8 border-t border-gray-200">
           <!-- Pending Collateral -->
           <div v-if="statusKey === 'PENDING_COLLATERAL'" class="space-y-4">
-            <div v-if="!isMyCollateralLocked" class="bg-indigo-600 p-8 rounded-[32px] shadow-xl shadow-indigo-100">
-              <p class="text-sm font-black text-white mb-6 uppercase tracking-widest italic">Güvenli takas için teminatınızı kilitleyin</p>
-              <button 
-                :disabled="actionLoading"
-                class="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all transform active:scale-95 flex items-center justify-center gap-3"
-                @click="$emit('lock-collateral')"
-              >
-                <div v-if="actionLoading" class="animate-spin rounded-full h-4 w-4 border-2 border-indigo-600 border-t-transparent"></div>
-                TEMİNATI KİLİTLE & ONAYLA
-              </button>
+            <div class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+              <span class="text-amber-600 mt-0.5 flex-shrink-0">🔒</span>
+              <div>
+                <p class="font-medium text-amber-800">Teminat otomatik bloke edildi</p>
+                <p class="text-amber-700 text-xs mt-0.5">
+                  Teklif kabul edildiğinde her iki tarafın teminatı (toplam değerin %20'si)
+                  cüzdanınızdan otomatik olarak ayrıldı. Takas tamamlanınca serbest bırakılır.
+                </p>
+              </div>
             </div>
-            <div v-else class="flex items-center gap-3 text-green-600 bg-green-50 p-5 rounded-2xl border border-green-100">
+            <div v-if="isMyCollateralLocked" class="flex items-center gap-3 text-green-600 bg-green-50 p-5 rounded-2xl border border-green-100">
               <CheckCircleIcon class="h-6 w-6" />
               <span class="text-[10px] font-black uppercase tracking-[0.2em]">Teminatınız Kilitlendi. Karşı taraf bekleniyor.</span>
             </div>
@@ -39,7 +38,15 @@
 
           <!-- Shipping -->
           <div v-else-if="isShippingPhase" class="space-y-5">
-            <div v-if="!isMyShippingInfoProvided" class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
+            <!-- DIGITAL mod bilgi bandı -->
+            <div v-if="statusStyle.digitalMode" class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p class="text-sm font-medium text-blue-900">Dijital Teslimat</p>
+              <p class="text-xs text-blue-700 mt-1">
+                Bu takas dijital ürün içeriyor. Dosya/erişim bilgisini karşı tarafa sohbet üzerinden iletmeniz yeterli.
+                Teslim 24 saat içinde otomatik olarak onaylanacak.
+              </p>
+            </div>
+            <div v-else-if="!isMyShippingInfoProvided" class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 italic">Kargo Takip No / Teslimat Bilgisi</label>
               <div class="flex flex-col gap-4">
                 <input 
@@ -135,5 +142,5 @@ defineProps({
   isCompletedPhase: Boolean
 })
 
-defineEmits(['lock-collateral', 'submit-shipping', 'confirm-receipt', 'finalize', 'dispute', 'review', 'update:shippingCode'])
+defineEmits(['submit-shipping', 'confirm-receipt', 'finalize', 'dispute', 'review', 'update:shippingCode'])
 </script>

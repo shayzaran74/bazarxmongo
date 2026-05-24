@@ -205,6 +205,7 @@ const route = useRoute()
 const { $api } = useApi()
 const config = useRuntimeConfig()
 const nuxt = useNuxtApp()
+const authStore = useAuthStore()
 const { fetchOffers } = useSurplus()
 
 const offer = ref<TradeOfferDetail | null>(null)
@@ -237,17 +238,23 @@ const displayStatus = computed((): string => {
 })
 
 // Sadece alıcı taraf PENDING teklifte aksiyon yapabilir
-const canActOnOffer = computed((): boolean => normalizedStatus.value === 'PENDING')
+const canActOnOffer = computed((): boolean => {
+  if (normalizedStatus.value !== 'PENDING') return false
+  const myCompanyId = (authStore.user as { vendor?: { company?: { id?: string } } })?.vendor?.company?.id
+  if (!myCompanyId) return false
+  // Sadece alıcı taraf (toCompany) Kabul/Reddet yapabilir
+  return offer.value?.toCompany?.id === myCompanyId
+})
 
 // Teklif verilerini yükle
 const loadOffer = async (): Promise<void> => {
   loading.value = true
   try {
     const res = await $api<{ success: boolean; data: TradeOfferDetail }>(
-      `${config.public.apiBase}/api/v1/offers/${route.params.id}`
+      `/api/v1/offers/${route.params.id}`
     )
-    offer.value = res.data ?? null
-    if (offer.value) await loadChain(offer.value)
+    offer.value = (res as unknown as { success: boolean; data: TradeOfferDetail }).data ?? null
+    if (offer.value) await loadChain(offer.value as TradeOfferDetail)
   } catch { /* hata filtresi işler */ } finally {
     loading.value = false
   }
@@ -256,16 +263,17 @@ const loadOffer = async (): Promise<void> => {
 // Müzakere zincirini oluştur (parentOfferId zinciri)
 const loadChain = async (current: TradeOfferDetail): Promise<void> => {
   const chain: TradeOfferDetail[] = [current]
-  let parentId = current.parentOfferId
+  let parentId = (current as { parentOfferId?: string }).parentOfferId
 
   while (parentId) {
     try {
       const res = await $api<{ success: boolean; data: TradeOfferDetail }>(
-        `${config.public.apiBase}/api/v1/offers/${parentId}`
+        `/api/v1/offers/${parentId}`
       )
-      if (res.data) {
-        chain.unshift(res.data)
-        parentId = res.data.parentOfferId
+      if ((res as unknown as { data?: TradeOfferDetail }).data) {
+        const d = (res as unknown as { data: TradeOfferDetail }).data
+        chain.unshift(d)
+        parentId = (d as { parentOfferId?: string }).parentOfferId
       } else break
     } catch { break }
   }
@@ -277,9 +285,9 @@ const handleAccept = async (): Promise<void> => {
   if (!offer.value) return
   try {
     const res = await $api<{ success: boolean; sessionId?: string }>(
-      `${config.public.apiBase}/api/v1/offers/${offer.value.id}/accept`,
+      `/api/v1/offers/${offer.value.id}/accept`,
       { method: 'POST' }
-    )
+    ) as { success: boolean; sessionId?: string }
     if (res.success && res.sessionId) {
       nuxt.$toast?.success('Teklif kabul edildi!')
       await navigateTo(`/ticaritakas/swap/${res.sessionId}`)
@@ -293,7 +301,7 @@ const handleAccept = async (): Promise<void> => {
 const handleReject = async (): Promise<void> => {
   if (!offer.value) return
   try {
-    await $api(`${config.public.apiBase}/api/v1/offers/${offer.value.id}/status`, {
+    await $api(`/api/v1/offers/${offer.value.id}/status`, {
       method: 'PATCH',
       body: { status: 'rejected' },
     })

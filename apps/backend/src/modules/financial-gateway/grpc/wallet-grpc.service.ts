@@ -129,11 +129,18 @@ export class WalletGrpcService implements OnModuleInit {
   }
 
   async getWallet(userId: string) {
-    return this.circuitBreaker.execute(
+    this.logger.log(`getWallet called for userId=${userId}`);
+    const result = await this.circuitBreaker.execute(
       'wallet.getWallet',
-      async () => firstValueFrom(this.financialService.getWallet({ userId })),
-      { fallbackResponse: { balance: '0', currency: 'TRY' } },
+      async () => {
+        const response = await firstValueFrom(this.financialService.getWallet({ userId }));
+        this.logger.log(`gRPC getWallet response: ${JSON.stringify(response)}`);
+        return response;
+      },
+      { fallbackResponse: { accounts: [], requests: [], withdrawalRequests: [], giftCards: [] } },
     );
+    this.logger.log(`getWallet final result: ${JSON.stringify(result)}`);
+    return result;
   }
 
   async getTransactions(
@@ -208,11 +215,10 @@ export class WalletGrpcService implements OnModuleInit {
     page: number = 1,
     limit: number = 20,
   ) {
-    if (!userId) throw new Error('userId zorunludur');
     return this.circuitBreaker.execute(
       'wallet.getWithdrawals',
       async () => firstValueFrom(
-        this.financialService.getWithdrawals({ userId, status: status || '', page, limit }),
+        this.financialService.getWithdrawals({ userId: userId || '', status: status || '', page, limit }),
       ),
       { fallbackResponse: { items: [], total: 0 } },
     );
@@ -224,11 +230,10 @@ export class WalletGrpcService implements OnModuleInit {
     page: number = 1,
     limit: number = 10,
   ) {
-    if (!userId) throw new Error('userId zorunludur');
     return this.circuitBreaker.execute(
       'wallet.getWalletRequests',
       async () => firstValueFrom(
-        this.financialService.getWalletRequests({ userId, status: status || '', page, limit }),
+        this.financialService.getWalletRequests({ userId: userId || '', status: status || '', page, limit }),
       ),
       { fallbackResponse: { items: [], total: 0 } },
     );

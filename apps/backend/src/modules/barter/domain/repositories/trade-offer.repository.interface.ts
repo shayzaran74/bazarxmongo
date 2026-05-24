@@ -32,6 +32,10 @@ export interface CreateTradeOfferData {
   expiresAt: Date;
   parentOfferId?: string;
   counterOfferId?: string;
+  requestedItemId?: string;
+  offeredItemId?: string;
+  offerSource?: string;
+  batchMatchRunId?: string;
 }
 
 export interface ITradeOfferRepository extends IRepository<TradeOffer> {

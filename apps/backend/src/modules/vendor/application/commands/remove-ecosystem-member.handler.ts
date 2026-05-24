@@ -1,51 +1,70 @@
 // apps/backend/src/modules/vendor/application/commands/remove-ecosystem-member.handler.ts
 
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { BadRequestException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { RemoveEcosystemMemberCommand } from './remove-ecosystem-member.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
+import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
+import { AuditLogService } from '../../../audit/application/audit-log.service';
+import { EcosystemMemberRemovedEvent } from '../../domain/events/ecosystem-member-removed.event';
 
 @CommandHandler(RemoveEcosystemMemberCommand)
-export class RemoveEcosystemMemberHandler
-  implements ICommandHandler<RemoveEcosystemMemberCommand> {
-
+export class RemoveEcosystemMemberHandler implements ICommandHandler<RemoveEcosystemMemberCommand> {
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly ecosystemRepo: MongoBrandEcosystemRepository,
+    @Inject('IEcosystemMembershipRepository')
+    private readonly membershipRepo: IEcosystemMembershipRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
+    private readonly auditLog: AuditLogService,
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: RemoveEcosystemMemberCommand) {
-    const { userId, memberVendorId } = command;
+    const { userId, memberVendorId, ecosystemId } = command;
 
     const callerVendor = await this.vendorRepo.findByUserId(userId);
     if (!callerVendor) throw new ForbiddenException('Satıcı profiliniz bulunamadı.');
 
     const memberVendor = await this.vendorRepo.findById(memberVendorId);
-    if (!memberVendor) throw new NotFoundException('Üye bayi bulunamadı');
-    if (!memberVendor.ecosystemId) {
-      throw new BadRequestException('Bu bayi herhangi bir ekosisteme üye değil');
+    if (!memberVendor) throw new NotFoundException('Üye bayi bulunamadı.');
+
+    // Ecosistemin sahibi mi kontrol et
+    const ecosystem = await this.ecosystemRepo.findById(ecosystemId);
+    if (!ecosystem) throw new NotFoundException('Ekosistem bulunamadı.');
+    if (ecosystem.ownerId !== callerVendor.id) {
+      throw new ForbiddenException('Bu ekosistemen üyesini çıkarma yetkiniz yok.');
     }
 
-    // Yalnızca ekosistem sahibi üye çıkarabilir
-    const ecosystem = await this.ecosystemRepo.findByOwnerId(callerVendor.id);
-    if (!ecosystem || ecosystem.id !== memberVendor.ecosystemId) {
-      throw new ForbiddenException('Bu ekosistemden üye çıkarma yetkiniz yok. Sadece ekosistem kurucusu üye çıkarabilir.');
+    // Membership kaydını bul
+    const membership = await this.membershipRepo.findOne(memberVendorId, ecosystemId);
+    if (!membership || membership.status === 'REMOVED') {
+      throw new BadRequestException('Bu bayi bu ekosistemin üyesi değil.');
     }
 
-    const ecosystemId = memberVendor.ecosystemId;
+    // Status'u REMOVED yap
+    const now = new Date();
+    await this.membershipRepo.updateStatus(memberVendorId, ecosystemId, 'REMOVED', now);
 
-    await this.vendorRepo.update(memberVendorId, { ecosystemId: undefined });
-
-    await this.auditLogRepo.create({
-      ecosystemId,
-      vendorId: memberVendorId,
+    // AuditLog yaz
+    await this.auditLog.log({
+      actorId: userId,
       action: 'MEMBER_REMOVED',
-      severity: 'HIGH',
-      details: { removedBy: userId },
+      resourceType: 'EcosystemMembership',
+      resourceId: `${memberVendorId}-${ecosystemId}`,
+      newValue: {
+        memberVendorId,
+        removedAt: now,
+        removedBy: userId,
+        ecosystemId,
+      },
     });
+
+    // Domain event — BazarX publish'i kaldır
+    const removedEvent = new EcosystemMemberRemovedEvent(memberVendorId, ecosystemId);
+    await this.eventBus.publish(removedEvent);
 
     return { success: true };
   }

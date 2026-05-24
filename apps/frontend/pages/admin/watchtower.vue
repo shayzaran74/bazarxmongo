@@ -5,7 +5,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ['auth', 'admin'] })
 
-const { apiBase } = useRuntimeConfig().public
+const { $api } = useApi()
 
 interface WatchtowerFlag {
   id:          string
@@ -27,10 +27,10 @@ async function fetchFlags(): Promise<void> {
   pending.value = true
   error.value   = null
   try {
-    const data = await $fetch<WatchtowerFlag[]>(
-      `${apiBase}/api/v1/trust-score/admin/watchtower/flags?page=${page.value}&limit=20`,
+    const res = await $api<WatchtowerFlag[]>(
+      `/api/v1/trust-score/admin/watchtower/flags?page=${page.value}&limit=20`,
     )
-    flags.value = data
+    flags.value = (res.data ?? res) as WatchtowerFlag[]
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Bayraklar yüklenemedi'
   } finally {

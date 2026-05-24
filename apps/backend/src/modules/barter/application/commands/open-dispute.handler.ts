@@ -36,7 +36,8 @@ export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
       throw new ForbiddenException('Bu swap session\'a erişim yetkiniz yok.');
     }
 
-    // Session'ı DISPUTED olarak güncelle
+    // Session'ı DISPUTED durumuna geçir ve kaydet
+    session.dispute();
     await this.sessionRepository.save(session);
 
     // Karşı tarafı belirle
@@ -44,6 +45,9 @@ export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
 
     // Master Plan v4.3 §3.4 — Delil sunma penceresi: oluşumdan itibaren 24 saat
     const deadlineAt = new Date(Date.now() + DISPUTE_TIMINGS.RESPONSE_WINDOW_HOURS * 60 * 60 * 1000);
+
+    // Teminat %20 → gerçek işlem değeri = collateralAmount * 5, kuruşa çevir (* 100)
+    const tradeValueInKurus = Math.round(props.collateralAmount * 5 * 100);
 
     await this.disputeRepository.create({
       swapSessionId:        command.sessionId,
@@ -53,6 +57,7 @@ export class OpenDisputeHandler implements ICommandHandler<OpenDisputeCommand> {
       reason:               command.reason,
       status:               DisputeResolutionStatus.OPEN,
       resolutionDeadlineAt: deadlineAt,
+      tradeValueInKurus,
     });
 
     await this.auditLog.log({

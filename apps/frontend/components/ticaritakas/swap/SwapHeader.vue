@@ -9,9 +9,9 @@
       </h1>
       <div class="flex items-center gap-3">
         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          İlan: {{ session.offer.requestedItem?.title }} <span class="mx-2 opacity-30">|</span> ID: #{{ session.id.slice(-6) }}
+          İlan: {{ session.tradeOffer?.requestedItem?.title }} <span class="mx-2 opacity-30">|</span> ID: #{{ session.id.slice(-6) }}
         </p>
-        <ReviewStatusBadge :trade-offer-id="session.offerId" />
+        <ReviewStatusBadge :trade-offer-id="session.tradeOfferId" />
       </div>
     </div>
 

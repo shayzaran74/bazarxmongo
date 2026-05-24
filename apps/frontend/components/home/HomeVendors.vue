@@ -1,13 +1,8 @@
 <template>
   <div
     v-if="show === 'true'"
-    class="w-full bg-md3-primary py-10 md:py-16 relative overflow-hidden mb-8 md:mb-12"
+    class="mx-4 md:mx-6 xl:mx-auto max-w-7xl rounded-[1.5rem] md:rounded-[2rem] bg-neutral-700 py-6 md:py-10 relative overflow-hidden mb-6 md:mb-10 shadow-xl border border-white/5"
   >
-    <!-- Gradient Decorations -->
-    <div class="absolute inset-0 opacity-20 pointer-events-none">
-      <div class="absolute top-0 right-0 w-[40%] h-[40%] bg-primary-500/15 rounded-full blur-[120px]" />
-      <div class="absolute bottom-0 left-0 w-[40%] h-[40%] bg-accent-500/10 rounded-full blur-[120px]" />
-    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
@@ -18,16 +13,16 @@
             <MagnifyingGlassIcon class="h-4 w-4" />
             {{ $t('vendorsHome.badge') }}
           </div>
-          <h2 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase italic leading-none">
+          <h2 class="text-2xl md:text-3xl font-black text-white mb-3 tracking-tighter uppercase italic leading-none">
             {{ $t('vendorsHome.title') }} <span class="text-primary-300">{{ $t('vendorsHome.subtitle') }}</span>
           </h2>
-          <p class="text-slate-400 text-lg font-medium">
+          <p class="text-slate-400 text-base font-medium">
             {{ $t('vendorsHome.description') }}
           </p>
         </div>
         <NuxtLink
           to="/vendors"
-          class="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-xl group"
+          class="px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-xl group"
         >
           {{ $t('vendorsHome.seeAll') }}
           <ArrowRightIcon class="h-4 w-4 ml-2 inline group-hover:translate-x-2 transition-transform" />
@@ -36,23 +31,23 @@
 
       <div
         v-if="loading"
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
       >
         <div
           v-for="i in 5"
           :key="'vendor-loading-' + i"
-          class="bg-white/5 animate-pulse rounded-[2.5rem] h-64 border border-white/5"
+          class="bg-white/5 animate-pulse rounded-[2rem] h-48 border border-white/5"
         />
       </div>
 
       <div
         v-else
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 animate-fade-in"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 animate-fade-in"
       >
         <div
           v-for="vendor in vendors"
           :key="vendor.id"
-          class="group bg-white/5 backdrop-blur-sm rounded-[2.5rem] p-6 text-center border border-white/10 hover:border-primary-500/50 hover:bg-white/10 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col items-center justify-center h-64 active:scale-95 shadow-xl"
+          class="group bg-white/5 backdrop-blur-sm rounded-[2rem] p-4 text-center border border-white/10 hover:border-primary-500/50 hover:bg-white/10 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col items-center justify-center h-48 active:scale-95 shadow-xl"
           @click="navigateTo(`/vendors/${vendor.id}`)"
         >
           <!-- Background Subtle Glow -->
@@ -61,7 +56,7 @@
           />
 
           <div
-            class="w-24 h-24 mb-6 bg-slate-800 rounded-3xl flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary-500/30 transition-all z-10 shadow-2xl relative"
+            class="w-16 h-16 mb-4 bg-slate-800 rounded-2xl flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary-500/30 transition-all z-10 shadow-2xl relative"
           >
             <NuxtImg
               v-if="vendor.logoUrl"
@@ -71,7 +66,7 @@
             />
             <span
               v-else
-              class="text-4xl font-black text-slate-600 uppercase"
+              class="text-2xl font-black text-slate-600 uppercase"
             >{{ (vendor.businessName || 'V').charAt(0) }}</span>
 
             <!-- Official Badge -->

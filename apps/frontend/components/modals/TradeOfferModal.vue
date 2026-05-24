@@ -44,13 +44,28 @@
             <div class="bg-gray-900 rounded-[2rem] p-6 text-white space-y-4 relative overflow-hidden">
               <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-primary-600/10 rounded-full blur-3xl" />
               <p class="text-[9px] font-black text-primary-400 uppercase tracking-widest italic">TEKLİF EDİLEN</p>
-              <div v-if="selectedItem" class="flex items-center space-x-4">
-                <div class="w-16 h-16 rounded-2xl bg-white/10 p-1 border border-white/5 overflow-hidden flex-shrink-0">
-                  <img :src="getMainImage(selectedItem)" class="w-full h-full object-cover rounded-xl">
-                </div>
-                <div>
-                  <h4 class="text-sm font-black text-white uppercase leading-snug">{{ selectedItem.title }}</h4>
-                  <p class="text-[10px] font-bold text-gray-500 mt-0.5 uppercase">STOK: {{ selectedItemAvailable }}</p>
+              <div v-if="selectedItems.length > 0" class="space-y-3 max-h-32 overflow-y-auto">
+                <div v-for="sel in selectedItems" :key="sel.id" class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-xl bg-white/10 p-0.5 border border-white/5 overflow-hidden flex-shrink-0">
+                    <img :src="getMainImage(sel)" class="w-full h-full object-cover rounded-lg">
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-black text-white uppercase leading-snug truncate">{{ sel.title }}</p>
+                    <p class="text-[9px] font-bold text-gray-500 uppercase">STOK: {{ sel.availableQuantity }}</p>
+                  </div>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <input
+                      @update:modelValue="updateOfferedItemQty(sel.id, $event)"
+                      type="number"
+                      step="0.01"
+                      :max="sel.availableQuantity"
+                      class="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-xs font-black text-white text-center"
+                      min="0.01"
+                    >
+                    <button type="button" class="text-white/40 hover:text-red-400 transition-colors" @click="removeOfferedItem(sel.id)">
+                      <XMarkIcon class="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <div v-else class="flex items-center space-x-4 h-16">
@@ -64,18 +79,28 @@
 
           <!-- Fields -->
           <div class="space-y-8">
-            <!-- Item Selector -->
+            <!-- Multi-Item Selector -->
             <div class="space-y-3">
-              <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">KENDİ ÜRÜNÜNÜZÜ SEÇİN</label>
-              <div v-if="myItems.length > 0" class="relative">
-                <select v-model="formData.offeredItemId" class="w-full bg-white border border-gray-100 rounded-3xl px-8 py-5 text-sm font-black text-gray-900 uppercase shadow-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all appearance-none cursor-pointer" required>
-                  <option value="" disabled>Lütfen bir ilan seçin...</option>
-                  <option v-for="it in myItems" :key="it.id" :value="it.id">
-                    {{ it.title }} | KALAN: {{ it.availableQuantity }} {{ it.unit }}
-                  </option>
-                </select>
-                <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <ChevronDownIcon class="h-5 w-5" />
+              <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">KENDİ ÜRÜNLERİNİZİ SEÇİN</label>
+              <div v-if="myItems.length > 0" class="space-y-3">
+                <div class="relative">
+                  <select
+                    id="item-select"
+                    class="w-full bg-white border border-gray-100 rounded-3xl px-8 py-5 text-sm font-black text-gray-900 uppercase shadow-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all appearance-none cursor-pointer"
+                    @change="addOfferedItem(($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="" disabled>Ürün eklemek için seçin...</option>
+                    <option v-for="it in availableToAdd" :key="it.id" :value="it.id">
+                      {{ it.title }} | KALAN: {{ it.availableQuantity }} {{ it.unit }}
+                    </option>
+                  </select>
+                  <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <ChevronDownIcon class="h-5 w-5" />
+                  </div>
+                </div>
+                <div v-if="myItems.length === 0" class="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-center text-amber-700">
+                  <InformationCircleIcon class="h-10 w-10 mr-4 opacity-50" />
+                  <p class="text-xs font-black uppercase tracking-tight italic">Takas yapabilmek için önce bir ürün eklemelisiniz.</p>
                 </div>
               </div>
               <div v-else class="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-center text-amber-700">
@@ -84,30 +109,19 @@
               </div>
             </div>
 
-            <!-- Quantities -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div class="space-y-3">
-                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">OFFERED QUANTITY</label>
-                <div class="relative">
-                  <input v-model.number="formData.offeredQuantity" type="number" step="0.01" :max="selectedItemAvailable" class="w-full bg-white border border-gray-100 rounded-3xl px-8 py-5 text-xl font-black text-gray-900 placeholder-gray-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm" placeholder="0.00" required>
-                  <span class="absolute right-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-primary-600 uppercase tracking-widest">{{ selectedItemUnit }}</span>
-                </div>
-              </div>
-              <div class="space-y-3">
-                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">REQUESTED QUANTITY</label>
-                <div class="relative">
-                  <input v-model.number="formData.requestedQuantity" type="number" step="0.01" class="w-full bg-white border border-gray-100 rounded-3xl px-8 py-5 text-xl font-black text-gray-900 placeholder-gray-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm" placeholder="0.00" required>
-                  <span class="absolute right-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-indigo-600 uppercase tracking-widest">{{ item.unit }}</span>
-                </div>
-              </div>
-            </div>
-
             <!-- Cash -->
             <div class="space-y-4">
-              <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">CASH ADJUSTMENT</label>
-              <div class="relative">
-                <div class="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300 italic">₺</div>
-                <input v-model.number="formData.cashDifference" type="number" step="0.01" class="w-full bg-white border border-gray-100 rounded-3xl pl-16 pr-8 py-5 text-2xl font-black text-gray-900 placeholder-gray-100 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm" placeholder="0.00">
+              <label class="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">NAKİT FARKI (ALICIYA / TEKLİFÇİYE)</label>
+              <div class="flex items-center gap-4">
+                <select v-model="formData.cashDirection" class="bg-white border border-gray-100 rounded-3xl px-6 py-4 text-xs font-black text-gray-700 uppercase shadow-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all">
+                  <option value="NONE">Fark yok</option>
+                  <option value="TO_RECEIVER">Alıcıya ödeyeceğim</option>
+                  <option value="TO_INITIATOR">Teklifçiye ödeyeceğim</option>
+                </select>
+                <div class="relative flex-1">
+                  <div class="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300 italic">₺</div>
+                  <input v-model.number="formData.cashAmount" type="number" step="0.01" class="w-full bg-white border border-gray-100 rounded-3xl pl-16 pr-8 py-5 text-2xl font-black text-gray-900 placeholder-gray-100 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm" placeholder="0.00">
+                </div>
               </div>
             </div>
 
@@ -138,7 +152,7 @@
         <button class="bg-gray-50 border border-gray-100 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-[1.5rem] py-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95" @click="$emit('close')">
           İŞLEMİ İPTAL ET
         </button>
-        <button :disabled="submitting || !formData.offeredItemId || !legalAccepted" class="relative bg-primary-600 hover:bg-primary-700 text-white rounded-[1.5rem] py-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl shadow-primary-600/30 disabled:opacity-50 disabled:grayscale overflow-hidden group" @click="submitOffer">
+        <button :disabled="submitting || formData.offeredItems.length === 0 || !legalAccepted" class="relative bg-primary-600 hover:bg-primary-700 text-white rounded-[1.5rem] py-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl shadow-primary-600/30 disabled:opacity-50 disabled:grayscale overflow-hidden group" @click="submitOffer">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           {{ submitting ? 'VERİLER İŞLENİYOR...' : 'RESMİ TEKLİFİ GÖNDER' }}
         </button>
@@ -149,23 +163,73 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ArrowsRightLeftIcon, XMarkIcon, InformationCircleIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import LegalDocumentModal from '~/components/modals/LegalDocumentModal.vue'
 import { useTradeOffer, LEGAL_TEXT } from '~/composables/useTradeOffer'
 
+interface SurplusListItem {
+  id: string
+  title: string
+  quantity: number
+  blockedQuantity?: number
+  unit?: string
+  images?: string[]
+  availableQuantity: number
+  company?: { id?: string; name?: string }
+}
+
 const props = defineProps({
-  item: { type: Object, required: true },
+  item: { type: Object as PropType<SurplusListItem>, required: true },
   isCounter: { type: Boolean, default: false },
-  originalOffer: { type: Object, default: null }
+  originalOffer: {
+    type: Object as PropType<{
+      id: string
+      fromCompanyId?: string
+      requestedItemId?: string
+      offeredItemId?: string
+      requestedQuantity?: number
+      offeredQuantity?: number
+      cashDifference?: number
+    }>,
+    default: null
+  }
 })
 const emit = defineEmits(['close', 'success'])
 
 const {
   myItems, submitting, legalAccepted, showLegalModal,
-  formData, selectedItem, selectedItemAvailable, selectedItemUnit,
+  formData, selectedItems,
   acceptLegal, submitOffer, getMainImage
-} = useTradeOffer(props, emit)
+} = useTradeOffer(props)
+
+const availableToAdd = computed(() =>
+  myItems.value.filter((it: SurplusListItem) => !formData.value.offeredItems.some(o => o.surplusItemId === it.id))
+)
+
+const getItemQty = (id: string): number => {
+  const found = formData.value.offeredItems.find(o => o.surplusItemId === id)
+  return found?.quantity ?? 1
+}
+
+const updateOfferedItemQty = (id: string, qty: number): void => {
+  const item = formData.value.offeredItems.find(o => o.surplusItemId === id)
+  if (item) item.quantity = qty
+}
+
+const addOfferedItem = (id: string): void => {
+  if (!id) return
+  const it = myItems.value.find((it: SurplusListItem) => it.id === id)
+  if (!it) return
+  if (!formData.value.offeredItems.some(o => o.surplusItemId === id)) {
+    formData.value.offeredItems.push({ surplusItemId: id, quantity: it.availableQuantity })
+  }
+  ;(document.getElementById('item-select') as HTMLSelectElement).value = ''
+}
+
+const removeOfferedItem = (id: string): void => {
+  formData.value.offeredItems = formData.value.offeredItems.filter(o => o.surplusItemId !== id)
+}
 </script>
 
 <style scoped>

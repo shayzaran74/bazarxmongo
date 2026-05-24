@@ -1,6 +1,6 @@
 // packages/shared/shared-types/src/dtos/auth/login-user.input.ts
 
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 
 export class LoginUserInput {
   @IsEmail({}, { message: 'Geçersiz e-posta adresi.' })
@@ -9,4 +9,8 @@ export class LoginUserInput {
   @IsString()
   @MinLength(6, { message: 'Şifre alanı zorunludur.' })
   password!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

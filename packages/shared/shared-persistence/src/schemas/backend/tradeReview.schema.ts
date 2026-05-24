@@ -17,7 +17,7 @@ export interface ITradeReview {
 }
 
 export const TradeReviewSchema = new Schema<ITradeReview>({
-  _id: { type: String },
+  _id: { type: String, default: () => { const { randomUUID } = require('crypto'); return randomUUID(); } },
   id: { type: String, required: true },
   rating: { type: Number },
   comment: { type: String },

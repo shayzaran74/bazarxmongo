@@ -1,24 +1,18 @@
 // apps/backend/src/modules/vendor/presentation/company.controller.ts
-import { Controller, Post, Body, Get, Patch,
+import { Controller, Post, Body, Get,
          Param, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse,
          ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateCompanyCommand }
   from '../application/commands/create-company.command';
-import { UpdateCompanyStatusCommand }
-  from '../application/commands/update-company-status.command';
 import { CreateCompanyDto }
   from '../application/dtos/create-company.dto';
-import { UpdateCompanyStatusDto }
-  from '../application/dtos/update-company-status.dto';
 import { GetCompanyQuery }
   from '../application/queries/get-company.query';
 import { GetMyCompanyQuery }
   from '../application/queries/get-my-company.query';
-import { GetPendingCompaniesQuery }
-  from '../application/queries/get-pending-companies.query';
-import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
+import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 
 interface AuthenticatedUser {
@@ -96,34 +90,6 @@ export class CompanyController {
   @Post()
   async create(@Body() dto: CreateCompanyDto) {
     return this.commandBus.execute(new CreateCompanyCommand(dto));
-  }
-
-  @ApiOperation({ summary: 'Get pending companies' })
-  @ApiBearerAuth()
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @Get('pending')
-  async getPending() {
-    const items = await this.queryBus.execute(
-      new GetPendingCompaniesQuery()
-    );
-    return { success: true, companies: items, data: items };
-  }
-
-  @ApiOperation({ summary: 'Update company status (Admin)' })
-  @ApiParam({ name: 'id', description: 'Company ID' })
-  @ApiBody({ type: UpdateCompanyStatusDto })
-  @ApiBearerAuth()
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @Patch(':id/status')
-  async updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateCompanyStatusDto,
-    @CurrentUser() admin: AuthenticatedUser,
-  ) {
-    const data = await this.commandBus.execute(
-      new UpdateCompanyStatusCommand(id, dto.status, admin.id, dto.rejectionReason),
-    );
-    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Get company by ID' })

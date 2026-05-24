@@ -50,7 +50,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
     ArrowsRightLeftIcon,
     CheckCircleIcon,
@@ -58,54 +58,41 @@ import {
     ChatBubbleOvalLeftEllipsisIcon
 } from '@heroicons/vue/24/solid'
 
-const props = defineProps({
-    tradeOfferId: {
-        type: String,
-        required: true
-    },
-    showPrompt: {
-        type: Boolean,
-        default: true
-    }
-})
-
-defineEmits(['review'])
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-
-const status = ref(null)
-const loading = ref(true)
-
-const fetchStatus = async () => {
-    if (!props.tradeOfferId) return
-
-    loading.value = true
-    try {
-        const response = await $fetch(`/api/trade-reviews/mutual-status/${props.tradeOfferId}`, {
-            baseURL: config.public.apiBase,
-            headers: { Authorization: `Bearer ${authStore.token}` }
-        })
-        if (response.success) {
-            status.value = response.data
-        }
-    } catch (error) {
-        console.error('Fetch review status error:', error)
-    } finally {
-        loading.value = false
-    }
+interface ReviewStatus {
+  isMutual:          boolean
+  hasUserReviewed:   boolean
+  hasPartnerReviewed: boolean
 }
 
-onMounted(() => {
-    fetchStatus()
-})
+const props = withDefaults(defineProps<{
+  tradeOfferId: string
+  showPrompt?:  boolean
+}>(), { showPrompt: true })
 
-// Watch for changes in tradeOfferId
-watch(() => props.tradeOfferId, () => {
-    fetchStatus()
-})
+defineEmits(['review'])
 
-// Expose refresh method
-defineExpose({
-    refresh: fetchStatus
-})
+const { $api } = useApi()
+
+const status  = ref<ReviewStatus | null>(null)
+const loading = ref(false)
+
+const fetchStatus = async (): Promise<void> => {
+  if (!props.tradeOfferId) return
+  loading.value = true
+  try {
+    const res = await $api<{ success: boolean; data?: ReviewStatus }>(
+      `/api/v1/trade-reviews/mutual-status/${props.tradeOfferId}`
+    )
+    if (res.success && res.data) status.value = res.data
+  } catch {
+    // endpoint henüz mevcut değil — sessizce geç
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchStatus)
+watch(() => props.tradeOfferId, fetchStatus)
+
+defineExpose({ refresh: fetchStatus })
 </script>

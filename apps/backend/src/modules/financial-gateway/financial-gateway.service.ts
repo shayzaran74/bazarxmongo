@@ -18,6 +18,17 @@ export class FinancialGatewayService {
     return this.walletService.getWallet(userId);
   }
 
+  async checkBalance(userId: string, requiredAmount: string, accountType: string = 'MAIN'): Promise<{ sufficient: boolean; currentBalance: string }> {
+    const balanceResponse = await this.walletService.getBalance(userId, accountType);
+    const currentBalance = (balanceResponse as any)?.balance ?? '0';
+    const balance = parseFloat(currentBalance);
+    const required = parseFloat(requiredAmount);
+    return {
+      sufficient: balance >= required,
+      currentBalance,
+    };
+  }
+
   // Escrow Methods
   async holdFunds(userId: string, amount: string, reason: string, referenceId: string, referenceType: string, idempotencyKey: string, sellerId: string = '') {
     return this.escrowService.holdFunds(userId, amount, reason, referenceId, referenceType, idempotencyKey, sellerId);

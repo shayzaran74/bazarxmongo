@@ -15,6 +15,8 @@ interface OpportunityData {
   title: string
   listingCompany: string
   value: number
+  quantity: number
+  unit: string
   image: string
   city: string
 }
@@ -26,6 +28,8 @@ const opportunity = ref<OpportunityData>({
   title: 'Yükleniyor...',
   listingCompany: '...',
   value: 0,
+  quantity: 0,
+  unit: 'Adet',
   image: '/placeholder-image.jpg',
   city: '',
 })
@@ -35,6 +39,62 @@ const barterAmount = ref(0)
 const cashAmount = ref(0)
 const xpEnabled = ref(true)
 const note = ref('')
+
+// Ürün Takası — envanter seçici
+interface InventoryItem { id: string; title: string; quantity: number; availableQuantity: number; unit: string; unitPrice?: number; images?: string[] }
+interface SelectedOfferItem { surplusItemId: string; quantity: number; estimatedValue: number; unitPrice: number; title: string; unit: string; images?: string[] }
+const showInventoryPicker = ref(false)
+const inventoryItems = ref<InventoryItem[]>([])
+const selectedInventoryItems = ref<SelectedOfferItem[]>([])
+const inventoryLoading = ref(false)
+
+const fetchInventory = async (): Promise<void> => {
+  if (inventoryItems.value.length) { showInventoryPicker.value = true; return }
+  inventoryLoading.value = true
+  try {
+    const res = await $api<{ success: boolean; data?: InventoryItem[]; items?: InventoryItem[] }>(
+      '/api/v1/surplus', { query: { status: 'ACTIVE', limit: 50 } }
+    )
+    inventoryItems.value = ((res as { data?: InventoryItem[] }).data ?? (res as { items?: InventoryItem[] }).items ?? []) as InventoryItem[]
+  } catch { inventoryItems.value = [] }
+  finally {
+    inventoryLoading.value = false
+    showInventoryPicker.value = true
+  }
+}
+
+const selectInventoryItem = (item: InventoryItem): void => {
+  if (selectedInventoryItems.value.some(s => s.surplusItemId === item.id)) return
+  const qty = item.availableQuantity || 1
+  const price = item.unitPrice ?? 0
+  selectedInventoryItems.value.push({
+    surplusItemId: item.id,
+    quantity: qty,
+    estimatedValue: qty * price,
+    unitPrice: price,
+    title: item.title,
+    unit: item.unit,
+    images: item.images,
+  })
+  showInventoryPicker.value = false
+}
+
+const removeInventoryItem = (id: string): void => {
+  selectedInventoryItems.value = selectedInventoryItems.value.filter(i => i.surplusItemId !== id)
+}
+
+const updateItemQty = (id: string, qty: number): void => {
+  const item = selectedInventoryItems.value.find(i => i.surplusItemId === id)
+  if (item) {
+    item.quantity = qty
+    item.estimatedValue = qty * item.unitPrice
+  }
+}
+
+const safeNum = (v: unknown): number => {
+  const n = Number(v)
+  return isNaN(n) ? 0 : n
+}
 
 const resolveImage = (images: string[] | undefined): string => {
   if (!Array.isArray(images) || images.length === 0) return '/placeholder-image.jpg'
@@ -48,47 +108,99 @@ const fetchOpportunity = async (): Promise<void> => {
   loading.value = true
   try {
     const [surplusRes, barterRes] = await Promise.all([
-      $api<Record<string, any>>(`/api/v1/surplus/${opportunityId}`),
+      $api<{ success: boolean; data?: Record<string, unknown> }>(`/api/v1/surplus/${opportunityId}`),
       $api<{ commissionXP?: string }>('/api/v1/barter/info').catch(() => null),
     ])
 
     if (surplusRes.success && surplusRes.data) {
-      const d = surplusRes.data
+      const d = surplusRes.data as Record<string, unknown>
+      const unitPrice = safeNum(d['unitPrice'])
+      const qty = safeNum(d['quantity'])
       opportunity.value = {
-        title:          String(d.title ?? ''),
-        listingCompany: (d.company as { name?: string })?.name ?? 'Kurumsal Satıcı',
-        value:          Number(d.unitPrice ?? 0),
-        image:          resolveImage(d.images as string[] | undefined),
-        city:           String(d.city ?? ''),
+        title:          String(d['title'] ?? ''),
+        listingCompany: (d['company'] as { name?: string })?.name ?? 'Kurumsal Satıcı',
+        value:          unitPrice,
+        quantity:       qty,
+        unit:           String(d['unit'] ?? 'Adet'),
+        image:          resolveImage(d['images'] as string[] | undefined),
+        city:           String(d['city'] ?? ''),
       }
-      barterAmount.value = Math.round(opportunity.value.value * 0.6)
-      cashAmount.value   = opportunity.value.value - barterAmount.value
+      // Barter: tüm değer barter kredi; Hybrid: %60 barter + %40 nakit
+      barterAmount.value = Math.round(unitPrice * qty * 0.6)
+      cashAmount.value   = Math.round(unitPrice * qty * 0.4)
     }
 
     if (barterRes?.success && barterRes.data) {
-      xpBalance.value = Number(barterRes.data.commissionXP ?? 0)
+      xpBalance.value = safeNum(barterRes.data.commissionXP)
     }
   } catch { /* hata filtresi tarafından işlenir */ } finally {
     loading.value = false
   }
 }
 
+// Swap modunda seçili ürünlerin toplam tahmini değeri
+const selectedItemsTotal = computed(() =>
+  selectedInventoryItems.value.reduce((acc, i) => acc + i.estimatedValue, 0)
+)
+
+// Toplam teklif değeri — türe göre değişir
+const totalOfferValue = computed(() => {
+  if (offerType.value === 'barter') return barterAmount.value
+  if (offerType.value === 'hybrid') return barterAmount.value + cashAmount.value
+  return selectedItemsTotal.value
+})
+
+// Barter modunda nakit sıfır
+const effectiveCash = computed(() =>
+  offerType.value === 'barter' ? 0 : offerType.value === 'swap' ? 0 : cashAmount.value
+)
+
 const commission = computed(() => {
-  const total = barterAmount.value + cashAmount.value
-  const base = total * 0.04
+  const base = totalOfferValue.value * 0.04
   return xpEnabled.value ? base / 2 : base
 })
 
+// Barter modunda: barterAmount = tam değer, nakit 0
+watch(offerType, (type) => {
+  const total = opportunity.value.value * opportunity.value.quantity
+  if (type === 'barter') {
+    barterAmount.value = Math.round(total)
+    cashAmount.value = 0
+  } else if (type === 'hybrid') {
+    barterAmount.value = Math.round(total * 0.6)
+    cashAmount.value = Math.round(total * 0.4)
+  }
+})
+
 const goToConfirmation = () => {
-  router.push({
-    path: `/ticaritakas/trade-pool/offer/confirm/${opportunityId}`,
-    query: {
-      barter: barterAmount.value,
-      cash: cashAmount.value,
-      note: note.value,
-      type: offerType.value.toUpperCase()
-    }
-  })
+  if (offerType.value === 'swap' && !selectedInventoryItems.value.length) {
+    alert('Lütfen takasa sunmak istediğiniz en az bir ürün seçin.')
+    return
+  }
+  if (offerType.value !== 'swap' && barterAmount.value <= 0 && cashAmount.value <= 0) {
+    alert('Lütfen geçerli bir teklif tutarı girin.')
+    return
+  }
+  const q: Record<string, string> = {
+    barter: String(offerType.value === 'swap' ? 0 : barterAmount.value),
+    cash:   String(offerType.value === 'barter' ? 0 : offerType.value === 'swap' ? 0 : cashAmount.value),
+    total:  String(totalOfferValue.value),
+    note:   note.value,
+    type:   offerType.value.toUpperCase(),
+  }
+  if (offerType.value === 'swap') {
+    q.offeredItems = JSON.stringify(
+      selectedInventoryItems.value.map(i => ({
+        surplusItemId: i.surplusItemId,
+        quantity: i.quantity,
+        estimatedValue: i.estimatedValue,
+        unitPrice: i.unitPrice,
+        title: i.title,
+        unit: i.unit,
+      }))
+    )
+  }
+  router.push({ path: `/ticaritakas/trade-pool/offer/confirm/${opportunityId}`, query: q })
 }
 
 onMounted(() => {
@@ -141,9 +253,25 @@ onMounted(() => {
             <div class="p-8 md:w-2/3 flex flex-col justify-center">
               <div class="flex justify-between items-start mb-2">
                 <span class="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em] italic">LİSTELEYEN: {{ opportunity.listingCompany }}</span>
-                <span class="text-2xl font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(opportunity.value) }} TL</span>
+                <div class="text-right">
+                  <span class="text-2xl font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(opportunity.value) }} TL</span>
+                  <span class="text-[9px] font-bold text-slate-400 block uppercase tracking-widest">/ {{ opportunity.unit }}</span>
+                </div>
               </div>
-              <h3 class="text-xl font-black text-[#002444] mb-4">{{ opportunity.title }}</h3>
+              <h3 class="text-xl font-black text-[#002444] mb-3">{{ opportunity.title }}</h3>
+              <!-- Adet ve toplam değer -->
+              <div v-if="opportunity.quantity > 0" class="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                <div class="flex flex-col">
+                  <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">TOPLAM TALEP</span>
+                  <span class="text-sm font-black text-[#002444]">
+                    {{ new Intl.NumberFormat('tr-TR').format(opportunity.quantity) }} {{ opportunity.unit }}
+                    <span class="text-slate-400 font-bold mx-1">×</span>
+                    {{ new Intl.NumberFormat('tr-TR').format(opportunity.value) }} TL
+                    <span class="text-slate-400 font-bold mx-1">=</span>
+                    <span class="text-blue-600">{{ new Intl.NumberFormat('tr-TR').format(opportunity.quantity * opportunity.value) }} TL</span>
+                  </span>
+                </div>
+              </div>
               <div class="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
                 <span v-if="opportunity.city" class="flex items-center gap-1">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-blue-500">
@@ -189,37 +317,122 @@ onMounted(() => {
               </button>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-8 pt-8 border-t border-slate-100">
+            <!-- Barter Kredisi — tek alan -->
+            <div v-if="offerType === 'barter'" class="pt-8 border-t border-slate-100 space-y-4">
               <div class="space-y-3">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">BARTER KREDİ TUTARI</label>
                 <div class="relative">
-                  <input v-model="barterAmount" type="number" class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-black focus:border-blue-500 focus:bg-white transition-all outline-none" />
+                  <input v-model="barterAmount" type="number" min="1" class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-black focus:border-blue-500 focus:bg-white transition-all outline-none" />
+                  <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">TL</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <span>NAKİT KISMI</span>
+                <span class="text-[#002444]">0 TL</span>
+              </div>
+            </div>
+
+            <!-- Karma Teklif — iki alan -->
+            <div v-if="offerType === 'hybrid'" class="grid md:grid-cols-2 gap-8 pt-8 border-t border-slate-100">
+              <div class="space-y-3">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">BARTER KREDİ TUTARI</label>
+                <div class="relative">
+                  <input v-model="barterAmount" type="number" min="0" class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-black focus:border-blue-500 focus:bg-white transition-all outline-none" />
                   <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">TL</span>
                 </div>
               </div>
               <div class="space-y-3">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">NAKİT TUTARI</label>
                 <div class="relative">
-                  <input v-model="cashAmount" type="number" class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-black focus:border-blue-500 focus:bg-white transition-all outline-none" />
+                  <input v-model="cashAmount" type="number" min="0" class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-black focus:border-blue-500 focus:bg-white transition-all outline-none" />
                   <span class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">TL</span>
                 </div>
+              </div>
+              <div class="md:col-span-2 flex items-center justify-between px-1 pt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100">
+                <span>TOPLAM TEKLİF</span>
+                <span class="text-[#002444] text-sm">{{ new Intl.NumberFormat('tr-TR').format(barterAmount + cashAmount) }} TL</span>
+              </div>
+            </div>
+
+            <!-- Ürün Takası — envanter seçici -->
+            <div v-if="offerType === 'swap'" class="mt-8 pt-8 border-t border-slate-100">
+              <!-- Seçili ürünler -->
+              <div v-if="selectedInventoryItems.length" class="space-y-3 mb-4">
+                <div v-for="sel in selectedInventoryItems" :key="sel.surplusItemId" class="p-5 bg-blue-50 rounded-2xl border-2 border-blue-200">
+                  <div class="flex items-start gap-4">
+                    <img :src="resolveImage(sel.images)" class="w-12 h-12 rounded-xl object-cover bg-slate-200 shrink-0" alt="">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-0.5">TAKAS ÜRÜNÜ</p>
+                      <p class="text-sm font-black text-[#002444] truncate uppercase italic">{{ sel.title }}</p>
+                      <p v-if="sel.unitPrice > 0" class="text-[10px] text-slate-400 font-bold mt-0.5">
+                        Birim Fiyat: {{ new Intl.NumberFormat('tr-TR').format(sel.unitPrice) }} TL / {{ sel.unit }}
+                      </p>
+                    </div>
+                    <button class="text-red-400 hover:text-red-600 shrink-0" @click="removeInventoryItem(sel.surplusItemId)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                  </div>
+                  <!-- Adet + hesaplama -->
+                  <div class="flex items-center gap-3 mt-4 pt-3 border-t border-blue-200">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">ADET</label>
+                    <input
+                      type="number"
+                      :value="sel.quantity"
+                      @input="updateItemQty(sel.surplusItemId, Number(($event.target as HTMLInputElement).value))"
+                      min="1"
+                      class="w-24 px-3 py-2 rounded-xl border border-blue-200 bg-white text-sm font-black text-center"
+                    >
+                    <span class="text-[9px] text-slate-400 uppercase">{{ sel.unit }}</span>
+                    <div class="ml-auto text-right">
+                      <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">TAHMİNİ DEĞER</span>
+                      <span class="text-sm font-black text-blue-600">{{ new Intl.NumberFormat('tr-TR').format(sel.estimatedValue) }} TL</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Toplam değer özeti -->
+                <div class="flex items-center justify-between px-4 py-3 bg-white rounded-2xl border-2 border-blue-100">
+                  <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">TOPLAM TAKAS DEĞERİ</span>
+                  <span class="text-base font-black" :class="selectedItemsTotal >= opportunity.value * opportunity.quantity ? 'text-green-600' : 'text-amber-600'">
+                    {{ new Intl.NumberFormat('tr-TR').format(selectedItemsTotal) }} TL
+                  </span>
+                </div>
+              </div>
+
+              <!-- Seçim butonu -->
+              <div class="p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 hover:border-blue-300 transition-all" @click="fetchInventory">
+                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm transition-transform hover:scale-110">
+                  <svg v-if="inventoryLoading" class="animate-spin w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-slate-400"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <span class="text-xs font-black text-slate-500 uppercase tracking-widest">{{ selectedInventoryItems.length ? 'Başka Ürün Ekle' : 'Envanterden Ürün Seç' }}</span>
+                <p class="text-[10px] text-slate-400 mt-2">Takas etmek istediğiniz kurumsal varlıklarınızı ekleyin.</p>
+              </div>
+
+              <!-- Picker açıldığında liste -->
+              <div v-if="showInventoryPicker" class="mt-4 bg-white rounded-2xl border border-slate-200 shadow-xl max-h-72 overflow-y-auto">
+                <div v-if="!inventoryItems.length" class="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Aktif ilanınız bulunmuyor.</div>
+                <button
+                  v-for="item in inventoryItems"
+                  :key="item.id"
+                  class="w-full flex items-center gap-4 px-6 py-4 hover:bg-blue-50 transition-all border-b border-slate-50 last:border-0 text-left"
+                  @click="selectInventoryItem(item)"
+                >
+                  <img :src="resolveImage(item.images)" class="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0" alt="">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-black text-[#002444] uppercase italic truncate">{{ item.title }}</p>
+                    <p class="text-[9px] text-slate-400 uppercase tracking-widest">
+                      {{ item.availableQuantity }} {{ item.unit }}
+                      <span v-if="item.unitPrice" class="ml-2 text-blue-500">· {{ new Intl.NumberFormat('tr-TR').format(item.unitPrice) }} TL/{{ item.unit }}</span>
+                    </p>
+                  </div>
+                </button>
               </div>
             </div>
 
             <div class="mt-8 space-y-3">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">TEKLİF NOTU (OPSİYONEL)</label>
               <textarea v-model="note" rows="3" placeholder="Satıcıya eklemek istediğiniz notu yazın..." class="w-full px-6 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50 text-[#002444] font-medium focus:border-blue-500 focus:bg-white transition-all outline-none resize-none"></textarea>
-            </div>
-
-            <div v-if="offerType === 'swap'" class="mt-10 p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-slate-100 transition-all">
-              <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-slate-400">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </div>
-              <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Envanterden Ürün Seç</span>
-              <p class="text-[10px] text-slate-400 mt-2">Takas etmek istediğiniz kurumsal varlıkları ekleyin.</p>
             </div>
           </div>
         </div>
@@ -256,16 +469,28 @@ onMounted(() => {
             </div>
             <div class="p-8 space-y-6">
               <div class="flex justify-between text-sm">
+                <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">BARTER KREDİ</span>
+                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(offerType === 'swap' ? 0 : barterAmount) }} TL</span>
+              </div>
+              <div v-if="offerType === 'hybrid'" class="flex justify-between text-sm">
+                <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">NAKİT</span>
+                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(cashAmount) }} TL</span>
+              </div>
+              <div v-if="offerType === 'swap'" class="flex justify-between text-sm">
+                <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">ÜRÜN DEĞERİ</span>
+                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(selectedItemsTotal) }} TL</span>
+              </div>
+              <div class="flex justify-between text-sm">
                 <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">TAKAS DEĞERİ</span>
-                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(barterAmount + cashAmount) }} TL</span>
+                <span class="font-black text-blue-600">{{ new Intl.NumberFormat('tr-TR').format(totalOfferValue) }} TL</span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">KOMİSYON (%4)</span>
-                <span class="font-bold" :class="xpEnabled ? 'line-through text-red-400' : 'text-[#002444]'">{{ new Intl.NumberFormat('tr-TR').format((barterAmount + cashAmount) * 0.04) }} TL</span>
+                <span class="font-bold" :class="xpEnabled ? 'line-through text-red-400' : 'text-[#002444]'">{{ new Intl.NumberFormat('tr-TR').format(totalOfferValue * 0.04) }} TL</span>
               </div>
               <div v-if="xpEnabled" class="flex justify-between text-sm text-green-600">
-                <span class="font-bold uppercase tracking-widest text-[10px]">XP İNDİRİMİ (%50)</span>
-                <span class="font-black">-{{ new Intl.NumberFormat('tr-TR').format(((barterAmount + cashAmount) * 0.04) / 2) }} TL</span>
+                <span class="font-bold uppercase tracking-widest text-[10px]">XP İNDİRİMİ (Maks. %50)</span>
+                <span class="font-black">-{{ new Intl.NumberFormat('tr-TR').format((totalOfferValue * 0.04) / 2) }} TL</span>
               </div>
               
               <div class="pt-6 border-t border-slate-100 flex justify-between items-end">
@@ -288,16 +513,15 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Güven Danışmanı -->
-          <div class="p-6 rounded-[2rem] bg-green-50 border-2 border-green-100 flex gap-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-green-600 shrink-0 mt-1">
+          <!-- BazarX Güvencesi -->
+          <div class="p-6 rounded-[2rem] bg-blue-50 border-2 border-blue-100 flex gap-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-600 shrink-0 mt-1">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
             <div>
-              <p class="text-xs font-black text-green-800 uppercase tracking-widest mb-1">GÜVEN DANIŞMANI</p>
-              <p class="text-[10px] font-medium text-green-700 leading-relaxed opacity-80">
-                Bu kullanıcının %98 tamamlama oranı vardır. Teklifiniz, tercih ettikleri 60:40 barter oranına uygundur. 
-                <span class="font-black underline">Başarı olasılığı: Yüksek.</span>
+              <p class="text-xs font-black text-blue-800 uppercase tracking-widest mb-1">BAZARX GÜVENCESİ</p>
+              <p class="text-[10px] font-medium text-blue-700 leading-relaxed opacity-80">
+                Bu ilan BazarX Kurumsal Denetim ekibi tarafından ön incelemeden geçirilmiştir. Escrow koruması altında güvenli takas yapabilirsiniz.
               </p>
             </div>
           </div>

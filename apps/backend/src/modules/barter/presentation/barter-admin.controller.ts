@@ -1,9 +1,18 @@
 // apps/backend/src/modules/barter/presentation/barter-admin.controller.ts
 
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Logger, Inject } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
-import { Inject } from '@nestjs/common';
+import { IDemandMatch } from '@barterborsa/shared-persistence/schemas/backend/demandMatch.schema';
+import { IVendorB2BData } from '@barterborsa/shared-persistence/schemas/backend/vendorB2BData.schema';
+import { TradeOffer } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
+import { TradeOfferItem } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
+import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
+import { SwapSession } from '@barterborsa/shared-persistence/schemas/backend/swapSession.schema';
+import { TrustScore } from '@barterborsa/shared-persistence/schemas/backend/trustScore.schema';
 import { ITradeOfferRepository } from '../domain/repositories/trade-offer.repository.interface';
 import { IWantedItemRepository } from '../domain/repositories/wanted-item.repository.interface';
 import { ICategoryRepository } from '../domain/repositories/category.repository.interface';
@@ -43,6 +52,8 @@ export class BarterAdminController {
     private readonly swapScheduler:       SwapSchedulerService,
     private readonly trustScoreSvc:       TrustScoreRecalculationService,
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
+    @InjectModel('DemandMatch') private readonly demandMatchModel: Model<IDemandMatch>,
+    @InjectModel('VendorB2BData') private readonly vendorB2BDataModel: Model<IVendorB2BData>,
   ) {}
 
   @ApiOperation({ summary: 'List all trade offers for admin' })
@@ -51,15 +62,63 @@ export class BarterAdminController {
     const filter: Record<string, unknown> = {};
     if (status) filter.status = status;
 
-    const result = await this.tradeOfferRepo.findWithFilters(filter, 0, 100);
-    return { success: true, data: result.items };
+    const docs = await TradeOffer.find(filter).sort({ createdAt: -1 }).limit(100).lean();
+    
+    const populated = await Promise.all(docs.map(async (doc: any) => {
+      const fromCompany = await Company.findOne({ id: doc.fromCompanyId }).lean();
+      const toCompany = await Company.findOne({ id: doc.toCompanyId }).lean();
+      
+      const offeredItems = await TradeOfferItem.find({ $or: [{ offered_offer_id: doc.id }, { offered_offer_id: doc.id }] }).lean() || [];
+      const requestedItems = await TradeOfferItem.find({ $or: [{ requested_offer_id: doc.id }, { requested_offer_id: doc.id }] }).lean() || [];
+      
+      for (const item of offeredItems) {
+        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
+      }
+      for (const item of requestedItems) {
+        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
+      }
+
+      return {
+        ...doc,
+        fromCompany: fromCompany || { name: 'Bilinmeyen Şirket' },
+        toCompany: toCompany || { name: 'Bilinmeyen Şirket' },
+        offeredItems,
+        requestedItems,
+      };
+    }));
+
+    return { success: true, data: populated };
   }
 
   @ApiOperation({ summary: 'List pending trade offers' })
   @Get('offers/pending')
   async getPendingOffers() {
-    const result = await this.tradeOfferRepo.findWithFilters({ status: 'PENDING' }, 0, 100);
-    return { success: true, data: result.items };
+    const docs = await TradeOffer.find({ status: 'PENDING' }).sort({ createdAt: -1 }).limit(100).lean();
+
+    const populated = await Promise.all(docs.map(async (doc: any) => {
+      const fromCompany = await Company.findOne({ id: doc.fromCompanyId }).lean();
+      const toCompany = await Company.findOne({ id: doc.toCompanyId }).lean();
+
+      const offeredItems = await TradeOfferItem.find({ $or: [{ offered_offer_id: doc.id }, { offered_offer_id: doc.id }] }).lean() || [];
+      const requestedItems = await TradeOfferItem.find({ $or: [{ requested_offer_id: doc.id }, { requested_offer_id: doc.id }] }).lean() || [];
+
+      for (const item of offeredItems) {
+        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
+      }
+      for (const item of requestedItems) {
+        if ((item as any).listingId) (item as any).listing = await Listing.findOne({ id: (item as any).listingId }).lean();
+      }
+
+      return {
+        ...doc,
+        fromCompany: fromCompany || { name: 'Bilinmeyen Şirket' },
+        toCompany: toCompany || { name: 'Bilinmeyen Şirket' },
+        offeredItems,
+        requestedItems,
+      };
+    }));
+
+    return { success: true, data: populated };
   }
 
   @ApiOperation({ summary: 'Approve/Accept trade offer (Admin)' })
@@ -157,10 +216,28 @@ export class BarterAdminController {
   @Patch('user/:id')
   async updateUserBarterSettings(
     @Param('id') userId: string,
-    @Body() _body: { barterBalance?: number; barterCreditLimit?: number },
+    @Body() body: {
+      b2bTier?: string;
+      barterLimitOverride?: number;
+      b2bCommRate?: number;
+      subscriptionStatus?: string;
+    },
   ) {
     const vendor = await this.vendorRepo.findByUserId(userId);
-    if (!vendor) return { success: false, message: 'Vendor not found' };
+    if (!vendor) return { success: false, message: 'Vendor bulunamadı' };
+
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.b2bTier !== undefined)            update.b2bTier = body.b2bTier;
+    if (body.subscriptionStatus !== undefined) update.subscriptionStatus = body.subscriptionStatus;
+    if (body.barterLimitOverride !== undefined)
+      update.barterLimitOverride = Types.Decimal128.fromString(String(body.barterLimitOverride));
+    if (body.b2bCommRate !== undefined)
+      update.b2bCommRate = Types.Decimal128.fromString(String(body.b2bCommRate));
+
+    await this.vendorB2BDataModel.updateOne(
+      { vendorId: vendor.id },
+      { $set: update },
+    ).exec();
 
     return { success: true, message: 'Barter ayarları güncellendi' };
   }
@@ -174,20 +251,45 @@ export class BarterAdminController {
 
   @ApiOperation({ summary: 'List demand matches' })
   @Get('demand-matches')
-  async getDemandMatches(@Query('status') _status?: string) {
-    return { success: true, data: [] };
+  async getDemandMatches(
+    @Query('status') status?: string,
+    @Query('page')   page  = '1',
+    @Query('limit')  limit = '20',
+  ) {
+    const filter: Record<string, unknown> = {};
+    if (status) filter.status = status;
+
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const [items, total] = await Promise.all([
+      this.demandMatchModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit, 10))
+        .lean()
+        .exec(),
+      this.demandMatchModel.countDocuments(filter).exec(),
+    ]);
+
+    return { success: true, data: items, total, page: parseInt(page, 10) };
   }
 
   // ── Timeout İzleme & Manuel Tetikleme ────────────────────────────────────
 
   @ApiOperation({ summary: 'Timeout riski taşıyan swap session\'ları listele' })
   @Get('timeout-monitor')
-  async getTimeoutMonitor(@Query('warningDays') warningDays = '3') {
+  async getTimeoutMonitor(@Query('warningDays') warningDays = '3'): Promise<{
+    success: boolean;
+    data: {
+      stats: Record<string, number>;
+      alreadyTimedOut: number;
+      soonExpiring: { withinDays: number; count: number; sessions: Array<Record<string, unknown>> };
+      nextCronRun: string;
+    };
+  }> {
     const days     = Math.max(1, parseInt(warningDays, 10));
     const now      = new Date();
     const warnDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-
-    const { SwapSession } = require('@barterborsa/shared-persistence/schemas/backend/swapSession.schema');
 
     const [alreadyTimedOut, soonExpiring, byStatus] = await Promise.all([
       SwapSession.countDocuments({ status: SwapSessionStatus.TIMEOUT }),
@@ -238,7 +340,6 @@ export class BarterAdminController {
     @Query('page')     page  = '1',
     @Query('limit')    limit = '20',
   ) {
-    const { TrustScore } = require('@barterborsa/shared-persistence/schemas/backend/trustScore.schema');
     const filter: Record<string, unknown> = {};
     if (level)    filter.level    = level;
     if (isFrozen) filter.isFrozen = isFrozen === 'true';
@@ -281,4 +382,56 @@ export class BarterAdminController {
     const candidates = await this.trustScoreRepo.findFreezeCandidates(FREEZE_VIOLATION_THRESHOLD);
     return { success: true, data: candidates, threshold: FREEZE_VIOLATION_THRESHOLD };
   }
+
+  @ApiOperation({ summary: 'Admin onayı bekleyen swap sessionları listele' })
+  @Get('swap/pending-release')
+  async getPendingReleaseSessions(): Promise<{ success: boolean; data: Record<string, unknown>[] }> {
+    const sessions = await SwapSession.find({ collateralStatus: 'PENDING_RELEASE' })
+      .sort({ updatedAt: -1 })
+      .lean()
+      .exec();
+    return { success: true, data: sessions as unknown as Record<string, unknown>[] };
+  }
+
+  @ApiOperation({ summary: 'Admin onayıyla teminatları serbest bırak' })
+  @Post('swap/:id/release-collateral')
+  async releaseCollateral(@Param('id') sessionId: string) {
+    const session = await SwapSession.findOne({ id: sessionId }).lean().exec();
+    if (!session) return { success: false, message: 'Swap session bulunamadı.' };
+
+    const s = session as Record<string, unknown>;
+    if (s.collateralStatus !== 'PENDING_RELEASE' && s.collateralStatus !== 'HELD') {
+      return { success: false, message: `Teminat durumu uygun değil: ${s.collateralStatus}` };
+    }
+
+    const idempotencyBase = `admin-release-${sessionId}`;
+
+    if (s.fromCollateralHoldId) {
+      try {
+        await this.financialGateway.releaseFunds(s.fromCollateralHoldId as string, `${idempotencyBase}-from`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        this.logger.error('From collateral iadesi başarısız', { holdId: s.fromCollateralHoldId, error: msg });
+      }
+    }
+
+    if (s.toCollateralHoldId) {
+      try {
+        await this.financialGateway.releaseFunds(s.toCollateralHoldId as string, `${idempotencyBase}-to`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        this.logger.error('To collateral iadesi başarısız', { holdId: s.toCollateralHoldId, error: msg });
+      }
+    }
+
+    await SwapSession.updateOne(
+      { id: sessionId },
+      { $set: { collateralStatus: 'RELEASED', updatedAt: new Date() } },
+    ).exec();
+
+    this.logger.log('Admin teminat serbest bırakma onayı', { sessionId });
+
+    return { success: true, message: 'Teminatlar komisyon kesilerek serbest bırakıldı.' };
+  }
+
 }

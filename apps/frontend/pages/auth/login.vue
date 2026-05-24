@@ -283,7 +283,6 @@ const handleLogin = async () => {
 }
 
 const handleGoogleLogin = () => {
-  const googleUrl = `${useRuntimeConfig().public.apiBase}/api/auth/google`
-  window.location.href = googleUrl
+  window.location.href = '/api/v1/auth/google'
 }
 </script>

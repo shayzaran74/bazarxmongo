@@ -11,6 +11,7 @@ import { ITrustScoreRepository } from '../../domain/repositories/trust-score.rep
 import { ISwapSessionRepository } from '../../../barter/domain/repositories/swap-session.repository.interface';
 import { MongoBrandEcosystemRepository } from '../../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
+import { scoreToLevel } from '../../../barter/domain/trust-level.constants';
 
 // Son N günlük stok hareketi penceresi
 const ACTIVITY_WINDOW_DAYS = 30;
@@ -65,9 +66,10 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     if (!ecosystem) throw new NotFoundException('Ekosistem bulunamadı.');
 
     const isOwner = ecosystem.ownerId === actorVendorId;
-    if (!isOwner) {
-      throw new ForbiddenException('Bu ekosistemin yönetim paneline erişim yetkiniz yok.');
-    }
+    const isBlindPool = ecosystem.isBlindPool ?? false;
+
+    // Kör havuzda sahip dışında herkes anonymousId ile görür
+    const isAnonymousViewer = isBlindPool && !isOwner;
 
     const since = new Date();
     since.setDate(since.getDate() - ACTIVITY_WINDOW_DAYS);
@@ -102,17 +104,26 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
 
       // VendorProps'ta storeName/slug olmadığından güvenli fallback kullanılır
       const vendorMeta = memberProps as unknown as { storeName?: string; slug?: string };
+
+      // Kör havuzda vendorId ve vendorName maskelenir — anonymousId kullanılır
+      const displayVendorId = isAnonymousViewer
+        ? `anon-${memberId.substring(0, 8)}`
+        : memberId;
+      const displayVendorName = isAnonymousViewer
+        ? `Bayi ${memberId.substring(0, 8).toUpperCase()}`
+        : (vendorMeta.storeName || vendorMeta.slug || memberId);
+
       members.push({
-        vendorId:         memberId,
-        vendorName:       vendorMeta.storeName || vendorMeta.slug || memberId,
-        tier:             String(memberProps.tier ?? 'CORE'),
-        trustScore:       Number(trustRecord?.score?.toString() ?? 100),
-        trustLevel:       trustRecord?.level ?? 'GOOD',
-        violationCount:   trustRecord?.violationCount ?? 0,
-        isFrozen:         trustRecord?.isFrozen ?? false,
-        activeListings:   listingsResult.total,
+        vendorId:         displayVendorId,
+        vendorName:       displayVendorName,
+        tier:             isAnonymousViewer ? 'HIDDEN' : String(memberProps.tier ?? 'CORE'),
+        trustScore:       isAnonymousViewer ? 0 : Number(trustRecord?.score?.toString() ?? 100),
+        trustLevel:       isAnonymousViewer ? 'ANONYMOUS' : (trustRecord?.level ?? scoreToLevel(Number(trustRecord?.score?.toString() ?? 100))),
+        violationCount:   isAnonymousViewer ? 0 : (trustRecord?.violationCount ?? 0),
+        isFrozen:         isAnonymousViewer ? false : (trustRecord?.isFrozen ?? false),
+        activeListings:   isAnonymousViewer ? 0 : listingsResult.total,
         recentTradeCount: recentTrades,
-        lastActivityAt,
+        lastActivityAt:   lastActivityAt,
       });
     }
 

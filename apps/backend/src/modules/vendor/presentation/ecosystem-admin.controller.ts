@@ -38,6 +38,11 @@ export type EcosystemDto = {
     memberCount: number;
     listingCount: number;
     logCount: number;
+    commissionStats: {
+      internalCommRate: number;
+      estimatedTotalCommission: number;
+      currency: string;
+    };
   };
   Members: EcosystemMemberDto[];
 };
@@ -180,7 +185,12 @@ export class EcosystemAdminController {
           totalStok,
           memberCount: ecoMembers.length,
           listingCount,
-          logCount: logCountsMap.get(eco.id) || 0
+          logCount: logCountsMap.get(eco.id) || 0,
+          commissionStats: {
+            internalCommRate: eco.internalCommRate ? Number(eco.internalCommRate.toString()) : 4.0,
+            estimatedTotalCommission: totalValue * (eco.internalCommRate ? Number(eco.internalCommRate.toString()) : 4.0) / 100,
+            currency: 'TRY',
+          },
         },
         Members: membersList
       };
@@ -209,8 +219,8 @@ export class EcosystemAdminController {
     const uniqueEcoIds = [...new Set([...ecoIdsFromLogs, ...ecoIdsFromVendors])];
     
     const ecosystems = await Promise.all(uniqueEcoIds.map(id => this.brandEcosystemRepo.findById(id)));
-    const ecoMap = new Map<string, IBrandEcosystem | null>(
-      ecosystems.filter(Boolean).map(e => [e!.id, e])
+    const ecoMap = new Map(
+      ecosystems.filter(Boolean).map(e => [e!.id, e!] as const)
     );
 
     const result = logs.map(log => {
@@ -279,7 +289,7 @@ export class EcosystemAdminController {
       tradingPerformance: oldRecord ? Number(oldRecord.tradingPerformance) : 100,
       xpLoyalty:          oldRecord ? Number(oldRecord.xpLoyalty) : 100,
       compliance:         oldRecord ? Number(oldRecord.compliance) : 100,
-      level:              scoreToLevel(newScore, oldRecord?.isFrozen ?? false),
+      level:              scoreToLevel(newScore),
     });
     
     // Log trust score override
@@ -328,5 +338,42 @@ export class EcosystemAdminController {
     });
     
     return { success: true };
+  }
+
+  @ApiOperation({ summary: 'MAP (Minimum Advertised Price) ihlallerini listele' })
+  @Get('map-violations')
+  async getMapViolations(): Promise<{ success: boolean; data: Record<string, unknown>[] }> {
+    const listings = await this.listingModel.find({
+      'bazarxPublished.published': true,
+      'bazarxPublished.minMarketPrice': { $exists: true },
+    }).lean().exec();
+
+    const violations: Record<string, unknown>[] = [];
+    for (const listing of listings) {
+      const price = listing.price ? Number(listing.price.toString()) : 0;
+      const bp = listing.bazarxPublished as { minMarketPrice?: { toString(): string }; ecosystemId?: string } | undefined;
+      const minPrice = bp?.minMarketPrice ? Number(bp.minMarketPrice.toString()) : 0;
+
+      if (minPrice > 0 && price < minPrice) {
+        const vendor = await this.vendorModel.findOne({ id: listing.vendorId }).select('companyId').lean().exec();
+        const company = vendor?.companyId
+          ? await this.companyModel.findOne({ id: vendor.companyId }).select('name').lean().exec()
+          : null;
+
+        violations.push({
+          listingId: listing.id,
+          title: listing.title,
+          vendorId: listing.vendorId,
+          vendorName: (company as { name?: string })?.name ?? '—',
+          ecosystemId: bp?.ecosystemId,
+          currentPrice: price,
+          minMarketPrice: minPrice,
+          difference: minPrice - price,
+          differencePercent: Math.round(((minPrice - price) / minPrice) * 100),
+        });
+      }
+    }
+
+    return { success: true, data: violations };
   }
 }

@@ -11,6 +11,7 @@ import { CommerceModule } from '../commerce/commerce.module';
 
 // Controllers
 import { CompanyController } from './presentation/company.controller';
+import { DealerController } from './presentation/dealer.controller';
 import { VendorController } from './presentation/vendor.controller';
 import { VendorAdminController } from './presentation/vendor-admin.controller';
 import { VendorProductController } from './presentation/vendor-product.controller';
@@ -46,7 +47,6 @@ import { CreateBannerHandler } from './application/commands/create-banner.handle
 import { UpdateBannerHandler } from './application/commands/update-banner.handler';
 import { DeleteBannerHandler } from './application/commands/delete-banner.handler';
 import { UpdateRestaurantSettingsHandler } from './application/commands/update-restaurant-settings.handler';
-import { UpdateCompanyStatusHandler } from './application/commands/update-company-status.handler';
 
 // Query handlers
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -62,7 +62,6 @@ import { GetEcosystemAuditLogsHandler } from './application/queries/get-ecosyste
 import { GetEcosystemDashboardHandler } from './application/queries/get-ecosystem-dashboard.handler';
 import { ListAdminVendorsHandler } from './application/queries/list-admin-vendors.handler';
 import { GetMyCompanyHandler } from './application/queries/get-my-company.handler';
-import { GetPendingCompaniesHandler } from './application/queries/get-pending-companies.handler';
 import { GetVendorOrdersHandler } from './application/queries/get-vendor-orders.handler';
 import { GetVendorPendingOrderCountHandler } from './application/queries/get-vendor-pending-order-count.handler';
 import { GetVendorTransfersHandler } from './application/queries/get-vendor-transfers.handler';
@@ -85,11 +84,16 @@ import { MongoInventoryLogRepository } from './infrastructure/persistence/mongo-
 import { MongoListingImageRepository } from './infrastructure/persistence/mongo-listing-image.repository';
 import { MongoBrandEcosystemRepository } from './infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from './infrastructure/persistence/mongo-ecosystem-audit-log.repository';
+import { MongoEcosystemMembershipRepository } from './infrastructure/persistence/repositories/mongo-ecosystem-membership.repository';
+import { MongoEcosystemOrderRepository } from './infrastructure/persistence/repositories/mongo-ecosystem-order.repository';
 import { MongoSwapSessionRepository } from '../barter/infrastructure/persistence/mongo-swap-session.repository';
 import { MongoEarlyPaymentRepository } from './infrastructure/persistence/mongo-early-payment.repository';
 import { MongoVendorScoreRepository } from './infrastructure/persistence/mongo-vendor-score.repository';
 import { MongoUserRepository } from './infrastructure/persistence/mongo-user.repository';
 import { MongoTrustScoreRepository } from './infrastructure/persistence/mongo-trust-score.repository';
+import { WatchoverService } from './application/services/watchover.service';
+import { GarageSaleService } from './application/services/garage-sale.service';
+import { GarageSaleScheduler } from './application/schedulers/garage-sale.scheduler';
 
 // Services
 import { VendorRegistrationService } from './application/services/vendor-registration.service';
@@ -98,6 +102,13 @@ import { CommissionEngineService } from './application/services/commission-engin
 import { CommissionController } from './presentation/commission.controller';
 import { EarlyPaymentService } from './application/services/early-payment.service';
 import { VendorScoreService } from './application/services/vendor-score.service';
+import { BazarXPublishService } from './application/services/bazarx-publish.service';
+
+// Event handlers
+import { EcosystemCreatedHandler } from './application/handlers/ecosystem-created.handler';
+import { EcosystemMemberRemovedHandler } from './application/handlers/ecosystem-member-removed.handler';
+import { ListingPriceChangedHandler } from './application/handlers/listing-price-changed.handler';
+import { ListingVisibilityChangedHandler } from './application/handlers/listing-visibility-changed.handler';
 
 const CommandHandlers = [
   CreateCompanyHandler,
@@ -123,7 +134,6 @@ const CommandHandlers = [
   UpdateBannerHandler,
   DeleteBannerHandler,
   UpdateRestaurantSettingsHandler,
-  UpdateCompanyStatusHandler,
 ];
 
 const QueryHandlers = [
@@ -140,7 +150,6 @@ const QueryHandlers = [
   GetEcosystemDashboardHandler,
   ListAdminVendorsHandler,
   GetMyCompanyHandler,
-  GetPendingCompaniesHandler,
   GetVendorOrdersHandler,
   GetVendorPendingOrderCountHandler,
   GetVendorTransfersHandler,
@@ -178,6 +187,9 @@ import { InventoryLog, InventoryLogSchema } from '../../../../../packages/shared
 import { ListingImage, ListingImageSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/listingImage.schema';
 import { BrandEcosystem, BrandEcosystemSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/brandEcosystem.schema';
 import { EcosystemAuditLog, EcosystemAuditLogSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/ecosystemAuditLog.schema';
+import { EcosystemMembership, EcosystemMembershipSchema } from './infrastructure/persistence/schemas/ecosystemMembership.schema';
+import { EcosystemOrder, EcosystemOrderSchema } from './infrastructure/persistence/schemas/ecosystemOrder.schema';
+import { GarageSale, GarageSaleSchema } from '@barterborsa/shared-persistence/schemas/backend/garageSale.schema';
 import { VendorViolationModel, VendorViolationSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/vendorViolation.schema';
 import { EarlyPaymentRequest, EarlyPaymentRequestSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/early-payment-request.schema';
 import { User, UserSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/user.schema';
@@ -214,6 +226,9 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
       { name: 'ListingImage', schema: ListingImageSchema },
       { name: 'BrandEcosystem', schema: BrandEcosystemSchema },
       { name: 'EcosystemAuditLog', schema: EcosystemAuditLogSchema },
+      { name: 'EcosystemMembership', schema: EcosystemMembershipSchema },
+      { name: 'EcosystemOrder', schema: EcosystemOrderSchema },
+      { name: 'GarageSale', schema: GarageSaleSchema },
       { name: 'VendorViolation', schema: VendorViolationSchema },
       { name: 'EarlyPaymentRequest', schema: EarlyPaymentRequestSchema },
       { name: 'User', schema: UserSchema },
@@ -237,6 +252,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     AdminEarlyPaymentController,
     VendorScoreController,
     EcosystemAdminController,
+    DealerController,
   ],
   providers: [
     VendorRegistrationService,
@@ -259,10 +275,32 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     MongoListingImageRepository,
     MongoBrandEcosystemRepository,
     MongoEcosystemAuditLogRepository,
+    MongoEcosystemMembershipRepository,
+    MongoEcosystemOrderRepository,
+    WatchoverService,
+    GarageSaleService,
+    GarageSaleScheduler,
+    BazarXPublishService,
+    EcosystemCreatedHandler,
+    EcosystemMemberRemovedHandler,
+    ListingPriceChangedHandler,
+    ListingVisibilityChangedHandler,
+    { provide: 'IEcosystemMembershipRepository', useClass: MongoEcosystemMembershipRepository },
+    { provide: 'IEcosystemOrderRepository', useClass: MongoEcosystemOrderRepository },
     { provide: 'IEarlyPaymentRepository', useClass: MongoEarlyPaymentRepository },
     { provide: 'IVendorScoreRepository', useClass: MongoVendorScoreRepository },
     { provide: 'ITrustScoreRepository', useClass: MongoTrustScoreRepository },
   ],
-  exports: [CommissionEngineService, EarlyPaymentService, 'IVendorRepository', 'ITrustScoreRepository'],
+  exports: [
+    CommissionEngineService,
+    EarlyPaymentService,
+    WatchoverService,
+    GarageSaleService,
+    BazarXPublishService,
+    'IVendorRepository',
+    'ITrustScoreRepository',
+    'IEcosystemMembershipRepository',
+    'IEcosystemOrderRepository',
+  ],
 })
 export class VendorModule {}

@@ -7,8 +7,30 @@ const opportunityId = route.params.id
 // Query params'dan gelen teklif verileri
 const barterAmount = ref(Number(route.query.barter) || 0)
 const cashAmount = ref(Number(route.query.cash) || 0)
+const totalValue = ref(Number(route.query.total) || 0)
 const note = ref(String(route.query.note || ''))
 const type = ref(String(route.query.type || 'HYBRID'))
+const offeredItemId = ref(String(route.query.offeredItemId || ''))
+
+interface OfferedItemBody {
+  surplusItemId: string
+  quantity: number
+  estimatedValue?: number
+  unitPrice?: number
+  title?: string
+  unit?: string
+}
+const offeredItems = ref<OfferedItemBody[]>(route.query.offeredItems
+  ? JSON.parse(String(route.query.offeredItems)) : [])
+
+// Toplam teklif değeri: SWAP için offeredItems toplamı, diğerleri için barter+cash
+const effectiveTotalValue = computed(() => {
+  if (type.value === 'SWAP') {
+    const itemsTotal = offeredItems.value.reduce((acc, i) => acc + (i.estimatedValue ?? 0), 0)
+    return itemsTotal > 0 ? itemsTotal : totalValue.value
+  }
+  return totalValue.value || (barterAmount.value + cashAmount.value)
+})
 
 interface SurplusData {
   id: string
@@ -52,29 +74,40 @@ const confirmAndSubmit = async () => {
   errorBanner.value = null
 
   try {
+    const body: Record<string, unknown> = {
+      surplusItemId: opportunityId,
+      note: note.value,
+    }
+    if (type.value === 'SWAP' && offeredItems.value.length > 0) {
+      body.offeredItems = offeredItems.value.map(i => ({
+        surplusItemId: i.surplusItemId,
+        quantity: i.quantity,
+        estimatedValue: i.estimatedValue ?? 0,
+      }))
+      body.cashAmount = 0
+      body.cashDirection = 'NONE'
+    } else {
+      body.barterAmount = barterAmount.value
+      body.cashAmount = cashAmount.value
+      body.offeredItemId = offeredItemId.value || undefined
+    }
     const res = await $api<{ success: boolean; data?: { id?: string } }>('/api/v1/offers', {
       method: 'POST',
-      body: {
-        surplusItemId: opportunityId,
-        barterAmount:  barterAmount.value,
-        cashAmount:    cashAmount.value,
-        note:          note.value,
-        type:          type.value,
-      },
+      body,
     })
 
     if (res.success) {
+      const data = res as { success: boolean; data?: { id?: string } }
       router.push({
         path: '/ticaritakas/trade-pool/offer/success',
         query: {
-          id:      `#TRX-${res.data?.id?.substring(0, 5).toUpperCase() ?? 'NEW'}`,
+          id:      `#TRX-${data.data?.id?.substring(0, 5).toUpperCase() ?? 'NEW'}`,
           partner: opportunity.value?.company?.name ?? 'Kurumsal Satıcı',
-          amount:  new Intl.NumberFormat('tr-TR').format(barterAmount.value + cashAmount.value),
+          amount:  new Intl.NumberFormat('tr-TR').format(effectiveTotalValue.value),
         },
       })
     }
   } catch (error: unknown) {
-    // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı + §4.2 allowOnlineResale
     const err = error as { data?: { code?: string; message?: string }; message?: string }
     const code    = err?.data?.code
     const message = err?.data?.message ?? err?.message ?? 'Teklif onaylanırken bir hata oluştu.'
@@ -100,8 +133,10 @@ onMounted(() => {
   fetchOpportunity()
 })
 
-const commission = computed(() => (barterAmount.value + cashAmount.value) * 0.04)
+const commission = computed(() => effectiveTotalValue.value * 0.04)
 const discountedCommission = computed(() => commission.value / 2)
+
+const fmt = (n: number) => new Intl.NumberFormat('tr-TR').format(n)
 </script>
 
 <template>
@@ -124,9 +159,9 @@ const discountedCommission = computed(() => commission.value / 2)
             <h1 class="text-lg font-black text-[#002444] leading-tight">Teklifinizi Gözden Geçirin</h1>
           </div>
         </div>
-        
-        <div class="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-full border border-green-100">
-          <span class="text-xs font-bold text-green-700">Güvenilir Partner Modu Aktif</span>
+
+        <div class="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+          <span class="text-xs font-bold text-blue-700">BazarX Escrow Koruması</span>
         </div>
       </div>
     </header>
@@ -161,48 +196,96 @@ const discountedCommission = computed(() => commission.value / 2)
                 <div class="flex justify-between items-start">
                   <div>
                     <h3 class="font-black text-xl text-[#002444]">{{ opportunity.title }}</h3>
-                    <p class="text-slate-500 text-sm mt-2 leading-relaxed">{{ opportunity.description?.substring(0, 100) }}...</p>
                   </div>
                   <div class="text-right">
-                    <div class="text-2xl font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(opportunity.unitPrice) }} TL</div>
+                    <div class="text-2xl font-black text-[#002444]">{{ fmt(opportunity.unitPrice ?? 0) }} TL</div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">LİSTE FİYATI</div>
                   </div>
                 </div>
-                <div class="mt-6 flex flex-wrap gap-2">
-                  <span class="bg-blue-100/50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">Garanti: 2 Yıl</span>
-                  <span class="bg-blue-100/50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">Lojistik: Dahil</span>
-                  <span class="bg-blue-100/50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">Montaj: Ücretsiz</span>
+                <div v-if="opportunity.description" class="mt-4">
+                  <p class="text-xs text-slate-400 leading-relaxed italic">{{ opportunity.description.substring(0, 120) }}{{ opportunity.description.length > 120 ? '...' : '' }}</p>
                 </div>
               </div>
             </div>
 
+            <!-- SUNULAN TEKLİF DETAYI — tip bazlı -->
             <div class="mt-10">
               <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">SUNULAN TEKLİF DETAYI</h3>
-              <div class="space-y-4">
+
+              <!-- SWAP: seçilen stok kalemleri listesi -->
+              <div v-if="type === 'SWAP'" class="space-y-3">
+                <div
+                  v-for="(item, idx) in offeredItems"
+                  :key="idx"
+                  class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors"
+                >
+                  <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 font-black text-sm">
+                      {{ idx + 1 }}
+                    </div>
+                    <div>
+                      <div class="font-black text-sm text-[#002444]">{{ item.title ?? 'Ürün' }}</div>
+                      <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                        {{ item.quantity }} {{ item.unit ?? 'Adet' }}
+                        <template v-if="item.unitPrice"> × {{ fmt(item.unitPrice) }} TL</template>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-black text-base text-[#002444]">{{ fmt(item.estimatedValue ?? 0) }} TL</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">TAHMİNİ DEĞER</div>
+                  </div>
+                </div>
+
+                <!-- Toplam satırı -->
+                <div class="flex items-center justify-between px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                  <span class="text-sm font-black text-blue-800 uppercase tracking-widest">Toplam Takas Değeri</span>
+                  <span class="text-xl font-black text-[#002444]">{{ fmt(effectiveTotalValue) }} TL</span>
+                </div>
+              </div>
+
+              <!-- BARTER: sadece barter kredisi satırı -->
+              <div v-else-if="type === 'BARTER'" class="space-y-4">
                 <div class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
                   <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>
                     </div>
                     <div>
-                      <div class="font-black text-sm text-[#002444]">{{ type === 'HYBRID' ? 'Karma Teklif: Barter' : 'Barter Kredisi' }}</div>
+                      <div class="font-black text-sm text-[#002444]">Barter Kredisi</div>
                       <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Genel Barter Havuzu Kullanımı</div>
                     </div>
                   </div>
-                  <div class="text-right font-black text-lg text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(barterAmount) }} TL</div>
+                  <div class="text-right font-black text-lg text-[#002444]">{{ fmt(barterAmount) }} TL</div>
                 </div>
-                
+              </div>
+
+              <!-- HYBRID: hem barter hem nakit -->
+              <div v-else class="space-y-4">
+                <div class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
+                  <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>
+                    </div>
+                    <div>
+                      <div class="font-black text-sm text-[#002444]">Karma Teklif: Barter Kredisi</div>
+                      <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Genel Barter Havuzu Kullanımı</div>
+                    </div>
+                  </div>
+                  <div class="text-right font-black text-lg text-[#002444]">{{ fmt(barterAmount) }} TL</div>
+                </div>
+
                 <div class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 transition-colors">
                   <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                     </div>
                     <div>
-                      <div class="font-black text-sm text-[#002444]">Nakit Bakiyesi</div>
+                      <div class="font-black text-sm text-[#002444]">Karma Teklif: Nakit Bakiyesi</div>
                       <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Ticari Mevduat Hesabı Transferi</div>
                     </div>
                   </div>
-                  <div class="text-right font-black text-lg text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(cashAmount) }} TL</div>
+                  <div class="text-right font-black text-lg text-[#002444]">{{ fmt(cashAmount) }} TL</div>
                 </div>
               </div>
             </div>
@@ -227,8 +310,8 @@ const discountedCommission = computed(() => commission.value / 2)
               <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                 <div class="text-center md:text-left">
                   <div class="text-[10px] text-blue-300 font-black uppercase tracking-[0.2em] mb-2">Standart Komisyon</div>
-                  <div class="text-2xl font-black opacity-40 line-through">{{ new Intl.NumberFormat('tr-TR').format(commission) }} TL</div>
-                  <div class="text-[10px] text-blue-400 font-bold mt-1">(İşlem Bedelinin %4'ü)</div>
+                  <div class="text-2xl font-black opacity-40 line-through">{{ fmt(commission) }} TL</div>
+                  <div class="text-[10px] text-blue-400 font-bold mt-1">(Üyelik seviyenize göre değişir)</div>
                 </div>
                 <div class="flex justify-center">
                   <div class="flex flex-col items-center">
@@ -237,14 +320,14 @@ const discountedCommission = computed(() => commission.value / 2)
                       <polyline points="12 5 19 12 12 19"></polyline>
                     </svg>
                     <div class="bg-white/10 px-4 py-1.5 rounded-full mt-4 border border-white/10 text-amber-400 text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
-                      -{{ new Intl.NumberFormat('tr-TR').format(discountedCommission) }} XP Kullanıldı
+                      -{{ fmt(discountedCommission) }} XP Kullanıldı
                     </div>
                   </div>
                 </div>
                 <div class="text-center md:text-right">
                   <div class="text-[10px] text-blue-300 font-black uppercase tracking-[0.2em] mb-2">İndirimli Komisyon</div>
-                  <div class="text-4xl font-black text-amber-400">{{ new Intl.NumberFormat('tr-TR').format(discountedCommission) }} TL</div>
-                  <div class="text-[10px] text-blue-300 font-black mt-1">KOMİSYON İNDİRİMİ (%50)</div>
+                  <div class="text-4xl font-black text-amber-400">{{ fmt(discountedCommission) }} TL</div>
+                  <div class="text-[10px] text-blue-300 font-black mt-1">KOMİSYON İNDİRİMİ (Maks. %50)</div>
                 </div>
               </div>
             </div>
@@ -257,19 +340,39 @@ const discountedCommission = computed(() => commission.value / 2)
           <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
             <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">FİNANSAL ÖZET</h2>
             <div class="space-y-5">
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-slate-500 font-medium">Barter Kredi Tutarı</span>
-                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(barterAmount) }} TL</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-slate-500 font-medium">Nakit Bakiyesi</span>
-                <span class="font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(cashAmount) }} TL</span>
-              </div>
+              <!-- SWAP: kalem bazlı özet -->
+              <template v-if="type === 'SWAP'">
+                <div v-for="(item, idx) in offeredItems" :key="idx" class="flex justify-between items-center text-sm">
+                  <span class="text-slate-500 font-medium truncate max-w-[60%]">{{ item.title ?? `Kalem ${idx+1}` }}</span>
+                  <span class="font-black text-[#002444] shrink-0">{{ fmt(item.estimatedValue ?? 0) }} TL</span>
+                </div>
+              </template>
+
+              <!-- BARTER -->
+              <template v-else-if="type === 'BARTER'">
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-slate-500 font-medium">Barter Kredi Tutarı</span>
+                  <span class="font-black text-[#002444]">{{ fmt(barterAmount) }} TL</span>
+                </div>
+              </template>
+
+              <!-- HYBRID -->
+              <template v-else>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-slate-500 font-medium">Barter Kredi Tutarı</span>
+                  <span class="font-black text-[#002444]">{{ fmt(barterAmount) }} TL</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-slate-500 font-medium">Nakit Bakiyesi</span>
+                  <span class="font-black text-[#002444]">{{ fmt(cashAmount) }} TL</span>
+                </div>
+              </template>
+
               <div class="flex justify-between items-center text-sm">
                 <span class="text-slate-500 font-medium">İndirimli Komisyon Bedeli</span>
-                <span class="font-black text-green-600">{{ new Intl.NumberFormat('tr-TR').format(discountedCommission) }} TL</span>
+                <span class="font-black text-green-600">{{ fmt(discountedCommission) }} TL</span>
               </div>
-              
+
               <div v-if="note" class="pt-5 border-t border-slate-50">
                 <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest block mb-2">Ek Not</span>
                 <p class="text-xs text-slate-500 italic leading-relaxed">"{{ note }}"</p>
@@ -279,28 +382,10 @@ const discountedCommission = computed(() => commission.value / 2)
               <div class="flex justify-between items-end">
                 <span class="text-[#002444] font-black text-xs uppercase tracking-widest">Toplam Teklif Değeri</span>
                 <div class="text-right">
-                  <div class="text-3xl font-black text-[#002444]">{{ new Intl.NumberFormat('tr-TR').format(barterAmount + cashAmount) }} TL</div>
+                  <div class="text-3xl font-black text-[#002444]">{{ fmt(effectiveTotalValue) }} TL</div>
                   <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Vergiler Dahil</div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- TrustScore Preview -->
-          <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-            <div class="flex items-center gap-4 mb-6">
-              <div class="w-14 h-14 rounded-full border-4 border-green-50 flex items-center justify-center text-green-600 font-black text-lg bg-green-50 shadow-inner">
-                +2
-              </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium">İşlem başarıyla tamamlandığında.</p>
-              </div>
-            </div>
-            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-              <div class="bg-green-500 h-full w-[85%] rounded-full shadow-sm"></div>
-            </div>
-            <div class="flex justify-between mt-3">
-              <span class="text-[10px] font-black text-green-600 uppercase tracking-widest">Potansiyel: 84</span>
             </div>
           </div>
 
@@ -323,7 +408,7 @@ const discountedCommission = computed(() => commission.value / 2)
             </div>
           </div>
 
-          <!-- Master Plan §4.5 — Ekosistem içi takas yasağı uyarı bandı -->
+          <!-- Hata Bandı -->
           <div
             v-if="errorBanner"
             class="rounded-2xl border-2 px-5 py-4 mb-4"

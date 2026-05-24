@@ -28,6 +28,7 @@ const TIMEOUT_ELIGIBLE_STATUSES: SwapSessionStatus[] = [
 @Injectable()
 export class SwapSchedulerService {
   private readonly logger = new Logger(SwapSchedulerService.name);
+  private readonly AUTO_RELEASE_SLA_DAYS = 3;
 
   constructor(
     @Inject('ISwapSessionRepository') private readonly swapRepo:  ISwapSessionRepository,
@@ -74,6 +75,61 @@ export class SwapSchedulerService {
   async runManually(): Promise<void> {
     this.logger.log('SwapSession timeout taraması manuel tetiklendi');
     await this.checkTimeouts();
+  }
+
+  @Cron('0 9 * * 1-5', { name: 'autoReleaseStaleCollaterals', timeZone: 'Europe/Istanbul' })
+  async autoReleaseStaleCollaterals(): Promise<void> {
+    this.logger.log('Auto-release SLA kontrolü başlıyor...', SwapSchedulerService.name);
+
+    const cutoffDate = new Date(
+      Date.now() - this.AUTO_RELEASE_SLA_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    const staleSessions = await this.swapRepo.findByStatusAndPendingReleaseBefore(cutoffDate, BATCH_SIZE);
+
+    for (const session of staleSessions) {
+      try {
+        const props = session.getProps();
+        if (!props.initiatorHoldId || !props.receiverHoldId) {
+          this.logger.warn(
+            `Session ${session.id} holdId eksik — atlanıyor`,
+            SwapSchedulerService.name,
+          );
+          continue;
+        }
+
+        await this.financialGateway.releaseFunds(
+          props.initiatorHoldId,
+          `auto-release-${session.id}-initiator`,
+        );
+        await this.financialGateway.releaseFunds(
+          props.receiverHoldId,
+          `auto-release-${session.id}-receiver`,
+        );
+
+        session.releaseCollateral();
+        session.complete();
+        await this.swapRepo.save(session);
+
+        await this.auditLog.log({
+          actorId:      'SYSTEM',
+          action:       'SWAP_AUTO_RELEASED',
+          resourceType: 'SwapSession',
+          resourceId:   session.id,
+          newValue:     { collateralStatus: 'RELEASED', autoReleasedAt: new Date().toISOString() },
+        });
+
+        this.logger.log(
+          `Session ${session.id} SLA aşımı — teminat otomatik serbest bırakıldı`,
+          SwapSchedulerService.name,
+        );
+      } catch (err: unknown) {
+        this.logger.error(
+          `Session ${session.id} auto-release başarısız: ${err instanceof Error ? err.message : String(err)}`,
+          SwapSchedulerService.name,
+        );
+      }
+    }
   }
 
   private async transitionToTimeout(session: SwapSession, reason: string): Promise<void> {

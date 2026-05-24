@@ -56,7 +56,13 @@ export const useTradeOffers = () => {
           { query: { companyId: myCompany.value.id, type: activeTab.value } }
         )
         if (res.success && res.data) {
-          offers.value = res.data
+          const all = res.data
+          const companyId = myCompany.value.id
+          if (activeTab.value === 'received') {
+            offers.value = all.filter(o => o.receiverId === companyId || o.toCompanyId === companyId || o.toCompany?.id === companyId)
+          } else {
+            offers.value = all.filter(o => o.initiatorId === companyId || o.fromCompanyId === companyId || o.fromCompany?.id === companyId)
+          }
         }
       }
     } catch (err: unknown) {

@@ -1,5 +1,5 @@
 // apps/backend/src/modules/barter/presentation/surplus.controller.ts
-import { ISurplusCategory, ICompany } from '@barterborsa/shared-persistence';
+import { ISurplusCategory, ICompany, ICategoryAttribute } from '@barterborsa/shared-persistence';
 import { safeRegexFilter } from '../../../common/utils/regex.utils';
 
 import {
@@ -56,6 +56,7 @@ export class SurplusController {
     @Inject('IVendorRepository') private readonly vendorRepository: IVendorRepository,
     @InjectModel('SurplusCategory') private readonly surplusCategoryModel: Model<ISurplusCategory>,
     @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('CategoryAttribute') private readonly categoryAttributeModel: Model<ICategoryAttribute>,
   ) {}
 
   // ─── Kategoriler ──────────────────────────────────────────────────────────
@@ -109,8 +110,31 @@ export class SurplusController {
   @ApiOperation({ summary: 'Surplus kategori özelliklerini listele' })
   @ApiParam({ name: 'id' })
   @Get('categories/:id/attributes')
-  async getCategoryAttributes(@Param('id') id: string) {
-    return { success: true, data: [] };
+  async getCategoryAttributes(@Param('id') id: string): Promise<{ success: boolean; data: { id: string; name: string; label: string; type: string; options: unknown[]; unit?: string; placeholder?: string; isRequired?: boolean; isFilterable?: boolean; order?: number }[] }> {
+    // surplusCategoryId veya categoryId üzerinden eşleştir, isActive filtrele
+    const attrs = await this.categoryAttributeModel
+      .find({
+        $or: [{ surplusCategoryId: id }, { categoryId: id }],
+        isActive: true,
+      })
+      .sort({ order: 1 })
+      .lean()
+      .exec();
+
+    const data = attrs.map(a => ({
+      id:          a.id,
+      name:        a.name,
+      label:       a.label,
+      type:        a.type,
+      options:     (a.options as unknown as unknown[]) ?? [],
+      unit:        a.unit,
+      placeholder: a.placeholder,
+      isRequired:  a.isRequired,
+      isFilterable: a.isFilterable,
+      order:       a.order,
+    }));
+
+    return { success: true, data };
   }
 
   // ─── Surplus listesi ──────────────────────────────────────────────────────
@@ -229,17 +253,29 @@ export class SurplusController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     if (id === 'all') return this.listAll();
-    const item = await this.surplusRepository.findByIdWithCompany(id);
+
+    // findById mapper üzerinden geçer — Decimal128 alanlar düzgün number'a dönüşür
+    const item = await this.surplusRepository.findById(id);
     if (!item) throw new NotFoundException('Surplus ürün bulunamadı');
-    
-    if (item.companyId) {
-      const company = (await this.companyModel.findOne({ id: item.companyId }).lean()) as { id: string; name?: string } | null;
-      if (company) {
-        item.company = { id: company.id, name: company.name ?? '' };
+
+    const props = item.getProps();
+
+    let company: { id: string; name: string } | null = null;
+    if (props.companyId) {
+      const companyDoc = (await this.companyModel.findOne({ id: props.companyId }).lean()) as { id: string; name?: string } | null;
+      if (companyDoc) {
+        company = { id: companyDoc.id, name: companyDoc.name ?? '' };
       }
     }
-    
-    return { success: true, data: item };
+
+    return {
+      success: true,
+      data: {
+        ...props,
+        id: item.id,
+        company,
+      },
+    };
   }
 
   // ─── Surplus güncelle (vendor) ────────────────────────────────────────────

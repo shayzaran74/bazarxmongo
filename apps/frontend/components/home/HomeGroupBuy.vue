@@ -149,8 +149,9 @@ const sortedTiers = computed(() => {
 })
 
 const calculateMaxDiscount = () => {
-  if (!activeGroupBuy.value?.tiers || !activeGroupBuy.value?.Product) return 0
-  const basePrice = activeGroupBuy.value.Product.price
+  if (!activeGroupBuy.value?.tiers) return 0
+  const basePrice = activeGroupBuy.value.originalPrice || 0
+  if (!basePrice) return 0
   const minPrice = Math.min(...activeGroupBuy.value.tiers.map((t: GroupBuyTier) => t.price))
   return Math.round(((basePrice - minPrice) / basePrice) * 100)
 }

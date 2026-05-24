@@ -16,6 +16,7 @@ export interface IBrandEcosystem {
   isBlindPool: boolean;
   logoUrl?: string;
   ownerId: string;
+  maxMembers: number;
   updatedAt: Date;
 }
 
@@ -31,6 +32,7 @@ export const BrandEcosystemSchema = new Schema<IBrandEcosystem>({
   isBlindPool: { type: Boolean, default: true, alias: 'is_blind_pool' },
   logoUrl: { type: String, alias: 'logo_url' },
   ownerId: { type: String, alias: 'owner_id' },
+  maxMembers: { type: Number, default: 50, alias: 'max_members' },
   updatedAt: { type: Date, alias: 'updated_at' },
 }, {
   timestamps: true,

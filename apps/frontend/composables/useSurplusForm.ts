@@ -143,15 +143,23 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
   }
 
   const syncCategoriesFromItem = async (): Promise<void> => {
-    const main = mainCategories.value.find(c => c.name === formData.value.category)
+    // category alanı ID veya isim olabilir (backend ID saklar) — ikisini de dene
+    const main = mainCategories.value.find(
+      c => c.id === formData.value.category || c.name === formData.value.category
+    )
     if (main) {
-      selectedMainCategory.value = main.id
-      subCategories1.value       = surplusCategories.value.filter(c => c.parentId === main.id)
-      const sub1 = subCategories1.value.find(c => c.name === formData.value.materialType)
+      selectedMainCategory.value  = main.id
+      formData.value.category     = main.name  // görüntüleme için isme normalize et
+      subCategories1.value        = surplusCategories.value.filter(c => c.parentId === main.id)
+      const sub1 = subCategories1.value.find(
+        c => c.id === formData.value.materialType || c.name === formData.value.materialType
+      )
       if (sub1) {
         selectedSubCategory1.value = sub1.id
         subCategories2.value       = surplusCategories.value.filter(c => c.parentId === sub1.id)
-        const sub2 = subCategories2.value.find(c => c.name === formData.value.materialType)
+        const sub2 = subCategories2.value.find(
+          c => c.id === formData.value.materialType || c.name === formData.value.materialType
+        )
         if (sub2) selectedSubCategory2.value = sub2.id
       }
       await fetchSurplusAttributes(selectedSubCategory2.value || selectedSubCategory1.value || selectedMainCategory.value)
@@ -230,11 +238,12 @@ export const useSurplusForm = (item: SurplusItem | null = null) => {
       if (file.size > 5 * 1024 * 1024) continue
       const data = new FormData()
       data.append('file', file)
-      const res = await $api<{ success: boolean; url?: string }>('/api/v1/upload?type=product', {
+      const res = await $api<{ success: boolean; url?: string; data?: { publicUrl?: string } }>('/api/v1/upload?type=product', {
         method: 'POST',
         body:   data,
       })
-      if (res.success && res.url) formData.value.images.push(res.url)
+      const uploadedUrl = res.url ?? res.data?.publicUrl
+      if (res.success && uploadedUrl) formData.value.images.push(uploadedUrl)
     }
   }
 

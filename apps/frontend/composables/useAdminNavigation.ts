@@ -56,7 +56,6 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
           icon: BuildingOfficeIcon,
           isOpen: true,
           children: [
-            { label: 'Firma Onayları', to: '/admin/company-approvals', icon: BuildingOfficeIcon },
             { label: 'İlan Onayları', to: '/admin/surplus-approvals', icon: SparklesIcon },
             { label: 'İstek Onayları', to: '/admin/wanted-items', icon: ClipboardDocumentListIcon },
             { label: 'Teklif Onayları', to: '/admin/offers', icon: ArrowsRightLeftIcon },
@@ -64,6 +63,7 @@ export const useAdminNavigation = (isSuperAdmin: boolean) => {
             { label: 'Barter Kategorileri', to: '/admin/barter-categories', icon: TagIcon },
             { label: 'Barter Yönetimi', to: '/admin/barter', icon: BanknotesIcon },
             { label: 'Akıllı Eşleştirme', to: '/admin/barter/matching', icon: SparklesIcon },
+            { label: 'Teminat Yönetimi', to: '/admin/barter/collateral', icon: BanknotesIcon },
             { label: 'Talep Eşleştirme', to: '/admin/demand-matching', icon: UserGroupIcon },
             { label: '🔭 Watchtower', to: '/admin/chat-monitor', icon: ChatBubbleLeftRightIcon },
             { label: '🏢 Ekosistem', to: '/admin/ecosystems', icon: SparklesIcon }

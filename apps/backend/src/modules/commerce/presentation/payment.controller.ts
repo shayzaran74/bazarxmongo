@@ -26,11 +26,15 @@ export class CreditCardProcessDto {
 export class BankTransferConfirmDto {
   @IsNumber() @IsPositive() @Max(MAX_TOPUP_AMOUNT) amount!: number;
   @IsOptional() @IsString() referenceNumber?: string;
+  @IsOptional() @IsString() reference?: string;
+  @IsOptional() @IsString() orderNumber?: string;
 }
 
 export class EftConfirmDto {
   @IsNumber() @IsPositive() @Max(MAX_TOPUP_AMOUNT) amount!: number;
   @IsOptional() @IsString() senderAccount?: string;
+  @IsOptional() @IsString() reference?: string;
+  @IsOptional() @IsString() orderNumber?: string;
 }
 
 @ApiTags('Payments')

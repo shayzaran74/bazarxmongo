@@ -412,6 +412,6 @@ const handleRegister = async () => {
 }
 
 const handleGoogleRegister = () => {
-  window.location.href = `${useRuntimeConfig().public.apiBase}/api/auth/google`
+  window.location.href = '/api/v1/auth/google'
 }
 </script>

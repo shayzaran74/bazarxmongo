@@ -32,11 +32,11 @@ export class WalletAdminController {
   @ApiOperation({ summary: 'Get all wallet requests' })
   @Get('requests')
   async getRequests(
-    @Query() query: WalletQueryDto & { userId: string },
+    @Query() query: WalletQueryDto,
   ) {
-    if (!query.userId?.trim()) throw new BadRequestException('userId query param zorunludur');
+    const userId = query.user || query.accountId;
     const data = await this.queryBus.execute(
-      new GetWalletRequestsQuery(query.userId, query.accountType, query.page || 1, query.limit || 10),
+      new GetWalletRequestsQuery(userId || '', query.accountType, query.page || 1, query.limit || 10),
     );
     return { success: true, data };
   }
@@ -62,11 +62,11 @@ export class WalletAdminController {
   @ApiOperation({ summary: 'Get all withdrawals' })
   @Get('withdrawals')
   async getWithdrawals(
-    @Query() query: WalletQueryDto & { userId: string },
+    @Query() query: WalletQueryDto,
   ) {
-    if (!query.userId?.trim()) throw new BadRequestException('userId query param zorunludur');
+    const userId = query.user || query.accountId;
     const data = await this.queryBus.execute(
-      new GetWithdrawalsQuery(query.userId, query.accountType, query.page || 1, query.limit || 10),
+      new GetWithdrawalsQuery(userId || '', query.accountType, query.page || 1, query.limit || 10),
     );
     return { success: true, data };
   }

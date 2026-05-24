@@ -7,6 +7,11 @@ import { BadRequestException } from '@nestjs/common';
 import { IVendorRepository } from '../../../vendor/domain/repositories/vendor.repository.interface';
 import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
 
+interface BarterChainResponse {
+  id: string;
+  offers: Array<{ offeredItemId?: string; requestedItemId?: string }>;
+}
+
 @QueryHandler(GetMyBarterChainsQuery)
 export class GetMyBarterChainsHandler implements IQueryHandler<GetMyBarterChainsQuery> {
   constructor(
@@ -14,7 +19,7 @@ export class GetMyBarterChainsHandler implements IQueryHandler<GetMyBarterChains
     @Inject('ISwapSessionRepository') private readonly swapSessionRepository: ISwapSessionRepository,
   ) {}
 
-  async execute(query: GetMyBarterChainsQuery) {
+  async execute(query: GetMyBarterChainsQuery): Promise<BarterChainResponse[]> {
     const vendor = await this.vendorRepository.findByUserId(query.userId);
 
     if (!vendor) {
@@ -27,6 +32,14 @@ export class GetMyBarterChainsHandler implements IQueryHandler<GetMyBarterChains
     }
 
     const result = await this.swapSessionRepository.findByCompanyWithFilters(companyId, 0, 100);
-    return result.items;
+
+    // SwapSession → BarterChain formatına map et
+    return result.items.map(session => {
+      const props = session.getProps();
+      return {
+        id:     session.id,
+        offers: [{ offeredItemId: props.tradeOfferId }],
+      } as BarterChainResponse;
+    });
   }
 }

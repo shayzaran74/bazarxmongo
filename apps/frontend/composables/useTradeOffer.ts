@@ -1,7 +1,6 @@
 // apps/frontend/composables/useTradeOffer.ts
 
 import { ref, computed, watch, onMounted } from 'vue'
-import { useNuxtApp } from '#app'
 import { useApi } from '~/composables/useApi'
 
 export const LEGAL_TEXT = `BAZARX DİJİTAL TAKAS VE TESLİM TAAHHÜTNAMESİ
@@ -63,60 +62,74 @@ interface SurplusListResponse {
   data?: SurplusListItem[]
 }
 
+interface SelectedOfferItem {
+  surplusItemId: string
+  quantity: number
+}
+
 interface OfferFormData {
   fromCompanyId: string
   toCompanyId: string | undefined
-  offeredItemId: string
-  requestedItemId: string | undefined
-  offeredQuantity: number
-  requestedQuantity: number | undefined
-  cashDifference: number
+  offeredItems: SelectedOfferItem[]
+  requestedItems: SelectedOfferItem[]
+  cashAmount: number
+  cashDirection: string
   message: string
 }
 
-export const useTradeOffer = (props: TradeOfferProps, emit: (event: string) => void) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const useTradeOffer = (props: TradeOfferProps) => {
   const { $api } = useApi()
+  const nuxt      = useNuxtApp()
   const myItems    = ref<SurplusListItem[]>([])
   const submitting = ref(false)
   const legalAccepted  = ref(false)
   const showLegalModal = ref(false)
 
   const formData = ref<OfferFormData>({
-    fromCompanyId:     '',
-    toCompanyId:       props.isCounter ? props.originalOffer?.fromCompanyId : props.item?.companyId,
-    offeredItemId:     props.isCounter ? (props.originalOffer?.requestedItemId ?? '') : '',
-    requestedItemId:   props.isCounter ? props.originalOffer?.offeredItemId    : props.item?.id,
-    offeredQuantity:   props.isCounter ? (props.originalOffer?.requestedQuantity ?? 0) : 0,
-    requestedQuantity: props.isCounter ? props.originalOffer?.offeredQuantity : props.item?.quantity,
-    cashDifference:    props.isCounter ? -(props.originalOffer?.cashDifference ?? 0) : 0,
-    message: '',
+    fromCompanyId:   '',
+    toCompanyId:     props.isCounter ? props.originalOffer?.fromCompanyId : props.item?.companyId,
+    offeredItems:    [],
+    requestedItems:  props.item?.id
+      ? [{ surplusItemId: props.item.id, quantity: props.item.quantity ?? 1 }]
+      : [],
+    cashAmount:   0,
+    cashDirection: 'NONE',
+    message:     '',
   })
 
-  const selectedItem = computed((): SurplusListItem | undefined =>
-    myItems.value.find(it => it.id === formData.value.offeredItemId)
+  const selectedItems = computed((): SurplusListItem[] =>
+    formData.value.offeredItems
+      .map(o => myItems.value.find(it => it.id === o.surplusItemId))
+      .filter(Boolean) as SurplusListItem[]
   )
 
+  const totalOfferedValue = computed((): number =>
+    selectedItems.value.reduce((acc, it) => acc + (it.quantity ?? 0) * (it.availableQuantity > 0 ? 1 : 0), 0)
+  )
+
+  const selectedItem = computed((): SurplusListItem | undefined => selectedItems.value[0])
   const selectedItemAvailable = computed((): number => selectedItem.value?.availableQuantity ?? 0)
   const selectedItemUnit      = computed((): string => selectedItem.value?.unit ?? 'ADET')
 
-  watch(() => formData.value.offeredItemId, (newVal) => {
-    if (newVal && selectedItem.value && formData.value.offeredQuantity === 0) {
-      formData.value.offeredQuantity = selectedItem.value.availableQuantity
+  watch(() => formData.value.offeredItems, (newVal) => {
+    if (newVal.length === 0) {
+      formData.value.offeredItems = []
     }
-  })
+  }, { deep: true })
 
   const fetchMyCompanyAndItems = async (): Promise<void> => {
     try {
       const compRes = await $api<CompanyResponse>('/api/v1/companies/me')
-      const company = (compRes as CompanyResponse).company ?? compRes.data
+      const company = (compRes as CompanyResponse).company ?? (compRes as { data?: { id: string } }).data
       if (compRes.success && company) {
-        formData.value.fromCompanyId = company.id
+        formData.value.fromCompanyId = (company as { id: string }).id
         const itemsRes = await $api<SurplusListResponse>('/api/v1/surplus', {
-          query: { companyId: company.id, status: 'active' },
+          query: { companyId: (company as { id: string }).id, status: 'active' },
         })
         if (itemsRes.success) {
-          const raw = (itemsRes as SurplusListResponse).items ?? itemsRes.data ?? []
-          myItems.value = raw
+          const raw = (itemsRes as SurplusListResponse).items ?? (itemsRes as { data?: SurplusListItem[] }).data ?? []
+          myItems.value = (raw as SurplusListItem[])
             .map(item => ({ ...item, availableQuantity: item.quantity - (item.blockedQuantity ?? 0) }))
             .filter(item => item.availableQuantity > 0)
         }
@@ -129,29 +142,47 @@ export const useTradeOffer = (props: TradeOfferProps, emit: (event: string) => v
     showLegalModal.value = false
   }
 
+  const emit = defineEmits<{
+    success: []
+    close: []
+  }>()
+
   const submitOffer = async (): Promise<void> => {
-    const toast = useNuxtApp().$toast as { error: (msg: string) => void; success: (msg: string) => void }
+    const toast = nuxt.$toast as { error: (msg: string) => void; success: (msg: string) => void } | undefined
     if (submitting.value) return
-    if (!legalAccepted.value) { toast.error('Lütfen Dijital Takas Taahhütnamesini onaylayın.'); return }
-    if (formData.value.offeredQuantity <= 0 || (formData.value.requestedQuantity ?? 0) <= 0) {
-      toast.error("Lütfen geçerli miktarlar girin (0'dan büyük olmalıdır)."); return
+    if (!legalAccepted.value) { toast?.error('Lütfen Dijital Takas Taahhütnamesini onaylayın.'); return }
+    if (formData.value.offeredItems.length === 0) {
+      toast?.error('Lütfen en az bir ürün seçin.'); return
+    }
+    if (formData.value.requestedItems.length === 0) {
+      toast?.error('Lütfen en az bir istenen ürün belirtin.'); return
+    }
+    const totalOfferedQty = formData.value.offeredItems.reduce((a, o) => a + o.quantity, 0)
+    if (totalOfferedQty <= 0) {
+      toast?.error('Miktar sıfırdan büyük olmalıdır.'); return
     }
     submitting.value = true
     try {
       const endpoint = props.isCounter
         ? `/api/v1/offers/${props.originalOffer!.id}/counter`
         : '/api/v1/offers'
-      const response = await $api<{ success: boolean }>(endpoint, {
-        method: 'POST',
-        body: { ...formData.value, legalAccepted: true },
-      })
+      const body: Record<string, unknown> = {
+        toCompanyId:     formData.value.toCompanyId,
+        offeredItems:    formData.value.offeredItems,
+        requestedItems:  formData.value.requestedItems,
+        cashAmount:      formData.value.cashAmount,
+        cashDirection:   formData.value.cashDirection,
+        message:         formData.value.message,
+        legalAccepted:   true,
+      }
+      const response = await $api<{ success: boolean }>(endpoint, { method: 'POST', body })
       if (response.success) {
-        toast.success(props.isCounter ? 'Karşı teklifiniz gönderildi!' : 'Takas teklifiniz gönderildi!')
+        toast?.success(props.isCounter ? 'Karşı teklifiniz gönderildi!' : 'Takas teklifiniz gönderildi!')
         emit('success')
       }
     } catch (error: unknown) {
       const msg = (error as { data?: { message?: string } })?.data?.message ?? 'Teklif gönderilirken bir hata oluştu.'
-      toast.error(msg)
+      toast?.error(msg)
     } finally {
       submitting.value = false
     }
@@ -169,7 +200,7 @@ export const useTradeOffer = (props: TradeOfferProps, emit: (event: string) => v
 
   return {
     myItems, submitting, legalAccepted, showLegalModal,
-    formData, selectedItem, selectedItemAvailable, selectedItemUnit,
+    formData, selectedItems, selectedItem, selectedItemAvailable, selectedItemUnit,
     acceptLegal, submitOffer, getMainImage, LEGAL_TEXT,
   }
 }

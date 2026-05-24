@@ -1,7 +1,7 @@
 // apps/backend/src/modules/commerce/commerce.module.ts
 // CommerceModule — Mongoose migration (ADR-005 Faz 2a)
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HttpModule } from '@nestjs/axios';
@@ -131,6 +131,7 @@ const Repositories = [
     ]),
     FinancialGatewayModule,
     CatalogModule,
+    forwardRef(() => VendorModule),
     AuditMongooseModule,
   ],
   controllers: [
