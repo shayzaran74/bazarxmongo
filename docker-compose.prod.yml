@@ -69,6 +69,21 @@ services:
       - NODE_ENV=production
       - CORS_ORIGIN=${CORS_ORIGIN}
       - WS_CORS_ORIGIN=${WS_CORS_ORIGIN}
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - JWT_ACCESS_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=bazarx-media
+      - STORAGE_TYPE=minio
+      - FINANCIAL_SERVICE_URL=financial-service:50051
     expose:
       - "3001"
     depends_on:
@@ -96,6 +111,14 @@ services:
     restart: always
     env_file:
       - apps/financial-service/.env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - JWT_ACCESS_SECRET=${JWT_SECRET}
     expose:
       - "50051"
     depends_on:
@@ -114,6 +137,17 @@ services:
     restart: always
     env_file:
       - apps/delivery-service/.env
+    environment:
+      - NODE_ENV=production
+      - port=3002
+      - grpcPort=50052
+      - protoPath=apps/delivery-service/src/grpc/delivery.proto
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - JWT_ACCESS_SECRET=${JWT_SECRET}
     expose:
       - "3002"
     depends_on:
