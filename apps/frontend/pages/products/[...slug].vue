@@ -298,6 +298,8 @@ watch(product, (newProduct) => {
     })
   }
 }, { immediate: true })
+
+definePageMeta({ layout: 'default', hideSideAds: true })
 </script>
 
 <style scoped>

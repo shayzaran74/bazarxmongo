@@ -67,7 +67,16 @@ export const useProductCard = (props: { product: Product, badges?: DynamicBadges
     event.stopPropagation()
     try {
       if (!props.product.id) return
-      await cartStore.addToCart(props.product.id.toString(), 1, undefined, props.product)
+      // product.id = Listing ID (MongoDB _id), bestListingId = primary listing for cart
+      // listingId is required for backend to find the listing directly
+      const listingId = (props.product as any).bestListingId || props.product.id
+      await cartStore.addToCart(
+        (props.product as any).catalogProductId || props.product.id,
+        1,
+        undefined,
+        props.product,
+        listingId
+      )
       nuxtApp.$toast.success(t('product.addedToCart') || 'Ürün sepete eklendi')
     } catch (err: unknown) {
       const errorMsg = (err as Error).message || t('product.addToCartError') || 'Hata oluştu'

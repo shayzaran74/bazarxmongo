@@ -14,24 +14,29 @@
     />
 
     <!-- Main Content Grid -->
-    <div class="relative flex justify-center">
-      <ClientOnly>
-        <LayoutPremiumSideAd 
-          v-if="sideAds.length" 
-          side="left" 
-          :ads="sideAds.filter(a => a.side === 'LEFT')" 
+    <div :class="['relative transition-all duration-300', hideSideAds ? '' : 'flex justify-center']">
+      <ClientOnly v-if="!hideSideAds">
+        <LayoutPremiumSideAd
+          v-if="sideAds.length"
+          side="left"
+          :ads="sideAds.filter(a => a.side === 'LEFT')"
         />
       </ClientOnly>
 
-      <main class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 relative z-[1]">
+      <main
+        :class="[
+          'w-full py-6 relative z-[1] transition-all duration-300',
+          hideSideAds ? 'px-0' : 'px-4 sm:px-6 lg:px-8 max-w-7xl'
+        ]"
+      >
         <slot />
       </main>
 
-      <ClientOnly>
-        <LayoutPremiumSideAd 
-          v-if="sideAds.length" 
-          side="right" 
-          :ads="sideAds.filter(a => a.side === 'RIGHT')" 
+      <ClientOnly v-if="!hideSideAds">
+        <LayoutPremiumSideAd
+          v-if="sideAds.length"
+          side="right"
+          :ads="sideAds.filter(a => a.side === 'RIGHT')"
         />
       </ClientOnly>
     </div>
@@ -81,6 +86,12 @@ import VendorUpsellModal from '~/components/layout/VendorUpsellModal.vue'
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 
 const settingsStore = useSiteSettingsStore()
+const route = useRoute()
+const hideSideAds = computed(() => {
+  const meta = route.meta
+  return meta && (meta.hideSideAds === true || (Array.isArray(meta) && meta.some(m => m?.hideSideAds === true)))
+})
+
 const {
   currentEcosystem, ecosystemHomeLink, siteLogoUrl,
   brandName, brandSubtitle, categories,

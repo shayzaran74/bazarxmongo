@@ -2,22 +2,7 @@
 > @bazarx/backend@1.0.0 prebuild /Users/macbook/Desktop/bazarx/apps/backend
 > rm -rf dist || true
 
-rm: dist/packages/shared/shared-persistence/src/schemas/backend: Directory not empty
-rm: dist/packages/shared/shared-persistence/src/schemas: Directory not empty
-rm: dist/packages/shared/shared-persistence/src: Directory not empty
-rm: dist/packages/shared/shared-persistence: Directory not empty
-rm: dist/packages/shared: Directory not empty
-rm: dist/packages: Directory not empty
-rm: dist/apps/backend/src/modules: Directory not empty
-rm: dist/apps/backend/src: Directory not empty
-rm: dist/apps/backend: Directory not empty
-rm: dist/apps: Directory not empty
-rm: dist: Directory not empty
 
 > @bazarx/backend@1.0.0 build /Users/macbook/Desktop/bazarx/apps/backend
 > nest build
 
-
- Error  ENOTEMPTY: directory not empty, rmdir '/Users/macbook/Desktop/bazarx/apps/backend/dist/apps/backend/src/modules/vendor/infrastructure/persistence'
-
- ELIFECYCLE  Command failed with exit code 1.

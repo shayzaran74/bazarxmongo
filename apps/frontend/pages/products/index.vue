@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="max-w-[1400px] mx-auto px-4 py-6">
+    <div class="w-full px-4 lg:px-8 py-6">
       <!-- Breadcrumb -->
       <nav class="text-sm mb-4 flex items-center gap-2 text-gray-600">
         <NuxtLink to="/" class="hover:text-primary-600">{{ $t('products.home') }}</NuxtLink>
@@ -25,9 +25,9 @@
         </div>
       </div>
 
-      <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Sidebar Filters -->
-        <aside class="w-full lg:w-64 flex-shrink-0">
+      <div class="flex flex-col xl:flex-row gap-6">
+        <!-- Sidebar Filters (Collapsible on mobile) -->
+        <aside class="xl:w-72 flex-shrink-0">
           <ProductFilters
             :categories="categories"
             :current-filters="currentFilters"
@@ -41,13 +41,56 @@
           <div v-if="pending" class="flex justify-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
-          
+
           <div v-else-if="error" class="bg-red-50 p-4 rounded-xl text-red-600 text-center">
             {{ $t('products.errorLoading') }}
           </div>
 
           <div v-else>
-            <div v-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <!-- Active Filters Pills -->
+            <div v-if="hasActiveFilters" class="mb-6 flex flex-wrap items-center gap-3">
+              <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Aktif Filtreler:</span>
+              <button
+                v-if="currentFilters.categorySlug"
+                class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-200 transition-colors"
+                @click="removeFilter('categorySlug')"
+              >
+                {{ getCategoryName(currentFilters.categorySlug) }}
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+              <button
+                v-if="currentFilters.brand"
+                class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-200 transition-colors"
+                @click="removeFilter('brand')"
+              >
+                {{ currentFilters.brand }}
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+              <button
+                v-if="currentFilters.minPrice || currentFilters.maxPrice"
+                class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-200 transition-colors"
+                @click="removeFilter('price')"
+              >
+                {{ currentFilters.minPrice || 0 }}₺ - {{ currentFilters.maxPrice || '∞' }}₺
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+              <button
+                v-if="currentFilters.search"
+                class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-200 transition-colors"
+                @click="removeFilter('search')"
+              >
+                "{{ currentFilters.search }}"
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+              <button
+                class="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold hover:bg-gray-200 transition-colors"
+                @click="clearFilters"
+              >
+                Tümünü Temizle
+              </button>
+            </div>
+
+            <div v-if="products.length > 0" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
               <ProductCard
                 v-for="product in products"
                 :key="product.id"
@@ -65,15 +108,15 @@
               <button @click="clearFilters" class="px-6 py-2 bg-primary-600 text-white rounded-xl font-bold">{{ $t('products.clearFilters') }}</button>
             </div>
 
-            <!-- Simple Pagination -->
+            <!-- Pagination -->
             <div v-if="pagination.totalPages > 1" class="mt-12 flex justify-center gap-2">
-              <button 
+              <button
                 :disabled="pagination.page === 1"
                 class="px-4 py-2 border rounded-xl disabled:opacity-30"
                 @click="goToPage(pagination.page - 1)"
               >‹</button>
               <span class="flex items-center px-4 font-bold text-sm">{{ pagination.page }} / {{ pagination.totalPages }}</span>
-              <button 
+              <button
                 :disabled="pagination.page === pagination.totalPages"
                 class="px-4 py-2 border rounded-xl disabled:opacity-30"
                 @click="goToPage(pagination.page + 1)"
@@ -88,6 +131,7 @@
 
 <script setup lang="ts">
 import * as HeroIcons from '@heroicons/vue/24/outline'
+import { XMarkIcon } from '@heroicons/vue/24/outline'
 import type { Product, Category } from '@barterborsa/shared-types'
 import { getProductUrl } from '~/utils/product-url'
 import { useProductService } from '~/services/api/ProductService'
@@ -110,10 +154,27 @@ const currentFilters = computed(() => {
   }
   if (route.query.minPrice) filters.minPrice = Number(route.query.minPrice)
   if (route.query.maxPrice) filters.maxPrice = Number(route.query.maxPrice)
-  
-  // Clean undefined
+
   return Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined))
 })
+
+const hasActiveFilters = computed(() =>
+  currentFilters.value.categorySlug || currentFilters.value.brand ||
+  currentFilters.value.minPrice || currentFilters.value.maxPrice || currentFilters.value.search
+)
+
+const getCategoryName = (slug: string) => {
+  const cat = categories.value.find(c => c.slug === slug)
+  return cat?.name || slug
+}
+
+const removeFilter = (key: string) => {
+  const q = { ...route.query }
+  if (key === 'price') { delete q.minPrice; delete q.maxPrice }
+  else if (key === 'categorySlug') { delete q.categorySlug; delete q.category }
+  else delete q[key]
+  router.push({ query: q })
+}
 
 // SSR Data Fetch
 const { data: categoriesData } = await useAsyncData('categories', () => categoryService.getCategories())
@@ -123,7 +184,7 @@ const { data: productsData, pending, error, refresh } = await useAsyncData(
   `products-${JSON.stringify(currentFilters.value)}`,
   () => productService.getProducts({
     ...currentFilters.value,
-    limit: 20
+    limit: 24
   }),
   { watch: [() => route.query] }
 )
@@ -132,7 +193,7 @@ const products = computed(() => productsData.value?.data || [])
 const pagination = computed(() => ({
   page: productsData.value?.meta?.page || 1,
   total: productsData.value?.meta?.total || 0,
-  totalPages: Math.ceil((productsData.value?.meta?.total || 0) / 20)
+  totalPages: Math.ceil((productsData.value?.meta?.total || 0) / 24)
 }))
 
 const currentCategory = computed(() => {
@@ -154,6 +215,6 @@ const goToPage = (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({ title: computed(() => `${currentCategoryName.value} | BarterBorsa`) })
 </script>
