@@ -12,6 +12,11 @@
         "include": "modules/financial-gateway/grpc/*.proto",
         "outDir": "dist/apps/backend/src",
         "watchAssets": true
+      },
+      {
+        "include": "modules/delivery/grpc/*.proto",
+        "outDir": "dist/apps/backend/src",
+        "watchAssets": true
       }
     ]
   }
