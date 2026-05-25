@@ -4,6 +4,7 @@ WORKDIR /app
 RUN npm install -g pnpm@9
 
 COPY . .
+RUN find . -name "*.tsbuildinfo" -delete || true
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
