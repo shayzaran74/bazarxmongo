@@ -45,7 +45,7 @@ export class SystemVendorService implements OnModuleInit {
       { upsert: true, setDefaultsOnInsert: true },
     );
 
-    const admin = await this.userModel.findOne({ role: 'ADMIN' }, { id: 1 }).lean();
+    const admin = await this.userModel.findOne({ role: { $in: ['ADMIN', 'SUPER_ADMIN'] } }, { id: 1 }).lean();
     if (!admin) {
       this.logger.error('CRITICAL: No admin user found for system vendor. Seed the database!');
       return '';

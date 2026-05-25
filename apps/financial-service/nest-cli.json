@@ -8,6 +8,7 @@
     "assets": [
       {
         "include": "grpc/*.proto",
+        "outDir": "dist/apps/financial-service/src",
         "watchAssets": true
       }
     ]

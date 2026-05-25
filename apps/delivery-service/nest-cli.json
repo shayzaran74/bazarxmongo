@@ -7,6 +7,7 @@
     "assets": [
       {
         "include": "grpc/*.proto",
+        "outDir": "dist/apps/delivery-service/src",
         "watchAssets": true
       }
     ]
