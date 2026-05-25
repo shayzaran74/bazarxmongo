@@ -13,7 +13,9 @@ RUN npx turbo run build --filter=@barterborsa/financial-service...
 FROM node:20-alpine AS runner
 
 WORKDIR /app
+RUN npm install -g pnpm
 COPY --from=builder /app ./
 
 EXPOSE 50051
-CMD ["npm", "--filter", "@barterborsa/financial-service", "run", "start"]
+CMD ["pnpm", "--filter", "@barterborsa/financial-service", "run", "start"]
+

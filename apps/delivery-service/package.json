@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
+    "start": "node dist/apps/delivery-service/src/main",
     "dev": "nest start --watch --entryFile apps/delivery-service/src/main",
     "test": "jest",
     "test:watch": "jest --watch"

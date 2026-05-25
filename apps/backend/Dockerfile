@@ -13,7 +13,9 @@ RUN npx turbo run build --filter=@bazarx/backend...
 FROM node:20-alpine AS runner
 
 WORKDIR /app
+RUN npm install -g pnpm
 COPY --from=builder /app ./
 
 EXPOSE 3001
-CMD ["npm", "--filter", "@bazarx/backend", "run", "start:prod"]
+CMD ["pnpm", "--filter", "@bazarx/backend", "run", "start:prod"]
+
