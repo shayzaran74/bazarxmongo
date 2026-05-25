@@ -84,6 +84,7 @@ services:
       - MINIO_BUCKET=bazarx-media
       - STORAGE_TYPE=minio
       - FINANCIAL_SERVICE_URL=financial-service:50051
+      - APP_BASE_URL=https://${DOMAIN}
     expose:
       - "3001"
     depends_on:
