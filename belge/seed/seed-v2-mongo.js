@@ -9,7 +9,7 @@ import { Vendor } from '../../packages/shared/shared-persistence/src/schemas/bac
 import { Category } from '../../packages/shared/shared-persistence/src/schemas/backend/category.schema.ts';
 import { CatalogProduct } from '../../packages/shared/shared-persistence/src/schemas/backend/catalogProduct.schema.ts';
 import { Listing } from '../../packages/shared/shared-persistence/src/schemas/backend/listing.schema.ts';
-import { Wallet } from '../../packages/shared/shared-persistence/src/schemas/backend/wallet.schema.ts';
+import { Wallet } from '../../packages/shared/shared-persistence/src/schemas/financial/wallet.schema.ts';
 
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://barterborsa:barterborsa123@localhost:27017/bazarxmongo?authSource=admin';
 
