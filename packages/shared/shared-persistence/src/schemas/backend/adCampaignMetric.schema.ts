@@ -31,7 +31,8 @@ export const AdCampaignMetricSchema = new Schema<IAdCampaignMetric>({
   collection: 'ad_campaign_metrics',
 });
 
-// Composite index
+// Bileşik unique index — kampanya bazlı günlük tek kayıt garantisi
+AdCampaignMetricSchema.index({ adCampaignId: 1, date: 1 }, { unique: true });
 AdCampaignMetricSchema.index({ date: 1 });
 
 export const AdCampaignMetric = createModelProxy<IAdCampaignMetric>('AdCampaignMetric', AdCampaignMetricSchema);

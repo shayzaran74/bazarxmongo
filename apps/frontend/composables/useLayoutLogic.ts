@@ -25,6 +25,15 @@ export const useLayoutLogic = () => {
   const sideAds = ref<Record<string, unknown>[]>([])
   const layoutCategories = ref<Record<string, unknown>[]>([])
 
+  // ── Side Ads Visibility ───────────────────────────────────
+  const SIDE_ADS_EXCLUDED = [
+    /^\/products/,
+    /^\/item\//,
+  ]
+  const hideSideAds = computed(() =>
+    SIDE_ADS_EXCLUDED.some(re => re.test(route.path))
+  )
+
   // ── Ecosystem ─────────────────────────────────────────────
   const currentEcosystem = computed(() => {
     if (route.path.startsWith('/ticaritakas') || route.path.startsWith('/my/offers')) return 'ticaritakas'
@@ -207,6 +216,7 @@ export const useLayoutLogic = () => {
     // state
     locationModalOpen, showAdvancedSearch, showVendorRequiredModal,
     selectedCity, geoLoading, geoError, detectedCity, sideAds,
+    hideSideAds,
     // computed
     currentEcosystem, ecosystemHomeLink, siteLogoUrl,
     brandName: computed(() => (siteSettingsStore.settings?.brandName as string) || 'BazarX'),

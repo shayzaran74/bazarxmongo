@@ -3,6 +3,8 @@ import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { Roles } from '@barterborsa/shared-nest';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { GetAdminStatsQuery } from '../application/commands-queries/analytics.bus';
 
 @ApiTags('Admin Dashboard')
@@ -11,19 +13,21 @@ import { GetAdminStatsQuery } from '../application/commands-queries/analytics.bu
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/analytics')
 export class AdminDashboardController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    @InjectConnection() private readonly connection: Connection,
+  ) {}
 
   @ApiOperation({ summary: 'Get admin wallet and general stats' })
   @Get('wallet/stats')
   async getWalletStats() {
     const stats = await this.queryBus.execute(new GetAdminStatsQuery());
-    // Eşleşme sağlamak için frontend'in beklediği yapıya dönüştürüyoruz
     return {
       success: true,
       data: {
         users: {
           total: stats?.users?.total || 0,
-          totalCommissionXP: 12500, // Dummy financial data
+          totalCommissionXP: 12500,
           totalAdXP: 8400,
           totalServiceXP: 5200,
           totalBarterBalance: 45000,
@@ -38,13 +42,13 @@ export class AdminDashboardController {
   @ApiOperation({ summary: 'Get admin audit logs' })
   @Get('logs/audit')
   async getAuditLogs(@Query('limit') limit: number = 10) {
-    return {
-      success: true,
-      data: [
-        { id: 1, action: 'LOGIN', targetId: 'System', details: 'Admin girişi yapıldı', createdAt: new Date() },
-        { id: 2, action: 'UPDATE_PRODUCT', targetId: 'PRD-123', details: 'Fiyat güncellendi', createdAt: new Date() }
-      ]
-    };
+    const AuditLog = this.connection.models['AuditLog'] ||
+      this.connection.model('AuditLog');
+    const logs = await AuditLog.find()
+      .sort({ createdAt: -1 })
+      .limit(Math.min(Number(limit) || 10, 100))
+      .lean();
+    return { success: true, data: logs };
   }
 
   @ApiOperation({ summary: 'Get pending products' })

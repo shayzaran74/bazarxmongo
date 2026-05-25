@@ -13,7 +13,7 @@ import {
 } from '@barterborsa/domain-identity';
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { TokenService } from './token.service';
-import { IUser, ISession, SessionSchema } from '@barterborsa/shared-persistence';
+import { IUser, ISession, SessionSchema, LoginHistory } from '@barterborsa/shared-persistence';
 import { IVerificationTokenRepository } from '@barterborsa/domain-identity';
 import { MailService } from '../../../communication/infrastructure/mail/mail.service';
 
@@ -33,9 +33,16 @@ export class AuthService {
 
   async login(input: LoginUserInput, userAgent?: string, ipAddress?: string) {
     const result = await this.commandBus.execute(new LoginUserCommand(input));
-    if (!result.success) throw new UnauthorizedException(result.error.message);
+    if (!result.success) {
+      // Başarısız login — LoginHistory'ye yaz
+      await this.writeLoginHistory(input.email, 'FAILURE', result.error?.message || 'Authentication failed', userAgent, ipAddress);
+      throw new UnauthorizedException(result.error?.message || 'Giriş başarısız.');
+    }
 
     const user = result.data;
+
+    // Başarılı login — LoginHistory'ye yaz
+    await this.writeLoginHistory(user.id, 'SUCCESS', undefined, userAgent, ipAddress);
 
     // Sadece eski/şüpheli session'ları temizle — 30 günden eski veya aynı cihazda olmayanlar
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -185,5 +192,21 @@ export class AuthService {
       id: user.id, email: user.email,
     });
     return { accessToken, refreshToken };
+  }
+
+  private async writeLoginHistory(identifier: string, status: 'SUCCESS' | 'FAILURE', reason?: string, userAgent?: string, ipAddress?: string): Promise<void> {
+    const id = `lh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await LoginHistory.create({
+      _id: id,
+      id,
+      userId: identifier,
+      status,
+      reason: reason || '',
+      userAgent: userAgent || 'Unknown',
+      ipAddress: ipAddress || 'Unknown',
+      createdAt: new Date(),
+    }).catch((err: Error) => {
+      this.logger.warn('LoginHistory yazılamadı', { error: err.message, status });
+    });
   }
 }

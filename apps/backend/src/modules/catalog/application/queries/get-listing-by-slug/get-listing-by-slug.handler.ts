@@ -21,14 +21,24 @@ export class GetListingBySlugHandler implements IQueryHandler<GetListingBySlugQu
   constructor(private readonly anonymizer: AnonymizerService) {}
 
   async execute(query: GetListingBySlugQuery) {
-    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.slug) || /^c[^\s-]{8,}$/i.test(query.slug);
+    console.log(`[DEBUG-LST-SLUG] execute called with slug: "${query.slug}"`);
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.slug) 
+      || /^c[^\s-]{8,}$/i.test(query.slug)
+      || query.slug.startsWith('lst-');
+
+    console.log(`[DEBUG-LST-SLUG] isId: ${isId}`);
 
     const listing = await Listing.findOne(isId ? { id: query.slug } : { slug: query.slug }).lean().exec() as ListingLean | null;
-    if (!listing) return null;
+    console.log(`[DEBUG-LST-SLUG] Listing.findOne result exists: ${!!listing}`);
+    if (!listing) {
+      console.log(`[DEBUG-LST-SLUG] Listing not found for query slug: "${query.slug}", returning null`);
+      return null;
+    }
 
     const cp = listing.catalogProductId
       ? await CatalogProduct.findOne({ id: listing.catalogProductId }).lean().exec()
       : null;
+    console.log(`[DEBUG-LST-SLUG] CatalogProduct find result exists: ${!!cp}`);
 
     // Master Plan v4.3 §4.4 + §5.3 — Ekosistem listing'lerinde vendor kimliği gizli
     const isEcosystemListing = Boolean(listing.ecosystemId);
@@ -38,9 +48,10 @@ export class GetListingBySlugHandler implements IQueryHandler<GetListingBySlugQu
     if (listing.vendorId) {
       if (isEcosystemListing) {
         anonymousVendorId = this.anonymizer.anonymize(listing.vendorId as string, 'vendor');
-        // Ekosistem listing'lerde gerçek vendor verisini expose etmiyoruz
+        console.log(`[DEBUG-LST-SLUG] Ecosystem listing, anonymizing vendor: ${anonymousVendorId}`);
       } else {
         vendor = await Vendor.findOne({ id: listing.vendorId }).lean().exec();
+        console.log(`[DEBUG-LST-SLUG] Normal listing, vendor found: ${!!vendor}`);
       }
     }
 

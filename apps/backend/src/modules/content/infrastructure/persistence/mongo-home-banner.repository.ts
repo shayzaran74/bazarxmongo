@@ -16,18 +16,18 @@ export class MongoHomeBannerRepository implements IHomeBannerRepository {
     this.model = HomeBannerModel;
   }
 
-  private toDomain(doc: any): HomeBanner {
+  private toDomain(doc: Record<string, unknown>): HomeBanner {
     return HomeBannerMapper.toDomain(doc);
   }
 
   async findById(id: string): Promise<HomeBanner | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? this.toDomain(doc) : null;
+    return doc ? this.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
   }
 
   async findAll(): Promise<HomeBanner[]> {
     const docs = await this.model.find({}).exec();
-    return docs.map(doc => this.toDomain(doc));
+    return docs.map(doc => this.toDomain(doc.toObject() as unknown as Record<string, unknown>));
   }
 
   async save(entity: HomeBanner): Promise<void> {
@@ -59,6 +59,6 @@ export class MongoHomeBannerRepository implements IHomeBannerRepository {
     if (tag) filter.tag = tag;
 
     const docs = await this.model.find(filter).sort({ order: 1 }).exec();
-    return docs.map(doc => this.toDomain(doc));
+    return docs.map(doc => this.toDomain(doc.toObject() as unknown as Record<string, unknown>));
   }
 }

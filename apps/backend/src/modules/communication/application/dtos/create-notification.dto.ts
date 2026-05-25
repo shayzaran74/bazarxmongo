@@ -1,11 +1,12 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { NotificationType } from '../../domain/enums/notification-type.enum';
 
 export class CreateNotificationDto {
   @IsString()
   userId!: string;
 
-  @IsString()
-  type!: string;
+  @IsEnum(NotificationType)
+  type!: NotificationType;
 
   @IsString()
   title!: string;

@@ -2,9 +2,11 @@
 // AdCampaign repository — Mongoose implementation (ADR-005 Faz 2b)
 
 import { Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { randomUUID } from 'crypto';
 import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
 import { AdCampaign as AdCampaignModel, IAdCampaign } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
+import { AdCampaignMetric } from '@barterborsa/shared-persistence/schemas/backend/adCampaignMetric.schema';
 import { AdCampaignMapper, AdCampaignDocument } from './mappers/ad-campaign.mapper';
 import { IAdCampaignRepository } from '../../domain/repositories/ad-campaign.repository.interface';
 import { AdCampaign } from '../../domain/entities/ad-campaign.entity';
@@ -36,7 +38,33 @@ export class MongoAdCampaignRepository
     return docs.map(doc => AdCampaignMapper.toDomain(doc));
   }
 
+  async findActiveByListingAndSlot(listingId: string, slotType: string): Promise<AdCampaign | null> {
+    const doc = await this.model.findOne({
+      targetListingId: listingId,
+      targetSlotType: slotType,
+      adStatus: 'ACTIVE',
+    }).exec();
+    return doc ? AdCampaignMapper.toDomain(doc) : null;
+  }
+
   async updateMetric(campaignId: string, type: 'impression' | 'click', cost: number): Promise<void> {
-    // Metric updates handled by AdCampaignMetric repository
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const inc = type === 'impression'
+      ? { impressions: 1, spend: cost }
+      : { clicks: 1, spend: cost };
+    await AdCampaignMetric.updateOne(
+      { adCampaignId: campaignId, date: today },
+      {
+        $inc: inc,
+        $setOnInsert: {
+          id: randomUUID(),
+          adCampaignId: campaignId,
+          date: today,
+          sales: 0,
+        },
+      },
+      { upsert: true },
+    ).exec();
   }
 }

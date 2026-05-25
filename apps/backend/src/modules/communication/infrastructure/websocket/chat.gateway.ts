@@ -6,16 +6,18 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UsePipes, ValidationPipe, Logger } from '@nestjs/common';
+import { UsePipes, ValidationPipe, Logger, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { JwtService } from '@nestjs/jwt';
 import { SendMessageCommand } from '../../application/commands/send-message.command';
 import { SendMessageDto } from '../../application/dtos/send-message.dto';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
+import { IChatRoomRepository } from '../../domain/repositories/chat-room.repository.interface';
 
 interface ExtendedSocket extends Socket {
   userId?: string;
@@ -27,10 +29,11 @@ const WS_CORS_ORIGIN: string | string[] | false = rawWsOrigin
   : false;
 
 @WebSocketGateway({
+  namespace: 'chat',
   cors: { origin: WS_CORS_ORIGIN, credentials: true },
 })
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
 
   @WebSocketServer()
@@ -40,7 +43,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly jwtService: JwtService,
+    @Inject('IChatRoomRepository') private readonly chatRoomRepo: IChatRoomRepository,
   ) {}
+
+  afterInit(server: Server): void {
+    server.on('error', (err: Error) => {
+      this.logger.error('WebSocket sunucu hatası', { message: err.message });
+    });
+    this.logger.log('ChatGateway başlatıldı (namespace: /chat)');
+  }
 
   async handleConnection(client: Socket) {
     try {
@@ -79,6 +90,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() roomId: string
   ) {
     const userId = (client as ExtendedSocket).userId;
+    if (!userId) return { success: false, message: 'Unauthorized' };
+
+    const room = await this.chatRoomRepo.findById(roomId);
+    if (!room || !room.getProps().participantIds?.includes(userId)) {
+      this.logger.warn(`Yetkisiz room:join denemesi user=${userId} room=${roomId}`);
+      return { success: false, message: 'Bu odaya erişim yetkiniz yok' };
+    }
+
     client.join(`chat:${roomId}`);
     return { success: true, roomId };
   }
@@ -116,11 +135,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: SendMessageDto & { roomId: string }
   ) {
     const userId = (client as ExtendedSocket).userId;
+    if (!userId) return { success: false, message: 'Unauthorized' };
 
     const result = await this.commandBus.execute(
       new SendMessageCommand(
         data.roomId,
-        userId ?? null,
+        userId,
         data.content,
         data.type || ChatMessageType.TEXT
       )

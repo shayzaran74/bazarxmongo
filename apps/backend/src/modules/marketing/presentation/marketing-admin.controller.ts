@@ -3,6 +3,7 @@
 
 import { Controller, Get, Post, Put, Delete, UseGuards, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { GiftVoucher } from '@barterborsa/shared-persistence/schemas/backend/giftVoucher.schema';
 import { GroupBuy } from '@barterborsa/shared-persistence/schemas/backend/groupBuy.schema';
@@ -25,6 +26,24 @@ interface CatalogProductLeanDoc {
   name?: string;
   slug?: string;
   media?: Array<{ url?: string }>;
+}
+
+class CreateGroupBuyDto {
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() productId?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsString() startDate?: string;
+  @IsOptional() @IsString() endDate?: string;
+  @IsOptional() tiers?: Array<{ price?: number; minParticipants?: number }>;
+}
+
+class UpdateGroupBuyDto {
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() productId?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsString() startDate?: string;
+  @IsOptional() @IsString() endDate?: string;
+  @IsOptional() tiers?: Array<{ price?: number; minParticipants?: number }>;
 }
 
 @ApiTags('Marketing Admin')
@@ -74,7 +93,7 @@ export class GroupBuyAdminController {
   }
 
   @Post()
-  async createCampaign(@Body() body: Record<string, any>) {
+  async createCampaign(@Body() body: CreateGroupBuyDto) {
     const id = 'gb-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     const createData: Record<string, unknown> = {
       _id: id,
@@ -92,7 +111,7 @@ export class GroupBuyAdminController {
   }
 
   @Put(':id')
-  async updateCampaign(@Param('id') id: string, @Body() body: Record<string, any>) {
+  async updateCampaign(@Param('id') id: string, @Body() body: UpdateGroupBuyDto) {
     const updateData: Record<string, unknown> = {
       title: body.title,
       productId: body.productId,

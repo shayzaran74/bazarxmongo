@@ -7,6 +7,7 @@ import { CreateNotificationCommand } from '../commands/create-notification.comma
 import { CreateChatRoomCommand } from '../commands/create-chat-room.command';
 import { SendMessageCommand } from '../commands/send-message.command';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
+import { NotificationType } from '../../domain/enums/notification-type.enum';
 
 export interface TradeOfferAcceptedEvent {
   offerId: string;
@@ -34,7 +35,7 @@ export class TradeOfferAcceptedNotificationHandler {
     await this.commandBus.execute(
       new CreateNotificationCommand(
         initiatorId,
-        'BARTER_OFFER',
+        NotificationType.BARTER_OFFER,
         'Takas Teklifi Kabul Edildi',
         'Takas teklifiniz karşı tarafça kabul edildi. Görüşmeye başlayabilirsiniz.',
         '/barter/offers'
@@ -44,7 +45,7 @@ export class TradeOfferAcceptedNotificationHandler {
     await this.commandBus.execute(
       new CreateNotificationCommand(
         receiverId,
-        'BARTER_OFFER',
+        NotificationType.BARTER_OFFER,
         'Takas Teklifi Kabul Edildi',
         'Takas teklifini kabul ettiniz. Görüşmeye başlayabilirsiniz.',
         '/barter/offers'

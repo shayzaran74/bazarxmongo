@@ -15,6 +15,9 @@ export interface ISideAd {
   link?: string;
   order: number;
   category?: string;
+  // Ekosistem bazlı görünürlük: ['BAZARX', 'TICARITAKAS', 'BARTERBORSA', 'GLOBAL']
+  // Boş array veya sadece GLOBAL → tüm ekosistemler
+  ecosystems?: string[];
   createdAt: Date;
   isActive: boolean;
   updatedAt: Date;
@@ -31,6 +34,7 @@ export const SideAdSchema = new Schema<ISideAd>({
   link: { type: String },
   order: { type: Number, default: 0 },
   category: { type: String },
+  ecosystems: { type: [String], default: [] },
   createdAt: { type: Date, alias: 'created_at' },
   isActive: { type: Boolean, default: true, alias: 'is_active' },
   updatedAt: { type: Date, alias: 'updated_at' },

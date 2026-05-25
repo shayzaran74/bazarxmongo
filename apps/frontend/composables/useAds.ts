@@ -159,7 +159,16 @@ export const useAds = () => {
   // Banner listesi (kampanyalardan filtrele)
   const fetchBanners = async (_params: Record<string, unknown> = {}): Promise<ApiResponse<AdCampaign[]>> => {
     const res = await fetchCampaigns()
-    const banners = (res.data ?? []).filter(c => c.adType === 'BANNER')
+    const typeId = _params.type as number
+    const slotIds: Record<number, string> = { 1: 'CATEGORY_BANNER', 2: 'PRODUCT_SIMILAR', 3: 'BRAND_STORE' }
+    const targetSlot = typeId ? slotIds[typeId] : null
+
+    const banners = (res.data ?? []).filter(c => {
+      if (c.adType !== 'BANNER') return false
+      const slots = (c.targetSlots as string[]) || []
+      if (targetSlot && !slots.includes(targetSlot)) return false
+      return true
+    })
     return { success: res.success, data: banners }
   }
 

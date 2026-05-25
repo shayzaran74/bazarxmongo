@@ -1,15 +1,27 @@
 // apps/backend/src/modules/communication/presentation/communication-admin.controller.ts
 
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, Param, UseGuards, NotFoundException } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Roles } from '@barterborsa/shared-nest';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Roles, CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
 import { IUserComplaint } from '@barterborsa/shared-persistence';
 import { CreateNotificationDto } from '../application/dtos/create-notification.dto';
 import { CreateNotificationCommand } from '../application/commands/create-notification.command';
+
+class ResolveComplaintDto {
+  @IsEnum(['PENDING', 'INVESTIGATING', 'RESOLVED'])
+  status!: 'PENDING' | 'INVESTIGATING' | 'RESOLVED';
+
+  @IsString()
+  @IsOptional()
+  adminNote?: string;
+}
+
+interface AuthenticatedUser { id: string; role: string }
 
 @ApiTags('Communication Admin')
 @ApiBearerAuth()
@@ -51,5 +63,29 @@ export class CommunicationAdminController {
     return this.commandBus.execute(
       new CreateNotificationCommand(dto.userId, dto.type, dto.title, dto.message, dto.link),
     );
+  }
+
+  @ApiOperation({ summary: 'Şikayet durumunu güncelle (Admin)' })
+  @ApiParam({ name: 'id', description: 'Şikayet ID' })
+  @Patch('complaints/:id/status')
+  async updateComplaintStatus(
+    @Param('id') id: string,
+    @Body() dto: ResolveComplaintDto,
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    const complaint = await this.complaintModel.findOne({ id }).lean().exec();
+    if (!complaint) {
+      throw new NotFoundException({ code: 'COMPLAINT_NOT_FOUND', message: 'Şikayet bulunamadı' });
+    }
+
+    const update: Record<string, unknown> = { status: dto.status };
+    if (dto.adminNote !== undefined) update.adminNote = dto.adminNote;
+    if (dto.status === 'RESOLVED') {
+      update.resolvedBy = admin.id;
+      update.resolvedAt = new Date();
+    }
+
+    await this.complaintModel.updateOne({ id }, { $set: update }).exec();
+    return { success: true };
   }
 }

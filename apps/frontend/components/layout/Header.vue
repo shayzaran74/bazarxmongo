@@ -163,8 +163,8 @@
         </button>
       </div>
 
-      <!-- MegaMenu -->
-      <div class="hidden lg:block w-full border-t border-gray-100 bg-white shadow-sm overflow-x-auto">
+      <!-- MegaMenu — ticaritakas ve barterborsa ekosistemlerinde gizli -->
+      <div v-if="showCategoryBand" class="hidden lg:block w-full border-t border-gray-100 bg-white shadow-sm overflow-x-auto">
         <div class="max-w-7xl mx-auto px-6 py-1">
           <LayoutMegaMenu :categories="categories" :loading="loading" />
         </div>
@@ -192,6 +192,25 @@ const props = defineProps<{
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const showUserDropdown = ref(false)
+const route = useRoute()
+
+const showCategoryBand = computed(() =>
+  !route.path.startsWith('/ticaritakas') &&
+  !route.path.startsWith('/barterborsa') &&
+  !route.path.startsWith('/become-vendor') &&
+  !route.path.startsWith('/products') &&
+  !route.path.startsWith('/barter') &&
+  !route.path.startsWith('/auctions') &&
+  !route.path.startsWith('/lotteries') &&
+  !route.path.startsWith('/group-buys') &&
+  !route.path.startsWith('/campaigns') &&
+  !route.path.startsWith('/cart') &&
+  !route.path.startsWith('/checkout') &&
+  !route.path.startsWith('/profile') &&
+  !route.path.startsWith('/orders') &&
+  !route.path.startsWith('/wallet') &&
+  !route.path.startsWith('/payment')
+)
 
 const ecosystems = [
   { id: 'bazarx', label: 'nav.ecoBazarX', icon: '🛒', path: '/', activeClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' },

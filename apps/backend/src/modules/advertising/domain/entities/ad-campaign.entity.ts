@@ -2,10 +2,11 @@
 
 import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
 import { AdStatus, AdType, BillingModel, PricingModel, TargetRole } from '../enums/advertising.enums';
-import { 
-  CampaignCreatedEvent, 
-  CampaignApprovedEvent, 
-  CampaignExhaustedEvent 
+import {
+  CampaignCreatedEvent,
+  CampaignApprovedEvent,
+  CampaignExhaustedEvent,
+  CampaignExpiredEvent,
 } from '../events/advertising.events';
 
 export interface AdCampaignProps {
@@ -22,6 +23,9 @@ export interface AdCampaignProps {
   endDate: Date;
   vendorId?: string;
   creatorId?: string;
+  adSource?: 'PAID' | 'MENU_TAAHHUT';
+  targetListingId?: string;
+  targetSlotType?: string;
   imageUrl?: string;
   linkUrl?: string;
   targetCategories: string[];
@@ -106,6 +110,12 @@ export class AdCampaign extends AggregateRoot<AdCampaignProps> {
     if (this.props.endDate <= now) {
       this.props.adStatus = AdStatus.EXPIRED;
       this.props.updatedAt = new Date();
+      this.addDomainEvent(new CampaignExpiredEvent(
+        this.id.toString(),
+        this.props.vendorId ?? 'SYSTEM',
+        this.props.targetListingId,
+        this.props.targetSlotType,
+      ));
     }
   }
 

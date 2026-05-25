@@ -4,7 +4,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { AnalyticsEvent, IAnalyticsEvent } from '@barterborsa/shared-persistence';
+import { AnalyticsEvent, IAnalyticsEvent, Category } from '@barterborsa/shared-persistence';
 import { User } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
 import { Vendor } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
@@ -57,13 +57,13 @@ export class MongoAnalyticsRepository {
       Vendor.countDocuments({ status: 'PENDING' }),
       Vendor.countDocuments({ status: 'APPROVED' }),
       Listing.countDocuments(),
-      User.countDocuments(), // TODO: category count
+      Category.countDocuments(), // DÜZELTİLDİ: User → Category
       Listing.countDocuments(),
       Order.countDocuments(),
     ]);
     return {
       users: { total: totalUsers, newLast24h: 0, active: 0 },
-      vendors: { total: totalUsers, pending: pendingVendors, active: activeVendors },
+      vendors: { total: activeVendors, pending: pendingVendors, active: activeVendors }, // DÜZELTİLDİ: totalUsers → activeVendors
       catalog: { totalProducts, totalCategories, totalListings, totalAuctions: 0, totalLotteries: 0 },
       sales: { totalOrders, totalRevenue: 0, pendingOrders: 0 },
     };
@@ -74,7 +74,7 @@ export class MongoAnalyticsRepository {
       Listing.countDocuments({ vendorId }),
       Listing.countDocuments({ vendorId, status: 'ACTIVE' }),
       Listing.countDocuments({ vendorId, stock: 0 }),
-      Order.countDocuments(),
+      Order.countDocuments({ vendorId }), // DÜZELTİLDİ: izolasyon eklendi
     ]);
     return {
       products: { total: totalListings, active: activeListings, outOfStock },

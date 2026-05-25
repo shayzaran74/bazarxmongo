@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6">
-    <div class="max-w-5xl mx-auto">
+    <div class="w-full">
       <!-- Header -->
       <div class="text-center mb-10">
         <h1 class="text-4xl font-black text-neutral-900 tracking-tighter sm:text-5xl mb-4 italic uppercase">
@@ -123,7 +123,7 @@ import RegistrationLegalAgreements from '~/components/vendor/registration/Regist
 import RegistrationSummary from '~/components/vendor/registration/RegistrationSummary.vue'
 import RegistrationStatus from '~/components/vendor/registration/RegistrationStatus.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({ title: 'Satıcı Başvurusu | BazarX' })
 
 const authStore = useAuthStore()

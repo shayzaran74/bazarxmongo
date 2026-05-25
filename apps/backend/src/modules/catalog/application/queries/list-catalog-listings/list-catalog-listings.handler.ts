@@ -36,7 +36,7 @@ export class ListCatalogListingsHandler implements IQueryHandler<ListCatalogList
     if (isAdmin) {
       // Admin tümünü görür — isActive filtresi opsiyonel
       if (filters.isActive !== undefined) filter.isActive = filters.isActive;
-    } else if (isVendor && userId) {
+    } else if (isVendorScope && isVendor && userId) {
       const vendor = await Vendor.findOne({ userId }).exec();
       if (vendor) {
         filter.vendorId = vendor.id;

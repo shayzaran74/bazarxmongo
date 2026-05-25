@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <!-- Profile Header -->
       <ProfileHeader 
         :user="user"
@@ -145,7 +145,7 @@ import ProfilePreferencesTab from '~/components/profile/ProfilePreferencesTab.vu
 import ProfileAvatarModal from '~/components/profile/ProfileAvatarModal.vue'
 import ProfileAddressModal from '~/components/profile/ProfileAddressModal.vue'
 
-definePageMeta({ layout: 'default', middleware: 'auth' })
+definePageMeta({ layout: 'default', middleware: 'auth', hideSideAds: true })
 const { t } = useI18n()
 useHead({ title: `${t('profile.title')} - BazarX` })
 

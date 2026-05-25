@@ -9,6 +9,8 @@ export interface HomeQuadCardItemProps {
   productId?: string;
   order: number;
   quadCardId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class HomeQuadCardItem extends Entity<HomeQuadCardItemProps> {
@@ -16,7 +18,7 @@ export class HomeQuadCardItem extends Entity<HomeQuadCardItemProps> {
     super(props, id);
   }
 
-  public static create(props: HomeQuadCardItemProps, id?: string): HomeQuadCardItem {
-    return new HomeQuadCardItem(props, id);
+  public static create(props: Omit<HomeQuadCardItemProps, 'createdAt' | 'updatedAt'>, id?: string): HomeQuadCardItem {
+    return new HomeQuadCardItem({ ...props, createdAt: new Date(), updatedAt: new Date() }, id);
   }
 }

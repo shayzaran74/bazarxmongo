@@ -44,6 +44,9 @@ export class AdCampaignMapper {
       mediaUrl: doc.mediaUrl ?? undefined,
       negativeKeywords: doc.negativeKeywords ?? [],
       rejectionReason: doc.rejectionReason ?? undefined,
+      adSource: doc.adSource ?? undefined,
+      targetListingId: doc.targetListingId ?? undefined,
+      targetSlotType: doc.targetSlotType ?? undefined,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -81,6 +84,9 @@ export class AdCampaignMapper {
       targetDistricts: props.targetDistricts,
       targetSlots: props.targetSlots,
       negativeKeywords: props.negativeKeywords,
+      adSource: props.adSource,
+      targetListingId: props.targetListingId,
+      targetSlotType: props.targetSlotType,
       createdAt: props.createdAt,
       updatedAt: props.updatedAt,
     };

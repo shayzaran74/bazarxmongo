@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50/50">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
       <!-- Page Header -->
       <div class="mb-10">
         <h1 class="text-4xl font-black text-gray-900 tracking-tight">
@@ -151,7 +151,7 @@ import WalletAuctionBids from '~/components/wallet/WalletAuctionBids.vue'
 import WalletTransactions from '~/components/wallet/WalletTransactions.vue'
 import WalletRequests from '~/components/wallet/WalletRequests.vue'
 
-definePageMeta({ layout: 'default', middleware: 'auth' })
+definePageMeta({ layout: 'default', middleware: 'auth', hideSideAds: true })
 useHead({ 
   title: 'Cüzdanım - TicariTakas', 
   meta: [{ name: 'description', content: 'Cüzdan bakiyenizi yönetin ve işlemlerinizi takip edin.' }] 

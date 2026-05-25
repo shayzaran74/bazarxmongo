@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-white">
     <!-- Hero Section -->
-    <PremiumHero :full-name="authStore.fullName" @cta="scrollToPricing" />
+    <PremiumHero :full-name="authStore.fullName" :member-count="memberCount" @cta="scrollToPricing" />
 
     <!-- Features Section -->
     <PremiumFeatures />
@@ -40,7 +40,7 @@
     </section>
 
     <!-- Pricing Section -->
-    <PremiumPricing :loading="loading" @select="startPremium" />
+    <PremiumPricing :loading="loading" :plans="plans" @select="startPremium" />
 
     <!-- FAQ CTA -->
     <section class="py-32 bg-white italic">
@@ -66,7 +66,18 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'PREMIUM AVANTAJLARI // BAZARX' })
 
 const authStore = useAuthStore()
-const { loading, scrollToPricing, startPremium } = usePremium()
+const { loading, plans, myMembership, scrollToPricing, fetchPlans, fetchMembership, startPremium } = usePremium()
+
+const memberCount = computed(() => {
+    const m = myMembership.value
+    if (!m) return 0
+    return m.totalMembers ?? m.memberCount ?? 0
+})
+
+onMounted(async () => {
+    await fetchPlans()
+    await fetchMembership()
+})
 
 const steps = [
   { title: 'PLANINI BELİRLE', desc: 'İHTİYACINA EN UYGUN PREMIUM PLANINI SEÇ VE "PREMİUM\'A GEÇ" BUTONUNA TIKLA.' },

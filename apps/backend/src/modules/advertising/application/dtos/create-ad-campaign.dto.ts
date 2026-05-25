@@ -1,7 +1,7 @@
 // apps/backend/src/modules/advertising/application/dtos/create-ad-campaign.dto.ts
 
-import { IsString, IsOptional, IsNumber, IsEnum, IsDateString, IsArray, IsUrl } from 'class-validator';
-import { AdType, BillingModel, PricingModel, TargetRole } from '../../domain/enums/advertising.enums';
+import { IsString, IsOptional, IsNumber, IsEnum, IsDateString, IsArray, IsBoolean } from 'class-validator';
+import { AdType, AdSlotType, BillingModel, PricingModel, TargetRole } from '../../domain/enums/advertising.enums';
 
 export class CreateAdCampaignDto {
   @IsString()
@@ -66,7 +66,7 @@ export class CreateAdCampaignDto {
   @IsOptional()
   targetUrl?: string;
 
-  @IsUrl({ require_tld: false })
+  @IsString()
   @IsOptional()
   mediaUrl?: string;
 
@@ -74,4 +74,21 @@ export class CreateAdCampaignDto {
   @IsString({ each: true })
   @IsOptional()
   negativeKeywords: string[] = [];
+
+  // GO Reklam Slot Sistemi — adSource ve listing hedefleme
+  @IsEnum(['PAID', 'MENU_TAAHHUT'])
+  @IsOptional()
+  adSource: 'PAID' | 'MENU_TAAHHUT' = 'PAID';
+
+  @IsString()
+  @IsOptional()
+  targetListingId?: string;
+
+  @IsEnum(AdSlotType)
+  @IsOptional()
+  targetSlotType?: AdSlotType;
+
+  @IsBoolean()
+  @IsOptional()
+  isDiscretionary?: boolean;
 }

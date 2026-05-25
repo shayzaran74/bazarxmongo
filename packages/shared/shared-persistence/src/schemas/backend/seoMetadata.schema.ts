@@ -29,7 +29,7 @@ export const SeoMetadataSchema = new Schema<ISeoMetadata>({
   collection: 'seo_metadata',
 });
 
-// Composite index
-SeoMetadataSchema.index({ platform: 1, path: 1 });
+// Unique index — path benzersiz olmalı (URL bazlı SEO)
+SeoMetadataSchema.index({ path: 1 }, { unique: true });
 
 export const SeoMetadata = createModelProxy<ISeoMetadata>('SeoMetadata', SeoMetadataSchema);

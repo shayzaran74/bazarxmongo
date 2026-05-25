@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import TtAccessBarrier from '~/components/ticaritakas/TtAccessBarrier.vue'
 
+definePageMeta({ layout: 'default', hideSideAds: true })
+
 const { $api } = useApi()
 const authStore = useAuthStore()
 const route = useRoute()

@@ -8,7 +8,7 @@ COPY . .
 
 # Bağımlılıkları yükle ve build al
 RUN pnpm install
-RUN pnpm --filter ecommerce-frontend build
+RUN npx turbo run build --filter=ecommerce-frontend...
 
 FROM node:20-alpine AS runner
 

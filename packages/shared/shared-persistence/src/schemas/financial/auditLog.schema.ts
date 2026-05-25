@@ -40,8 +40,7 @@ AuditLogSchema.index({ entityType: 1, entityId: 1 });
 // Composite index
 AuditLogSchema.index({ actorId: 1 });
 
-// Composite index
-AuditLogSchema.index({ action: 1 });
+// Composite index — entityType + entityId zaten satır 38'de var, action index kaldırıldı (schema'da action field yok)
 
 // Composite index
 AuditLogSchema.index({ createdAt: 1 });

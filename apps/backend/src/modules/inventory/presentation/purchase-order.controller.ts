@@ -108,9 +108,10 @@ export class PurchaseOrderController {
       try {
         await InventoryLog.create({
           id: 'ilog-' + Date.now() + '-' + Math.random().toString(36).substring(7),
-          productId: item.listingId,
+          listingId: item.listingId,
           vendorId: vendor?.id,
-          change: item.quantity,
+          quantity: item.quantity,
+          type: 'PURCHASE' as const,
           reason: 'PURCHASE_ORDER',
           referenceId: order.id,
         });

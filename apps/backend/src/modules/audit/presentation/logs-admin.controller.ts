@@ -86,6 +86,8 @@ export class LogsAdminController {
     }
   }
 
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Audit loglarını listele' })
   @Get('audit')
   async getAuditLogs(@Query('limit') limit: number = 20): Promise<{ success: boolean; data: unknown[] }> {

@@ -47,6 +47,9 @@ export function createModelProxy<T>(modelName: string, schema: Schema, connectio
       return Reflect.construct(RealModel, argArray, newTarget);
     },
     get(target, prop, receiver) {
+      if (prop === 'name') {
+        return modelName;
+      }
       const conn = ConnectionRegistry.getActiveConnection(connectionName);
       const RealModel = conn.models[modelName] || conn.model(modelName, schema);
       

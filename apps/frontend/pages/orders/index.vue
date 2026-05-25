@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">
         Siparişlerim
       </h1>
@@ -126,7 +126,8 @@ import { useAppImage } from '~/composables/useAppImage'
 
 definePageMeta({
   layout: 'default',
-  middleware: 'auth'
+  middleware: 'auth',
+  hideSideAds: true
 })
 
 const { resolveImageUrl } = useAppImage()

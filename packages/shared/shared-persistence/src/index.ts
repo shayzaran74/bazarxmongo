@@ -130,7 +130,7 @@ export { VendorBanner, IVendorBanner, VendorBannerSchema } from './schemas/backe
 export { BrandEcosystem, IBrandEcosystem, BrandEcosystemSchema } from './schemas/backend/brandEcosystem.schema';
 
 // Analytics/Notification/SystemSetting schemas + repository
-export { AnalyticsEvent, AnalyticsEventSchema, IAnalyticsEvent, EventCategory, EventCategoryType } from './schemas/backend/analyticsEvent.schema';
+export { AnalyticsEvent, AnalyticsEventSchema, IAnalyticsEvent, EventCategory, EventCategoryType, AnalyticsEventType } from './schemas/backend/analyticsEvent.schema';
 export { Notification, INotification } from './schemas/backend/notification.schema';
 export { SystemSetting, ISystemSetting, SystemSettingSchema } from './schemas/backend/systemSetting.schema';
 export * from './mongodb/misc/analytics.repository';

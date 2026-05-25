@@ -8,6 +8,17 @@ import { Transfer as TransferModel } from '@barterborsa/shared-persistence/schem
 import { TransferItem as TransferItemModel } from '@barterborsa/shared-persistence/schemas/backend/transferItem.schema';
 import { ITransferRepository } from '../../domain/repositories/transfer.repository.interface';
 
+export interface TransferSearchResult {
+  id: string;
+  vendorId: string;
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  status: string;
+  totalItems: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 @Injectable()
 export class MongoTransferRepository implements ITransferRepository {
   private readonly model: Model<ITransfer>;
@@ -18,33 +29,33 @@ export class MongoTransferRepository implements ITransferRepository {
     this.itemModel = TransferItemModel;
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<TransferSearchResult | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? doc.toObject() as unknown as TransferSearchResult : null;
   }
 
-  async findByVendorId(vendorId: string): Promise<any[]> {
+  async findByVendorId(vendorId: string): Promise<TransferSearchResult[]> {
     const docs = await this.model
       .find({ vendorId })
       .sort({ createdAt: -1 })
       .limit(50)
       .exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as TransferSearchResult);
   }
 
-  async create(data: any): Promise<any> {
+  async create(data: Record<string, unknown>): Promise<TransferSearchResult> {
     const id = 'tr-' + crypto.randomUUID();
     const doc = await this.model.create({ id, ...data, createdAt: new Date(), updatedAt: new Date() });
-    return doc.toObject();
+    return doc.toObject() as unknown as TransferSearchResult;
   }
 
-  async update(id: string, data: any): Promise<any | null> {
+  async update(id: string, data: Record<string, unknown>): Promise<TransferSearchResult | null> {
     const doc = await this.model.findOneAndUpdate({ id }, { $set: { ...data, updatedAt: new Date() } }, { new: true }).exec();
-    return doc ? doc.toObject() : null;
+    return doc ? doc.toObject() as unknown as TransferSearchResult : null;
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<TransferSearchResult[]> {
     const docs = await this.model.find().exec();
-    return docs.map(doc => doc.toObject());
+    return docs.map(doc => doc.toObject() as unknown as TransferSearchResult);
   }
 }

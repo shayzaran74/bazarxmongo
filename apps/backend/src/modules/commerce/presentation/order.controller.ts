@@ -41,6 +41,7 @@ export class OrderController {
   @ApiResponse({ status: 404, description: 'Sipariş bulunamadı' })
   @Get(':id')
   async getOrder(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    console.log(`[DEBUG-404] OrderController.getOrder called. Param ID: ${id}, User ID: ${user.id}`);
     const order = await this.queryBus.execute(new GetOrderDetailsQuery(id, user.id));
     return { success: true, data: order };
   }

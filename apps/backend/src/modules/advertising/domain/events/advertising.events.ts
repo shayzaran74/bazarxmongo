@@ -23,6 +23,18 @@ export class CampaignExhaustedEvent extends DomainEvent {
   }
 }
 
+export class CampaignExpiredEvent extends DomainEvent {
+  public readonly eventName = 'advertising.campaign.expired';
+  constructor(
+    public readonly campaignId: string,
+    public readonly vendorId: string,
+    public readonly targetListingId?: string,
+    public readonly targetSlotType?: string,
+  ) {
+    super(campaignId);
+  }
+}
+
 export class ImpressionRecordedEvent extends DomainEvent {
   public readonly eventName = 'advertising.impression.recorded';
   constructor(

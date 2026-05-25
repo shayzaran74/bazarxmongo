@@ -127,6 +127,7 @@ export const OrderSchema = new Schema<IOrder>({
   bufferCommands: false,
 });
 
+OrderSchema.index({ id: 1 }, { unique: true });
 OrderSchema.index({ userId: 1 });
 OrderSchema.index({ vendorId: 1 });
 OrderSchema.index({ status: 1 });

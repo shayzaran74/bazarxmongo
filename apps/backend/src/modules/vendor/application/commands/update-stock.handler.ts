@@ -33,8 +33,8 @@ export class UpdateStockHandler implements ICommandHandler<UpdateStockCommand> {
         vendorId: vendor.id,
         listingId,
         quantity: change,
-        type: change > 0 ? 'ADJUSTMENT' : 'ADJUSTMENT',
-        reason,
+        type: 'ADJUSTMENT',
+        reason: reason || undefined,
         referenceType: 'MANUAL_ADJUSTMENT',
       });
 

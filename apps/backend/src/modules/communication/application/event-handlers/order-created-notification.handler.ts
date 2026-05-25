@@ -1,13 +1,14 @@
 // apps/backend/src/modules/communication/application/event-handlers/order-created-notification.handler.ts
 
 import { EventsHandler, IEventHandler, CommandBus } from '@nestjs/cqrs';
-import { RabbitRPC, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { Injectable } from '@nestjs/common';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { Injectable, Logger } from '@nestjs/common';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { CreateNotificationCommand } from '../commands/create-notification.command';
 import { CreateChatRoomCommand } from '../commands/create-chat-room.command';
 import { SendMessageCommand } from '../commands/send-message.command';
 import { ChatMessageType } from '../../domain/enums/chat-message-type.enum';
+import { NotificationType } from '../../domain/enums/notification-type.enum';
 
 export interface OrderCreatedEvent {
   orderId: string;
@@ -24,6 +25,8 @@ export interface OrderCreatedEvent {
 
 @Injectable()
 export class OrderCreatedNotificationHandler {
+  private readonly logger = new Logger(OrderCreatedNotificationHandler.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly templateService: NotificationTemplateService,
@@ -37,18 +40,15 @@ export class OrderCreatedNotificationHandler {
   async handle(event: OrderCreatedEvent) {
     const { id, orderNumber, userId } = event;
 
-    // 1. Create Notification for Buyer
+    // Notification — fire-and-forget, ana akışı (chat room) bloke etmemeli
     const template = this.templateService.getOrderCreatedTemplate(orderNumber, id);
-    await this.commandBus.execute(
-      new CreateNotificationCommand(userId, 'ORDER_STATUS', template.title, template.message, template.link)
-    );
+    this.commandBus
+      .execute(new CreateNotificationCommand(userId, NotificationType.ORDER_STATUS, template.title, template.message, template.link))
+      .catch((err: unknown) => this.logger.error('Sipariş bildirimi gönderilemedi', { userId, orderId: id, err }));
 
-    // 2. Create Chat Room
-    const roomResult = await this.commandBus.execute(
-      new CreateChatRoomCommand(id)
-    );
+    // Chat room oluştur — kritik akış
+    const roomResult = await this.commandBus.execute(new CreateChatRoomCommand(id));
 
-    // 3. Send System Message to Chat
     if (roomResult.success) {
       await this.commandBus.execute(
         new SendMessageCommand(

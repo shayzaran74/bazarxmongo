@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { MongoOrderRepository } from '../../infrastructure/persistence/mongo-order.repository';
+import { AuditLogService } from '../../../audit/application/audit-log.service';
 
 type EscrowReleaseResult = { success: boolean; error?: string; holdId?: string };
 
@@ -16,6 +17,7 @@ export class OrderEscrowWorker {
   constructor(
     private readonly orderRepo: MongoOrderRepository,
     private readonly financialGateway: FinancialGatewayService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -43,9 +45,10 @@ export class OrderEscrowWorker {
     for (const order of pendingReleases) {
       try {
         const escrowHoldId = order.getProps().escrowHoldId!;
-        const idempotencyKey = `release-order-${order.id}-${order.getProps().orderNumber.value}`;
+        const orderNumber = order.getProps().orderNumber.value;
+        const idempotencyKey = `release-order-${order.id}-${orderNumber}`;
 
-        this.logger.debug(`Sipariş ${order.getProps().orderNumber.value} için fonlar serbest bırakılıyor (HoldId: ${escrowHoldId})`);
+        this.logger.debug(`Sipariş ${orderNumber} için fonlar serbest bırakılıyor (HoldId: ${escrowHoldId})`);
 
         const result: EscrowReleaseResult = await this.financialGateway.releaseFunds(escrowHoldId, idempotencyKey);
 
@@ -58,9 +61,20 @@ export class OrderEscrowWorker {
               completedAt: new Date(),
             }
           );
-          this.logger.log(`Sipariş ${order.getProps().orderNumber.value} ödemesi satıcıya aktarıldı.`);
+          // Escrow release audit log — fire-and-forget
+          this.auditLog.log({
+            actorId:      'SYSTEM',
+            action:       'ESCROW_RELEASED',
+            resourceType: 'Order',
+            resourceId:   order.id,
+            oldValue:     { escrowStatus: 'HELD' },
+            newValue:     { escrowStatus: 'RELEASED', payoutStatus: 'PAID_TO_VENDOR' },
+          }).catch((err: Error) => {
+            this.logger.warn('Escrow release audit log yazılamadı', { orderId: order.id, error: err.message });
+          });
+          this.logger.log(`Sipariş ${orderNumber} ödemesi satıcıya aktarıldı.`);
         } else {
-          this.logger.error(`Sipariş ${order.getProps().orderNumber.value} release başarısız: ${result.error || 'Bilinmeyen hata'}`);
+          this.logger.error(`Sipariş ${orderNumber} release başarısız: ${result.error || 'Bilinmeyen hata'}`);
         }
       } catch (error: unknown) {
         this.logger.error(`Sipariş ${order.getProps().orderNumber.value} işlenirken hata oluştu: ${(error instanceof Error ? error.message : String(error))}`);

@@ -8,6 +8,20 @@ export type AdCampaignStatusType = typeof AdCampaignStatus[number];
 export const AdType = ['BANNER','SPONSORED_PRODUCT','SEARCH_AD','SIDE_AD','VIDEO','REWARD_DISTRIBUTION','SAMPLING','SEARCH','DISPLAY','SOCIAL','RETARGETING'] as const;
 export type AdTypeType = typeof AdType[number];
 
+export const AdSource = ['PAID', 'MENU_TAAHHUT'] as const;
+export type AdSourceType = typeof AdSource[number];
+
+export const MenuPriceRange = ['BELOW_1000', 'ABOVE_1000'] as const;
+export type MenuPriceRangeType = typeof MenuPriceRange[number];
+
+export interface AdCampaignMetadata {
+  b2bPackageType?: string;
+  period?: string;
+  comboValue?: number;
+  contentSummary?: string;
+  [key: string]: unknown;
+}
+
 export interface IAdCampaign {
   _id?: string;
   id: string;
@@ -37,7 +51,18 @@ export interface IAdCampaign {
   targetDistricts?: string[];
   targetSlots?: string[];
   negativeKeywords?: string[];
-  metadata?: Schema.Types.Mixed;
+  metadata?: AdCampaignMetadata;
+  // GO Reklam Slot Sistemi (Sprint kararı)
+  adSource?: AdSourceType;
+  restaurantId?: string;
+  targetListingId?: string;
+  targetSlotType?: string;
+  menuTaahhutCount?: number;
+  calculatedAdValueTL?: Types.Decimal128;
+  tierAtCalculation?: string;
+  menuPriceRange?: MenuPriceRangeType;
+  bonusMonthsGranted?: number;
+  isDiscretionary?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,6 +97,17 @@ export const AdCampaignSchema = new Schema<IAdCampaign>({
   targetSlots: { type: [String], default: [] },
   negativeKeywords: { type: [String], default: [] },
   metadata: { type: Schema.Types.Mixed },
+  // GO Reklam Slot Sistemi alanları
+  adSource: { type: String, enum: AdSource },
+  restaurantId: { type: String },
+  targetListingId: { type: String },
+  targetSlotType: { type: String },
+  menuTaahhutCount: { type: Number },
+  calculatedAdValueTL: { type: Types.Decimal128 },
+  tierAtCalculation: { type: String },
+  menuPriceRange: { type: String, enum: MenuPriceRange },
+  bonusMonthsGranted: { type: Number },
+  isDiscretionary: { type: Boolean },
   createdAt: { type: Date },
   updatedAt: { type: Date },
 }, {
@@ -83,5 +119,7 @@ AdCampaignSchema.index({ adStatus: 1 });
 AdCampaignSchema.index({ adType: 1 });
 AdCampaignSchema.index({ platform: 1 });
 AdCampaignSchema.index({ vendorId: 1 });
+AdCampaignSchema.index({ targetListingId: 1, targetSlotType: 1, adStatus: 1 });
+AdCampaignSchema.index({ restaurantId: 1, adStatus: 1 });
 
 export const AdCampaign = createModelProxy<IAdCampaign>('AdCampaign', AdCampaignSchema);

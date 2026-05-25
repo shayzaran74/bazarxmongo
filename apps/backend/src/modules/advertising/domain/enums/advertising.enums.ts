@@ -11,6 +11,7 @@ export enum AdType {
 }
 
 export enum AdSlotType {
+  // Mevcut slot tipleri (geriye dönük uyumluluk)
   HOMEPAGE_BANNER = 'HOMEPAGE_BANNER',
   HOMEPAGE_SIDEBAR = 'HOMEPAGE_SIDEBAR',
   SEARCH_TOP = 'SEARCH_TOP',
@@ -20,7 +21,24 @@ export enum AdSlotType {
   PRODUCT_DETAIL = 'PRODUCT_DETAIL',
   CART_SIDEBAR = 'CART_SIDEBAR',
   CHECKOUT_BANNER = 'CHECKOUT_BANNER',
+  // GO Sprint kararı — listing önceliği ve özel slot tipleri
+  UPPER_BANNER = 'UPPER_BANNER',           // 7 gün — ana sayfa üst banner
+  LOWER_BANNER = 'LOWER_BANNER',           // 14 gün — ana sayfa alt banner
+  FEATURED = 'FEATURED',                   // isFeatured=true listing önceliği
+  FLASH_SALE = 'FLASH_SALE',               // isFlashSale=true listing önceliği
+  SPECIAL_OFFER = 'SPECIAL_OFFER',         // isSpecialOffer=true listing önceliği
+  AI_RECOMMENDATION = 'AI_RECOMMENDATION', // AI öneri boost katsayısı: 1.5
 }
+
+// GO slot tipleri için konfigürasyon sabiti
+export const AD_SLOT_CONFIG: Partial<Record<AdSlotType, { defaultDays?: number; aiBoost?: number }>> = {
+  [AdSlotType.UPPER_BANNER]:      { defaultDays: 7 },
+  [AdSlotType.LOWER_BANNER]:      { defaultDays: 14 },
+  [AdSlotType.FEATURED]:          {},
+  [AdSlotType.FLASH_SALE]:        {},
+  [AdSlotType.SPECIAL_OFFER]:     {},
+  [AdSlotType.AI_RECOMMENDATION]: { aiBoost: 1.5 },
+};
 
 export enum BillingModel {
   PREPAID = 'PREPAID',

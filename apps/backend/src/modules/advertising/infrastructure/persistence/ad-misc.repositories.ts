@@ -35,7 +35,7 @@ export class MongoSideAdRepository implements ISideAdRepository {
       emoji: r.emoji,
       link: r.link,
       order: r.order ?? 0,
-      ecosystems: [],
+      ecosystems: (r as { ecosystems?: string[] }).ecosystems ?? [],
       category: r.category,
       isActive: r.isActive,
     }, r.id) : null;
@@ -50,7 +50,7 @@ export class MongoSideAdRepository implements ISideAdRepository {
       emoji: r.emoji,
       link: r.link,
       order: r.order ?? 0,
-      ecosystems: [],
+      ecosystems: (r as { ecosystems?: string[] }).ecosystems ?? [],
       category: r.category,
       isActive: r.isActive,
     }, r.id));

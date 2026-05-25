@@ -8,7 +8,7 @@ COPY . .
 
 # Bağımlılıkları yükle ve build al
 RUN pnpm install
-RUN pnpm --filter @barterborsa/delivery-service build
+RUN npx turbo run build --filter=@barterborsa/delivery-service...
 
 FROM node:20-alpine AS runner
 

@@ -1,30 +1,41 @@
 // apps/backend/src/modules/commerce/infrastructure/persistence/mongo-order.repository.ts
 // Order repository — Mongoose implementation (ADR-005 Faz 2a)
 
-import { Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
-import { BaseMongoRepository } from '@barterborsa/shared-persistence/mongodb/base-mongo.repository';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { Order as OrderModel, IOrder } from '@barterborsa/shared-persistence/schemas/backend/order.schema';
 import { OrderMapper, OrderDocument } from './mappers/order.mapper';
 import { IOrderRepository } from '../../domain/repositories/order.repository.interface';
 import { Order } from '../../domain/entities/order.entity';
-import { OrderStatus } from '../../domain/enums/order-status.enum';
 
 @Injectable()
 export class MongoOrderRepository implements IOrderRepository {
-  private readonly model: Model<OrderDocument>;
+  private readonly logger = new Logger(MongoOrderRepository.name);
 
-  constructor() {
-    this.model = OrderModel;
-  }
+  constructor(
+    @InjectModel(OrderModel.name) private readonly model: Model<OrderDocument>,
+  ) {}
 
   private toDomain(doc: OrderDocument): Order {
     return OrderMapper.toDomain(doc);
   }
 
   async findById(id: string): Promise<Order | null> {
+    console.log(`[DEBUG-404] MongoOrderRepository.findById called with id: ${id}`);
+    const rawDoc = await this.model.findOne({ id }).lean().exec();
+    console.log(`[DEBUG-404] Raw doc from DB:`, rawDoc ? { id: rawDoc.id, _id: rawDoc._id, userId: rawDoc.userId } : 'null');
+    
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? this.toDomain(doc) : null;
+    if (doc) {
+      console.log(`[DEBUG-404] MongoOrderRepository.findById document found!`);
+      const domain = this.toDomain(doc);
+      console.log(`[DEBUG-404] Domain object userId:`, domain.getProps().userId);
+      return domain;
+    } else {
+      console.log(`[DEBUG-404] MongoOrderRepository.findById document NOT found.`);
+      return null;
+    }
   }
 
   async findByOrderNumber(orderNumber: string): Promise<Order | null> {
@@ -124,13 +135,27 @@ export class MongoOrderRepository implements IOrderRepository {
     return docs.map(doc => this.toDomain(doc));
   }
 
-  async create(order: Order, idempotencyKey?: string, session?: unknown): Promise<void> {
+  async create(order: Order, idempotencyKey?: string, session?: ClientSession): Promise<void> {
     const doc = OrderMapper.toPersistence(order);
     if (idempotencyKey) {
       doc.idempotencyKey = idempotencyKey;
     }
     const opts = session ? { session } : undefined;
-    await this.model.create(doc, opts);
+    console.log(`[DEBUG-404] MongoOrderRepository.create executing for id: ${order.id}`, { 
+      sessionExists: !!session,
+      docId: doc.id,
+      doc_id: doc._id,
+      docUserId: doc.userId,
+      orderPropsUserId: order.getProps().userId
+    });
+    
+    try {
+      const result = await this.model.create([doc], opts);
+      console.log(`[DEBUG-404] MongoOrderRepository.create result:`, result.length > 0 ? { id: result[0].id, _id: result[0]._id, userId: result[0].userId } : 'empty');
+    } catch (e: unknown) {
+      console.error(`[DEBUG-404] MongoOrderRepository.create ERROR!`, e);
+      throw e;
+    }
   }
 
   async updateStatus(orderId: string, status: string): Promise<void> {
@@ -141,19 +166,26 @@ export class MongoOrderRepository implements IOrderRepository {
   }
 
   async updatePaid(orderId: string, escrowHoldId: string): Promise<void> {
-    await this.model.updateOne(
-      { id: orderId },
-      {
-        $set: {
-          status: 'PAID',
-          paymentStatus: 'COMPLETED',
-          paidAt: new Date(),
-          escrowHoldId,
-          escrowStatus: 'HELD',
-          updatedAt: new Date(),
+    console.log(`[DEBUG-404] MongoOrderRepository.updatePaid called for id: ${orderId}`);
+    try {
+      const result = await this.model.updateOne(
+        { id: orderId },
+        {
+          $set: {
+            status: 'PAID',
+            paymentStatus: 'COMPLETED',
+            paidAt: new Date(),
+            escrowHoldId,
+            escrowStatus: 'HELD',
+            updatedAt: new Date(),
+          }
         }
-      }
-    ).exec();
+      ).exec();
+      console.log(`[DEBUG-404] MongoOrderRepository.updatePaid result:`, result);
+    } catch (e: unknown) {
+      console.error(`[DEBUG-404] MongoOrderRepository.updatePaid ERROR!`, e);
+      throw e;
+    }
   }
 
   async updateOne(orderId: string, data: Record<string, unknown>): Promise<void> {

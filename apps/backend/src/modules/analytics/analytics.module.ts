@@ -5,9 +5,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AnalyticsEvent, AnalyticsEventSchema } from '@barterborsa/shared-persistence';
 
-import { TrackingController } from './presentation/tracking.controller';
-import { AnalyticsAdminController } from './presentation/analytics-admin.controller';
-import { VendorAnalyticsController } from './presentation/vendor-analytics.controller';
+import { TrackingController, AnalyticsAdminController, VendorAnalyticsController } from './presentation/analytics.controllers';
 import { AdminDashboardController } from './presentation/admin-dashboard.controller';
 
 import { TrackEventHandler } from './application/handlers/track-event.handler';

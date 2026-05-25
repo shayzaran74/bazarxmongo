@@ -2,23 +2,24 @@
 
 import { HelpCategory } from '../../../domain/entities/help-category.entity';
 import { HelpArticle } from '../../../domain/entities/help-article.entity';
+import { ArticleStatus } from '../../../domain/enums/article-status.enum';
 
 export class HelpCategoryMapper {
-  static toDomain(raw: any): HelpCategory {
+  static toDomain(raw: Record<string, unknown>): HelpCategory {
     return HelpCategory.create({
-      name: raw.name,
-      slug: raw.slug,
-      description: raw.description || undefined,
-      icon: raw.icon || undefined,
-      order: raw.order,
-      language: raw.language,
-      isActive: raw.isActive,
-      parentId: raw.parentId || undefined,
-      platform: raw.platform,
-    }, raw.id);
+      name: raw.name as string,
+      slug: raw.slug as string,
+      description: raw.description as string | undefined,
+      icon: raw.icon as string | undefined,
+      order: raw.order as number,
+      language: raw.language as string,
+      isActive: raw.isActive as boolean,
+      parentId: raw.parentId as string | undefined,
+      platform: raw.platform as string,
+    }, raw.id as string);
   }
 
-  static toPersistence(domain: HelpCategory): any {
+  static toPersistence(domain: HelpCategory): Record<string, unknown> {
     const props = domain.getProps();
     return {
       id: domain.id.toString(),
@@ -36,23 +37,23 @@ export class HelpCategoryMapper {
 }
 
 export class HelpArticleMapper {
-  static toDomain(raw: any): HelpArticle {
+  static toDomain(raw: Record<string, unknown>): HelpArticle {
     return HelpArticle.create({
-      title: raw.title,
-      slug: raw.slug,
-      content: raw.content,
-      excerpt: raw.excerpt || undefined,
-      status: raw.status,
-      order: raw.order,
-      language: raw.language,
-      categoryId: raw.categoryId || undefined,
-      isActive: raw.isActive,
-      isPopular: raw.isPopular,
-      platform: raw.platform,
-    }, raw.id);
+      title: raw.title as string,
+      slug: raw.slug as string,
+      content: raw.content as string,
+      excerpt: raw.excerpt as string | undefined,
+      status: raw.status as ArticleStatus,
+      order: raw.order as number,
+      language: raw.language as string,
+      categoryId: raw.categoryId as string | undefined,
+      isActive: raw.isActive as boolean,
+      isPopular: raw.isPopular as boolean,
+      platform: raw.platform as string,
+    }, raw.id as string);
   }
 
-  static toPersistence(domain: HelpArticle): any {
+  static toPersistence(domain: HelpArticle): Record<string, unknown> {
     const props = domain.getProps();
     return {
       id: domain.id.toString(),

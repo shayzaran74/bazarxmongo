@@ -36,10 +36,12 @@ import { UserComplaintMapper } from './infrastructure/persistence/mappers/user-c
 
 import { ChatGateway } from './infrastructure/websocket/chat.gateway';
 import { NotificationTemplateService } from './application/services/notification-template.service';
+import { SilentHoursService } from './application/services/silent-hours.service';
 import { OrderCreatedNotificationHandler } from './application/event-handlers/order-created-notification.handler';
 import { TradeOfferAcceptedNotificationHandler } from './application/event-handlers/trade-offer-accepted-notification.handler';
 import { UserRegisteredNotificationHandler } from './application/event-handlers/user-registered-notification.handler';
 import { MailService } from './infrastructure/mail/mail.service';
+import { FcmService } from './infrastructure/push/fcm.service';
 
 import { ChatRoom, ChatRoomSchema } from '@barterborsa/shared-persistence/schemas/backend/chatRoom.schema';
 import { ChatMessage, ChatMessageSchema } from '@barterborsa/shared-persistence/schemas/backend/chatMessage.schema';
@@ -98,7 +100,9 @@ import { OrderSchema, TradeOfferSchema } from '@barterborsa/shared-persistence';
     { provide: 'INotificationRepository', useClass: MongoNotificationRepository },
     { provide: 'IUserComplaintRepository', useClass: MongoUserComplaintRepository },
     MailService,
+    FcmService,
+    SilentHoursService,
   ],
-  exports: [NotificationTemplateService, MailService],
+  exports: [NotificationTemplateService, MailService, FcmService, SilentHoursService],
 })
 export class CommunicationModule {}

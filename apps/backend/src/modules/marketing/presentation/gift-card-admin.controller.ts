@@ -3,6 +3,26 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 
+interface GiftCardResponse {
+  id: string;
+  code: string;
+  initialValue: number;
+  currentValue: number;
+  currency?: string;
+  expiresAt?: string;
+  status?: string;
+  createdAt?: string;
+}
+
+interface GiftCardListItem {
+  id: string;
+  code: string;
+  initialValue: number;
+  currentValue: number;
+  currency?: string;
+  status?: string;
+}
+
 @ApiTags('Gift Card Admin')
 @ApiBearerAuth()
 @Roles('ADMIN', 'SUPER_ADMIN')
@@ -14,13 +34,19 @@ export class GiftCardAdminController {
   @ApiOperation({ summary: 'Get gift card details' })
   @Get(':id')
   async getGiftCard(@Param('id') id: string) {
-    const data: any = await this.financialGateway.getGiftCard(id);
+    const data = await this.financialGateway.getGiftCard(id) as Record<string, unknown> | null;
+    if (!data) return { success: false, message: 'Gift card not found' };
     return {
       success: true,
       data: {
-        ...data,
+        id: data.id as string,
+        code: data.code as string,
         initialValue: Number(data.initialValue || 0),
         currentValue: Number(data.currentValue || 0),
+        currency: data.currency as string | undefined,
+        expiresAt: data.expiresAt as string | undefined,
+        status: data.status as string | undefined,
+        createdAt: data.createdAt as string | undefined,
       }
     };
   }
@@ -33,17 +59,19 @@ export class GiftCardAdminController {
     @Query('user') customerId?: string,
   ) {
     if (!customerId) throw new Error('customerId (user query param) zorunludur');
-    const data: any = await this.financialGateway.listGiftCards({
+    const data = await this.financialGateway.listGiftCards({
       customerId,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
-    });
-    
-    // Convert string amounts to numbers for frontend safety (toFixed etc.)
-    const items = (data.items || []).map((item: any) => ({
-      ...item,
+    }) as { items: GiftCardListItem[]; total: number };
+
+    const items: GiftCardResponse[] = (data.items || []).map((item: GiftCardListItem) => ({
+      id: item.id || '',
+      code: item.code || '',
       initialValue: Number(item.initialValue || 0),
       currentValue: Number(item.currentValue || 0),
+      currency: item.currency,
+      status: item.status,
     }));
 
     return { success: true, data: items, total: data.total };

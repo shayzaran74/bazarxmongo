@@ -12,13 +12,14 @@ import { SettingsController } from './presentation/settings.controller';
 import { B2BAdPackageController } from './presentation/b2b-ad-package.controller';
 
 import { CreateAdCampaignHandler } from './application/commands/create-ad-campaign.handler';
-import { ApproveAdCampaignHandler, RecordImpressionHandler, RecordClickHandler } from './application/commands/ad-lifecycle.handlers';
+import { ApproveAdCampaignHandler, RecordImpressionHandler, RecordClickHandler, CampaignExpiredHandler } from './application/commands/ad-lifecycle.handlers';
 
 import { GetAdsForSlotHandler, GetVendorCampaignsHandler, GetAdsAdminHandler, GetSideAdsHandler } from './application/queries/advertising-query.handlers';
 
 import { AdAuctionService } from './application/services/ad-auction.service';
 import { BudgetManagerService } from './application/services/budget-manager.service';
 import { B2BAdPackageService } from './application/services/b2b-ad-package.service';
+import { ListingFlagService } from './application/services/listing-flag.service';
 
 import { MongoAdCampaignRepository } from './infrastructure/persistence/mongo-ad-campaign.repository';
 import { MongoAdSlotRepository, MongoSideAdRepository, MongoAdCampaignMetricRepository } from './infrastructure/persistence/ad-misc.repositories';
@@ -26,6 +27,7 @@ import { MongoAdSlotRepository, MongoSideAdRepository, MongoAdCampaignMetricRepo
 import { AdCampaign, AdCampaignSchema } from '@barterborsa/shared-persistence/schemas/backend/adCampaign.schema';
 import { AdSlot, AdSlotSchema } from '@barterborsa/shared-persistence/schemas/backend/adSlot.schema';
 import { AdCampaignMetric, AdCampaignMetricSchema } from '@barterborsa/shared-persistence/schemas/backend/adCampaignMetric.schema';
+import { SideAdSchema } from '@barterborsa/shared-persistence/schemas/backend/sideAd.schema';
 
 import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 
@@ -34,6 +36,10 @@ const CommandHandlers = [
   ApproveAdCampaignHandler,
   RecordImpressionHandler,
   RecordClickHandler,
+];
+
+const EventHandlers = [
+  CampaignExpiredHandler,
 ];
 
 const QueryHandlers = [
@@ -57,17 +63,20 @@ const Repositories = [
       { name: AdCampaign.name, schema: AdCampaignSchema },
       { name: AdSlot.name, schema: AdSlotSchema },
       { name: AdCampaignMetric.name, schema: AdCampaignMetricSchema },
+      { name: 'SideAd', schema: SideAdSchema },
     ]),
     AuditMongooseModule,
   ],
   controllers: [AdCampaignController, AdCampaignVendorController, AdvertisingAdminController, SettingsController, B2BAdPackageController],
   providers: [
     ...CommandHandlers,
+    ...EventHandlers,
     ...QueryHandlers,
     ...Repositories,
     AdAuctionService,
     BudgetManagerService,
     B2BAdPackageService,
+    ListingFlagService,
   ],
   exports: [AdAuctionService, B2BAdPackageService],
 })

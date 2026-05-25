@@ -40,5 +40,8 @@ export const ChatRoomSchema = new Schema<IChatRoom>({
 
 ChatRoomSchema.index({ isArchived: 1 });
 ChatRoomSchema.index({ updatedAt: -1 });
+// Race condition önleme — aynı sipariş/teklif için tek oda garantisi
+ChatRoomSchema.index({ orderId: 1 }, { unique: true, sparse: true });
+ChatRoomSchema.index({ tradeOfferId: 1 }, { unique: true, sparse: true });
 
 export const ChatRoom = createModelProxy<IChatRoom>('ChatRoom', ChatRoomSchema);

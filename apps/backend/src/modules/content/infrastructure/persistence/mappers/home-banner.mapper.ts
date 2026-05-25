@@ -3,24 +3,24 @@
 import { HomeBanner } from '../../../domain/entities/home-banner.entity';
 
 export class HomeBannerMapper {
-  static toDomain(raw: any): HomeBanner {
+  static toDomain(raw: Record<string, unknown>): HomeBanner {
     return HomeBanner.create({
-      title: raw.title,
-      description: raw.description || undefined,
-      order: raw.order,
-      buttonText: raw.buttonText || undefined,
-      image: raw.image,
-      isActive: raw.isActive,
-      link: raw.link || undefined,
-      platform: raw.platform,
-      subtitle: raw.subtitle || undefined,
-      tag: raw.tag || undefined,
-      startDate: raw.startDate || undefined,
-      endDate: raw.endDate || undefined,
-    }, raw.id);
+      title: raw.title as string,
+      description: raw.description as string | undefined,
+      order: raw.order as number,
+      buttonText: raw.buttonText as string | undefined,
+      image: raw.image as string,
+      isActive: raw.isActive as boolean,
+      link: raw.link as string | undefined,
+      platform: raw.platform as string,
+      subtitle: raw.subtitle as string | undefined,
+      tag: raw.tag as string | undefined,
+      startDate: raw.startDate as Date | undefined,
+      endDate: raw.endDate as Date | undefined,
+    }, raw.id as string);
   }
 
-  static toPersistence(domain: HomeBanner): any {
+  static toPersistence(domain: HomeBanner): Record<string, unknown> {
     const props = domain.getProps();
     return {
       id: domain.id.toString(),

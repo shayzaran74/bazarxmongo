@@ -2,19 +2,19 @@
 
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
-import { IChatMessage } from '@barterborsa/shared-persistence';
+import { IChatMessage, IChatRoom } from '@barterborsa/shared-persistence';
 import { CreateChatRoomDto }   from '../application/dtos/create-chat-room.dto';
 import { SendMessageDto }      from '../application/dtos/send-message.dto';
 import { CreateChatRoomCommand }    from '../application/commands/create-chat-room.command';
 import { SendMessageCommand }       from '../application/commands/send-message.command';
 import { MarkMessagesReadCommand }  from '../application/commands/mark-messages-read.command';
-import { GetChatRoomsQuery }        from '../application/queries/get-chat-rooms.query';
 import { GetMessagesQuery }         from '../application/queries/get-messages.query';
+import { GetChatRoomsQuery }        from '../application/queries/get-chat-rooms.query';
 
 interface AuthenticatedUser { id: string; role: string }
 
@@ -27,6 +27,7 @@ export class ChatController {
     private readonly commandBus: CommandBus,
     private readonly queryBus:   QueryBus,
     @InjectModel('ChatMessage') private readonly msgModel: Model<IChatMessage>,
+    @InjectModel('ChatRoom')    private readonly roomModel: Model<IChatRoom>,
   ) {}
 
   @Get('rooms')
@@ -76,7 +77,16 @@ export class ChatController {
 
   @Get('unread-count')
   async getUnreadCount(@CurrentUser() user: AuthenticatedUser) {
+    const rooms = await this.roomModel
+      .find({ participantIds: user.id }, { id: 1, _id: 0 })
+      .lean()
+      .exec() as { id: string }[];
+
+    if (rooms.length === 0) return { success: true, count: 0 };
+
+    const roomIds = rooms.map(r => r.id);
     const count = await this.msgModel.countDocuments({
+      roomId: { $in: roomIds },
       isRead: false,
       senderId: { $ne: user.id },
     });

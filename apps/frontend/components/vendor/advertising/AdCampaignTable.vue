@@ -29,7 +29,11 @@ const formatNumber = (num: number) => new Intl.NumberFormat('tr-TR').format(num 
 const formatCurrency = (amount: number) => {
     return ((amount || 0) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-const formatDate = (date: string) => new Date(date).toLocaleDateString('tr-TR')
+const formatDate = (date: string | undefined | null) => {
+    if (!date) return '-'
+    const d = new Date(date)
+    return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('tr-TR')
+}
 
 const getMetricTotal = (ad: AdCampaign, key: 'impressions' | 'clicks' | 'spend' | 'sales') => {
     return ad.metrics?.reduce((sum, m) => sum + (m[key] || 0), 0) || 0

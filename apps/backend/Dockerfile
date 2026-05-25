@@ -8,7 +8,7 @@ COPY . .
 
 # Bağımlılıkları yükle ve build al
 RUN pnpm install
-RUN pnpm --filter @bazarx/backend build
+RUN npx turbo run build --filter=@bazarx/backend...
 
 FROM node:20-alpine AS runner
 

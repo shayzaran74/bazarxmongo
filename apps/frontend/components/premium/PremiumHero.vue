@@ -27,15 +27,15 @@
               <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               HEMEN PREMİUM'LU OL ✨
             </button>
-            
+
             <div class="flex items-center gap-6">
               <div class="flex -space-x-4">
                 <div v-for="i in 4" :key="i" :class="['w-14 h-14 rounded-full border-4 border-[#0a0a0c] bg-neutral-800 flex items-center justify-center text-[10px] font-black text-white shadow-2xl transition-transform hover:scale-110 cursor-pointer', i === 4 ? 'bg-indigo-600' : '']">
-                  <span v-if="i === 4">+10K</span>
+                  <span v-if="i === 4">+{{ memberCount > 0 ? (memberCount - 3).toLocaleString() : '10K' }}</span>
                   <UserIcon v-else class="h-6 w-6 opacity-40" />
                 </div>
               </div>
-              <span class="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] pt-1">10.000+ AKTİF ÜYE</span>
+              <span class="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] pt-1">{{ (memberCount > 0 ? memberCount.toLocaleString() : '10.000') }}+ AKTİF ÜYE</span>
             </div>
           </div>
         </div>
@@ -73,7 +73,7 @@
 
 <script setup>
 import { StarIcon, UserIcon } from '@heroicons/vue/24/outline'
-defineProps({ fullName: String })
+defineProps({ fullName: String, memberCount: { type: Number, default: 0 } })
 defineEmits(['cta'])
 </script>
 

@@ -134,7 +134,8 @@ const fetchData = async () => {
         if (adsRes && (adsRes as any).success && (adsRes as any).data) {
             const rawCampaigns = (adsRes as any).data || []
             adCampaigns.value = rawCampaigns.map((campaign: any) => {
-                const productIds = campaign.targetKeywords || []
+                let productIds = campaign.targetKeywords || []
+                if (!Array.isArray(productIds)) productIds = [productIds]
                 const matchedProducts = productIds.map((pId: string) => {
                     const product = vendorProducts.value.find(p => p.id === pId)
                     return product ? {
@@ -250,10 +251,10 @@ const openLayoutModal = async (type: number) => {
             const existing = res.data[0] // Type is correctly inferred from useAds
             initialLayoutForm.value = {
                 id: existing.id,
-                imageUrl: existing.imageUrl,
-                linkUrl: existing.linkUrl || '',
+                imageUrl: existing.mediaUrl || existing.imageUrl || '',
+                linkUrl: existing.targetUrl || existing.linkUrl || '',
                 template: existing.template || 'A',
-                status: existing.status,
+                status: existing.adStatus || existing.status,
                 rejectionReason: existing.rejectionReason
             }
         }
@@ -264,17 +265,47 @@ const openLayoutModal = async (type: number) => {
 const handleSaveLayout = async (form: LayoutForm, cities: string[], districts: string[]) => {
     isSavingLayout.value = true
     try {
-        const payload = { ...form, type: selectedLayoutType.value, targetCities: cities, targetDistricts: districts }
-        const res = form.id 
-            ? await ads.updateBanner(form.id, payload)
-            : await ads.createBanner(payload)
+        const titles: Record<number, string> = {
+            1: 'Kategori Sayfası Bannerı',
+            2: 'Benzer Ürünler Reklamı',
+            3: 'Marka Mağazası Tasarımı'
+        }
+        const slotIds: Record<number, string> = {
+            1: 'CATEGORY_BANNER',
+            2: 'PRODUCT_SIMILAR',
+            3: 'BRAND_STORE'
+        }
 
-        if (res.success) {
+        const payload = {
+            name: titles[selectedLayoutType.value] || 'Özel Yerleşim',
+            platform: 'BAZARX',
+            budget: 0,
+            adType: 'BANNER',
+            bidAmount: 0,
+            pricingModel: 'CPC',
+            startDate: new Date().toISOString(),
+            targetSlots: [slotIds[selectedLayoutType.value]],
+            mediaUrl: form.imageUrl,
+            targetUrl: form.linkUrl,
+            targetCities: cities,
+            targetDistricts: districts
+        }
+        // Satıcıların kampanya güncelleme yetkisi olmadığı için her kaydetmede yeni bir kayıt oluşturuyoruz.
+        // Eski kampanyalar listeden pasife alınabilir.
+        const res = await ads.createBanner(payload)
+
+        if (res && res.success) {
             $toast.success('Düzen kaydedildi')
             isLayoutModalOpen.value = false
+            fetchData()
+        } else {
+            const errorMsg = (res as any)?.message || 'Bilinmeyen hata'
+            $toast.error('Kayıt başarısız: ' + errorMsg)
+            console.error('Kayıt hatası:', res)
         }
-    } catch (err) {
-        $toast.error('Kaydetme hatası')
+    } catch (err: any) {
+        $toast.error('Kaydetme hatası: ' + (err.message || 'Sunucu hatası'))
+        console.error('Kaydetme catch hatası:', err)
     } finally {
         isSavingLayout.value = false
     }
@@ -284,8 +315,9 @@ const handleBannerUpload = async (file: File) => {
     isUploadingBanner.value = true
     try {
         const res = await ads.uploadBanner(file)
-        if (res.success) {
-            initialLayoutForm.value.imageUrl = (res as any).url
+        if (res && res.success) {
+            const uploadedUrl = (res as any).url || (res as any).data?.url || ''
+            initialLayoutForm.value = { ...initialLayoutForm.value, imageUrl: uploadedUrl }
             $toast.success('Görsel yüklendi')
         }
     } catch (err) {

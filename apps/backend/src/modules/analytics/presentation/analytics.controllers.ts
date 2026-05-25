@@ -1,21 +1,24 @@
-import { Controller, Post, Body, Get, Query, UseGuards, ForbiddenException } from '@nestjs/common';
+// apps/backend/src/modules/analytics/presentation/analytics.controllers.ts
+
+import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiQuery, 
-  ApiBody 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Roles, CurrentUser } from '@barterborsa/shared-nest';
 import { Public } from '@barterborsa/shared-security';
 import { JwtAuthGuard, RolesGuard } from '@barterborsa/shared-security';
-import { 
-  TrackEventCommand, 
-  GetDashboardStatsQuery, 
+import {
+  TrackEventCommand,
+  GetDashboardStatsQuery,
   GetAdminStatsQuery,
-  GetVendorStatsQuery 
+  GetVendorStatsQuery,
+  TrackEventInput,
 } from '../application/commands-queries/analytics.bus';
 
 @ApiTags('Analytics')
@@ -25,24 +28,30 @@ export class TrackingController {
 
   @Public()
   @ApiOperation({ summary: 'Track user interaction event', description: 'Kullanıcı etkileşimlerini (tıklama, sayfa görüntüleme, sepet işlemi) sisteme kaydeder.' })
-  @ApiBody({ 
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {
         eventType: { type: 'string', example: 'PAGE_VIEW' },
-        metadata: { type: 'object', additionalProperties: true }
+        metadata: { type: 'object', additionalProperties: true },
       },
-      required: ['eventType']
-    }
+      required: ['eventType'],
+    },
   })
   @ApiResponse({ status: 201, description: 'Olay kaydedildi.' })
   @Post('track')
-  async track(@Body() dto: Record<string, any>) { return this.commandBus.execute(new TrackEventCommand(dto)); }
+  async track(@Body() dto: TrackEventInput) {
+    // fire-and-forget: event yazımı ana akışı блoke etmemeli
+    this.commandBus.execute(new TrackEventCommand(dto)).catch((err: Error) => {
+      // discard — analytics hatası ana işlemi etkilemez
+    });
+    return { success: true };
+  }
 }
 
 @ApiTags('Analytics Admin')
 @ApiBearerAuth()
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/analytics')
 export class AnalyticsAdminController {
@@ -50,14 +59,18 @@ export class AnalyticsAdminController {
 
   @ApiOperation({ summary: 'Get root analytics (Admin)', description: 'Genel istatistikleri döner.' })
   @Get()
-  async getRoot(@Query('period') period?: string) { return this.queryBus.execute(new GetDashboardStatsQuery((period as 'day' | 'week' | 'month') || 'day')); }
+  async getRoot(@Query('period') period?: string) {
+    return this.queryBus.execute(new GetDashboardStatsQuery((period as 'day' | 'week' | 'month') || 'day'));
+  }
 
   @ApiOperation({ summary: 'Get dashboard statistics (Admin)', description: 'Yönetim paneli için özet istatistikleri ve grafik verilerini döner.' })
   @ApiQuery({ name: 'period', required: false, enum: ['DAILY', 'WEEKLY', 'MONTHLY'], example: 'DAILY' })
   @ApiResponse({ status: 200, description: 'İstatistik verileri.' })
   @ApiResponse({ status: 403, description: 'Sadece admin yetkisi ile erişilebilir.' })
   @Get('dashboard')
-  async getDashboard(@Query('period') period?: string) { return this.queryBus.execute(new GetDashboardStatsQuery((period as 'day' | 'week' | 'month') || 'day')); }
+  async getDashboard(@Query('period') period?: string) {
+    return this.queryBus.execute(new GetDashboardStatsQuery((period as 'day' | 'week' | 'month') || 'day'));
+  }
 
   @ApiOperation({ summary: 'Get general admin statistics', description: 'Kullanıcı, ürün, vendor ve satış sayılarını kapsayan genel admin istatistiklerini döner.' })
   @ApiResponse({ status: 200, description: 'Genel istatistik verileri.' })
@@ -90,10 +103,16 @@ export class VendorAnalyticsController {
   @Get('stats')
   async getStats(@CurrentUser() user: AuthenticatedUser) {
     if (!user.vendorId) {
-      throw new ForbiddenException('Bu işlem için bir satıcı profiline ihtiyacınız var.');
+      throw new Error('Bu işlem için bir satıcı profiline ihtiyacınız var.');
     }
     return this.queryBus.execute(new GetVendorStatsQuery(user.vendorId));
   }
 }
 
-export interface AuthenticatedUser { id: string; role: string; vendorId?: string; firstName?: string; lastName?: string; }
+export interface AuthenticatedUser {
+  id: string;
+  role: string;
+  vendorId?: string;
+  firstName?: string;
+  lastName?: string;
+}
