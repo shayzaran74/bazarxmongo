@@ -5,7 +5,7 @@ RUN npm install -g pnpm@9
 
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @barterborsa/delivery-service build --force
+RUN pnpm --filter @barterborsa/delivery-service build
 
 FROM node:20-alpine AS runner
 
