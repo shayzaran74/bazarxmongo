@@ -306,8 +306,7 @@ export class WalletGrpcService implements OnModuleInit {
     );
   }
 
-  async listGiftCards(data: { customerId: string; page?: number; limit?: number }) {
-    if (!data.customerId) throw new Error('customerId zorunludur');
+  async listGiftCards(data: { customerId?: string; page?: number; limit?: number }) {
     return this.circuitBreaker.execute(
       'wallet.listGiftCards',
       async () => firstValueFrom(this.financialService.listGiftCards(data)),

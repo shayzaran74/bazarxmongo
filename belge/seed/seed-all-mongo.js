@@ -42,10 +42,10 @@ async function runSeeders() {
 
     console.log('\n⏳ Clearing Redis Cache...');
     try {
-        execSync('redis-cli -p 6380 flushall', { stdio: 'inherit' });
+        execSync('redis-cli -p 6379 flushall', { stdio: 'inherit' });
         console.log('✅ Cache cleared successfully');
     } catch (error) {
-        console.warn('⚠️ Could not clear Redis cache automatically. You may need to run "redis-cli -p 6380 flushall" manually.');
+        console.warn('⚠️ Could not clear Redis cache automatically. You may need to run "redis-cli -p 6379 flushall" manually.');
     }
 
     console.log('\n------------------------------------');

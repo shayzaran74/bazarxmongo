@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass barterborsa123 --maxmemory 256mb --maxmemory-policy noeviction
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -82,8 +82,8 @@ services:
       RABBITMQ_DEFAULT_USER: barterborsa
       RABBITMQ_DEFAULT_PASS: barterborsa123
     ports:
-      - "5673:5672"
-      - "15673:15672"
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -102,8 +102,8 @@ services:
       MINIO_ROOT_USER: barterborsa
       MINIO_ROOT_PASSWORD: barterborsa123
     ports:
-      - "9002:9000"
-      - "9003:9001"
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:

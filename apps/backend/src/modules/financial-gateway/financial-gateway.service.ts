@@ -125,7 +125,7 @@ export class FinancialGatewayService {
   }
 
   async listGiftCards(data: {
-    customerId: string;
+    customerId?: string;
     page?: number;
     limit?: number;
   }) {
