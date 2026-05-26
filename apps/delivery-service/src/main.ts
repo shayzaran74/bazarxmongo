@@ -21,7 +21,7 @@ async function bootstrap() {
     options: {
       url: `0.0.0.0:${config.get('grpcPort')}`,
       package: 'barterborsa.delivery',
-      protoPath: config.get('protoPath'),
+      protoPath: config.get('resolvedProtoPath'),
     },
   });
 

@@ -12,7 +12,7 @@ export default () => {
 
   return {
     grpcPort: parseInt(process.env.DELIVERY_GRPC_PORT || '50052', 10),
-    protoPath,
+    resolvedProtoPath: protoPath,
     package: 'barterborsa.delivery',
   };
 };
