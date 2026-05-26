@@ -79,8 +79,12 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, Vendo
       vendorIds.length  ? VendorProfileModel.find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
     ]);
 
-    const companyMap = new Map<string, (typeof companies)[0]>(companies.map(c => [c.id, c]));
-    const userMap    = new Map<string, (typeof users)[0]>(users.map(u => [u.email, u]));
+    const companyMap = new Map<string, (typeof companies)[0]>(
+      companies.reduce((acc, c) => acc.set(c.id, c), new Map<string, (typeof companies)[0]>()),
+    );
+    const userMap = new Map<string, (typeof users)[0]>(
+      users.reduce((acc, u) => acc.set(u.email, u), new Map<string, (typeof users)[0]>()),
+    );
     const profileMap = new Map((profiles as { vendorId: string }[]).map(p => [p.vendorId, p]));
 
     const items = vendors.map((v) => {
