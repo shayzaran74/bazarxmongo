@@ -17,10 +17,7 @@ export class ConnectionRegistry {
 
   static getActiveConnection(name: string = 'default'): Connection {
     const conn = this.getConnectionsMap().get(name);
-    console.log(`=== ConnectionRegistry.getActiveConnection('${name}') ===`);
-    console.log(`Found registered connection in global store: ${!!conn}`);
     if (conn) {
-      console.log(`Registered connection readyState: ${conn.readyState}`);
       return conn;
     }
     
@@ -34,7 +31,6 @@ export class ConnectionRegistry {
       }
     }
     if (this.fallbackMongoose && this.fallbackMongoose.connection) {
-      console.log(`Fallback global connection readyState: ${this.fallbackMongoose.connection.readyState}`);
       return this.fallbackMongoose.connection;
     }
     
