@@ -30,13 +30,29 @@ class CreateAdminProductDto {
   @IsOptional() @IsString() @MaxLength(500) slug?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() brand?: string;
+  @IsOptional() @IsString() brandName?: string;
+  @IsOptional() @IsString() brandId?: string;
   @IsOptional() @IsString() categoryId?: string;
-  @IsOptional() @IsNumber() @Min(0) price?: number;
-  @IsOptional() @IsNumber() @Min(0) stock?: number;
-  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) price?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) stock?: number;
+  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT', 'PENDING']) status?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
   @IsOptional() @IsObject() specs?: Record<string, string | number | boolean>;
   @IsOptional() @IsBoolean() isFeatured?: boolean;
+  @IsOptional() @IsBoolean() isSpecialOffer?: boolean;
+  @IsOptional() @IsBoolean() isFlashSale?: boolean;
+
+  // Formdan veya diğer modüllerden gelebilecek ek alanlar
+  @IsOptional() @IsString() barcode?: string;
+  @IsOptional() @IsString() gtin?: string;
+  @IsOptional() @IsString() modelCode?: string;
+  @IsOptional() @IsString() trendyolProductId?: string;
+  @IsOptional() @IsString() sku?: string;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) marketPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) vatRate?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) lowStockThreshold?: number;
+  @IsOptional() @IsString() stockCode?: string;
+  @IsOptional() @IsBoolean() hasVariants?: boolean;
 }
 
 class UpdateAdminProductDto {
@@ -44,10 +60,12 @@ class UpdateAdminProductDto {
   @IsOptional() @IsString() @MaxLength(500) slug?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() brand?: string;
+  @IsOptional() @IsString() brandName?: string;
+  @IsOptional() @IsString() brandId?: string;
   @IsOptional() @IsString() categoryId?: string;
-  @IsOptional() @IsNumber() @Min(0) price?: number;
-  @IsOptional() @IsNumber() @Min(0) stock?: number;
-  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) price?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) stock?: number;
+  @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT', 'PENDING']) status?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
   @IsOptional() @IsArray() @IsString({ each: true }) productImages?: string[];
   @IsOptional() @IsString() image?: string;
@@ -55,6 +73,18 @@ class UpdateAdminProductDto {
   @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @IsBoolean() isSpecialOffer?: boolean;
   @IsOptional() @IsBoolean() isFlashSale?: boolean;
+
+  // Formdan veya diğer modüllerden gelebilecek ek alanlar
+  @IsOptional() @IsString() barcode?: string;
+  @IsOptional() @IsString() gtin?: string;
+  @IsOptional() @IsString() modelCode?: string;
+  @IsOptional() @IsString() trendyolProductId?: string;
+  @IsOptional() @IsString() sku?: string;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) marketPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) vatRate?: number;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) lowStockThreshold?: number;
+  @IsOptional() @IsString() stockCode?: string;
+  @IsOptional() @IsBoolean() hasVariants?: boolean;
 }
 
 class BulkUpdateProductDto {

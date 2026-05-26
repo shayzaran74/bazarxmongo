@@ -56,6 +56,14 @@ export const useAppImage = () => {
 
     if (!finalUrl || typeof finalUrl !== 'string') return fallback;
 
+    // Eski veritabanı kayıtlarındaki storage.bazarx.com.tr URL'lerini proxy'ye yönlendir
+    // Bu kontrol http/https early-return'den ÖNCE olmalı — yoksa çözümlenemeyen domain'e gider
+    const storageIndex = finalUrl.indexOf('/bazarx-media/');
+    if (storageIndex !== -1) {
+      const key = finalUrl.substring(storageIndex + '/bazarx-media/'.length);
+      return getPublicImageUrl(key);
+    }
+
     if (
       finalUrl.startsWith('blob:') ||
       finalUrl.startsWith('data:') ||
@@ -65,12 +73,6 @@ export const useAppImage = () => {
       return finalUrl;
     }
 
-    // Eski veritabanı kayıtlarındaki /bazarx-media/ içeren URL'lerden key kısmını ayıkla
-    const minioIndex = finalUrl.indexOf('/bazarx-media/');
-    if (minioIndex !== -1) {
-      const key = finalUrl.substring(minioIndex + '/bazarx-media/'.length);
-      return getPublicImageUrl(key);
-    }
 
     return getPublicImageUrl(finalUrl);
   };

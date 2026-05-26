@@ -337,11 +337,34 @@ export const useAdminProducts = () => {
       return
     }
     loading.value = true
+
+    // DTO kurallarına uygun temiz payload oluştur
+    const payload = { ...formData.value }
+
+    const cleanNumeric = (val: any) => {
+      if (val === '' || val === null || val === undefined) return undefined
+      const num = Number(val)
+      return isNaN(num) ? undefined : num
+    }
+
+    payload.price = cleanNumeric(payload.price)
+    payload.stock = cleanNumeric(payload.stock)
+    payload.marketPrice = cleanNumeric(payload.marketPrice)
+    payload.vatRate = cleanNumeric(payload.vatRate)
+    payload.lowStockThreshold = cleanNumeric(payload.lowStockThreshold)
+
+    // Undefined/null/empty alanları temizle ki forbidNonWhitelisted takılmasın
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+        delete payload[key]
+      }
+    })
+
     try {
       if (editingId.value) {
         const res = await $api<any>(`/api/v1/admin/products/${editingId.value}`, {
           method: 'PUT',
-          body: formData.value
+          body: payload
         })
         if (res.success) {
           $toast.success('Ürün güncellendi')
@@ -354,7 +377,7 @@ export const useAdminProducts = () => {
       } else {
         const res = await $api<any>('/api/v1/admin/products', {
           method: 'POST',
-          body: formData.value
+          body: payload
         })
         if (res.success) {
           $toast.success('Ürün eklendi')

@@ -132,7 +132,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from '#imports'
-import { useI18n, useAppImage, useRuntimeConfig, useAuthStore } from '#imports'
+import { useI18n, useAppImage, useRuntimeConfig, useAuthStore, useApi } from '#imports'
 import ChevronLeftIcon from '@heroicons/vue/24/outline/ChevronLeftIcon'
 import ChevronRightIcon from '@heroicons/vue/24/outline/ChevronRightIcon'
 import ArrowRightIcon from '@heroicons/vue/24/outline/ArrowRightIcon'
@@ -154,9 +154,14 @@ const { $api } = useApi()
 const banners = ref([])
 const currentIndex = ref(0)
 const autoPlayInterval = ref(null)
+const isFetching = ref(false)
 const SLIDE_DURATION = 6000
 
 const fetchBanners = async () => {
+    // Zaten fetch yapılıyorsa tekrar tetikleme — titreme önlenir
+    if (isFetching.value) return
+    isFetching.value = true
+
     try {
         let city = authStore.user?.city || ''
         if (!city) {
@@ -183,26 +188,35 @@ const fetchBanners = async () => {
         // Backend raw array döndürüyor (wrapper yok)
         const rawBanners = Array.isArray(data) ? data : (data?.data || [])
         if (rawBanners.length > 0) {
+            stopAutoPlay()
             banners.value = rawBanners.map((b) => ({
                 ...b,
                 imageUrl: b.image || b.imageUrl,
                 linkUrl: b.link || b.linkUrl,
                 subtitle: b.subtitle || 'MID-BANNER REKLAM'
             }))
+            currentIndex.value = 0
             if (banners.value.length > 1) {
                 startAutoPlay()
             }
-        } else {
+        } else if (banners.value.length === 0) {
+            // Sadece henüz hiç banner yüklenmemişse mock data kullan
+            // Mevcut bannerlar varsa dokunma — titreme önlenir
             console.warn('No banners found from API, using mock data')
             loadMockBanners()
         }
     } catch (error) {
         console.error('Fetch middle banners error:', error)
-        loadMockBanners()
+        if (banners.value.length === 0) {
+            loadMockBanners()
+        }
+    } finally {
+        isFetching.value = false
     }
 }
 
 const loadMockBanners = () => {
+    stopAutoPlay()
     banners.value = [
         {
             id: 'mock-1',
@@ -221,6 +235,7 @@ const loadMockBanners = () => {
             subtitle: 'KURUMSAL TAKAS'
         }
     ]
+    currentIndex.value = 0
     if (banners.value.length > 1) startAutoPlay()
 }
 
@@ -247,6 +262,7 @@ const goToSlide = (index) => {
 }
 
 const startAutoPlay = () => {
+    stopAutoPlay() // Önce mevcut interval'i temizle — çift interval önlenir
     autoPlayInterval.value = setInterval(() => {
         currentIndex.value = (currentIndex.value + 1) % banners.value.length
     }, SLIDE_DURATION)
@@ -269,8 +285,13 @@ const handleBannerClick = (banner) => {
     }
 }
 
+// Debounced watch — auth veya locale değişimlerinde hızlı tetiklemeleri engelle
+let watchDebounce = null
 watch([() => authStore.user?.city, locale], () => {
-    fetchBanners()
+    if (watchDebounce) clearTimeout(watchDebounce)
+    watchDebounce = setTimeout(() => {
+        fetchBanners()
+    }, 500)
 })
 
 onMounted(() => {
@@ -279,6 +300,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     stopAutoPlay()
+    if (watchDebounce) clearTimeout(watchDebounce)
 })
 </script>
 
