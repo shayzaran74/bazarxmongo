@@ -165,5 +165,9 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
 export class AppModule {
   constructor(@InjectConnection() private readonly connection: Connection) {
     ConnectionRegistry.registerConnection('default', this.connection);
+    console.log('=== CONNECTION REGISTERED IN REGISTRY ===');
+    console.log('Connection Ready State:', this.connection.readyState);
+    console.log('Connection Host:', this.connection.host);
+    console.log('Connection DB Name:', this.connection.name);
   }
 }
