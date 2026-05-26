@@ -139,6 +139,13 @@ export const useCreateAuction = (
     }
   }
 
+  const parseDecimal = (val: any, fallback = 0): number => {
+    if (!val) return fallback
+    if (typeof val === 'object' && val.$numberDecimal) return Number(val.$numberDecimal)
+    const num = Number(val)
+    return isNaN(num) ? fallback : num
+  }
+
   onMounted(async () => {
     await fetchProducts()
     if (isEditing.value && props.auction) {
@@ -147,9 +154,9 @@ export const useCreateAuction = (
         productId: a.productId ?? '',
         title: a.title ?? '',
         description: a.description ?? '',
-        startPrice: a.startingPrice ?? '',
-        minBidIncrement: a.minBidIncrement ?? 1.0,
-        participationDeposit: Number(a.participationDeposit ?? 0),
+        startPrice: parseDecimal(a.startingPrice, 0) || '',
+        minBidIncrement: parseDecimal(a.minBidIncrement, 1.0),
+        participationDeposit: parseDecimal(a.participationDeposit, 0),
         startTime: a.startTime ? new Date(a.startTime).toISOString().slice(0, 16) : '',
         endTime: a.endTime ? new Date(a.endTime).toISOString().slice(0, 16) : '',
         status: a.status ?? 'ACTIVE',

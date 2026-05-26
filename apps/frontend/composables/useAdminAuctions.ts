@@ -125,13 +125,22 @@ export const useAdminAuctions = () => {
     return list
   })
 
+  const parseDecimal = (val: any, fallback = 0): number => {
+    if (!val) return fallback
+    if (typeof val === 'object' && val.$numberDecimal) return Number(val.$numberDecimal)
+    const num = Number(val)
+    return isNaN(num) ? fallback : num
+  }
+
   const mapAuctionAdmin = (raw: AdminAuction): AdminAuction => {
     const media = raw.listing?.catalogProduct?.media || []
     const image = media.find(m => m.type === 'IMAGE')?.url || media[0]?.url || null
     return {
       ...raw,
-      startingPrice: Number(raw.startingPrice || 0),
-      currentPrice: Number(raw.currentPrice ?? raw.startingPrice ?? 0),
+      startingPrice: parseDecimal(raw.startingPrice, 0),
+      currentPrice: parseDecimal(raw.currentPrice ?? raw.startingPrice, 0),
+      minBidIncrement: parseDecimal(raw.minBidIncrement, 1),
+      participationDeposit: parseDecimal(raw.participationDeposit, 0),
       Product: raw.listing?.catalogProduct
         ? {
             name: raw.listing.catalogProduct.name,

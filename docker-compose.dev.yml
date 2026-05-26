@@ -28,6 +28,7 @@ services:
     image: mongo:7.0
     container_name: bazarx-mongodb-new
     restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--keyFile", "/data/mongodb.key"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: barterborsa
       MONGO_INITDB_ROOT_PASSWORD: barterborsa123
@@ -36,6 +37,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - ./mongodb.key:/data/mongodb.key:ro
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
