@@ -48,6 +48,8 @@ class UpdateAdminProductDto {
   @IsOptional() @IsNumber() @Min(0) stock?: number;
   @IsOptional() @IsString() @IsIn(['ACTIVE', 'INACTIVE', 'DRAFT']) status?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) images?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) productImages?: string[];
+  @IsOptional() @IsString() image?: string;
   @IsOptional() @IsObject() specs?: Record<string, string | number | boolean>;
   @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @IsBoolean() isSpecialOffer?: boolean;
