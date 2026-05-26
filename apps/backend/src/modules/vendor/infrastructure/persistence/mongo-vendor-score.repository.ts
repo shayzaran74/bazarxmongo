@@ -2,6 +2,7 @@
 // VendorScore + VendorViolation MongoDB repository (ADR-005 Faz 2a)
 
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   VendorViolationModel,
@@ -56,9 +57,12 @@ export class MongoVendorScoreRepository implements IVendorScoreRepository {
   private readonly trustScoreModel: Model<ITrustScore>;
   private readonly violationModel: Model<IVendorViolation>;
 
-  constructor() {
-    this.trustScoreModel = TrustScore;
-    this.violationModel = VendorViolationModel;
+  constructor(
+    @InjectModel('TrustScore') trustScoreModel: Model<ITrustScore>,
+    @InjectModel('VendorViolation') violationModel: Model<IVendorViolation>,
+  ) {
+    this.trustScoreModel = trustScoreModel;
+    this.violationModel = violationModel;
   }
 
   // =====================

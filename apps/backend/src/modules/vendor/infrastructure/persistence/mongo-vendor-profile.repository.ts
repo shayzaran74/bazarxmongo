@@ -2,6 +2,7 @@
 // VendorProfile repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
 import { VendorProfile as VendorProfileModel, IVendorProfile } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/vendorProfile.schema';
@@ -13,9 +14,8 @@ export class MongoVendorProfileRepository
   extends BaseMongoRepository<VendorProfileEntity, IVendorProfile>
   implements IVendorProfileRepository
 {
-  constructor() {
-    const model: Model<IVendorProfile> = VendorProfileModel;
-    super(model, {
+  constructor(@InjectModel('VendorProfile') private readonly vendorProfileModel: Model<IVendorProfile>) {
+    super(vendorProfileModel, {
       toDomain: (doc) => this.toDomain(doc),
       toPersistence: (entity) => this.toPersistence(entity),
     });

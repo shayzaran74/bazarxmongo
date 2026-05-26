@@ -2,6 +2,7 @@
 // Brand repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Brand as BrandModel, IBrand } from '@barterborsa/shared-persistence/schemas/backend/brand.schema';
 
@@ -15,8 +16,8 @@ export interface BrandDocument extends IBrand {
 export class MongoBrandRepository {
   private readonly model: Model<BrandDocument>;
 
-  constructor() {
-    this.model = BrandModel as Model<BrandDocument>;
+  constructor(@InjectModel('Brand') model: Model<BrandDocument>) {
+    this.model = model;
   }
 
   async findById(id: string): Promise<BrandDocument | null> {

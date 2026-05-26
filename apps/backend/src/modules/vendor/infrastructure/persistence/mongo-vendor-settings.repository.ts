@@ -2,6 +2,7 @@
 // VendorSettings repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
 import { VendorSettings as VendorSettingsModel, IVendorSettings } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/vendorSettings.schema';
@@ -13,9 +14,8 @@ export class MongoVendorSettingsRepository
   extends BaseMongoRepository<VendorSettingsEntity, IVendorSettings>
   implements IVendorSettingsRepository
 {
-  constructor() {
-    const model: Model<IVendorSettings> = VendorSettingsModel;
-    super(model, {
+  constructor(@InjectModel('VendorSettings') vendorSettingsModel: Model<IVendorSettings>) {
+    super(vendorSettingsModel, {
       toDomain: (doc) => this.toDomain(doc),
       toPersistence: (entity) => this.toPersistence(entity),
     });

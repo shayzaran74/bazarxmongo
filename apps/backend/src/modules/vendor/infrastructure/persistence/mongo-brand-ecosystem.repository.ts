@@ -2,6 +2,7 @@
 // BrandEcosystem repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BrandEcosystem as BrandEcosystemModel, IBrandEcosystem } from '@barterborsa/shared-persistence/schemas/backend/brandEcosystem.schema';
 import { BrandEcosystem } from '../../domain/entities/brand-ecosystem.entity';
@@ -11,8 +12,8 @@ import { IBrandEcosystemRepository, BrandEcosystemDocument } from '../../domain/
 export class MongoBrandEcosystemRepository implements IBrandEcosystemRepository {
   private readonly model: Model<BrandEcosystemDocument>;
 
-  constructor() {
-    this.model = BrandEcosystemModel as unknown as Model<BrandEcosystemDocument>;
+  constructor(@InjectModel('BrandEcosystem') model: Model<BrandEcosystemDocument>) {
+    this.model = model;
   }
 
   async findById(id: string): Promise<BrandEcosystemDocument | null> {

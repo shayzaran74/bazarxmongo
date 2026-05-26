@@ -2,6 +2,7 @@
 // Company repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
 import { Company as CompanyModel, ICompany } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/company.schema';
@@ -15,8 +16,8 @@ export class MongoCompanyRepository
   extends BaseMongoRepository<Company, ICompany>
   implements ICompanyRepository
 {
-  constructor() {
-    super(CompanyModel as unknown as Parameters<typeof Object>[0], {
+  constructor(@InjectModel('Company') companyModel: Model<ICompany>) {
+    super(companyModel, {
       toDomain: CompanyMapper.toDomain as unknown as Parameters<typeof Object>[0],
       toPersistence: CompanyMapper.toPersistence as unknown as Parameters<typeof Object>[0],
     });

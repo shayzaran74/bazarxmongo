@@ -2,6 +2,7 @@
 // ListingImage repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ListingImage as ListingImageModel, IListingImage } from '@barterborsa/shared-persistence/schemas/backend/listingImage.schema';
 
@@ -13,8 +14,8 @@ export interface ListingImageDocument extends IListingImage {
 export class MongoListingImageRepository {
   private readonly model: Model<ListingImageDocument>;
 
-  constructor() {
-    this.model = ListingImageModel as Model<ListingImageDocument>;
+  constructor(@InjectModel('ListingImage') model: Model<ListingImageDocument>) {
+    this.model = model;
   }
 
   async create(data: { listingId: string; url: string; order: number }): Promise<ListingImageDocument> {

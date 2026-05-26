@@ -2,6 +2,7 @@
 // VendorBanner repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VendorBanner as VendorBannerModel, IVendorBanner } from '@barterborsa/shared-persistence/schemas/backend/vendorBanner.schema';
 
@@ -16,8 +17,8 @@ export interface VendorBannerDocument extends IVendorBanner {
 export class MongoVendorBannerRepository {
   private readonly model: Model<VendorBannerDocument>;
 
-  constructor() {
-    this.model = VendorBannerModel as Model<VendorBannerDocument>;
+  constructor(@InjectModel('VendorBanner') model: Model<VendorBannerDocument>) {
+    this.model = model;
   }
 
   async findById(id: string): Promise<VendorBannerDocument | null> {

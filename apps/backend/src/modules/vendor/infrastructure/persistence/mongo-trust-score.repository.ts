@@ -1,6 +1,7 @@
 // apps/backend/src/modules/vendor/infrastructure/persistence/mongo-trust-score.repository.ts
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { TrustScore as TrustScoreModel, ITrustScore } from '@barterborsa/shared-persistence';
 import { ITrustScoreRepository } from '../../domain/repositories/trust-score.repository.interface';
@@ -9,8 +10,8 @@ import { ITrustScoreRepository } from '../../domain/repositories/trust-score.rep
 export class MongoTrustScoreRepository implements ITrustScoreRepository {
   private readonly model: Model<ITrustScore>;
 
-  constructor() {
-    this.model = TrustScoreModel;
+  constructor(@InjectModel('TrustScore') model: Model<ITrustScore>) {
+    this.model = model;
   }
 
   async findByVendorId(vendorId: string): Promise<any | null> {

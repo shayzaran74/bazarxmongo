@@ -2,6 +2,7 @@
 // User repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User as UserModel, IUser } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
 
@@ -13,8 +14,8 @@ export interface UserDocument extends IUser {
 export class MongoUserRepository {
   private readonly model: Model<UserDocument>;
 
-  constructor() {
-    this.model = UserModel as Model<UserDocument>;
+  constructor(@InjectModel('User') model: Model<UserDocument>) {
+    this.model = model;
   }
 
   async findById(id: string): Promise<UserDocument | null> {

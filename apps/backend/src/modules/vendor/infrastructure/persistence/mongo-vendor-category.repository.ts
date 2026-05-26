@@ -2,6 +2,7 @@
 // VendorCategory repository — Mongoose (junction table, no domain entity)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VendorCategory as VendorCategoryModel, IVendorCategory } from '@barterborsa/shared-persistence/schemas/backend/vendorCategory.schema';
 
@@ -13,8 +14,8 @@ export interface VendorCategoryDocument extends IVendorCategory {
 export class MongoVendorCategoryRepository {
   private readonly model: Model<VendorCategoryDocument>;
 
-  constructor() {
-    this.model = VendorCategoryModel as Model<VendorCategoryDocument>;
+  constructor(@InjectModel('VendorCategory') model: Model<VendorCategoryDocument>) {
+    this.model = model;
   }
 
   async create(data: { vendorId: string; categoryId: string }): Promise<void> {

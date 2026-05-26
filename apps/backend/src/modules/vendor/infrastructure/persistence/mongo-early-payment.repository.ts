@@ -2,6 +2,7 @@
 // MongoEarlyPaymentRepository — MongoDB/Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EarlyPaymentRequest as EarlyPaymentModel, IEarlyPaymentRequest } from '@barterborsa/shared-persistence';
 import { EarlyPaymentStatus } from '../../domain/enums/early-payment-status.enum';
@@ -61,8 +62,8 @@ export class MongoEarlyPaymentRepository implements IEarlyPaymentRepository {
   private readonly mapper = new EarlyPaymentMapper();
   private readonly model: Model<IEarlyPaymentRequest>;
 
-  constructor() {
-    this.model = EarlyPaymentModel;
+  constructor(@InjectModel('EarlyPaymentRequest') model: Model<IEarlyPaymentRequest>) {
+    this.model = model;
   }
 
   async findById(id: string): Promise<EarlyPaymentRequest | null> {

@@ -47,7 +47,7 @@ export class VendorRegistrationService {
       await mongoSession.withTransaction(async () => {
         // 1. Company oluştur
         const companyId = 'co-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-        await Company.create([{
+        await this.connection.model('Company').create([{
           _id: companyId,
           id: companyId,
           name: businessName,

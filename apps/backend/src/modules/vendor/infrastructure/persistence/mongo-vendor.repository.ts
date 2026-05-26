@@ -2,6 +2,7 @@
 // Vendor repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
 import { Vendor as VendorModel, IVendor } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/vendor.schema';
@@ -15,8 +16,8 @@ export class MongoVendorRepository
   extends BaseMongoRepository<Vendor, IVendor>
   implements IVendorRepository
 {
-  constructor() {
-    super(VendorModel as unknown as Model<IVendor>, {
+  constructor(@InjectModel('Vendor') vendorModel: Model<IVendor>) {
+    super(vendorModel, {
       toDomain: VendorMapper.toDomain as unknown as (doc: IVendor) => Vendor,
       toPersistence: VendorMapper.toPersistence as unknown as (entity: Vendor) => Partial<IVendor>,
     });

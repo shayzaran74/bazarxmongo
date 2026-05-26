@@ -2,6 +2,7 @@
 // EcosystemAuditLog repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EcosystemAuditLog as EcosystemAuditLogModel, IEcosystemAuditLog } from '@barterborsa/shared-persistence/schemas/backend/ecosystemAuditLog.schema';
 import { IEcosystemAuditLogRepository, EcosystemAuditLogDocument } from '../../domain/repositories/ecosystem-audit-log.repository.interface';
@@ -10,8 +11,8 @@ import { IEcosystemAuditLogRepository, EcosystemAuditLogDocument } from '../../d
 export class MongoEcosystemAuditLogRepository implements IEcosystemAuditLogRepository {
   private readonly model: Model<EcosystemAuditLogDocument>;
 
-  constructor() {
-    this.model = EcosystemAuditLogModel as unknown as Model<EcosystemAuditLogDocument>;
+  constructor(@InjectModel('EcosystemAuditLog') model: Model<EcosystemAuditLogDocument>) {
+    this.model = model;
   }
 
   async create(data: {

@@ -2,6 +2,7 @@
 // InventoryLog repository — Mongoose (ADR-005 Faz 2c)
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { InventoryLog as InventoryLogModel, IInventoryLog } from '@barterborsa/shared-persistence/schemas/backend/inventoryLog.schema';
 
@@ -13,8 +14,8 @@ export interface InventoryLogDocument extends IInventoryLog {
 export class MongoInventoryLogRepository {
   private readonly model: Model<InventoryLogDocument>;
 
-  constructor() {
-    this.model = InventoryLogModel as Model<InventoryLogDocument>;
+  constructor(@InjectModel('InventoryLog') model: Model<InventoryLogDocument>) {
+    this.model = model;
   }
 
   async create(data: {

@@ -192,6 +192,7 @@ import { EcosystemOrder, EcosystemOrderSchema } from './infrastructure/persisten
 import { GarageSale, GarageSaleSchema } from '@barterborsa/shared-persistence/schemas/backend/garageSale.schema';
 import { VendorViolationModel, VendorViolationSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/vendorViolation.schema';
 import { EarlyPaymentRequest, EarlyPaymentRequestSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/early-payment-request.schema';
+import { TrustScore, TrustScoreSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/trustScore.schema';
 import { User, UserSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/user.schema';
 import { UserProfile, UserProfileSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/userProfile.schema';
 import { Category, CategorySchema } from '../../../../../packages/shared/shared-persistence/src/schemas/backend/category.schema';
@@ -231,6 +232,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
       { name: 'GarageSale', schema: GarageSaleSchema },
       { name: 'VendorViolation', schema: VendorViolationSchema },
       { name: 'EarlyPaymentRequest', schema: EarlyPaymentRequestSchema },
+      { name: 'TrustScore', schema: TrustScoreSchema },
       { name: 'User', schema: UserSchema },
       { name: 'UserProfile', schema: UserProfileSchema },
       { name: 'Category', schema: CategorySchema },
