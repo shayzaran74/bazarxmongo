@@ -52,7 +52,6 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
         const uri = config.getOrThrow<string>('MONGODB_URI');
         // Mask password for safety
         const maskedUri = uri.replace(/:([^@/:]+)@/, ':****@');
-        console.log('=== NESTJS RESOLVED MONGODB_URI ===', maskedUri);
         return {
           uri,
           family: 4,
@@ -62,9 +61,9 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
           connectTimeoutMS: 30000,
           heartbeatFrequencyMS: 10000,
           connectionFactory: (connection) => {
-            connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
-            connection.on('error', (err: unknown) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
-            connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
+            connection.on('connected', () => { /* connected */ });
+            connection.on('error', (err: unknown) => { /* error */ });
+            connection.on('disconnected', () => { /* disconnected */ });
             return connection;
           },
         };
@@ -165,9 +164,5 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
 export class AppModule {
   constructor(@InjectConnection() private readonly connection: Connection) {
     ConnectionRegistry.registerConnection('default', this.connection);
-    console.log('=== CONNECTION REGISTERED IN REGISTRY ===');
-    console.log('Connection Ready State:', this.connection.readyState);
-    console.log('Connection Host:', this.connection.host);
-    console.log('Connection DB Name:', this.connection.name);
   }
 }

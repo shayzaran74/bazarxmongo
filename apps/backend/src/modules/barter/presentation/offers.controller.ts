@@ -580,10 +580,8 @@ export class OffersController {
       ? await TradeOfferItemModel.find({ $or: [{ offeredOfferId: offerId }, { requestedOfferId: offerId }] }).lean()
       : [];
 
-    console.log(`[enrichOffer] offerId=${offerId}, tradeOfferItems count=${tradeOfferItems.length}`);
     const offeredItemIds   = tradeOfferItems.filter(i => i.offeredOfferId   === offerId).map(i => i.surplusItemId).filter(Boolean) as string[];
     const requestedItemIds = tradeOfferItems.filter(i => i.requestedOfferId === offerId).map(i => i.surplusItemId).filter(Boolean) as string[];
-    console.log(`[enrichOffer] offeredItemIds=${JSON.stringify(offeredItemIds)}, requestedItemIds=${JSON.stringify(requestedItemIds)}`);
     const allItemIds = [...new Set([...offeredItemIds, ...requestedItemIds, requestedItemId, offeredItemId].filter(Boolean))] as string[];
 
     const surplusItems = allItemIds.length
@@ -593,11 +591,9 @@ export class OffersController {
       surplusItems.items.map(item => {
         const p = item.getProps();
         const normalizedImages = this.normalizeImages(p.images);
-        console.log(`[enrichOffer] item id=${item.id}, images raw=${JSON.stringify(p.images)}, normalized=${JSON.stringify(normalizedImages)}`);
         return [item.id, { id: item.id, title: p.title, images: normalizedImages }] as [string, { id: string; title: string; images: string[] }];
       })
     );
-    console.log(`[enrichOffer] itemMap entries=${itemMap.size}, keys=${JSON.stringify([...itemMap.keys()])}`);
 
     const status  = raw['status'] as string | undefined;
     let swapSession: { id: string } | null = null;
