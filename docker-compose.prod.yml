@@ -182,6 +182,7 @@ services:
     image: mongo:7.0
     container_name: bazarx-mongodb-prod
     restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}

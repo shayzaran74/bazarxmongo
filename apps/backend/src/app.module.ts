@@ -44,6 +44,7 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env', '../../../.env'],
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
