@@ -10,6 +10,8 @@ import { RejectVendorCommand } from '../application/commands/reject-vendor.comma
 import { UpdateAdminVendorCommand } from '../application/commands/update-admin-vendor.command';
 import { AddVendorCategoryCommand } from '../application/commands/add-vendor-category.command';
 import { RemoveVendorCategoryCommand } from '../application/commands/remove-vendor-category.command';
+import { SuspendVendorCommand } from '../application/commands/suspend-vendor.command';
+import { ReinstateVendorCommand } from '../application/commands/reinstate-vendor.command';
 
 interface AuthenticatedUser {
   id: string;
@@ -119,5 +121,30 @@ export class VendorAdminController {
     @Param('categoryId') categoryId: string,
   ) {
     return this.commandBus.execute(new RemoveVendorCategoryCommand(id, categoryId));
+  }
+
+  @ApiOperation({ summary: 'Suspend vendor' })
+  @Put(':id/suspend')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { reason: { type: 'string' } },
+      required: ['reason'],
+    },
+  })
+  async suspendVendor(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    const data = await this.commandBus.execute(new SuspendVendorCommand(id, reason, admin.id));
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Reinstate (unsuspend) vendor' })
+  @Put(':id/reinstate')
+  async reinstateVendor(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
+    const data = await this.commandBus.execute(new ReinstateVendorCommand(id, admin.id));
+    return { success: true, data };
   }
 }

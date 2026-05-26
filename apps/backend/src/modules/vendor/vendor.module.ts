@@ -36,6 +36,8 @@ import { RemoveEcosystemMemberHandler } from './application/commands/remove-ecos
 import { UpdateEcosystemSettingsHandler } from './application/commands/update-ecosystem-settings.handler';
 import { ApproveVendorHandler } from './application/commands/approve-vendor.handler';
 import { RejectVendorHandler } from './application/commands/reject-vendor.handler';
+import { SuspendVendorHandler } from './application/commands/suspend-vendor.handler';
+import { ReinstateVendorHandler } from './application/commands/reinstate-vendor.handler';
 import { UpdateAdminVendorHandler } from './application/commands/update-admin-vendor.handler';
 import { AddVendorCategoryHandler } from './application/commands/add-vendor-category.handler';
 import { RemoveVendorCategoryHandler } from './application/commands/remove-vendor-category.handler';
@@ -123,6 +125,8 @@ const CommandHandlers = [
   UpdateEcosystemSettingsHandler,
   ApproveVendorHandler,
   RejectVendorHandler,
+  SuspendVendorHandler,
+  ReinstateVendorHandler,
   UpdateAdminVendorHandler,
   AddVendorCategoryHandler,
   RemoveVendorCategoryHandler,

@@ -9,6 +9,7 @@ import { VendorRegisteredEvent } from '../events/vendor-registered.event';
 import { VendorApprovedEvent } from '../events/vendor-approved.event';
 import { VendorRejectedEvent } from '../events/vendor-rejected.event';
 import { VendorSuspendedEvent } from '../events/vendor-suspended.event';
+import { VendorReinstatedEvent } from '../events/vendor-reinstated.event';
 
 export interface VendorProps {
   userId: string;
@@ -93,6 +94,14 @@ export class Vendor extends AggregateRoot<VendorProps> {
     this._updatedAt = new Date();
 
     this.addDomainEvent(new VendorSuspendedEvent(this.id, reason));
+  }
+
+  public reinstate(): void {
+    this.props.status = VendorStatus.APPROVED;
+    this.props.suspensionReason = undefined;
+    this._updatedAt = new Date();
+
+    this.addDomainEvent(new VendorReinstatedEvent(this.id));
   }
 
   public upgradeTier(newTier: VendorTier): void {
