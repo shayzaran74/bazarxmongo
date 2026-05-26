@@ -281,6 +281,8 @@
 <script setup>
 import { TrophyIcon, TicketIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 
+definePageMeta({ layout: 'default', hideSideAds: true })
+
 const route = useRoute()
 const authStore = useAuthStore()
 const { resolveImageUrl } = useAppImage()

@@ -128,7 +128,7 @@ import CreateCompanyModal from '~/components/modals/CreateCompanyModal.vue'
 
 import TtAccessBarrier from '~/components/ticaritakas/TtAccessBarrier.vue'
 
-definePageMeta({ middleware: ['auth'] })
+definePageMeta({ middleware: ['auth'], hideSideAds: true })
 
 const authStore = useAuthStore()
 const surplus = useSurplus()

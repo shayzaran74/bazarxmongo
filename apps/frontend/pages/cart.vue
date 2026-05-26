@@ -122,6 +122,11 @@
           </aside>
 
         </div>
+        
+        <!-- En çok alınan ürünler (Aktif sepetin altında da görünsün) -->
+        <div v-if="cartItems.length > 0" class="mt-8">
+          <CartBestSellers :products="bestSellers" :loading="bestSellersLoading" subtitle-text="Sepetinize eklediğiniz ürünlerin yanına bunları da değerlendirebilirsiniz." />
+        </div>
       </div>
     </div>
   </div>

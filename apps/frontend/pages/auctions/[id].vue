@@ -258,7 +258,7 @@ watch(auction, (newVal) => {
   }
 }, { immediate: true })
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({ title: 'AÇIK ARTIRMA // BAZARX' })
 </script>
 

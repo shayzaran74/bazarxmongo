@@ -138,6 +138,11 @@
         </aside>
 
       </div>
+      
+      <!-- En çok alınan ürünler -->
+      <div class="mt-8">
+        <CartBestSellers :products="bestSellers" :loading="bestSellersLoading" subtitle-text="Siparişinizi tamamlamadan önce en çok alınan fırsatlara göz atın." />
+      </div>
     </div>
 
     <!-- Modals -->
@@ -161,6 +166,7 @@ import CheckoutOrderSummary from '~/components/checkout/CheckoutOrderSummary.vue
 import CheckoutCouponSection from '~/components/checkout/CheckoutCouponSection.vue'
 import CheckoutAddressForm from '~/components/checkout/CheckoutAddressForm.vue'
 import CheckoutPaymentMethod from '~/components/checkout/CheckoutPaymentMethod.vue'
+import CartBestSellers from '~/components/cart/CartBestSellers.vue'
 import AnnouncementBar from '~/components/common/AnnouncementBar.vue'
 import LegalDocumentModal from '~/components/modals/LegalDocumentModal.vue'
 import { ClockIcon, ShoppingCartIcon, PlusIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
