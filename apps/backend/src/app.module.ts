@@ -63,7 +63,7 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
           heartbeatFrequencyMS: 10000,
           connectionFactory: (connection) => {
             connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
-            connection.on('error', (err) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
+            connection.on('error', (err: unknown) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
             connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
             return connection;
           },
