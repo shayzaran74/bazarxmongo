@@ -1,6 +1,6 @@
 // apps/backend/src/modules/vendor/domain/entities/vendor.entity.ts
 
-import { AggregateRoot } from '@barterborsa/shared-core';
+import { AggregateRoot, DomainException } from '@barterborsa/shared-core';
 import { VendorStatus } from '../enums/vendor-status.enum';
 import { VendorTier } from '../enums/vendor-tier.enum';
 import { VendorType } from '../enums/vendor-type.enum';
@@ -89,6 +89,11 @@ export class Vendor extends AggregateRoot<VendorProps> {
   }
 
   public suspend(reason: string): void {
+    if (this.props.status !== VendorStatus.APPROVED) {
+      throw new DomainException(
+        `Sadece APPROVED vendor askıya alınabilir. Mevcut durum: ${this.props.status}`
+      );
+    }
     this.props.status = VendorStatus.SUSPENDED;
     this.props.suspensionReason = reason;
     this._updatedAt = new Date();
@@ -97,6 +102,11 @@ export class Vendor extends AggregateRoot<VendorProps> {
   }
 
   public reinstate(): void {
+    if (this.props.status !== VendorStatus.SUSPENDED) {
+      throw new DomainException(
+        `Sadece SUSPENDED vendor tekrar aktif edilebilir. Mevcut durum: ${this.props.status}`
+      );
+    }
     this.props.status = VendorStatus.APPROVED;
     this.props.suspensionReason = undefined;
     this._updatedAt = new Date();
