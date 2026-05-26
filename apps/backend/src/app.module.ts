@@ -48,21 +48,27 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        uri: config.getOrThrow<string>('MONGODB_URI'),
-        family: 4,
-        maxPoolSize: 100,
-        minPoolSize: 10,
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 30000,
-        heartbeatFrequencyMS: 10000,
-        connectionFactory: (connection) => {
-          connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
-          connection.on('error', (err) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
-          connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
-          return connection;
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const uri = config.getOrThrow<string>('MONGODB_URI');
+        // Mask password for safety
+        const maskedUri = uri.replace(/:([^@/:]+)@/, ':****@');
+        console.log('=== NESTJS RESOLVED MONGODB_URI ===', maskedUri);
+        return {
+          uri,
+          family: 4,
+          maxPoolSize: 100,
+          minPoolSize: 10,
+          socketTimeoutMS: 45000,
+          connectTimeoutMS: 30000,
+          heartbeatFrequencyMS: 10000,
+          connectionFactory: (connection) => {
+            connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
+            connection.on('error', (err) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
+            connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
+            return connection;
+          },
+        };
+      },
     }),
     ScheduleModule.forRoot(),
 
