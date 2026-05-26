@@ -2,47 +2,41 @@
 // Vendor repository — Mongoose implementation (ADR-005 Faz 2a)
 
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { BaseMongoRepository } from '../../../../../../../packages/shared/shared-persistence/src/mongodb/base-mongo.repository';
-import { Vendor as VendorModel, IVendor } from '../../../../../../../packages/shared/shared-persistence/src/schemas/backend/vendor.schema';
-import { VendorMapper, VendorDocument } from './mappers/vendor.mapper';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { Vendor } from '../../domain/entities/vendor.entity';
 import { VendorSlug } from '../../domain/value-objects/vendor-slug.vo';
+import { VendorMapper } from './mappers/vendor.mapper';
 
 @Injectable()
-export class MongoVendorRepository
-  extends BaseMongoRepository<Vendor, IVendor>
-  implements IVendorRepository
-{
-  constructor(@InjectModel('Vendor') vendorModel: Model<IVendor>) {
-    super(vendorModel, {
-      toDomain: VendorMapper.toDomain as unknown as (doc: IVendor) => Vendor,
-      toPersistence: VendorMapper.toPersistence as unknown as (entity: Vendor) => Partial<IVendor>,
-    });
+export class MongoVendorRepository implements IVendorRepository {
+  constructor(@InjectConnection() private readonly connection: Connection) {}
+
+  private get model() {
+    return this.connection.model('Vendor');
   }
 
   async findByUserId(userId: string): Promise<Vendor | null> {
     const doc = await this.model.findOne({ userId }).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
   async findBySlug(slug: VendorSlug): Promise<Vendor | null> {
     const doc = await this.model.findOne({ slug: slug.value }).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
   async findByIdOrSlug(idOrSlug: string): Promise<Vendor | null> {
     const doc = await this.model.findOne({
       $or: [{ id: idOrSlug }, { slug: idOrSlug }],
     }).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
   async findByCompanyId(companyId: string): Promise<Vendor | null> {
     const doc = await this.model.findOne({ companyId }).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
   async search(params: {
@@ -65,7 +59,7 @@ export class MongoVendorRepository
     ]);
 
     return {
-      items: docs.map(doc => this.mapper.toDomain(doc)),
+      items: docs.map(doc => VendorMapper.toDomain(doc)),
       total,
     };
   }
@@ -85,32 +79,46 @@ export class MongoVendorRepository
       { $set: data },
       { new: true }
     ).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
   async findById(id: string): Promise<Vendor | null> {
     const doc = await this.model.findOne({ id }).exec();
-    return doc ? this.mapper.toDomain(doc) : null;
+    return doc ? VendorMapper.toDomain(doc) : null;
   }
 
-  async findByIdWithRelations(id: string): Promise<any | null> {
-    const doc = await this.model.findOne({ id }).exec();
-    return doc ? doc.toObject() : null;
+  async save(entity: Vendor): Promise<void> {
+    const persistence = VendorMapper.toPersistence(entity);
+    await this.model.create(persistence);
   }
 
   async findByBarterEnabled(enabled: boolean): Promise<Vendor[]> {
     const docs = await this.model.find({ barterEnabled: enabled }).limit(100).exec();
-    return docs.map(doc => this.mapper.toDomain(doc));
+    return docs.map(doc => VendorMapper.toDomain(doc));
   }
 
   async findByTier(tiers: string[]): Promise<Vendor[]> {
     const docs = await this.model.find({ tier: { $in: tiers }, status: 'APPROVED' }).limit(100).exec();
-    return docs.map(doc => this.mapper.toDomain(doc));
+    return docs.map(doc => VendorMapper.toDomain(doc));
   }
 
   async create(vendor: Vendor): Promise<Vendor> {
     const persistence = VendorMapper.toPersistence(vendor);
     const doc = await this.model.create(persistence);
-    return this.mapper.toDomain(doc);
+    return VendorMapper.toDomain(doc);
+  }
+
+  async findAll(): Promise<Vendor[]> {
+    const docs = await this.model.find().exec();
+    return docs.map(doc => VendorMapper.toDomain(doc));
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.model.deleteOne({ id }).exec();
+  }
+
+  async findByIdWithRelations(id: string): Promise<any | null> {
+    const doc = await this.model.findOne({ id }).exec();
+    return doc ? doc.toObject() : null;
   }
 }
