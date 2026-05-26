@@ -55,10 +55,16 @@ export class UpdateAdminProductHandler implements ICommandHandler<UpdateAdminPro
 
     await CatalogProduct.updateOne({ id: productId }, { $set: productUpdate }).exec();
 
-    if (data.productImages && Array.isArray(data.productImages)) {
+    // images veya productImages — frontend ikisini de gönderebilir
+    const incomingImages: string[] | undefined =
+      Array.isArray(data.productImages) ? data.productImages
+      : Array.isArray(data.images) ? data.images
+      : undefined;
+
+    if (incomingImages !== undefined) {
       await ProductMedia.deleteMany({ productId }).exec();
-      if (data.productImages.length > 0) {
-        const mediaDocs = data.productImages.map((url: string, index: number) => ({
+      if (incomingImages.length > 0) {
+        const mediaDocs = incomingImages.map((url: string, index: number) => ({
           id: 'media-' + crypto.randomUUID(),
           productId,
           url,

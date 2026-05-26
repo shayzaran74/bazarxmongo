@@ -339,7 +339,7 @@ export const useAdminProducts = () => {
     loading.value = true
     try {
       if (editingId.value) {
-        const res = await $api<any>(`/api/admin/products/${editingId.value}`, {
+        const res = await $api<any>(`/api/v1/admin/products/${editingId.value}`, {
           method: 'PUT',
           body: formData.value
         })
@@ -376,7 +376,7 @@ export const useAdminProducts = () => {
   // ─── Onay & Silme ──────────────────────────────────────────────────────────
   const approveProduct = async (id: string) => {
     try {
-      await $api(`/api/admin/products/${id}`, {
+      await $api(`/api/v1/admin/products/${id}`, {
         method: 'PUT',
         body: { status: 'ACTIVE', isFeatured: true, isSpecialOffer: true }
       })
@@ -391,7 +391,7 @@ export const useAdminProducts = () => {
   const deleteProduct = async (id: string) => {
     if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return
     try {
-      await $api(`/api/admin/products/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/products/${id}`, { method: 'DELETE' })
       $toast.success('Ürün silindi')
       fetchProducts(pagination.page)
       fetchProductStats()

@@ -22,23 +22,22 @@ export class AuditLogService {
   constructor(private readonly auditLogRepo: AuditLogRepository) {}
 
   async log(entry: AuditLogEntry): Promise<void> {
-    try {
-      await this.auditLogRepo.create({
-        id: '', // cuid repository'de üretilir
-        actorId: entry.actorId,
-        action: entry.action,
-        resourceType: entry.resourceType,
-        resourceId: entry.resourceId,
-        oldValue: entry.oldValue,
-        newValue: entry.newValue,
-        ipAddress: entry.ipAddress,
-        createdAt: new Date(),
-      });
-    } catch (err: unknown) {
-      // Audit log hatası ana işlemi durdurmamalı — sadece loglanır
+    // Fire-and-forget: audit log ana işlemi bloke etmemeli
+    // Hata durumunda sessizce loglanır (catch içinde)
+    this.auditLogRepo.create({
+      id: '', // cuid repository'de üretilir
+      actorId: entry.actorId,
+      action: entry.action,
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
+      oldValue: entry.oldValue,
+      newValue: entry.newValue,
+      ipAddress: entry.ipAddress,
+      createdAt: new Date(),
+    }).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
       this.logger.error('AuditLog kaydedilemedi', { entry, error: msg });
-    }
+    });
   }
 
   async findByActor(actorId: string, limit = 100) {
