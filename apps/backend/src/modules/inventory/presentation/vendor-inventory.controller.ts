@@ -16,6 +16,7 @@ import { InventoryLog } from '@barterborsa/shared-persistence/schemas/backend/in
 import { randomBytes } from 'crypto';
 import { ImportCategoryResolverService } from '../../catalog/application/services/import-category-resolver.service';
 import { TrendyolImportNormalizerService } from '../../catalog/application/services/trendyol-import-normalizer.service';
+import { ImportTemplateService } from '../../vendor/application/services/import-template.service';
 
 interface AuthenticatedUser {
   id: string;
@@ -113,17 +114,12 @@ export class VendorInventoryController {
   @Public()
   @Get('template/download')
   async downloadTemplate(@Res() res: Response) {
-    let filePath = path.join(process.cwd(), '..', '..', 'belge', 'exel', 'bazarx_trendyol_sablonu01.xlsx');
-    if (!fs.existsSync(filePath)) filePath = path.join(process.cwd(), 'belge', 'exel', 'bazarx_trendyol_sablonu01.xlsx');
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, error: 'Şablon dosyası bulunamadı.' });
-    }
+    const templateService = new ImportTemplateService();
+    const buffer = templateService.generateVendorExcel();
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=bazarx_urun_yukleme_sablonu.xlsx');
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    res.status(200).end(buffer);
   }
 
   @ApiOperation({ summary: 'Import products from Excel' })
@@ -195,7 +191,14 @@ export class VendorInventoryController {
           }
           } // close if (!catalogProduct)
 
-          const existingListing = await Listing.findOne({ vendorId: vendor.id, sku: barcode || undefined }).lean();
+          let existingListing = null;
+          const searchSku = barcode ? String(barcode).trim() : '';
+          if (searchSku) {
+            existingListing = await Listing.findOne({ vendorId: vendor.id, sku: searchSku }).lean();
+          }
+          if (!existingListing && catalogProduct) {
+            existingListing = await Listing.findOne({ vendorId: vendor.id, catalogProductId: catalogProduct.id }).lean();
+          }
 
           if (existingListing) {
             await Listing.updateOne({ id: existingListing.id }, { $set: { price, stock } }).exec();
@@ -302,7 +305,13 @@ export class VendorInventoryController {
           this.logger.warn(`[TrendyolImport] Hiç görsel bulunamadı for product: ${title}`);
         }
 
-        const existingListing = await Listing.findOne({ vendorId: vendor.id, sku }).lean();
+        let existingListing = null;
+        if (sku && String(sku).trim() !== '') {
+          existingListing = await Listing.findOne({ vendorId: vendor.id, sku: String(sku).trim() }).lean();
+        }
+        if (!existingListing) {
+          existingListing = await Listing.findOne({ vendorId: vendor.id, catalogProductId: catalogProduct!.id }).lean();
+        }
 
         if (existingListing) {
           await Listing.updateOne({ id: existingListing.id }, { $set: { price, stock: stockToUse } }).exec();

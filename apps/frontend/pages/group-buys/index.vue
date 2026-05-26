@@ -13,20 +13,25 @@
       <div class="flex gap-6 items-start">
 
         <!-- Sol Arama Sidebar -->
-        <aside class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+        <aside v-show="isSidebarOpen" class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24 relative">
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <UserGroupIcon class="w-4 h-4 text-primary-600" />
               <span class="font-black text-sm text-gray-900">Filtrele & Ara</span>
             </div>
-            <button
-              v-if="sideFilters.search || sideFilters.progress !== 'all' || sideFilters.sort !== 'newest'"
-              class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
-              type="button"
-              @click="sideFilters = { search: '', progress: 'all', sort: 'newest' }"
-            >
-              Temizle
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="sideFilters.search || sideFilters.progress !== 'all' || sideFilters.sort !== 'newest'"
+                class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
+                type="button"
+                @click="sideFilters = { search: '', progress: 'all', sort: 'newest' }"
+              >
+                Temizle
+              </button>
+              <button @click="isSidebarOpen = false" class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors" title="Filtreleri Gizle">
+                <Bars3Icon class="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div class="p-5 space-y-5">
@@ -90,6 +95,12 @@
 
         <!-- Ana İçerik -->
         <div class="flex-1 min-w-0">
+          <div v-if="!isSidebarOpen" class="mb-6">
+            <button @click="isSidebarOpen = true" class="p-2 bg-white text-gray-700 border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 flex items-center gap-2 font-bold transition-colors">
+              <Bars3Icon class="w-5 h-5" />
+              <span class="text-sm">Kategoriler / Filtreler</span>
+            </button>
+          </div>
           <div v-if="loading" class="flex justify-center items-center py-20">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
           </div>
@@ -210,9 +221,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { UserGroupIcon, ClockIcon, ArrowRightIcon, ShoppingCartIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import { UserGroupIcon, ClockIcon, ArrowRightIcon, ShoppingCartIcon, MagnifyingGlassIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 import { useCartStore } from '~/stores/cart'
 import type { GroupBuyDTO, ApiResponse } from '@barterborsa/shared-types'
+
+const isSidebarOpen = ref(true)
 
 definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({ title: 'Birlikte Al Kampanyaları | BazarX' })

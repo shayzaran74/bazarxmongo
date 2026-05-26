@@ -6,4 +6,5 @@ export enum VendorType {
   RESTAURANT = 'RESTAURANT',
   MARKET     = 'MARKET',
   SERVICE    = 'SERVICE',
+  INDIVIDUAL = 'INDIVIDUAL',
 }

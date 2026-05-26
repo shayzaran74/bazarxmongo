@@ -12,7 +12,7 @@ export type VendorStatusType = typeof VendorStatus[number];
 export const VendorTier = ['CORE', 'PLUS', 'PREMIUM', 'ELITE', 'APEX'] as const;
 export type VendorTierType = typeof VendorTier[number];
 
-export const VendorType = ['COMMERCE', 'RESTAURANT'] as const;
+export const VendorType = ['COMMERCE', 'RESTAURANT', 'MARKET', 'SERVICE', 'INDIVIDUAL'] as const;
 export type VendorTypeType = typeof VendorType[number];
 
 export interface IVendor {

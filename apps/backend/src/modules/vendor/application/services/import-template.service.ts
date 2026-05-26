@@ -1,6 +1,7 @@
 // apps/backend/src/modules/vendor/application/services/import-template.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import * as XLSX from 'xlsx';
+import { VENDOR_COLUMN_MAP } from '../commands/column-map.const';
 
 @Injectable()
 export class ImportTemplateService {
@@ -15,21 +16,25 @@ export class ImportTemplateService {
   generateVendorExcel(): Buffer {
     const wb = XLSX.utils.book_new();
 
-    // --- SHEET 1: Ürünler (Boş veri girişi şablonu) ---
+    const formatHeader = (key: string) => key.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    // Tek kaynak: VENDOR_COLUMN_MAP
     const headers = [
-      'Barkod*',
-      'SKU',
-      'Ürün Adı*',
-      'Açıklama',
-      'Fiyat*',
-      'Stok*',
-      'Marka',
-      'Kategori ID',
-      'Ana Resim',
-      'Ek Resimler',
-      'KDV Oranı',
-      'Durum',
+      formatHeader(VENDOR_COLUMN_MAP.barcode[0]),
+      'SKU', // formatHeader makes it 'Sku'
+      formatHeader(VENDOR_COLUMN_MAP.name[0]),
+      formatHeader(VENDOR_COLUMN_MAP.description[0]),
+      formatHeader(VENDOR_COLUMN_MAP.price[0]),
+      formatHeader(VENDOR_COLUMN_MAP.stock[0]),
+      formatHeader(VENDOR_COLUMN_MAP.brand[0]),
+      formatHeader(VENDOR_COLUMN_MAP.categoryId[0]),
+      formatHeader(VENDOR_COLUMN_MAP.primaryImage[0]),
+      formatHeader(VENDOR_COLUMN_MAP.extraImages[0]),
+      'KDV Oranı', // Özel durum
+      formatHeader(VENDOR_COLUMN_MAP.status[0]),
     ];
+
+    // --- SHEET 1: Ürünler (Boş veri girişi şablonu) ---
     const wsProducts = XLSX.utils.aoa_to_sheet([headers]);
     this.applyAutowidth(wsProducts);
     XLSX.utils.book_append_sheet(wb, wsProducts, 'Ürünler');
@@ -37,18 +42,18 @@ export class ImportTemplateService {
     // --- SHEET 2: Talimatlar ---
     const instructionsHeaders = ['Kolon Adı', 'Zorunlu Mu?', 'Açıklama / Kabul Edilen Değerler', 'Örnek Veri'];
     const instructionsRows = [
-      ['Barkod*', 'Evet (veya SKU)', 'Ürünün benzersiz barkod değeri (EAN, GTIN vb.)', '8690000000001'],
-      ['SKU', 'Hayır (Barkod yoksa Evet)', 'Ürün model/stok kodu', 'CP-1002-BLU'],
-      ['Ürün Adı*', 'Evet', 'Ürünün BazarX platformunda görünecek başlığı', 'Kablosuz Bluetooth Kulaklık'],
-      ['Açıklama', 'Hayır', 'Ürünün detaylı açıklaması ve özellikleri', 'Gürültü engelleyici kablosuz kulaklık.'],
-      ['Fiyat*', 'Evet', 'Ürün satış fiyatı (TL cinsinden, sayısal değer). Sıfır veya negatif olamaz.', '1250.50'],
-      ['Stok*', 'Evet', 'Mevcut envanter adedi. Tam sayı olmalı, negatif olamaz.', '50'],
-      ['Marka', 'Hayır', 'Ürün markası. Boş bırakılırsa ürün adının ilk kelimesi atanır.', 'Philips'],
-      ['Kategori ID', 'Hayır', 'Platform kategori benzersiz kimliği (örn: cat-12345). Geçersizse Genel kategoriye atanır.', 'cat-12345'],
-      ['Ana Resim', 'Hayır', 'Ürünün birincil görsel URL\'si', 'https://images.bazarx.com/kulaklik.jpg'],
-      ['Ek Resimler', 'Hayır', 'Diğer resim URL\'leri. Birden fazla resim için aralarına | (pipe) ekleyin.', 'https://img.com/k1.jpg|https://img.com/k2.jpg'],
-      ['KDV Oranı', 'Hayır', 'KDV yüzdesi. Kabul edilenler: 1, 8, 10, 18, 20. Boşsa 20 alınır.', '20'],
-      ['Durum', 'Hayır', 'Ürün yayında olma durumu. Kabul edilenler: ACTIVE, INACTIVE, PENDING. Boşsa ACTIVE.', 'ACTIVE'],
+      [headers[0], 'Evet (veya SKU)', 'Ürünün benzersiz barkod değeri (EAN, GTIN vb.)', '8690000000001'],
+      [headers[1], 'Hayır (Barkod yoksa Evet)', 'Ürün model/stok kodu', 'CP-1002-BLU'],
+      [headers[2], 'Evet', 'Ürünün BazarX platformunda görünecek başlığı', 'Kablosuz Bluetooth Kulaklık'],
+      [headers[3], 'Hayır', 'Ürünün detaylı açıklaması ve özellikleri', 'Gürültü engelleyici kablosuz kulaklık.'],
+      [headers[4], 'Evet', 'Ürün satış fiyatı (TL cinsinden, sayısal değer). Sıfır veya negatif olamaz.', '1250.50'],
+      [headers[5], 'Evet', 'Mevcut envanter adedi. Tam sayı olmalı, negatif olamaz.', '50'],
+      [headers[6], 'Hayır', 'Ürün markası. Boş bırakılırsa ürün adının ilk kelimesi atanır.', 'Philips'],
+      [headers[7], 'Hayır', 'Platform kategori benzersiz kimliği (örn: cat-12345). Geçersizse Genel kategoriye atanır.', 'cat-12345'],
+      [headers[8], 'Hayır', 'Ürünün birincil görsel URL\'si', 'https://images.bazarx.com/kulaklik.jpg'],
+      [headers[9], 'Hayır', 'Diğer resim URL\'leri. Birden fazla resim için aralarına | (pipe) ekleyin.', 'https://img.com/k1.jpg|https://img.com/k2.jpg'],
+      [headers[10], 'Hayır', 'KDV yüzdesi. Kabul edilenler: 1, 8, 10, 18, 20. Boşsa 20 alınır.', '20'],
+      [headers[11], 'Hayır', 'Ürün yayında olma durumu. Kabul edilenler: ACTIVE, INACTIVE, PENDING. Boşsa ACTIVE.', 'ACTIVE'],
     ];
 
     const wsInstructions = XLSX.utils.aoa_to_sheet([instructionsHeaders, ...instructionsRows]);

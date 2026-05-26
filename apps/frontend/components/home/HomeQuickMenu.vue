@@ -48,7 +48,8 @@ import {
   UserGroupIcon,
   SparklesIcon,
   QuestionMarkCircleIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/vue/24/outline'
 import type { FunctionalComponent, SVGAttributes } from 'vue'
 
@@ -85,7 +86,8 @@ const getIconComponent = (iconName: string) => {
     UserGroupIcon,
     SparklesIcon,
     QuestionMarkCircleIcon,
-    GlobeAltIcon
+    GlobeAltIcon,
+    BuildingStorefrontIcon
   }
   return icons[iconName] || null
 }

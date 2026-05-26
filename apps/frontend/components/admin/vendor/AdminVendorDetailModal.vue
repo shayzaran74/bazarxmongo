@@ -220,6 +220,34 @@
             </div>
           </div>
 
+          <!-- Takas (Barter) Ayarı (Onaylılar İçin) -->
+          <div
+            v-if="vendor.status === 'APPROVED'"
+            class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mt-4"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-emerald-900">
+                  🔄 Takas (Barter) Modülü
+                </h3>
+                <p class="text-xs text-emerald-700">
+                  Bu mağazanın diğer satıcılarla takas işlemi yapabilmesine izin verir.
+                </p>
+              </div>
+              <button
+                :class="[
+                  'px-4 py-2 rounded-lg font-bold transition-all shadow-sm',
+                  vendor.barterEnabled
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    : 'bg-white text-emerald-600 border border-emerald-600 hover:bg-emerald-50'
+                ]"
+                @click="$emit('toggle-barter', vendor)"
+              >
+                {{ vendor.barterEnabled ? 'Modülü Kapat' : 'Modülü Aç' }}
+              </button>
+            </div>
+          </div>
+
           <!-- Bilgiler -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -407,7 +435,8 @@ defineEmits([
   'close', 'approve', 'reject', 'cancel-reject', 
   'update:showRejectForm', 'update:rejectionReason', 
   'save-b2b', 'toggle-featured', 'remove-category', 
-  'update:selectedCategoryId', 'add-category', 'update-type'
+  'update:selectedCategoryId', 'add-category', 'update-type',
+  'toggle-barter'
 ])
 
 const formatDate = (dateString) => {

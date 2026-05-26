@@ -29,6 +29,7 @@ export class MongoVendorSettingsRepository
   async create(data: { vendorId: string; [key: string]: unknown }): Promise<void> {
     const id = 'vs-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     await this.model.create({
+      _id: id,
       id,
       vendorId: data.vendorId,
       createdAt: new Date(),

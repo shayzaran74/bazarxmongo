@@ -15,20 +15,25 @@
       <div class="flex gap-6 items-start">
 
         <!-- Sol Arama Sidebar -->
-        <aside class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+        <aside v-show="isSidebarOpen" class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24 relative">
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <MagnifyingGlassIcon class="w-4 h-4 text-primary-600" />
               <span class="font-black text-sm text-gray-900">Filtrele & Ara</span>
             </div>
-            <button
-              v-if="searchQuery || statusFilter"
-              class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
-              type="button"
-              @click="searchQuery = ''; statusFilter = ''"
-            >
-              Temizle
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="searchQuery || statusFilter"
+                class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
+                type="button"
+                @click="searchQuery = ''; statusFilter = ''"
+              >
+                Temizle
+              </button>
+              <button @click="isSidebarOpen = false" class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors" title="Filtreleri Gizle">
+                <Bars3Icon class="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div class="p-5 space-y-5">
@@ -98,6 +103,12 @@
 
         <!-- Grid -->
         <div class="flex-1 min-w-0">
+          <div v-if="!isSidebarOpen" class="mb-6">
+            <button @click="isSidebarOpen = true" class="p-2 bg-white text-gray-700 border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 flex items-center gap-2 font-bold transition-colors">
+              <Bars3Icon class="w-5 h-5" />
+              <span class="text-sm">Kategoriler / Filtreler</span>
+            </button>
+          </div>
           <div v-if="filteredLotteries.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
             <div
               v-for="lottery in filteredLotteries"
@@ -169,11 +180,12 @@
 </template>
 
 <script setup>
-import { MagnifyingGlassIcon, TicketIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, TicketIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 
 definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({ title: 'Şanslı Çekilişler | BazarX' })
 
+const isSidebarOpen = ref(true)
 const { resolveImageUrl } = useAppImage()
 
 const lotteries = ref([])

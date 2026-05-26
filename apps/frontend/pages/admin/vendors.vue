@@ -38,6 +38,7 @@
         @remove-category="removeCategory"
         @add-category="addCategory"
         @update-type="updateVendorType"
+        @toggle-barter="toggleBarterEnabled"
       />
     </div>
   </div>
@@ -67,7 +68,7 @@ const {
   showRejectForm, rejectionReason,
   filteredVendors, availableCategories,
   fetchVendors, fetchCategories, openVendorDetail, closeVendorDetail,
-  approveVendor, rejectVendor, toggleFeatured, saveB2BSettings,
+  approveVendor, rejectVendor, toggleFeatured, toggleBarterEnabled, saveB2BSettings,
   addCategory, removeCategory, updateVendorType
 } = useAdminVendors()
 

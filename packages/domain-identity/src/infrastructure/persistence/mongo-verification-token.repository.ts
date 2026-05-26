@@ -27,6 +27,7 @@ export class MongoVerificationTokenRepository implements IVerificationTokenRepos
 
     const id = `vt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await this.model.create({
+      _id: id,
       id,
       userId,
       token,

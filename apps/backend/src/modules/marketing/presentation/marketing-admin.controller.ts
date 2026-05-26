@@ -77,14 +77,25 @@ export class GroupBuyAdminController {
 
     const dataWithProducts = data.map(c => {
       const p = products.find(prod => prod.id === c.productId);
+      const parsedPrice = typeof c.price === 'object' && c.price && '$numberDecimal' in c.price 
+        ? Number((c.price as any).$numberDecimal) 
+        : Number(c.price || 0);
+        
       return {
         ...c,
         isActive: c.status === 'ACTIVE',
+        price: parsedPrice,
+        tiers: c.tiers?.map(t => ({
+          ...t,
+          price: typeof t.price === 'object' && t.price && '$numberDecimal' in t.price 
+            ? Number((t.price as any).$numberDecimal) 
+            : Number(t.price || 0)
+        })) || [],
         Product: p ? {
           id: p.id,
           name: p.name,
           slug: p.slug,
-          price: c.price,
+          price: parsedPrice,
           image: (p as CatalogProductLeanDoc).media?.[0]?.url || 'https://placehold.co/600x600?text=PRODUCT',
         } : null,
       };

@@ -89,13 +89,22 @@ export const useAdminGroupBuy = () => {
   const saveCampaign = async () => {
     saving.value = true
     try {
+      const payload = {
+        title: form.value.title,
+        productId: form.value.productId,
+        isActive: form.value.isActive,
+        startDate: form.value.startDate,
+        endDate: form.value.endDate,
+        tiers: form.value.tiers
+      }
+      
       if (form.value.id) {
-        await $api(`/api/admin/group-buys/${form.value.id}`, {
-          method: 'PUT', body: form.value
+        await $api(`/api/v1/admin/group-buys/${form.value.id}`, {
+          method: 'PUT', body: payload
         })
       } else {
         await $api('/api/v1/admin/group-buys', {
-          method: 'POST', body: form.value
+          method: 'POST', body: payload
         })
       }
       $toast.success('Kampanya kaydedildi')
@@ -111,7 +120,7 @@ export const useAdminGroupBuy = () => {
   const deleteCampaign = async (id: string) => {
     if (!confirm('Kampanyayı silmek istediğinize emin misiniz?')) return
     try {
-      await $api(`/api/admin/group-buys/${id}`, { method: 'DELETE' })
+      await $api(`/api/v1/admin/group-buys/${id}`, { method: 'DELETE' })
       $toast.success('Kampanya silindi')
       fetchGroupBuys()
     } catch {

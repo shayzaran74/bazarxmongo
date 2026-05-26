@@ -125,6 +125,24 @@ export const useAdminVendors = () => {
     }
   }
 
+  const toggleBarterEnabled = async (vendor: Record<string, unknown>) => {
+    const target = vendor || selectedVendor.value
+    if (!target) return
+
+    const isEnabled = !(target as { barterEnabled?: boolean }).barterEnabled
+
+    try {
+      await $api(`/api/v1/admin/vendors/${target.id}`, {
+        method: 'PUT',
+        body: { barterEnabled: isEnabled }
+      })
+      $toast.success('Takas (Barter) izni güncellendi')
+      ;(target as { barterEnabled?: boolean }).barterEnabled = isEnabled
+    } catch {
+      $toast.error('Takas (Barter) izni güncellenemedi')
+    }
+  }
+
   const saveB2BSettings = async (vendorOrData: Record<string, unknown>) => {
     const target = (vendorOrData && vendorOrData.id) ? vendorOrData : selectedVendor.value
     if (!target) return
@@ -213,7 +231,7 @@ export const useAdminVendors = () => {
     filteredVendors, availableCategories,
     fetchVendors, fetchCategories,
     openVendorDetail, closeVendorDetail,
-    approveVendor, rejectVendor, toggleFeatured,
+    approveVendor, rejectVendor, toggleFeatured, toggleBarterEnabled,
     saveB2BSettings, addCategory, removeCategory, updateVendorType,
   }
 }

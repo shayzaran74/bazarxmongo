@@ -93,6 +93,38 @@ export class ListAdminProductsHandler implements IQueryHandler<ListAdminProducts
           as: 'media'
         }
       },
+      {
+        $lookup: {
+          from: 'vendors',
+          let: { vendorIds: '$listings.vendorId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$id', '$$vendorIds'] }
+              }
+            },
+            {
+              $lookup: {
+                from: 'companies',
+                localField: 'companyId',
+                foreignField: 'id',
+                as: 'company'
+              }
+            },
+            { $unwind: { path: '$company', preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: 'id',
+                as: 'user'
+              }
+            },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+          ],
+          as: 'vendors'
+        }
+      },
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: limit }
@@ -113,14 +145,21 @@ export class ListAdminProductsHandler implements IQueryHandler<ListAdminProducts
         return sum + qty;
       }, 0) ?? 0;
       const media = item.media as Array<{ url: string }> | undefined;
+      const vendors = item.vendors as Record<string, unknown>[] | undefined;
       return {
         ...item,
         Brand: (item.brands as unknown[])?.[0] || (item.brand ? { name: item.brand } : null),
         Category: item.category ?? null,
-        Vendor: (listing as Record<string, unknown> | null)?.vendor ?? null,
+        Vendor: vendors?.[0] ?? null,
         image: media?.[0]?.url ?? null,
         images: media?.map(m => m.url) ?? [],
-        price: listing ? Number(listing.price) : 0,
+        price: listing ? (
+          listing.price && typeof listing.price === 'object' 
+            ? ('$numberDecimal' in listing.price 
+                ? Number((listing.price as any).$numberDecimal) 
+                : Number(listing.price.toString())) 
+            : Number(listing.price) || 0
+        ) : 0,
         stock: totalStock,
         sku: listing?.sku ?? '',
         // Görünürlük bayrakları — listing'den alınır (listing öncelikli, fallback catalog product)

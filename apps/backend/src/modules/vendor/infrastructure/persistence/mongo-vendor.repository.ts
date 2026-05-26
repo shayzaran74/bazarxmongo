@@ -89,7 +89,11 @@ export class MongoVendorRepository implements IVendorRepository {
 
   async save(entity: Vendor): Promise<void> {
     const persistence = VendorMapper.toPersistence(entity);
-    await this.model.create(persistence);
+    await this.model.updateOne(
+      { id: entity.id },
+      { $set: persistence },
+      { upsert: true }
+    ).exec();
   }
 
   async findByBarterEnabled(enabled: boolean): Promise<Vendor[]> {

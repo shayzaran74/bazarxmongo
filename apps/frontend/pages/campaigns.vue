@@ -29,20 +29,25 @@
     <div class="w-full px-6 mt-6 flex gap-6 items-start">
 
       <!-- Sol Sidebar -->
-      <aside class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+      <aside v-show="isSidebarOpen" class="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24 relative">
         <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <TagIcon class="w-4 h-4 text-primary-600" />
             <span class="font-black text-sm text-gray-900">Filtrele & Ara</span>
           </div>
-          <button
-            v-if="activeCategory !== 'all' || searchQuery"
-            class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
-            type="button"
-            @click="activeCategory = 'all'; searchQuery = ''"
-          >
-            Temizle
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="activeCategory !== 'all' || searchQuery"
+              class="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:opacity-70"
+              type="button"
+              @click="activeCategory = 'all'; searchQuery = ''"
+            >
+              Temizle
+            </button>
+            <button @click="isSidebarOpen = false" class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors" title="Filtreleri Gizle">
+              <Bars3Icon class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div class="p-5 space-y-5">
@@ -90,6 +95,12 @@
 
       <!-- Ana İçerik -->
       <div class="flex-1 min-w-0">
+        <div v-if="!isSidebarOpen" class="mb-6">
+          <button @click="isSidebarOpen = true" class="p-2 bg-white text-gray-700 border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 flex items-center gap-2 font-bold transition-colors">
+            <Bars3Icon class="w-5 h-5" />
+            <span class="text-sm">Kategoriler / Filtreler</span>
+          </button>
+        </div>
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-2xl font-black text-gray-900 tracking-tighter uppercase italic leading-none">
@@ -190,8 +201,10 @@
 import {
   RocketLaunchIcon, ClockIcon, ArrowRightIcon, StarIcon,
   DevicePhoneMobileIcon, SparklesIcon, ShoppingBagIcon,
-  FireIcon, TagIcon, GiftIcon, MagnifyingGlassIcon
+  FireIcon, TagIcon, GiftIcon, MagnifyingGlassIcon, Bars3Icon
 } from '@heroicons/vue/24/outline'
+
+const isSidebarOpen = ref(true)
 
 definePageMeta({ layout: 'default', hideSideAds: true })
 useHead({

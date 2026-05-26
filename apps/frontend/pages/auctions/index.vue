@@ -37,20 +37,25 @@
     <div class="w-full px-6 -mt-6 relative z-20 flex gap-6 items-start">
 
       <!-- Sol Arama Sidebar -->
-      <aside class="w-72 flex-shrink-0 bg-white rounded-2xl ambient-shadow border border-surface-variant/30 overflow-hidden sticky top-24">
+      <aside v-show="isSidebarOpen" class="w-72 flex-shrink-0 bg-white rounded-2xl ambient-shadow border border-surface-variant/30 overflow-hidden sticky top-24">
         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-[18px] text-md3-primary">Açık Artırma</span>
             <span class="font-black text-sm text-md3-primary">Filtrele & Ara</span>
           </div>
-          <button
-            v-if="hasActiveFilters"
-            class="text-[10px] font-black text-md3-primary uppercase tracking-widest hover:opacity-70 transition-opacity"
-            type="button"
-            @click="clearAllFilters"
-          >
-            Temizle
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="hasActiveFilters"
+              class="text-[10px] font-black text-md3-primary uppercase tracking-widest hover:opacity-70 transition-opacity"
+              type="button"
+              @click="clearAllFilters"
+            >
+              Temizle
+            </button>
+            <button @click="isSidebarOpen = false" class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Filtreleri Gizle">
+              <Bars3Icon class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div class="p-5 space-y-5">
@@ -138,6 +143,12 @@
 
       <!-- Ana İçerik -->
       <div class="flex-1 min-w-0">
+        <div v-if="!isSidebarOpen" class="mt-6 mb-4">
+          <button @click="isSidebarOpen = true" class="p-2 bg-white text-slate-700 border border-slate-200 shadow-sm rounded-lg hover:bg-slate-50 flex items-center gap-2 font-bold transition-colors">
+            <Bars3Icon class="w-5 h-5" />
+            <span class="text-sm">Kategoriler / Filtreler</span>
+          </button>
+        </div>
 
         <!-- Loading -->
         <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mt-6">
@@ -236,6 +247,9 @@
 
 <script setup>
 import { useAuctionOverview } from '~/composables/useAuctionOverview'
+import { Bars3Icon } from '@heroicons/vue/24/outline'
+
+const isSidebarOpen = ref(true)
 
 const authStore = useAuthStore()
 const {

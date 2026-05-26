@@ -13,17 +13,57 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-6">
-          <div class="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full border border-slate-100">
-            <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sistem Durumu: Aktif</span>
-          </div>
-          <button class="p-2 text-slate-400 hover:text-primary transition-colors relative">
-            <Icon name="heroicons:bell" size="24" />
-            <span class="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
-          <div class="h-10 w-10 rounded-full bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
-            <img :src="authStore.user?.avatar || '/placeholder-user.jpg'" class="w-full h-full object-cover">
+        <div class="flex items-center space-x-2 lg:space-x-4">
+          <!-- Notification Bell -->
+          <CommonNotificationBell v-if="authStore.isLoggedIn" class="hidden lg:block" />
+
+          <!-- Profile Dropdown -->
+          <div class="hidden lg:flex items-center p-1 bg-slate-50 rounded-full border border-slate-100 relative group/profile">
+            <button @click="showUserDropdown = !showUserDropdown" class="flex items-center gap-2 pr-3 pl-1 py-1 rounded-full hover:bg-white transition-all">
+              <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center border border-white overflow-hidden">
+                <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" class="w-full h-full object-cover">
+                <UserIcon v-else class="h-4 w-4 text-primary-600" />
+              </div>
+              <div class="text-left hidden xl:block leading-none">
+                <p class="text-[9px] font-black text-slate-400 uppercase mb-0.5">{{ authStore.balance ? formatPrice(authStore.balance) : 'HESABIM' }}</p>
+                <p class="text-[11px] font-bold text-slate-700 truncate max-w-[80px]">{{ authStore.isLoggedIn ? authStore.fullName.split(' ')[0] : 'Giriş Yap' }}</p>
+              </div>
+            </button>
+
+            <!-- User Menu Dropdown -->
+            <Transition name="slide-fade">
+              <div v-if="showUserDropdown" class="absolute right-0 top-full mt-3 w-72 bg-white rounded-3xl shadow-2xl p-2 border border-slate-100 z-[600]">
+                <template v-if="authStore.isLoggedIn">
+                  <div class="p-3 bg-slate-50 rounded-2xl mb-2 flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center border border-slate-100 overflow-hidden">
+                      <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" class="w-full h-full object-cover">
+                      <UserIcon v-else class="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <p class="text-xs font-black text-slate-900">{{ authStore.fullName }}</p>
+                      <p class="text-[10px] font-bold text-primary-600 uppercase">{{ authStore.user?.role }}</p>
+                    </div>
+                  </div>
+                  <div class="space-y-0.5">
+                    <NuxtLink to="/profile" @click="showUserDropdown = false" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600">
+                      <UserIcon class="h-4 w-4 text-slate-400" /><span>Profilim</span>
+                    </NuxtLink>
+                    <NuxtLink to="/wallet" @click="showUserDropdown = false" class="flex items-center space-x-3 px-3 py-2.5 hover:bg-emerald-50 rounded-xl text-xs font-bold text-slate-600">
+                      <BanknotesIcon class="h-4 w-4 text-emerald-500" /><span>Cüzdanım</span>
+                      <span v-if="authStore.balance" class="ml-auto text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{{ formatPrice(authStore.balance) }}</span>
+                    </NuxtLink>
+                    <div class="border-t border-slate-100 my-1" />
+                    <button @click="logout" class="flex items-center space-x-3 w-full px-3 py-2.5 hover:bg-red-50 text-red-600 rounded-xl text-left text-xs font-bold">
+                      <ArrowLeftOnRectangleIcon class="h-4 w-4 text-red-400" /> <span>Çıkış Yap</span>
+                    </button>
+                  </div>
+                </template>
+                <template v-else>
+                  <NuxtLink to="/auth/login" class="flex items-center justify-center w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase hover:bg-primary-600 transition-all mb-2">GİRİŞ YAP</NuxtLink>
+                  <NuxtLink to="/auth/register" class="flex items-center justify-center w-full py-2.5 text-slate-500 hover:text-slate-900 text-xs font-bold text-center">Kayıt Ol</NuxtLink>
+                </template>
+              </div>
+            </Transition>
           </div>
         </div>
       </header>
@@ -88,21 +128,26 @@
         <div class="flex gap-6 items-start">
 
           <!-- Sol Arama Barı -->
-          <aside class="w-72 flex-shrink-0 bg-white rounded-2xl shadow-ambient border border-slate-100 overflow-hidden sticky top-24">
+          <aside v-show="isSidebarOpen" class="w-72 flex-shrink-0 bg-white rounded-2xl shadow-ambient border border-slate-100 overflow-hidden sticky top-24 relative">
             <!-- Başlık -->
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <Icon name="heroicons:funnel" size="18" class="text-blue-500" />
                 <span class="font-black text-sm text-md3-primary">Detaylı Arama</span>
               </div>
-              <button
-                v-if="hasActiveFilters"
-                class="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-700 transition-colors"
-                type="button"
-                @click="clearFilters"
-              >
-                Temizle
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  v-if="hasActiveFilters"
+                  class="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-700 transition-colors"
+                  type="button"
+                  @click="clearFilters"
+                >
+                  Temizle
+                </button>
+                <button @click="isSidebarOpen = false" class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Filtreleri Gizle">
+                  <Bars3Icon class="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div class="p-5 space-y-5">
@@ -215,52 +260,61 @@
           </aside>
 
           <!-- Aktif Takas Fırsatları -->
-          <div class="flex-1 bg-white rounded-2xl shadow-ambient overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-              <div class="flex items-center gap-3">
-                <h4 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Aktif Takas Fırsatları</h4>
-                <span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-black rounded-full">{{ filteredOpportunities.length }}</span>
-              </div>
-              <NuxtLink to="/ticaritakas/trade-pool/all" class="text-sm font-bold text-primary-600 hover:underline">Tümünü Gör</NuxtLink>
+          <div class="flex-1 min-w-0">
+            <div v-if="!isSidebarOpen" class="mb-6">
+              <button @click="isSidebarOpen = true" class="p-2 bg-white text-slate-700 border border-slate-200 shadow-sm rounded-lg hover:bg-slate-50 flex items-center gap-2 font-bold transition-colors">
+                <Bars3Icon class="w-5 h-5" />
+                <span class="text-sm">Kategoriler / Filtreler</span>
+              </button>
             </div>
-
-            <!-- Boş durum -->
-            <div v-if="filteredOpportunities.length === 0" class="flex flex-col items-center justify-center py-20 text-center px-8">
-              <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <Icon name="heroicons:magnifying-glass" size="28" class="text-slate-300" />
+            
+            <div class="bg-white rounded-2xl shadow-ambient overflow-hidden">
+              <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                  <h4 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Aktif Takas Fırsatları</h4>
+                  <span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-black rounded-full">{{ filteredOpportunities.length }}</span>
+                </div>
+                <NuxtLink to="/ticaritakas/trade-pool/all" class="text-sm font-bold text-primary-600 hover:underline">Tümünü Gör</NuxtLink>
               </div>
-              <p class="font-black text-slate-700 mb-1">Sonuç bulunamadı</p>
-              <p class="text-sm text-slate-400">Filtrelerinizi değiştirerek tekrar deneyin.</p>
-              <button class="mt-4 text-sm font-bold text-blue-500 hover:underline" type="button" @click="clearFilters">Filtreleri Temizle</button>
-            </div>
 
-            <div v-else class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              <div
-                v-for="(opp, index) in filteredOpportunities"
-                :key="opp.id"
-                class="p-4 border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 transition-all cursor-pointer group relative overflow-hidden"
-                @click="navigateTo(`/ticaritakas/trade-pool/${opp.id}`)"
-              >
-                <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
-                <div class="flex gap-4 relative z-10">
-                  <div class="h-20 w-20 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <img v-if="opp.image" :src="opp.image" class="w-full h-full object-cover" />
-                    <Icon v-else :name="opp.icon" size="32" class="text-blue-500/50 group-hover:text-blue-500" />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-start gap-2">
-                      <p class="font-black text-sm text-[#002444] group-hover:text-blue-600 transition-colors truncate">{{ opp.title }}</p>
-                      <span class="bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shrink-0">{{ opp.category }}</span>
+              <!-- Boş durum -->
+              <div v-if="filteredOpportunities.length === 0" class="flex flex-col items-center justify-center py-20 text-center px-8">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                  <Icon name="heroicons:magnifying-glass" size="28" class="text-slate-300" />
+                </div>
+                <p class="font-black text-slate-700 mb-1">Sonuç bulunamadı</p>
+                <p class="text-sm text-slate-400">Filtrelerinizi değiştirerek tekrar deneyin.</p>
+                <button class="mt-4 text-sm font-bold text-blue-500 hover:underline" type="button" @click="clearFilters">Filtreleri Temizle</button>
+              </div>
+
+              <div v-else class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div
+                  v-for="(opp, index) in filteredOpportunities"
+                  :key="opp.id"
+                  class="p-4 border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 transition-all cursor-pointer group relative overflow-hidden"
+                  @click="navigateTo(`/ticaritakas/trade-pool/${opp.id}`)"
+                >
+                  <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
+                  <div class="flex gap-4 relative z-10">
+                    <div class="h-20 w-20 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <img v-if="opp.image" :src="opp.image" class="w-full h-full object-cover" />
+                      <Icon v-else :name="opp.icon" size="32" class="text-blue-500/50 group-hover:text-blue-500" />
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1 line-clamp-1 font-medium">{{ opp.desc }}</p>
-                    <div class="mt-4 flex justify-between items-center">
-                      <div class="flex flex-col">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Takas Değeri</span>
-                        <span class="text-sm font-black text-[#002444]">{{ opp.value }}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex justify-between items-start gap-2">
+                        <p class="font-black text-sm text-[#002444] group-hover:text-blue-600 transition-colors truncate">{{ opp.title }}</p>
+                        <span class="bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shrink-0">{{ opp.category }}</span>
                       </div>
-                      <div class="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Detaylar</span>
-                        <Icon name="heroicons:arrow-right" size="14" class="text-blue-500" />
+                      <p class="text-[11px] text-slate-500 mt-1 line-clamp-1 font-medium">{{ opp.desc }}</p>
+                      <div class="mt-4 flex justify-between items-center">
+                        <div class="flex flex-col">
+                          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Takas Değeri</span>
+                          <span class="text-sm font-black text-[#002444]">{{ opp.value }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                          <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Detaylar</span>
+                          <Icon name="heroicons:arrow-right" size="14" class="text-blue-500" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -328,13 +382,27 @@
 
 <script setup lang="ts">
 import TtAccessBarrier from '~/components/ticaritakas/TtAccessBarrier.vue'
+import { Bars3Icon, UserIcon, BanknotesIcon, ArrowLeftOnRectangleIcon } from '@heroicons/vue/24/outline'
 
 definePageMeta({ layout: false })
+
+const showUserDropdown = ref(false)
+
+const formatPrice = (p: number | string) => {
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(p) || 0)
+}
+
+const logout = async () => {
+  await authStore.logout()
+  navigateTo('/auth/login')
+}
 
 useHead({
   title: 'TicariTakas B2B — Kurumsal Panel',
   meta: [{ name: 'description', content: 'TicariTakas B2B kurumsal takas paneli — Elite üyelik, trade pool, XP yönetimi' }],
 })
+
+const isSidebarOpen = ref(true)
 
 const { $api } = useApi()
 const authStore = useAuthStore()

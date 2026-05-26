@@ -27,7 +27,12 @@
 
       <div class="flex flex-col xl:flex-row gap-6">
         <!-- Sidebar Filters (Collapsible on mobile) -->
-        <aside class="xl:w-72 flex-shrink-0">
+        <aside v-show="isSidebarOpen" class="xl:w-72 flex-shrink-0 relative">
+          <div class="flex justify-end mb-2">
+            <button @click="isSidebarOpen = false" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-md transition-colors" title="Filtreleri Gizle">
+              <HeroIcons.Bars3Icon class="w-6 h-6" />
+            </button>
+          </div>
           <ProductFilters
             :categories="categories"
             :current-filters="currentFilters"
@@ -38,6 +43,12 @@
 
         <!-- Main Product Grid -->
         <main class="flex-1">
+          <div v-if="!isSidebarOpen" class="mb-4">
+            <button @click="isSidebarOpen = true" class="p-2 bg-white text-gray-700 border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 flex items-center gap-2 font-bold transition-colors">
+              <HeroIcons.Bars3Icon class="w-5 h-5" />
+              <span class="text-sm">Kategoriler / Filtreler</span>
+            </button>
+          </div>
           <div v-if="pending" class="flex justify-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
@@ -142,6 +153,8 @@ const router = useRouter()
 const { t } = useI18n()
 const productService = useProductService()
 const categoryService = useCategoryService()
+
+const isSidebarOpen = ref(true)
 
 // Reactive Filter State from Query
 const currentFilters = computed(() => {

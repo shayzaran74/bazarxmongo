@@ -1,15 +1,25 @@
+import { computed, ref } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+
 export const useHomeMenuItems = () => {
-  return [
+  const authStore = useAuthStore()
+  
+  return computed(() => [
     { title: 'Market', icon: 'ShoppingBagIcon', path: '/products', colorFrom: 'from-orange-500', colorTo: 'to-orange-600', shadowColor: 'shadow-orange-200', hoverColor: 'hover:text-orange-600' },
-    { title: 'Ticari Takas', icon: 'BuildingOffice2Icon', path: '/ticaritakas', colorFrom: 'from-blue-500', colorTo: 'to-blue-600', shadowColor: 'shadow-blue-200', hoverColor: 'hover:text-blue-600' },
-    { title: 'Firma Başvurusu', icon: 'ClipboardDocumentCheckIcon', path: '/become-vendor', colorFrom: 'from-indigo-500', colorTo: 'to-indigo-600', shadowColor: 'shadow-indigo-200', hoverColor: 'hover:text-indigo-600' },
-    { title: 'Takas Havuzu', icon: 'ArrowsRightLeftIcon', path: '/barter', colorFrom: 'from-teal-500', colorTo: 'to-teal-600', shadowColor: 'shadow-teal-200', hoverColor: 'hover:text-teal-600' },
+    { title: 'Ticari Takas', icon: 'BuildingOffice2Icon', path: '/ticaritakas/b2b-dashboard', colorFrom: 'from-blue-500', colorTo: 'to-blue-600', shadowColor: 'shadow-blue-200', hoverColor: 'hover:text-blue-600' },
+    { 
+      title: authStore.isVendor ? 'Mağazam' : 'Firma Başvurusu', 
+      icon: authStore.isVendor ? 'BuildingStorefrontIcon' : 'ClipboardDocumentCheckIcon', 
+      path: authStore.isVendor ? '/vendor' : '/become-vendor', 
+      colorFrom: 'from-indigo-500', colorTo: 'to-indigo-600', shadowColor: 'shadow-indigo-200', hoverColor: 'hover:text-indigo-600' 
+    },
+    { title: 'Takas Havuzu', icon: 'ArrowsRightLeftIcon', path: '/ticaritakas/trade-pool/all', colorFrom: 'from-teal-500', colorTo: 'to-teal-600', shadowColor: 'shadow-teal-200', hoverColor: 'hover:text-teal-600' },
     { title: 'Açık Artırma', icon: 'RectangleGroupIcon', path: '/auctions', colorFrom: 'from-purple-500', colorTo: 'to-purple-600', shadowColor: 'shadow-purple-200', hoverColor: 'hover:text-purple-600' },
     { title: 'Çekiliş', icon: 'TicketIcon', path: '/lotteries', colorFrom: 'from-red-500', colorTo: 'to-red-600', shadowColor: 'shadow-red-200', hoverColor: 'hover:text-red-600' },
     { title: 'Grup Alımı', icon: 'UsersIcon', path: '/group-buys', colorFrom: 'from-pink-500', colorTo: 'to-pink-600', shadowColor: 'shadow-pink-200', hoverColor: 'hover:text-pink-600' },
     { title: 'Fırsatlar', icon: 'StarIcon', path: '/campaigns', colorFrom: 'from-yellow-500', colorTo: 'to-yellow-600', shadowColor: 'shadow-yellow-200', hoverColor: 'hover:text-yellow-600' },
     { title: 'BazarX Go', icon: 'TruckIcon', path: '/bazarx-go', colorFrom: 'from-emerald-500', colorTo: 'to-emerald-600', shadowColor: 'shadow-emerald-200', hoverColor: 'hover:text-emerald-600' },
-  ]
+  ])
 }
 
 export const useHomeMenu = () => {
