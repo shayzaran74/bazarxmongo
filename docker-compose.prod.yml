@@ -193,7 +193,7 @@ services:
       - "27017"
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD-SHELL", "echo 'db.runCommand({ping:1})' | mongosh --quiet || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 5
