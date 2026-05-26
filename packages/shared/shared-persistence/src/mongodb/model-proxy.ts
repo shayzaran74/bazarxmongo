@@ -1,16 +1,26 @@
 import { Connection, Model, Schema } from 'mongoose';
 
 export class ConnectionRegistry {
-  private static connections = new Map<string, Connection>();
+  private static getConnectionsMap(): Map<string, Connection> {
+    const globalRef = global as any;
+    if (!globalRef.__mongoose_connections) {
+      globalRef.__mongoose_connections = new Map<string, Connection>();
+    }
+    return globalRef.__mongoose_connections;
+  }
+
   private static fallbackMongoose: any = null;
 
   static registerConnection(name: string, connection: Connection) {
-    this.connections.set(name, connection);
+    this.getConnectionsMap().set(name, connection);
   }
 
   static getActiveConnection(name: string = 'default'): Connection {
-    const conn = this.connections.get(name);
+    const conn = this.getConnectionsMap().get(name);
+    console.log(`=== ConnectionRegistry.getActiveConnection('${name}') ===`);
+    console.log(`Found registered connection in global store: ${!!conn}`);
     if (conn) {
+      console.log(`Registered connection readyState: ${conn.readyState}`);
       return conn;
     }
     
@@ -24,6 +34,7 @@ export class ConnectionRegistry {
       }
     }
     if (this.fallbackMongoose && this.fallbackMongoose.connection) {
+      console.log(`Fallback global connection readyState: ${this.fallbackMongoose.connection.readyState}`);
       return this.fallbackMongoose.connection;
     }
     
