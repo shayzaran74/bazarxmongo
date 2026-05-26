@@ -56,6 +56,12 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
         socketTimeoutMS: 45000,
         connectTimeoutMS: 30000,
         heartbeatFrequencyMS: 10000,
+        connectionFactory: (connection) => {
+          connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
+          connection.on('error', (err) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
+          connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
+          return connection;
+        },
       }),
     }),
     ScheduleModule.forRoot(),
@@ -153,8 +159,5 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
 export class AppModule {
   constructor(@InjectConnection() private readonly connection: Connection) {
     ConnectionRegistry.registerConnection('default', this.connection);
-    this.connection.on('connected', () => console.log('=== MONGOOSE CONNECTED TO MongoDB ==='));
-    this.connection.on('error', (err) => console.error('=== MONGOOSE CONNECTION ERROR ===', err));
-    this.connection.on('disconnected', () => console.log('=== MONGOOSE DISCONNECTED ==='));
   }
 }
