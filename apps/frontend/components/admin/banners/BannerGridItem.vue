@@ -48,11 +48,11 @@
 
 <script setup>
 import { TrashIcon } from '@heroicons/vue/24/outline'
-const config = useRuntimeConfig()
 
 defineProps({ banner: Object })
 defineEmits(['edit', 'toggle', 'delete'])
 
-const resolveUrl = (url) => url?.startsWith('http') ? url : `${config.public.apiBase}${url}`
+const { resolveImageUrl } = useAppImage()
+const resolveUrl = (url) => resolveImageUrl(url)
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('tr-TR') : 'Süresiz'
 </script>

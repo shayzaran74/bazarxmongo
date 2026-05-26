@@ -41,24 +41,34 @@ export class ListAdminUsersHandler implements IQueryHandler<ListAdminUsersQuery>
       this.userModel.countDocuments(where),
     ]);
 
-    // Profil ve vendor bilgisi toplu sorgu — profiller userId=email ile saklanıyor
+    // Profil ve vendor bilgisi toplu sorgu — hem id hem de email ile eşleşmeyi destekler
+    const userIds = users.map(u => u.id).filter(Boolean);
     const userEmails = users.map(u => u.email).filter(Boolean);
+    const idsAndEmails = [...userIds, ...userEmails];
 
     const [profiles, vendors] = await Promise.all([
-      this.profileModel.find({ userId: { $in: userEmails } }).lean(),
-      this.vendorModel.find({ userId: { $in: userEmails } }).lean(),
+      this.profileModel.find({ userId: { $in: idsAndEmails } }).lean(),
+      this.vendorModel.find({ userId: { $in: idsAndEmails } }).lean(),
     ]);
 
     const companyIds = vendors.map(v => (v as Record<string, unknown>).companyId).filter(Boolean) as string[];
     const companies = await this.companyModel.find({ id: { $in: companyIds } }).lean();
 
-    const profileMap = new Map(profiles.map(p => [(p as Record<string, unknown>).userId as string, p]));
-    const vendorMap  = new Map(vendors.map(v => [(v as Record<string, unknown>).userId as string, v]));
+    const profileMap = new Map();
+    for (const p of profiles) {
+      if (p.userId) profileMap.set(p.userId, p);
+    }
+
+    const vendorMap = new Map();
+    for (const v of vendors) {
+      if (v.userId) vendorMap.set(v.userId, v);
+    }
+
     const companyMap = new Map(companies.map(c => [(c as Record<string, unknown>).id as string, c]));
 
     const items = users.map(u => {
-      const profile = profileMap.get(u.email);
-      const vendor  = vendorMap.get(u.email);
+      const profile = profileMap.get(u.id) || profileMap.get(u.email);
+      const vendor  = vendorMap.get(u.id) || vendorMap.get(u.email);
       const company = vendor ? companyMap.get(vendor.companyId) : null;
 
       return {

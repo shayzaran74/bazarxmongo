@@ -48,7 +48,7 @@ export class ListAdminVendorsHandler
     ] = await Promise.all([
       this.companyModel.find({ id: { $in: companyIds } }).lean(),
       this.vendorProfileModel.find({ $or: [{ vendorId: { $in: vendorIds } }, { userId: { $in: userEmails } }] }).lean(),
-      this.userModel.find({ email: { $in: userEmails } }).lean(),
+      this.userModel.find({ $or: [{ id: { $in: userEmails } }, { email: { $in: userEmails } }] }).lean(),
       this.userProfileModel.find({ userId: { $in: userEmails } }).lean(),
       this.vendorCategoryModel.find({ vendorId: { $in: vendorIds } }).lean(),
       this.listingModel.aggregate([
@@ -65,8 +65,18 @@ export class ListAdminVendorsHandler
 
     const companyMap = new Map(companies.map(c => [c.id, c]));
     const vendorProfileMap = new Map(vendorProfiles.map(p => [p.vendorId, p]));
-    const userMap = new Map(users.map(u => [u.email, u]));
-    const userProfileMap = new Map(userProfiles.map(p => [p?.userId, p]));
+    
+    const userMap = new Map();
+    for (const u of users) {
+      userMap.set(u.id, u);
+      userMap.set(u.email, u);
+    }
+
+    const userProfileMap = new Map();
+    for (const p of userProfiles) {
+      if (p.userId) userProfileMap.set(p.userId, p);
+    }
+
     const listingsCountMap = new Map(listingsCounts.map(item => [item._id, item.count]));
     const categoryMap = new Map(categories.map((cat) => [cat.id || cat._id?.toString(), cat]));
 
@@ -89,7 +99,7 @@ export class ListAdminVendorsHandler
       const company = companyMap.get(v.companyId);
       const vProfile = vendorProfileMap.get(vid) || vendorProfileMap.get(v.userId);
       const user = userMap.get(v.userId);
-      const uProfile = userProfileMap.get(v.userId);
+      const uProfile = userProfileMap.get(v.userId) || (user ? (userProfileMap.get(user.id) || userProfileMap.get(user.email)) : null);
       
       const userObj = user ? {
         id: user.id || user._id?.toString(),

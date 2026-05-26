@@ -28,7 +28,7 @@
         <div class="space-y-4">
           <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Banner Görseli *</label>
           <div v-if="form.imageUrl || preview" class="relative h-40 rounded-3xl overflow-hidden border-4 border-gray-100 shadow-inner">
-            <img :src="preview || resolveUrl(form.imageUrl)" class="w-full h-full object-cover">
+            <img :src="resolveUrl(preview || form.imageUrl)" class="w-full h-full object-cover">
             <button @click="$emit('remove-image')" class="absolute top-4 right-4 p-2 bg-red-600 text-white rounded-xl shadow-lg hover:bg-red-700 transition-all">
               <TrashIcon class="h-4 w-4" />
             </button>
@@ -101,7 +101,6 @@
 
 <script setup>
 import { XMarkIcon, TrashIcon, PhotoIcon, MapPinIcon } from '@heroicons/vue/24/outline'
-const config = useRuntimeConfig()
 
 defineProps({
   isOpen: Boolean,
@@ -115,5 +114,6 @@ defineProps({
 
 defineEmits(['close', 'save', 'upload', 'remove-image'])
 
-const resolveUrl = (url) => url?.startsWith('http') ? url : `${config.public.apiBase}${url}`
+const { resolveImageUrl } = useAppImage()
+const resolveUrl = (url) => resolveImageUrl(url)
 </script>
