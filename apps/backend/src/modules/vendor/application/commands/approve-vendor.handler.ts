@@ -40,14 +40,14 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
     // Company güncelle (domain bypass — company ayrı aggregate)
     if (vendor.getProps().companyId) {
       await this.companyRepo.update(vendor.getProps().companyId, {
-        status: 'APPROVED',
+        status: 'VERIFIED',
         verifiedAt: new Date(),
       });
     } else {
       const newCompany = await this.companyRepo.create({
         name: vendor.getProps().slug?.value ?? 'Satıcı Şirketi',
         taxNumber: 'AUTO-' + vendorId.substring(0, 8),
-        status: 'APPROVED',
+        status: 'VERIFIED',
         verifiedAt: new Date(),
       });
       await this.vendorRepo.update(vendorId, { companyId: newCompany.id });

@@ -36,9 +36,9 @@ export class RegisterVendorHandler implements ICommandHandler<RegisterVendorComm
       throw new NotFoundException('Kayıtlı şirket bulunamadı.');
     }
 
-    // 2. Kullanıcı zaten vendor mı?
+    // 2. Kullanıcı zaten vendor mı? (REJECTED durumundaki kayıt bypass edilir — yeni başvuruya izin verilir)
     const existingVendor = await this.vendorRepository.findByUserId(userId);
-    if (existingVendor) {
+    if (existingVendor && existingVendor.status !== 'REJECTED') {
       throw new ConflictException('Bu kullanıcı için zaten bir satıcı kaydı mevcut.');
     }
 
