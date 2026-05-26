@@ -79,11 +79,11 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, Vendo
       vendorIds.length  ? VendorProfileModel.find({ vendorId: { $in: vendorIds } }).lean().exec() : [],
     ]);
 
-    const companyMap = new Map<string, ICompany>(companies.map(c => [(c as ICompany).id, c as ICompany] as [string, ICompany]));
-    const userMap    = new Map<string, IUser>(users.map(u => [(u as IUser).email, u as IUser] as [string, IUser]));
+    const companyMap = new Map<string, (typeof companies)[0]>(companies.map(c => [c.id, c]));
+    const userMap    = new Map<string, (typeof users)[0]>(users.map(u => [u.email, u]));
     const profileMap = new Map((profiles as { vendorId: string }[]).map(p => [p.vendorId, p]));
 
-    const items = vendors.map((v: IVendor) => {
+    const items = vendors.map((v) => {
       const company = companyMap.get(v.companyId);
       const user    = userMap.get(v.userId);
       const profile = profileMap.get(v.id) as { storeName?: string; city?: string; logo?: string; description?: string; cuisineType?: string } | undefined;
@@ -96,13 +96,13 @@ export class ListVendorsHandler implements IQueryHandler<ListVendorsQuery, Vendo
         vendorType:  v.vendorType,
         userId:      v.userId,
         companyId:   v.companyId,
-        businessName: profile?.storeName || (company as ICompany)?.name || 'İsimsiz İşletme',
-        email:       (user as IUser)?.email || v.userId,
-        phone:       (user as IUser)?.phoneNumber || null,
+        businessName: profile?.storeName || (company as unknown as { name?: string })?.name || 'İsimsiz İşletme',
+        email:       (user as unknown as { email?: string })?.email || v.userId,
+        phone:       (user as unknown as { phoneNumber?: string | null })?.phoneNumber || null,
         productCount: 0,
         isFeatured:  false,
         profile: {
-          storeName: profile?.storeName || (company as ICompany)?.name || v.slug || 'İsimsiz İşletme',
+          storeName: profile?.storeName || (company as unknown as { name?: string })?.name || v.slug || 'İsimsiz İşletme',
           city: profile?.city || null,
           imageUrl: profile?.logo || null,
           isFeatured: false,
