@@ -8,6 +8,7 @@ import { Job } from 'bullmq';
 import { ICatalogProduct, IListing, IProductMedia, IImportJob, IVendor } from '@barterborsa/shared-persistence';
 import { PRODUCT_IMPORT_QUEUE } from '@barterborsa/shared-queue';
 import { SystemVendorService } from '../../infrastructure/services/system-vendor.service';
+import { ImportCategoryResolverService } from '../services/import-category-resolver.service';
 import { randomBytes } from 'crypto';
 
 export interface ProductImportJobData {
@@ -43,6 +44,7 @@ export class ProductImportWorker extends WorkerHost {
     @InjectModel('Vendor')         private readonly vendorModel:      Model<IVendor>,
     @InjectConnection()            private readonly connection:        Connection,
     private readonly systemVendorService: SystemVendorService,
+    private readonly categoryResolver: ImportCategoryResolverService,
   ) { super(); }
 
   async process(job: Job<ProductImportJobData>): Promise<void> {
@@ -107,12 +109,19 @@ export class ProductImportWorker extends WorkerHost {
     }
 
     try {
+      // Kategori güvenlik duvarı: tüm satırların categoryId'sini önceden toplu çözümle (transaction dışında)
+      const resolvedCategoryIds = new Map<string, string>();
+      for (const { row, slug } of prepared) {
+        const rawCatId = row.categoryId ? String(row.categoryId) : undefined;
+        resolvedCategoryIds.set(slug, await this.categoryResolver.resolveCategoryId(rawCatId));
+      }
+
       const session = await this.connection.startSession();
       try {
         await session.withTransaction(async () => {
           const productDocs = prepared.map(({ row, name, slug }) => {
             const pid = new Types.ObjectId().toString();
-            return { _id: pid, id: pid, name, slug, brand: String(row.brandName || 'Genel'), description: String(row.description || name), categoryId: row.categoryId && String(row.categoryId) !== '' ? String(row.categoryId) : null, status: row.status || 'PENDING', isFeatured: parseBool(row.isFeatured), isSpecialOffer: parseBool(row.isSpecialOffer), isFlashSale: parseBool(row.isFlashSale) };
+            return { _id: pid, id: pid, name, slug, brand: String(row.brandName || 'Genel'), description: String(row.description || name), categoryId: resolvedCategoryIds.get(slug) ?? null, status: row.status || 'PENDING', isFeatured: parseBool(row.isFeatured), isSpecialOffer: parseBool(row.isSpecialOffer), isFlashSale: parseBool(row.isFlashSale) };
           });
           await this.productModel.insertMany(productDocs, { session });
 

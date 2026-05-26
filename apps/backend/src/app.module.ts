@@ -26,6 +26,7 @@ import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MediaModule } from './modules/media/media.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { AuditMongooseModule } from './modules/audit/audit-mongoose.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
@@ -145,6 +146,7 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
     LoyaltyModule,
     AnalyticsModule,
     MediaModule,
+    DocumentsModule,
     InventoryModule,
     DeliveryModule,
     HealthModule,

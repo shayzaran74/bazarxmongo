@@ -1,53 +1,97 @@
-export const useAppImage = () => {
-  const config = useRuntimeConfig()
+// apps/frontend/composables/useAppImage.ts
 
+export const useAppImage = () => {
+  /**
+   * Public bir görsel anahtarı (objectKey) için API stream URL'ini üretir.
+   * Ortam farkı olmaksızın proxy (/api/v1/media) üzerinden backend'e yönlendirilir.
+   */
+  const getPublicImageUrl = (objectKey: string): string => {
+    if (!objectKey) {
+      return '/images/placeholder.webp';
+    }
+
+    // Eğer zaten tam bir URL, base64 data veya blob ise olduğu gibi döndür
+    if (
+      objectKey.startsWith('http://') ||
+      objectKey.startsWith('https://') ||
+      objectKey.startsWith('data:') ||
+      objectKey.startsWith('blob:')
+    ) {
+      return objectKey;
+    }
+
+    // Başındaki eğik çizgiyi temizle
+    const cleanKey = objectKey.startsWith('/') ? objectKey.substring(1) : objectKey;
+
+    // Eğer zaten api/v1/media ile başlıyorsa, çift ekleme yapmamak için doğrudan döndür
+    if (cleanKey.startsWith('api/v1/media/')) {
+      return `/${cleanKey}`;
+    }
+
+    return `/api/v1/media/${cleanKey}`;
+  };
+
+  /**
+   * Görsel anahtarını çözümler. Null/undefined durumlarında varsayılan placeholder'ı döndürür.
+   */
+  const getImageUrl = (objectKey: string | null | undefined): string => {
+    if (!objectKey) {
+      return '/images/placeholder.webp';
+    }
+    return getPublicImageUrl(objectKey);
+  };
+
+  /**
+   * Mevcut şablonlarda (templates) ve bileşenlerde kullanılan eski resolveImageUrl çağrıları için
+   * geriye dönük uyumluluk sağlar. Nesne girdisini ({ url: '...' }) ve eski /bazarx-media/ formatını destekler.
+   */
   const resolveImageUrl = (
     url: string | { url?: string } | null | undefined,
-    fallback = 'https://placehold.co/400x400?text=Resim'
+    fallback = '/images/placeholder.webp'
   ): string => {
-    if (!url) return fallback
+    if (!url) return fallback;
 
-    // Eğer nesne ise url alanını al ({ url: '...' })
-    const finalUrl = typeof url === 'string' ? url : (url?.url || fallback)
+    // Nesne ise içindeki url alanını al, yoksa fallback kullan
+    const finalUrl = typeof url === 'string' ? url : (url?.url || fallback);
 
-    if (!finalUrl || typeof finalUrl !== 'string') return fallback
+    if (!finalUrl || typeof finalUrl !== 'string') return fallback;
 
-    if (finalUrl.startsWith('blob:') || finalUrl.startsWith('data:')) {
-      return finalUrl
+    if (
+      finalUrl.startsWith('blob:') ||
+      finalUrl.startsWith('data:') ||
+      finalUrl.startsWith('http://') ||
+      finalUrl.startsWith('https://')
+    ) {
+      return finalUrl;
     }
 
-    const minioIndex = finalUrl.indexOf('/bazarx-media/')
+    // Eski veritabanı kayıtlarındaki /bazarx-media/ içeren URL'lerden key kısmını ayıkla
+    const minioIndex = finalUrl.indexOf('/bazarx-media/');
     if (minioIndex !== -1) {
-      const path = finalUrl.substring(minioIndex)
-      if (typeof window !== 'undefined') {
-        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        if (isDev) {
-          const cleanPath = path.substring('/bazarx-media'.length)
-          return `${config.public.minioBase}${cleanPath}`
-        }
-      }
-      return path
+      const key = finalUrl.substring(minioIndex + '/bazarx-media/'.length);
+      return getPublicImageUrl(key);
     }
 
-    if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
-      return finalUrl
-    }
+    return getPublicImageUrl(finalUrl);
+  };
 
-    if (finalUrl.startsWith('/')) {
-      return `${config.public.apiBase}${finalUrl}`
-    }
-
-    return finalUrl
-  }
-
-  const getProductImage = (product: Record<string, unknown>): string => {
-    const url = product?.image ||
+  /**
+   * Ürün objesinden görsel URL'ini çıkarıp çözümler.
+   */
+  const getProductImage = (product: Record<string, any>): string => {
+    const url =
+      product?.image ||
       (product?.media as Array<{ url?: string }>)?.[0]?.url ||
       (product?.images as string[])?.[0] ||
-      (product?.CatalogProduct as { media?: Array<{ url?: string }> })?.media?.[0]?.url
+      (product?.CatalogProduct as { media?: Array<{ url?: string }> })?.media?.[0]?.url;
 
-    return resolveImageUrl(url as string | { url?: string } | null | undefined, 'https://placehold.co/400x400?text=Ürün')
-  }
+    return resolveImageUrl(url, '/images/placeholder.webp');
+  };
 
-  return { resolveImageUrl, getProductImage }
-}
+  return {
+    getPublicImageUrl,
+    getImageUrl,
+    resolveImageUrl,
+    getProductImage,
+  };
+};

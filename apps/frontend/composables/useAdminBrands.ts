@@ -121,7 +121,7 @@ export const useAdminBrands = () => {
     if (!url) return '/images/no-brand.png'
     if (url.startsWith('http') || url.startsWith('data:')) return url
     const cleanUrl = url.startsWith('/') ? url.slice(1) : url
-    return config.public.minioBase + '/' + cleanUrl
+    return `/api/v1/media/${cleanUrl}`
   }
 
   const approveBrandApplication = async (id: string) => {

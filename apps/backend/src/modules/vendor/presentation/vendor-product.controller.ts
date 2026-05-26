@@ -2,9 +2,10 @@
 
 import {
   Controller, Get, Post, Put, Delete,
-  Body, Param, Query, UseGuards,
+  Body, Param, Query, UseGuards, Res,
   BadRequestException, UseInterceptors, UploadedFile, Inject, Logger,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -59,6 +60,7 @@ import { DeleteVendorProductCommand } from '../application/commands/delete-vendo
 import { ListVendorProductsQuery } from '../application/queries/list-vendor-products.query';
 import { BulkImportVendorProductsCommand } from '../application/commands/bulk-import-vendor-products.command';
 import { FileParserService } from '../application/services/file-parser.service';
+import { ImportTemplateService } from '../application/services/import-template.service';
 import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
 import { ITierBenefit, TierBenefit } from '@barterborsa/shared-persistence';
 
@@ -94,6 +96,7 @@ export class VendorProductController {
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly fileParser: FileParserService,
     @InjectModel('TierBenefit') private readonly tierModel: Model<ITierBenefit>,
+    private readonly templateService: ImportTemplateService,
   ) {}
 
   @ApiOperation({ summary: 'Excel/CSV dosyasından toplu ürün içe aktar' })
@@ -210,5 +213,32 @@ export class VendorProductController {
   @Delete(':id')
   async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.commandBus.execute(new DeleteVendorProductCommand(user.id, id));
+  }
+
+  @ApiOperation({ summary: 'İndirilebilir ürün şablonu dosyası üret' })
+  @Get('templates/:type')
+  @UseGuards(JwtAuthGuard)
+  async downloadTemplate(
+    @Param('type') type: string,
+    @Res() res: Response,
+  ) {
+    if (type === 'vendor-excel') {
+      const buffer = this.templateService.generateVendorExcel();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="vendor_urun_sablonu.xlsx"');
+      res.status(200).end(buffer);
+    } else if (type === 'admin-excel') {
+      const buffer = this.templateService.generateAdminExcel();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="admin_urun_sablonu.xlsx"');
+      res.status(200).end(buffer);
+    } else if (type === 'trendyol-json') {
+      const json = this.templateService.generateTrendyolJson();
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="trendyol_import_sablonu.json"');
+      res.status(200).end(json);
+    } else {
+      throw new BadRequestException('Geçersiz şablon tipi. Kabul edilenler: vendor-excel, admin-excel, trendyol-json');
+    }
   }
 }

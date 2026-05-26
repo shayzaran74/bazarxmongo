@@ -21,6 +21,7 @@ import { BulkUpdateAdminProductsCommand } from '../application/commands/bulk-upd
 import { UpdateAdminProductCommand }      from '../application/commands/update-admin-product.command';
 import { CreateAdminProductCommand }      from '../application/commands/create-admin-product.command';
 import { QueueImportProductsCommand }     from '../application/commands/queue-import-products.command';
+import { TrendyolImportNormalizerService } from '../application/services/trendyol-import-normalizer.service';
 
 interface AuthenticatedUser { id: string; role: string }
 
@@ -61,46 +62,6 @@ class BulkUpdateProductDto {
   @IsObject() updates!: UpdateAdminProductDto;
 }
 
-function cleanTrendyolTitle(raw: string): string {
-  const s = (raw ?? '').trim();
-  if (s.length <= 100) return s;
-  const mid = Math.floor(s.length / 2);
-  for (let offset = 0; offset <= 30; offset++) {
-    for (const pos of [mid + offset, mid - offset]) {
-      if (pos <= 0 || pos >= s.length || s[pos] !== ' ') continue;
-      const first = s.slice(0, pos).trim();
-      const second = s.slice(pos).trim();
-      const probe = second.slice(0, Math.min(20, second.length)).toLowerCase();
-      if (probe.length > 5 && first.toLowerCase().includes(probe)) return first;
-      const probe2 = first.slice(0, Math.min(20, first.length)).toLowerCase();
-      if (probe2.length > 5 && second.toLowerCase().includes(probe2)) return first;
-    }
-    if (offset === 0) continue;
-  }
-  const cut = s.slice(0, 100);
-  const lastSpace = cut.lastIndexOf(' ');
-  return lastSpace > 50 ? cut.slice(0, lastSpace) : cut;
-}
-
-function parseTrendyolDescription(raw: string): { cleanDescription: string; platformInfo: string; stock: number } {
-  if (!raw?.trim()) return { cleanDescription: '', platformInfo: '', stock: 1 };
-  let stock = 1;
-  const moreMatch = raw.match(/(\d+)\s*adetten fazla stok/i);
-  if (moreMatch) stock = Math.max(parseInt(moreMatch[1], 10), 1);
-  const lessMatch = raw.match(/(\d+)\s*adetten az stok/i);
-  if (lessMatch && !moreMatch) stock = Math.max(parseInt(lessMatch[1], 10), 1);
-  const specsIdx = raw.indexOf('Ürün Özellikleri:');
-  const relevantPart = specsIdx >= 0 ? raw.slice(0, specsIdx) : raw;
-  const BOILERPLATE = [/^Bu ürün\b/i, /tarafından gönderilecektir/i, /adetten fazla stok/i, /adetten az stok/i];
-  const platformLines: string[] = [];
-  const cleanLines: string[] = [];
-  for (const line of relevantPart.split(/\n/).map(l => l.trim()).filter(Boolean)) {
-    if (BOILERPLATE.some(p => p.test(line))) platformLines.push(line);
-    else cleanLines.push(line);
-  }
-  return { cleanDescription: cleanLines.join('\n').trim(), platformInfo: platformLines.join('\n').trim(), stock };
-}
-
 class TrendyolProductDto {
   @IsString() external_id!: string;
   @IsString() title!: string;
@@ -127,6 +88,7 @@ export class ProductAdminController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus:   QueryBus,
+    private readonly trendyolNormalizer: TrendyolImportNormalizerService,
   ) {}
 
   @Get('stats')
@@ -156,14 +118,25 @@ export class ProductAdminController {
   @Post('import-trendyol')
   async importFromTrendyol(@Body() dto: ImportTrendyolDto, @CurrentUser() user: AuthenticatedUser) {
     if (!dto.products?.length) throw new BadRequestException('products dizisi boş olamaz');
-    const rows = dto.products.map(p => {
-      const cleanTitle = cleanTrendyolTitle(p.title);
-      const { cleanDescription, platformInfo, stock: parsedStock } = parseTrendyolDescription(p.description ?? '');
-      const finalStock = parsedStock > 1 ? parsedStock : (dto.defaultStock ?? 1);
-      const specs: Record<string, unknown> = { ...(p.attributes ?? {}) };
-      if (platformInfo) specs['_platformInfo'] = platformInfo;
-      return { name: cleanTitle, description: cleanDescription || cleanTitle, price: p.price, stock: finalStock, sku: `TY-${p.external_id}`, brandName: p.brand || '', status: 'ACTIVE', productImages: p.image_url ? [p.image_url] : [], specs };
-    });
+    const rows = await Promise.all(
+      dto.products.map(async p => {
+        const normalized = await this.trendyolNormalizer.normalize(p as unknown as Record<string, unknown>);
+        const finalStock = normalized.stock > 1 ? normalized.stock : (dto.defaultStock ?? 1);
+        const specs = { ...normalized.attributes };
+        return {
+          name: normalized.name,
+          description: normalized.description || normalized.name,
+          price: normalized.price,
+          stock: finalStock,
+          sku: normalized.sku,
+          brandName: normalized.brand,
+          status: 'ACTIVE',
+          productImages: normalized.imageUrls,
+          specs,
+          categoryId: normalized.categoryId,
+        };
+      }),
+    );
     return this.commandBus.execute(new QueueImportProductsCommand(rows, user.id, dto.vendorType || 'COMMERCE'));
   }
 

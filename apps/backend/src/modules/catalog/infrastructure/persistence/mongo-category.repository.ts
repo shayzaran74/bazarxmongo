@@ -37,4 +37,16 @@ export class MongoCategoryRepository
     const docs = await this.model.find({ parentId: null }).exec();
     return docs.map(doc => this.mapper.toDomain(doc));
   }
+
+  async findByNameOrSlug(input: string): Promise<Category | null> {
+    const cleanSlug = input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const doc = await this.model.findOne({
+      $or: [
+        { name: { $regex: new RegExp(`^${escapedInput}$`, 'i') } },
+        { slug: cleanSlug },
+      ]
+    }).exec();
+    return doc ? this.mapper.toDomain(doc) : null;
+  }
 }

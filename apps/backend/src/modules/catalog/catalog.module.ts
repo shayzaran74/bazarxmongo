@@ -80,6 +80,9 @@ import { MongoVendorRepository } from '../vendor/infrastructure/persistence/mong
 
 // Master Plan §4.4 + §5.3 — Ekosistem kör havuz anonimleştirme servisi
 import { AnonymizerService } from '../barterborsa/application/services/anonymizer.service';
+import { ImportCategoryResolverService } from './application/services/import-category-resolver.service';
+import { ImageImportService } from './application/services/image-import.service';
+import { TrendyolImportNormalizerService } from './application/services/trendyol-import-normalizer.service';
 
 const CommandHandlers = [
   CreateCategoryHandler,
@@ -173,6 +176,9 @@ const QueryHandlers = [
     { provide: 'IListingRepository', useClass: MongoListingRepository },
     { provide: 'ICatalogProductRepository', useClass: MongoCatalogProductRepository },
     { provide: 'IVendorRepository', useClass: MongoVendorRepository },
+    ImportCategoryResolverService,
+    ImageImportService,
+    TrendyolImportNormalizerService,
   ],
   exports: [
     'ICategoryRepository',
@@ -180,6 +186,9 @@ const QueryHandlers = [
     'IListingRepository',
     'ICatalogProductRepository',
     SystemVendorService,
+    ImportCategoryResolverService,
+    ImageImportService,
+    TrendyolImportNormalizerService,
   ],
 })
 export class CatalogModule {}

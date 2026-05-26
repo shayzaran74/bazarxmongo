@@ -8,4 +8,5 @@ export interface ICategoryRepository extends IRepository<Category> {
   findBySlug(slug: Slug): Promise<Category | null>;
   findChildren(parentId: string): Promise<Category[]>;
   findRootCategories(): Promise<Category[]>;
+  findByNameOrSlug(input: string): Promise<Category | null>;
 }

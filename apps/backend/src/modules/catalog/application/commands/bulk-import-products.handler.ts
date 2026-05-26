@@ -10,6 +10,7 @@ import {
   BulkImportProductRow,
 } from './bulk-import-products.command';
 import { SystemVendorService } from '../../infrastructure/services/system-vendor.service';
+import { ImportCategoryResolverService } from '../services/import-category-resolver.service';
 import { CatalogProduct } from '@barterborsa/shared-persistence/schemas/backend/catalogProduct.schema';
 import { Listing } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
 import { ProductMedia } from '@barterborsa/shared-persistence/schemas/backend/productMedia.schema';
@@ -84,6 +85,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
   constructor(
     private readonly systemVendorService: SystemVendorService,
     private readonly mediaService: MediaService,
+    private readonly categoryResolver: ImportCategoryResolverService,
   ) {}
 
   async execute(command: BulkImportProductsCommand) {
@@ -175,6 +177,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
     try {
       for (const { row, name, slug } of prepared) {
         try {
+          const resolvedCategoryId = await this.categoryResolver.resolveCategoryId(row.categoryId);
           const id = 'cp-' + crypto.randomUUID();
           const product = new CatalogProduct({
             id,
@@ -183,7 +186,7 @@ export class BulkImportProductsHandler implements ICommandHandler<BulkImportProd
             brand: row.brandName || 'Genel',
             description: row.description || name,
             gtin: row.gtin || row.barcode || null,
-            categoryId: row.categoryId && row.categoryId !== '' ? row.categoryId : null,
+            categoryId: resolvedCategoryId,
             status: VALID_STATUSES.has(row.status ?? '') ? row.status : 'ACTIVE',
             isFeatured: parseBool(row.isFeatured),
             isSpecialOffer: parseBool(row.isSpecialOffer),

@@ -100,11 +100,13 @@ import { GarageSaleScheduler } from './application/schedulers/garage-sale.schedu
 // Services
 import { VendorRegistrationService } from './application/services/vendor-registration.service';
 import { FileParserService } from './application/services/file-parser.service';
+import { ColumnResolverService } from './application/services/column-resolver.service';
 import { CommissionEngineService } from './application/services/commission-engine.service';
 import { CommissionController } from './presentation/commission.controller';
 import { EarlyPaymentService } from './application/services/early-payment.service';
 import { VendorScoreService } from './application/services/vendor-score.service';
 import { BazarXPublishService } from './application/services/bazarx-publish.service';
+import { ImportTemplateService } from './application/services/import-template.service';
 
 // Event handlers
 import { EcosystemCreatedHandler } from './application/handlers/ecosystem-created.handler';
@@ -263,6 +265,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
   providers: [
     VendorRegistrationService,
     FileParserService,
+    ColumnResolverService,
     CommissionEngineService,
     EarlyPaymentService,
     VendorScoreService,
@@ -288,6 +291,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     GarageSaleService,
     GarageSaleScheduler,
     BazarXPublishService,
+    ImportTemplateService,
     EcosystemCreatedHandler,
     EcosystemMemberRemovedHandler,
     ListingPriceChangedHandler,
@@ -304,6 +308,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     WatchoverService,
     GarageSaleService,
     BazarXPublishService,
+    ImportTemplateService,
     'IVendorRepository',
     'ITrustScoreRepository',
     'IEcosystemMembershipRepository',
