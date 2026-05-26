@@ -4,9 +4,8 @@ WORKDIR /app
 RUN npm install -g pnpm@9
 
 COPY . .
-RUN find . -name "*.tsbuildinfo" -delete || true
 RUN pnpm install --frozen-lockfile
-RUN pnpm run build
+RUN pnpm --filter @bazarx/backend build --force
 
 FROM node:20-alpine AS runner
 
