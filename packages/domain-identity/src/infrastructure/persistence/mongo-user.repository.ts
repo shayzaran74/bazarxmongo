@@ -106,12 +106,12 @@ export class MongoUserRepository implements IUserRepository {
       const props = user.getProps();
       if (props.firstName || props.lastName) {
         await UserProfile.findOneAndUpdate(
-          { user_id: user.id },
+          { userId: user.id },
           {
             $set: {
-              user_id: user.id,
-              first_name: props.firstName,
-              last_name: props.lastName
+              userId: user.id,
+              firstName: props.firstName,
+              lastName: props.lastName
             },
             $setOnInsert: {
               _id: user.id,

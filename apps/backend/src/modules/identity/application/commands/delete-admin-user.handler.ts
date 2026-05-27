@@ -20,12 +20,12 @@ export class DeleteAdminUserHandler implements ICommandHandler<DeleteAdminUserCo
 
     if (userId === adminId) throw new ForbiddenException('Kendi hesabınızı silemezsiniz');
 
-    const user = await this.userModel.findById(userId, { _id: 1, email: 1, role: 1 }).lean();
+    const user = await this.userModel.findOne({ id: userId }, { id: 1, email: 1, role: 1 }).lean();
     if (!user) throw new NotFoundException('Kullanıcı bulunamadı');
 
     // Soft delete — FK referansları (orders, vendor) korunur
     await this.userModel.updateOne(
-      { _id: userId },
+      { id: userId },
       { $set: { deletedAt: new Date(), status: 'INACTIVE' } },
     );
 

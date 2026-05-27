@@ -25,11 +25,11 @@ export class UpdateUserStatusHandler implements ICommandHandler<UpdateUserStatus
       throw new BadRequestException(`Geçersiz durum: "${status}". İzin verilen: ACTIVE, INACTIVE, SUSPENDED, BANNED`);
     }
 
-    const user = await this.userModel.findById(userId, { status: 1 }).lean();
+    const user = await this.userModel.findOne({ id: userId }, { status: 1 }).lean();
     if (!user) throw new NotFoundException('Kullanıcı bulunamadı');
 
     await this.userModel.updateOne(
-      { _id: userId },
+      { id: userId },
       { $set: { status: normalized as UserStatusType } },
     );
 

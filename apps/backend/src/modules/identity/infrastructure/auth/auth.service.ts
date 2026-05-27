@@ -152,7 +152,7 @@ export class AuthService {
     }
 
     await this.userModel.updateOne(
-      { _id: user.id },
+      { id: user.id },
       { $set: { isEmailVerified: true } },
     );
     await this.verificationTokenRepository.delete(verificationToken.id);
