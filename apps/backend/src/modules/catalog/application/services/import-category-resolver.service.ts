@@ -33,8 +33,8 @@ export class ImportCategoryResolverService implements OnModuleInit {
     // Veritabanında bu ID ile bir kategorinin olup olmadığını kontrol et
     const exists = await this.categoryRepo.findById(defaultId);
     if (!exists) {
-      throw new Error(
-        `IMPORT_DEFAULT_CATEGORY_ID (${defaultId}) veritabanında bulunamadı.`
+      this.logger.warn(
+        `UYARI: IMPORT_DEFAULT_CATEGORY_ID (${defaultId}) veritabanında bulunamadı. Sistem çalışmaya devam edecek ancak içe aktarım (import) işlemleri için bu kategoriyi oluşturmalısınız.`
       );
     }
 
