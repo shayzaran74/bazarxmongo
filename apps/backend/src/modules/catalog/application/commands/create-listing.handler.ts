@@ -40,7 +40,9 @@ export class CreateListingHandler implements ICommandHandler<CreateListingComman
         brand: 'Bilinmeyen',
         description: dto.description || '',
         categoryId: ext.categoryId || 'other',
-        attributes: ext.attributes ?? []
+        attributes: ext.attributes ?? [],
+        // Satıcının yeni eklediği ürün admin onayına kadar yayında görünmez
+        status: 'PENDING',
       });
 
       await this.productRepository.save(newProduct);

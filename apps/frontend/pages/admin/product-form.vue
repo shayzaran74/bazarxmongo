@@ -87,6 +87,7 @@
 <script setup>
 import { ChevronLeftIcon } from '@heroicons/vue/24/outline'
 import { useProductForm } from '~/composables/useProductForm'
+import { useAdminProductService } from '~/services/api/AdminProductService'
 
 import ProductMediaManager from '~/components/admin/products/ProductMediaManager.vue'
 import ProductOrganization from '~/components/admin/products/ProductOrganization.vue'
@@ -95,19 +96,77 @@ import ProductSEO from '~/components/admin/products/ProductSEO.vue'
 import ProductShipping from '~/components/admin/products/ProductShipping.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
+
 const route = useRoute()
+const { $toast } = useNuxtApp()
+const adminProductService = useAdminProductService()
+
 const isEditing = computed(() => !!route.query.id)
+const saving = ref(false)
 
-const { 
-  form, saving, mainCategories, subCategories1, subCategories2,
-  selectedMainCategory, selectedSubCategory1, selectedSubCategory2,
-  fetchCategories, fetchProduct, handleFileUpload, saveProduct 
-} = useProductForm(route.query.id)
+// useProductForm kategorileri kendi içinde (onMounted) yükler; ayrıca burada çağırmaya gerek yok.
+const {
+  form,
+  handleFileUpload,
+  mainCategories,
+  subCategories1,
+  subCategories2,
+  selectedMainCategory,
+  selectedSubCategory1,
+  selectedSubCategory2,
+  handleMainCategoryChange,
+  handleSubCategory1Change,
+  handleSubCategory2Change,
+  validateForm,
+} = useProductForm({ productId: route.query.id })
 
-onMounted(async () => {
-  await fetchCategories()
-  if (isEditing.value) await fetchProduct()
+// Kademeli kategori seçimi: ProductOrganization v-model ref'i günceller,
+// alt kategori listelerinin ve form.categoryId'nin yeniden hesaplanması için handler'ları tetikle.
+watch(selectedMainCategory, () => handleMainCategoryChange())
+watch(selectedSubCategory1, () => handleSubCategory1Change())
+watch(selectedSubCategory2, () => handleSubCategory2Change())
+
+// Global ValidationPipe forbidNonWhitelisted aktif — yalnızca CreateAdminProductDto alanları gönderilir.
+const buildPayload = () => ({
+  name: form.name,
+  description: form.description || '',
+  brandName: form.brand || undefined,
+  categoryId: form.categoryId || undefined,
+  price: Number(form.price) || 0,
+  stock: Number(form.stock) || 0,
+  status: form.isActive ? 'ACTIVE' : 'DRAFT',
+  sku: form.sku || undefined,
+  barcode: form.barcode || undefined,
+  modelCode: form.modelCode || undefined,
+  images: Array.isArray(form.productImages) ? form.productImages : [],
+  isFeatured: !!form.isFeatured,
+  isSpecialOffer: !!form.isSpecialOffer,
+  isFlashSale: !!form.isFlashSale,
 })
+
+const saveProduct = async () => {
+  if (!validateForm()) return
+
+  saving.value = true
+  try {
+    const payload = buildPayload()
+    const res = isEditing.value
+      ? await adminProductService.updateProduct(route.query.id, payload)
+      : await adminProductService.createProduct(payload)
+
+    if (res.success) {
+      $toast.success(isEditing.value ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!')
+      await navigateTo('/admin/products')
+    } else {
+      $toast.error(res.error || res.message || 'Ürün kaydedilemedi')
+    }
+  } catch (err) {
+    const message = err?.data?.message || err?.data?.error || 'Ürün kaydedilirken bir hata oluştu'
+    $toast.error(message)
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <style scoped>

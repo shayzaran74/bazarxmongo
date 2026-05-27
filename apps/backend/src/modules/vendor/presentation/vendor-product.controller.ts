@@ -18,43 +18,6 @@ import { IVendor } from '@barterborsa/shared-persistence';
 import { Vendor as VendorModel } from '@barterborsa/shared-persistence/schemas/backend/vendor.schema';
 import { IsString, IsOptional, IsNumber, IsBoolean, IsArray } from 'class-validator';
 
-export class CreateVendorProductDto {
-  @IsString()
-  name!: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsString()
-  brand?: string;
-
-  @IsOptional()
-  @IsString()
-  barcode?: string;
-
-  @IsNumber()
-  price!: number;
-
-  @IsNumber()
-  stock!: number;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
-  @IsString()
-  catalogProductId?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  productImages?: string[];
-}
-
-import { CreateVendorProductCommand } from '../application/commands/create-vendor-product.command';
 import { UpdateVendorProductCommand } from '../application/commands/update-vendor-product.command';
 import { DeleteVendorProductCommand } from '../application/commands/delete-vendor-product.command';
 import { ListVendorProductsQuery } from '../application/queries/list-vendor-products.query';
@@ -191,12 +154,6 @@ export class VendorProductController {
       }),
     );
     return { success: true, data };
-  }
-
-  @ApiOperation({ summary: 'Yeni ürün/listing oluştur' })
-  @Post()
-  async create(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateVendorProductDto) {
-    return this.commandBus.execute(new CreateVendorProductCommand(user.id, body));
   }
 
   @ApiOperation({ summary: 'Ürün güncelle' })

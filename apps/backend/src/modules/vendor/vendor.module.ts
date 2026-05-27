@@ -27,7 +27,6 @@ import { EcosystemAdminController } from './presentation/ecosystem-admin.control
 import { CreateCompanyHandler } from './application/commands/create-company.handler';
 import { RegisterVendorHandler } from './application/commands/register-vendor.handler';
 import { UpdateStockHandler } from './application/commands/update-stock.handler';
-import { CreateVendorProductHandler } from './application/commands/create-vendor-product.handler';
 import { UpdateVendorProductHandler } from './application/commands/update-vendor-product.handler';
 import { DeleteVendorProductHandler } from './application/commands/delete-vendor-product.handler';
 import { CreateEcosystemHandler } from './application/commands/create-ecosystem.handler';
@@ -118,7 +117,6 @@ const CommandHandlers = [
   CreateCompanyHandler,
   RegisterVendorHandler,
   UpdateStockHandler,
-  CreateVendorProductHandler,
   UpdateVendorProductHandler,
   DeleteVendorProductHandler,
   CreateEcosystemHandler,

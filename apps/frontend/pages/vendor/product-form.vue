@@ -83,7 +83,6 @@ const { data: initialProductData } = await useAsyncData(`product-${productId.val
     const res = await $api(`/api/v1/listings/${productId.value}`)
     return res.data || {}
   } catch (err) {
-    console.error('Error fetching product:', err)
     return {}
   }
 }, { watch: [productId] })
@@ -117,12 +116,12 @@ const handleSave = async () => {
     
     const payload = {
       ...formData,
-      image: formData.image || (formData as any).productImages?.[0] || 'https://placehold.co/300x300?text=Ürün+Resmi',
+      image: formData.image || (formData as { productImages?: string[] }).productImages?.[0] || 'https://placehold.co/300x300?text=Ürün+Resmi',
       description: formData.description || '',
       maxPurchasePerMember: formData.maxPurchasePerMember || 0
     }
 
-    const response = await $api<ApiResponse<any>>(url, {
+    const response = await $api<ApiResponse<unknown>>(url, {
       method,
       body: payload
     })
@@ -131,10 +130,10 @@ const handleSave = async () => {
       toast.success(isEditing.value ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!')
       await navigateTo('/vendor/products')
     }
-  } catch (err: any) {
-    console.error('Error saving product:', err)
+  } catch (err: unknown) {
     const toast = useNuxtApp().$toast
-    const errorMessage = err.data?.message || err.data?.error || 'Ürün kaydedilirken bir hata oluştu'
+    const e = err as { data?: { message?: string; error?: string } }
+    const errorMessage = e.data?.message || e.data?.error || 'Ürün kaydedilirken bir hata oluştu'
     toast.error(errorMessage)
   } finally {
     saving.value = false

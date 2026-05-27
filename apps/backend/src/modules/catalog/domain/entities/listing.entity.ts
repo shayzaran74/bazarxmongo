@@ -85,7 +85,9 @@ export class Listing extends AggregateRoot<ListingProps> {
     }
     return new Listing({
       ...props,
-      status: ListingStatus.ACTIVE,
+      // Satıcının oluşturduğu yeni listing yayına girmeden önce admin onayı bekler
+      // (admin "pending products" kuyruğunda görünür, approve → ACTIVE).
+      status: ListingStatus.PENDING,
       isPromoted: false,
       isFeatured: false,
       availableQuantity: props.stock,

@@ -42,7 +42,9 @@ export class CatalogProduct extends AggregateRoot<CatalogProductProps> {
     return new CatalogProduct(props, id);
   }
 
-  public static create(props: Omit<CatalogProductProps, 'rating' | 'isFeatured' | 'isFlashSale' | 'isSpecialOffer' | 'status'>): CatalogProduct {
+  public static create(
+    props: Omit<CatalogProductProps, 'rating' | 'isFeatured' | 'isFlashSale' | 'isSpecialOffer' | 'status'> & { status?: string },
+  ): CatalogProduct {
     const ratingResult = Rating.create(0);
     const fallbackRating = Object.assign(Object.create(null), { props: { value: 0 } }) as Rating;
     return new CatalogProduct({
@@ -51,7 +53,8 @@ export class CatalogProduct extends AggregateRoot<CatalogProductProps> {
       isFeatured: false,
       isFlashSale: false,
       isSpecialOffer: false,
-      status: 'ACTIVE',
+      // Varsayılan ACTIVE; satıcı (A yolu) onay bekleyen ürün için PENDING geçer
+      status: props.status ?? 'ACTIVE',
     });
   }
 
