@@ -155,6 +155,8 @@ export class OrderMapper {
       expiresAt: props.expiresAt,
       createdAt: domain.createdAt,
       updatedAt: domain.updatedAt,
+      shippingAddress: props.shippingAddress ? props.shippingAddress.toJson() : undefined,
+      billingAddress: props.billingAddress ? props.billingAddress.toJson() : undefined,
       items,
       orderItems: items,
     };

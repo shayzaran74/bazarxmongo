@@ -20,7 +20,15 @@ export class UpdateOrderStatusHandler implements ICommandHandler<UpdateOrderStat
 
     const previousStatus = order.status;
     // Domain state machine — geçersiz geçiş DomainException fırlatır
-    order.transitionTo(status);
+    if (status === 'DELIVERED') {
+      order.deliver();
+    } else if (status === 'COMPLETED') {
+      order.complete();
+    } else if (status === 'CANCELLED') {
+      order.cancel();
+    } else {
+      order.transitionTo(status);
+    }
     await this.orderRepository.save(order);
 
     await this.auditLog.log({

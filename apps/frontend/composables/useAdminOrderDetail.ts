@@ -17,12 +17,18 @@ interface OrderItem {
 
 interface ShippingAddressData {
   fullName?: string
+  name?: string
+  firstName?: string
+  lastName?: string
   phone?: string
   addressLine1?: string
   addressLine2?: string
-  city?: string
+  neighborhood?: string
   district?: string
+  city?: string
   postalCode?: string
+  address?: string
+  country?: string
 }
 
 interface AdminOrderDetail {

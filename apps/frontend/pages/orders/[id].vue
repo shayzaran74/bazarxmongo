@@ -51,9 +51,14 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Genel Durum</p>
-            <span :class="getStatusBadgeClass(order.status)">
-              {{ getStatusText(order.status) }}
-            </span>
+            <div class="flex flex-col gap-1.5 items-start">
+              <span :class="getStatusBadgeClass(order.status)">
+                {{ getStatusText(order.status) }}
+              </span>
+              <p v-if="(order.status || '').toUpperCase() === 'SHIPPED' && order.trackingNumber" class="text-xs text-gray-600 font-medium">
+                {{ order.shippingCarrier || 'Kargo' }}: <span class="font-bold text-gray-900 select-all">{{ order.trackingNumber }}</span>
+              </p>
+            </div>
           </div>
           <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Toplam Tutar</p>
@@ -66,6 +71,25 @@
             <p class="font-bold text-gray-900 uppercase text-sm">
               {{ getPaymentMethodText(order.paymentMethod) }}
             </p>
+          </div>
+        </div>
+
+        <!-- Kargo Bilgileri -->
+        <div
+          v-if="order.status.toUpperCase() === 'SHIPPED' || order.status.toUpperCase() === 'DELIVERED'"
+          class="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-4">
+            <div class="p-3 bg-blue-100 rounded-xl text-blue-700">
+              <HeroIcons.TruckIcon class="h-6 w-6" />
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-900">Kargo Bilgileri</p>
+              <p class="text-sm text-gray-600 mt-1">
+                <span class="font-semibold text-gray-700">Kargo Firması:</span> {{ order.shippingCarrier || 'Belirtilmemiş' }} &nbsp;|&nbsp;
+                <span class="font-semibold text-gray-700">Takip Numarası:</span> {{ order.trackingNumber || 'Belirtilmemiş' }}
+              </p>
+            </div>
           </div>
         </div>
 

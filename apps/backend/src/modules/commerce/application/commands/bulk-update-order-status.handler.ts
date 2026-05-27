@@ -32,7 +32,15 @@ export class BulkUpdateOrderStatusHandler implements ICommandHandler<BulkUpdateO
           continue;
         }
         const previousStatus = order.status;
-        order.transitionTo(status);
+        if (status === 'DELIVERED') {
+          order.deliver();
+        } else if (status === 'COMPLETED') {
+          order.complete();
+        } else if (status === 'CANCELLED') {
+          order.cancel();
+        } else {
+          order.transitionTo(status);
+        }
         await this.orderRepository.save(order);
 
         await this.auditLog.log({

@@ -28,9 +28,11 @@
     <div class="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed italic">
       <template v-if="parsedAddress">
         <p class="font-bold mb-1">
-          {{ parsedAddress.name }}
+          {{ parsedAddress.fullName || parsedAddress.name || `${parsedAddress.firstName || ''} ${parsedAddress.lastName || ''}`.trim() || 'Alıcı Adı Belirtilmemiş' }}
         </p>
-        <p>{{ parsedAddress.address }}</p>
+        <p>{{ parsedAddress.addressLine1 || parsedAddress.address }}</p>
+        <p v-if="parsedAddress.addressLine2">{{ parsedAddress.addressLine2 }}</p>
+        <p v-if="parsedAddress.neighborhood || parsedAddress.district">{{ parsedAddress.neighborhood || '' }} {{ parsedAddress.district || '' }}</p>
         <p>{{ parsedAddress.postalCode }} {{ parsedAddress.city }}</p>
         <p>{{ parsedAddress.country || 'Türkiye' }}</p>
       </template>
@@ -50,7 +52,14 @@ interface CustomerUser {
 }
 
 interface ParsedAddress {
+  fullName?: string
   name?: string
+  firstName?: string
+  lastName?: string
+  addressLine1?: string
+  addressLine2?: string
+  neighborhood?: string
+  district?: string
   address?: string
   postalCode?: string
   city?: string

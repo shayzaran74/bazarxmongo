@@ -125,10 +125,13 @@ export class OffersController {
     if (!toCompanyId) throw new BadRequestException('Hedef şirket ID (toCompanyId) bulunamadı.');
     if (!receiverId) throw new BadRequestException('Hedef alıcı ID (receiverId) bulunamadı.');
 
-    // Receiver vendor APPROVED kontrolü
+    // Receiver vendor APPROVED + barterEnabled kontrolü (initiator getVendorWithCompany'de denetlendi)
     const receiverVendorCheck = await this.vendorRepository.findByCompanyId(toCompanyId);
     if (!receiverVendorCheck || receiverVendorCheck.getProps().status !== 'APPROVED') {
       throw new BadRequestException('Hedef firmanın satıcı hesabı onaylanmamış.');
+    }
+    if (!receiverVendorCheck.getProps().barterEnabled) {
+      throw new BadRequestException('Hedef firmanın takas (barter) modülü aktif değil.');
     }
 
     // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı.

@@ -138,7 +138,7 @@
             <h3 class="font-bold text-gray-950 mb-2 uppercase tracking-wider text-[10px]">Teslimat Adresi</h3>
             <p class="text-gray-700 leading-relaxed font-medium">
               <span v-if="parsedAddress">
-                <strong class="block mb-0.5">{{ parsedAddress.fullName }}</strong>
+                <strong class="block mb-0.5">{{ parsedAddress.fullName || parsedAddress.name || `${parsedAddress.firstName || ''} ${parsedAddress.lastName || ''}`.trim() || 'Alıcı Belirtilmemiş' }}</strong>
                 {{ parsedAddress.addressLine1 }} {{ parsedAddress.addressLine2 || '' }}<br>
                 {{ parsedAddress.postalCode || '' }} {{ parsedAddress.city || '' }} {{ parsedAddress.district ? `/ ${parsedAddress.district}` : '' }}
               </span>

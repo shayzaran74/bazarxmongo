@@ -68,8 +68,11 @@ export class TradeOfferMapper {
       id: domain.id,
       fromCompanyId: props.fromCompanyId,
       toCompanyId: props.toCompanyId,
+      offeredItemId: props.offeredItemId,
+      requestedItemId: props.requestedItemId,
       message: props.message,
       status: props.status,
+      parentOfferId: props.parentOfferId,
       cashAmount: Types.Decimal128.fromString(String(props.cashAmount)),
       cashDirection: props.cashDirection,
       cashCurrency: props.cashCurrency,
@@ -78,6 +81,12 @@ export class TradeOfferMapper {
       initiatorType: props.initiatorType,
       receiverId: props.receiverId,
       receiverType: props.receiverType,
+      acceptedAt: props.acceptedAt,
+      rejectedAt: props.rejectedAt,
+      cancelledAt: props.cancelledAt,
+      completedAt: props.completedAt,
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
     };
   }
 }

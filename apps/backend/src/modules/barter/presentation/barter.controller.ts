@@ -21,6 +21,7 @@ import { RegisterBarterCommand } from '../application/commands/register-barter.c
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import { ICompany } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
+import { BarterTopupDto, BarterWithdrawDto, BarterTransferDto } from './dto/barter-wallet.dto';
 
 interface AuthenticatedUser {
   id: string;
@@ -90,11 +91,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Barter cüzdanına para yükle' })
   @Post('topup')
-  async topup(@CurrentUser() user: AuthenticatedUser, @Body() body: { amount: number }) {
-    if (!body.amount || body.amount <= 0) {
-      throw new BadRequestException('Geçersiz miktar');
-    }
-    
+  async topup(@CurrentUser() user: AuthenticatedUser, @Body() body: BarterTopupDto) {
     return this.financialGateway.transferBetweenAccounts({
       userId: user.id,
       fromAccountType: 'MAIN',
@@ -106,11 +103,7 @@ export class BarterController {
 
   @ApiOperation({ summary: 'Barter cüzdanından para çek' })
   @Post('withdraw')
-  async withdraw(@CurrentUser() user: AuthenticatedUser, @Body() body: { amount: number }) {
-    if (!body.amount || body.amount <= 0) {
-      throw new BadRequestException('Geçersiz miktar');
-    }
-    
+  async withdraw(@CurrentUser() user: AuthenticatedUser, @Body() body: BarterWithdrawDto) {
     return this.financialGateway.transferBetweenAccounts({
       userId: user.id,
       fromAccountType: 'BARTER',
@@ -124,12 +117,8 @@ export class BarterController {
   @Post('transfer')
   async transfer(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { toCompanyId: string; amount: number; note?: string },
+    @Body() body: BarterTransferDto,
   ): Promise<{ success: boolean; data?: { transferId: string; holdId: string; amount: number; toCompanyId: string; status: string }; message?: string }> {
-    if (!body.toCompanyId || !body.amount || body.amount <= 0) {
-      throw new BadRequestException('Geçersiz transfer parametreleri');
-    }
-
     // Alıcı firma → vendor → userId çözümlemesi
     const receiverCompany = await this.companyModel
       .findOne({ id: body.toCompanyId })
