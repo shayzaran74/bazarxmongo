@@ -16,4 +16,4 @@ WORKDIR /app
 COPY --from=builder /app ./
 
 EXPOSE 3000
-CMD ["npm", "--filter", "ecommerce-frontend", "run", "start"]
+CMD ["node", "apps/frontend/.output/server/index.mjs"]
