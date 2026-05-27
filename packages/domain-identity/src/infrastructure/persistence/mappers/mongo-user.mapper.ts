@@ -35,6 +35,7 @@ export class MongoUserMapper {
   static toPersistence(user: User): any {
     const props = user.getProps();
     return {
+      _id: user.id,
       id: user.id,
       email: user.email,
       phoneNumber: props.phoneNumber,

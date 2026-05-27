@@ -102,6 +102,26 @@ export class MongoUserRepository implements IUserRepository {
         data,
         { upsert: true, new: true }
       ).exec();
+
+      const props = user.getProps();
+      if (props.firstName || props.lastName) {
+        await UserProfile.findOneAndUpdate(
+          { userId: user.id },
+          {
+            $set: {
+              userId: user.id,
+              firstName: props.firstName,
+              lastName: props.lastName
+            },
+            $setOnInsert: {
+              _id: user.id,
+              id: user.id
+            }
+          },
+          { upsert: true, new: true }
+        ).exec();
+      }
+
       this.logger.debug(`User saved: ${user.email}`);
     } catch (err: any) {
       this.logger.error(`Failed to save user ${user.email}: ${err.message}`, err.stack);
