@@ -50,7 +50,7 @@
                 <button class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" @click="$emit('edit', user)">
                   <PencilIcon class="w-4 h-4" />
                 </button>
-                <button class="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" @click="$emit('delete', user)">
+                <button class="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" @click="$emit('delete', user.id)">
                   <TrashIcon class="w-4 h-4" />
                 </button>
               </div>
