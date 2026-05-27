@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "entryFile": "main",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": false,
+    "tsConfigPath": "tsconfig.prod.json",
+    "assets": [
+      {
+        "include": "modules/financial-gateway/grpc/*.proto",
+        "watchAssets": true
+      }
+    ]
+  }
+}

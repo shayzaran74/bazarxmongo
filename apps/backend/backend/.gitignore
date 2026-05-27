@@ -1,0 +1,4 @@
+
+# Medya yüklemeleri
+public/uploads/*
+!public/uploads/.gitkeep

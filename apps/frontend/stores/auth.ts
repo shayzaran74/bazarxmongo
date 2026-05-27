@@ -29,7 +29,7 @@ export const useAuthStore = defineStore('auth', {
     isLoggedIn: (state) => state.isAuthenticated,
     isAdmin: (state) => state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
     isSuperAdmin: (state) => state.user?.role === 'SUPER_ADMIN',
-    isVendor: (state) => state.user?.role === 'VENDOR' || state.user?.role === 'ADMIN',
+    isVendor: (state) => state.user?.role === 'VENDOR' || state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
     isPremium: (state) => !!state.user?.isPremium,
     fullName: (state) => {
       if (!state.user) return ''
