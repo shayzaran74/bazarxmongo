@@ -153,4 +153,5 @@ export class Vendor extends AggregateRoot<VendorProps> {
   get vendorType(): VendorType { return this.props.vendorType; }
   get slug(): VendorSlug { return this.props.slug; }
   get profile() { return this.props.profile; }
+  get barterEnabled(): boolean { return this.props.barterEnabled ?? false; }
 }
