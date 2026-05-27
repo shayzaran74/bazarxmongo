@@ -1,11 +1,10 @@
 <template>
   <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
-    <div class="min-h-screen bg-surface text-on-surface flex">
+    <div class="flex flex-col lg:flex-row gap-6 w-full">
     <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 bottom-0 flex flex-col z-50 bg-white border-r border-slate-200 w-64 shadow-sm p-4 gap-2">
+    <aside class="hidden lg:flex flex-col z-10 bg-white border border-slate-200 rounded-2xl w-64 shadow-sm p-4 gap-2 sticky top-[100px] h-[calc(100vh-120px)]">
       <div class="mb-8 px-2 flex items-center gap-3">
         <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
-          <span class="material-symbols-outlined text-white">currency_exchange</span>
         </div>
         <div>
           <NuxtLink to="/barterborsa" class="text-xl font-black text-primary-container tracking-tight hover:opacity-80 transition-opacity">
@@ -16,75 +15,38 @@
       </div>
       <nav class="flex-1 space-y-1">
         <NuxtLink to="/ticaritakas/b2b-dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">dashboard</span>
           <span class="font-medium text-sm">Dashboard</span>
         </NuxtLink>
         <NuxtLink to="/barterborsa/kurumsal" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">waves</span>
           <span class="font-medium text-sm">Kör Havuz</span>
         </NuxtLink>
         <NuxtLink to="/products" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">inventory_2</span>
           <span class="font-medium text-sm">Envanter</span>
         </NuxtLink>
         <NuxtLink to="/barterborsa/islem-gecmisi" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">speed</span>
           <span class="font-medium text-sm">Akıllı Kota</span>
         </NuxtLink>
         <a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-white shadow-md rounded-lg transition-all transform active:scale-95 cursor-pointer">
-          <span class="material-symbols-outlined">group</span>
           <span class="font-medium text-sm">Bayi Yönetimi</span>
         </a>
         <NuxtLink to="/barterborsa/analitik" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">assessment</span>
           <span class="font-medium text-sm">Raporlama</span>
         </NuxtLink>
       </nav>
       <div class="mt-auto border-t border-slate-100 pt-4 space-y-1">
         <NuxtLink to="/settings" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 transition-all rounded-lg">
-          <span class="material-symbols-outlined">settings</span>
           <span class="font-medium text-sm">Ayarlar</span>
         </NuxtLink>
         <NuxtLink to="/auth/login" class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/5 transition-all rounded-lg">
-          <span class="material-symbols-outlined">logout</span>
           <span class="font-medium text-sm">Çıkış Yap</span>
         </NuxtLink>
       </div>
     </aside>
 
     <!-- Main Content Area -->
-    <div class="ml-64 flex-1 flex flex-col min-h-screen">
-      <!-- Top App Bar -->
-      <header class="sticky top-0 z-40 w-full h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-        <div class="flex items-center gap-4 flex-1 max-w-md">
-          <div class="relative w-full">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-            <input class="w-full bg-slate-100 border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-container/20 transition-all outline-none" placeholder="Bayi veya bölge ara..." type="text"/>
-          </div>
-        </div>
-        <div class="flex items-center gap-6">
-          <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all" type="button" aria-label="Bildirimler">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white" />
-          </button>
-          <button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all" type="button" aria-label="Yardım">
-            <span class="material-symbols-outlined">help_outline</span>
-          </button>
-          <div class="h-8 w-px bg-slate-200 mx-2" />
-          <div class="flex items-center gap-3 cursor-pointer group">
-            <div class="text-right">
-              <p class="text-xs font-bold text-primary-container">{{ authStore.fullName || '—' }}</p>
-              <p class="text-[10px] text-slate-500">Apex Üye</p>
-            </div>
-            <div class="w-10 h-10 rounded-full border-2 border-primary-fixed bg-primary-container text-white flex items-center justify-center text-sm font-bold shadow-sm group-hover:scale-105 transition-transform">
-              {{ (authStore.fullName || '?').substring(0, 2).toUpperCase() }}
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div class="flex-1 flex flex-col min-w-0">
       <!-- Main Canvas -->
-      <main class="p-8 space-y-8 flex-1">
+      <main class="py-4 space-y-8 flex-1">
         <!-- Bayi Ağı Genel Bakış -->
         <section
           v-motion
@@ -192,11 +154,9 @@
             <div class="bg-white rounded-xl border border-slate-100 shadow-ambient overflow-hidden">
               <div class="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h2 class="text-lg font-bold text-primary-container flex items-center gap-2">
-                  <span class="material-symbols-outlined text-primary-container">hub</span>
                   Bayi Listesi
                 </h2>
                 <button class="text-sm font-bold text-primary-container flex items-center gap-2 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-all" type="button">
-                  <span class="material-symbols-outlined text-base">download</span>
                   Dışa Aktar (CSV)
                 </button>
               </div>
@@ -278,7 +238,6 @@
           <aside class="space-y-6">
             <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-ambient">
               <h3 class="text-sm font-bold text-primary-container flex items-center gap-2 mb-6">
-                <span class="material-symbols-outlined text-error">warning</span>
                 Kritik Uyarılar (4)
               </h3>
               <div class="space-y-4">
@@ -325,7 +284,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: false, middleware: ['auth', 'barterborsa-apex'] })
+definePageMeta({ layout: 'default', middleware: ['auth', 'barterborsa-apex'], hideSideAds: true })
 
 useHead({
   title: 'Bayi Yönetim Paneli — BarterBorsa',

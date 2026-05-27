@@ -1,9 +1,9 @@
 <template>
   <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
-    <div class="min-h-screen bg-surface text-on-surface flex">
+    <div class="flex flex-col lg:flex-row gap-6 w-full mt-4">
     <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 bottom-0 flex flex-col z-50 bg-white border-r border-slate-200 w-64 shadow-sm">
-      <div class="p-6">
+    <aside class="hidden lg:flex flex-col z-10 bg-white border border-slate-200 rounded-2xl w-64 shadow-sm p-4 gap-2 sticky top-[100px] h-[calc(100vh-120px)]">
+      <div class="p-2 mb-4">
         <div class="flex items-center gap-3">
           <div class="h-10 w-10 bg-primary-container rounded-lg flex items-center justify-center">
             <span class="material-symbols-outlined text-on-primary">swap_vertical_circle</span>
@@ -16,60 +16,32 @@
           </div>
         </div>
       </div>
-      <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+      <nav class="flex-1 space-y-1 overflow-y-auto px-2">
         <NuxtLink to="/barterborsa" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
-          <span class="material-symbols-outlined mr-3">dashboard</span>
           <span class="text-sm">Dashboard</span>
         </NuxtLink>
         <NuxtLink to="/ticaritakas/b2b-dashboard" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
-          <span class="material-symbols-outlined mr-3">swap_vertical_circle</span>
           <span class="text-sm">Trade Pool</span>
         </NuxtLink>
-        <a class="group flex items-center px-4 py-3 my-1 rounded-r-lg bg-slate-50 text-primary-container border-r-4 border-primary-container transition-all">
-          <span class="material-symbols-outlined mr-3">receipt_long</span>
+        <a class="group flex items-center px-4 py-3 my-1 rounded-lg bg-slate-50 text-primary-container font-semibold transition-all cursor-pointer">
           <span class="text-sm font-semibold">Transactions</span>
         </a>
         <NuxtLink to="/products" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
-          <span class="material-symbols-outlined mr-3">storefront</span>
           <span class="text-sm">Marketplace</span>
         </NuxtLink>
         <NuxtLink to="/barterborsa/analitik" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
-          <span class="material-symbols-outlined mr-3">insights</span>
           <span class="text-sm">Analytics</span>
         </NuxtLink>
         <NuxtLink to="/barterborsa/kurumsal" class="group flex items-center px-4 py-3 my-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all">
-          <span class="material-symbols-outlined mr-3">business_center</span>
           <span class="text-sm">Corporate Tools</span>
         </NuxtLink>
       </nav>
     </aside>
 
     <!-- Main Content Area -->
-    <div class="ml-64 flex-1 flex flex-col min-h-screen">
-      <!-- Top App Bar -->
-      <header class="sticky top-0 z-40 w-full h-16 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div class="flex items-center gap-4 w-1/2">
-          <div class="relative w-full max-w-md">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-            <input class="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-full text-sm focus:ring-2 focus:ring-primary-container outline-none" placeholder="Search by ID, partner name, or invoice..." type="text"/>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <button class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors" type="button" aria-label="Bildirimler">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <div class="flex items-center gap-3">
-            <div class="text-right">
-              <p class="text-sm font-bold text-primary-container">{{ useAuthStore().fullName || '—' }}</p>
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-tertiary-fixed text-on-tertiary-fixed-variant">APEX ÜYE</span>
-            </div>
-            <div class="h-10 w-10 rounded-full border-2 border-primary-container bg-primary-container text-on-primary flex items-center justify-center font-bold">GL</div>
-          </div>
-        </div>
-      </header>
-
+    <div class="flex-1 flex flex-col min-w-0">
       <!-- Main Canvas -->
-      <main class="p-8 space-y-8 flex-1">
+      <main class="py-4 space-y-8 flex-1">
         <!-- Header Section -->
         <div
           v-motion
@@ -297,7 +269,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: false, middleware: ['auth', 'barterborsa-apex'] })
+definePageMeta({ layout: 'default', middleware: ['auth', 'barterborsa-apex'], hideSideAds: true })
 
 useHead({
   title: 'İşlem Geçmişi — TicariTakas B2B',

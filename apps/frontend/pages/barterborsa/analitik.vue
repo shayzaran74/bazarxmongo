@@ -1,8 +1,8 @@
 <template>
   <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
-    <div class="min-h-screen bg-surface flex">
+    <div class="flex flex-col lg:flex-row gap-6 w-full mt-4">
     <!-- Sidebar Navigation -->
-    <aside class="fixed left-0 top-0 h-full w-64 border-r border-slate-200 bg-white flex flex-col py-6 px-4 z-50 shadow-sm">
+    <aside class="hidden lg:flex flex-col z-10 bg-white border border-slate-200 rounded-2xl w-64 shadow-sm p-4 gap-2 sticky top-[100px] h-[calc(100vh-120px)]">
       <div class="mb-8 px-2">
         <NuxtLink to="/" class="text-xl font-black text-primary-container uppercase tracking-wider hover:opacity-80 transition-opacity">
           BazarX Core
@@ -11,24 +11,19 @@
       </div>
 
       <nav class="flex-1 space-y-1">
-        <a class="flex items-center gap-3 px-4 py-3 bg-slate-50 text-primary-container font-semibold border-r-4 border-primary-container rounded-l-lg transition-all">
-          <span class="material-symbols-outlined text-xl">dashboard</span>
+        <a class="flex items-center gap-3 px-4 py-3 bg-slate-50 text-primary-container font-semibold border-r-4 border-primary-container rounded-l-lg transition-all cursor-pointer">
           <span class="text-sm">Executive Overview</span>
         </a>
         <NuxtLink to="/barterborsa" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined text-xl">query_stats</span>
           <span class="text-sm">Trade Volume</span>
         </NuxtLink>
         <NuxtLink to="/barter" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined text-xl">loop</span>
           <span class="text-sm">Pool Churn</span>
         </NuxtLink>
         <NuxtLink to="/vendors" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined text-xl">verified_user</span>
           <span class="text-sm">TrustScore Analysis</span>
         </NuxtLink>
         <NuxtLink to="/categories" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined text-xl">map</span>
           <span class="text-sm">Regional Metrics</span>
         </NuxtLink>
       </nav>
@@ -41,50 +36,18 @@
           Generate Report
         </button>
         <NuxtLink to="/settings" class="flex items-center gap-3 px-4 py-2 text-slate-600 hover:text-primary-container transition-all">
-          <span class="material-symbols-outlined text-lg">settings</span>
           <span class="text-sm">Settings</span>
         </NuxtLink>
         <NuxtLink to="/support" class="flex items-center gap-3 px-4 py-2 text-slate-600 hover:text-primary-container transition-all">
-          <span class="material-symbols-outlined text-lg">contact_support</span>
           <span class="text-sm">Support</span>
         </NuxtLink>
       </div>
     </aside>
 
     <!-- Main Canvas -->
-    <div class="ml-64 flex-1 flex flex-col min-h-screen">
-      <!-- Top App Bar -->
-      <header class="sticky top-0 right-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-40 shadow-sm">
-        <div class="flex items-center gap-4">
-          <h2 class="font-semibold text-primary-container text-[20px]">Executive Overview</h2>
-          <div class="h-5 w-px bg-slate-200" />
-          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-            <span class="material-symbols-outlined text-sm text-slate-500">calendar_today</span>
-            <span class="text-xs font-medium text-slate-600">Oca 1 – Haz 30, 2024</span>
-            <span class="material-symbols-outlined text-sm text-slate-500">expand_more</span>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <button class="text-slate-500 hover:text-primary-container transition-colors p-1.5 rounded-full hover:bg-slate-50" type="button" aria-label="Bildirimler">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <button class="text-slate-500 hover:text-primary-container transition-colors p-1.5 rounded-full hover:bg-slate-50" type="button" aria-label="Yardım">
-            <span class="material-symbols-outlined">help_outline</span>
-          </button>
-          <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
-            <div class="text-right">
-              <p class="text-sm font-bold text-slate-900">Admin Panel</p>
-              <p class="text-[10px] text-slate-500 uppercase tracking-widest">Corporate Administrator</p>
-            </div>
-            <div class="w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm">
-              A
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div class="flex-1 flex flex-col min-w-0">
       <!-- Page Content -->
-      <main class="p-8 flex-1">
+      <main class="py-4 flex-1">
         <!-- KPI Cards -->
         <div
           v-motion
@@ -160,7 +123,6 @@
               <span class="text-md3-secondary text-xs font-bold flex items-center gap-1">
                 <span class="material-symbols-outlined text-xs">keyboard_double_arrow_up</span> ₺240k
               </span>
-              <span class="text-slate-400 text-xs">bu çeyrekte</span>
             </div>
           </div>
         </div>
@@ -320,8 +282,9 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: false,
+  layout: 'default',
   middleware: ['auth', 'barterborsa-apex'],
+  hideSideAds: true,
 })
 
 useHead({

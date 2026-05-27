@@ -1,73 +1,37 @@
 <template>
   <AccessGuard :requiresAuth="true" :requiresVendor="true" :requiresApex="true">
-    <div class="min-h-screen bg-surface text-on-surface flex">
+    <div class="flex flex-col lg:flex-row gap-6 w-full mt-4">
     <!-- Sidebar Navigation -->
-    <aside class="fixed left-0 top-16 h-[calc(100vh-64px)] flex flex-col pt-4 bg-white w-64 border-r border-slate-200 z-40">
-      <div class="px-6 mb-6">
+    <aside class="hidden lg:flex flex-col z-10 bg-white border border-slate-200 rounded-2xl w-64 shadow-sm p-4 gap-2 sticky top-[100px] h-[calc(100vh-120px)]">
+      <div class="px-2 mb-6">
         <h2 class="text-lg font-black text-primary-container uppercase tracking-wider">Kurumsal Portal</h2>
         <p class="text-xs text-slate-500 mt-0.5">Kurumsal Yönetim</p>
       </div>
       <nav class="flex-1 space-y-1 px-2">
-        <a class="flex items-center gap-3 px-4 py-3 bg-slate-100 text-primary-container border-r-4 border-primary-container rounded-l-lg font-semibold transition-all">
-          <span class="material-symbols-outlined">dashboard</span>
+        <a class="flex items-center gap-3 px-4 py-3 bg-slate-100 text-primary-container border-r-4 border-primary-container rounded-l-lg font-semibold transition-all cursor-pointer">
           <span class="text-sm">Panel</span>
         </a>
         <NuxtLink to="/barterborsa/analitik" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined">receipt_long</span>
           <span class="text-sm">Denetim Kayıtları</span>
         </NuxtLink>
         <NuxtLink to="/vendors" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined">lan</span>
           <span class="text-sm">Ağ Yönetimi</span>
         </NuxtLink>
-        <NuxtLink to="/settings" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined">api</span>
-          <span class="text-sm">API Ayarları</span>
-        </NuxtLink>
         <NuxtLink to="/admin" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined">admin_panel_settings</span>
           <span class="text-sm">Kullanıcı Rolleri</span>
         </NuxtLink>
       </nav>
-      <div class="border-t border-slate-100 px-2 py-2">
+      <div class="border-t border-slate-100 px-2 py-2 mt-auto">
         <NuxtLink to="/auth/login" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-primary-container rounded-lg transition-all">
-          <span class="material-symbols-outlined">logout</span>
           <span class="text-sm">Çıkış Yap</span>
         </NuxtLink>
       </div>
     </aside>
 
     <!-- Right Panel -->
-    <div class="ml-64 flex-1 flex flex-col">
-      <!-- Top App Bar -->
-      <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-50 shadow-sm">
-        <div class="flex items-center gap-4">
-          <NuxtLink to="/" class="text-xl font-bold tracking-tight text-primary-container hover:opacity-80 transition-opacity">
-            TicariTakas Enterprise
-          </NuxtLink>
-        </div>
-        <div class="flex items-center gap-4">
-          <div class="hidden md:flex items-center bg-surface-container px-4 py-2 rounded-full border border-outline-variant">
-            <span class="material-symbols-outlined text-outline mr-2 text-lg">search</span>
-            <input class="bg-transparent border-none focus:ring-0 text-sm w-52 outline-none" placeholder="Sistem kaynaklarında ara..." type="text" aria-label="Arama" />
-          </div>
-          <button class="text-slate-500 hover:bg-slate-50 transition-colors p-2 rounded-full" type="button" aria-label="Bildirimler">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <button class="text-slate-500 hover:bg-slate-50 transition-colors p-2 rounded-full" type="button" aria-label="Ayarlar">
-            <span class="material-symbols-outlined">settings</span>
-          </button>
-          <button class="text-slate-500 hover:bg-slate-50 transition-colors p-2 rounded-full" type="button" aria-label="Yardım">
-            <span class="material-symbols-outlined">help_outline</span>
-          </button>
-          <div class="h-8 w-8 rounded-full overflow-hidden border-2 border-primary-container bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm ml-2">
-            {{ (useAuthStore().fullName || 'AK').substring(0, 2).toUpperCase() }}
-          </div>
-        </div>
-      </header>
-
+    <div class="flex-1 flex flex-col min-w-0">
       <!-- Main Content -->
-      <main class="flex-1 p-8 bg-surface">
+      <main class="flex-1 py-4">
         <div class="max-w-7xl mx-auto space-y-8">
           <!-- Page Header -->
           <div
@@ -101,7 +65,6 @@
             >
               <div class="p-6 border-b border-slate-100 flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-md3-secondary">hub</span>
                   <h3 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Bayii Ağ Yönetimi</h3>
                 </div>
                 <div class="flex gap-2">
@@ -117,7 +80,6 @@
                 <!-- Mock map placeholder -->
                 <div class="absolute inset-0 bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 flex items-center justify-center">
                   <div class="text-center text-slate-400">
-                    <span class="material-symbols-outlined text-6xl mb-2 block">map</span>
                     <p class="text-sm font-medium">Distribütör Haritası</p>
                     <p class="text-xs mt-1">Veritabanı bağlantısı kurulduğunda yüklenecek</p>
                   </div>
@@ -154,7 +116,6 @@
             >
               <div class="p-6 border-b border-slate-100">
                 <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-md3-primary">toll</span>
                   <h3 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Smart Cap (Akıllı Kota)</h3>
                 </div>
               </div>
@@ -199,7 +160,6 @@
                   class="w-full py-3 bg-slate-50 border-2 border-dashed border-slate-300 text-slate-500 font-semibold text-sm rounded-xl hover:bg-white hover:border-md3-primary hover:text-md3-primary transition-all flex items-center justify-center gap-2"
                   type="button"
                 >
-                  <span class="material-symbols-outlined">add</span>
                   Yeni Yapılandırma Oluştur
                 </button>
               </div>
@@ -214,7 +174,6 @@
             >
               <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-md3-primary">monitor_heart</span>
                   <h3 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Watchtower Denetim Günlüğü</h3>
                 </div>
                 <div class="flex items-center gap-4">
@@ -282,7 +241,6 @@
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                   <div class="w-12 h-12 bg-primary-container rounded-lg flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary text-2xl">palette</span>
                   </div>
                   <div>
                     <h3 class="text-[20px] leading-[28px] font-semibold text-md3-primary">Kurumsal Marka Ayarları</h3>
@@ -333,8 +291,9 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: false,
+  layout: 'default',
   middleware: ['auth', 'barterborsa-apex'],
+  hideSideAds: true,
 })
 
 useHead({
