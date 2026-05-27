@@ -140,6 +140,7 @@ export class ListAdminVendorsHandler
         profile:    profileObj,
         user:       userObj,
         vendorCategories: vCats,
+        barterEnabled: v.barterEnabled,
         _count: {
           listings: countListings
         }
