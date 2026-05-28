@@ -27,10 +27,23 @@ echo "🏗️  Projeler derleniyor (Build) ve yeniden ayağa kaldırılıyor..."
 docker compose -f docker-compose.prod.yml up -d --build
 echo "✅ Sistem başarıyla ayağa kaldırıldı."
 
-# 5. (Opsiyonel) Sunucuda yer açmak için kullanılmayan (dangling) imajları temizle
-# Bu işlem disk şişmesini önler.
-echo "🧹 Gereksiz ve eski imajlar temizleniyor..."
+# 5. Sunucuda yer açmak için logları ve kullanılmayan imajları temizle
+echo "🧹 Gereksiz imajlar, build önbelleği ve loglar temizleniyor..."
+
+# Kullanılmayan (dangling) imajları siler (Disk açar)
 docker image prune -f
-echo "✅ Temizlik tamamlandı."
+
+# Docker build önbelleğini temizler (Çok ciddi disk açar)
+docker builder prune -a -f
+
+# Docker konteyner loglarını temizler (Eski logların diski doldurmasını engeller)
+sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log' || true
+
+echo "✅ Disk temizliği tamamlandı."
+
+# 6. İşletim sistemi RAM önbelleğini (Cache) temizle
+echo "🧠 RAM (Bellek) önbelleği boşaltılıyor..."
+sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches' || true
+echo "✅ Bellek temizliği tamamlandı."
 
 echo "🎉 Güncelleme Başarıyla Tamamlandı! BazarX yayında."
