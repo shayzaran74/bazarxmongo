@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule, InjectConnection } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
@@ -163,8 +164,12 @@ import { MetricsModule } from './infrastructure/metrics/metrics.module';
     OutboxProcessorService,
   ],
 })
-export class AppModule {
+export class AppModule implements NestModule {
   constructor(@InjectConnection() private readonly connection: Connection) {
     ConnectionRegistry.registerConnection('default', this.connection);
+  }
+
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CsrfMiddleware).forRoutes('*');
   }
 }

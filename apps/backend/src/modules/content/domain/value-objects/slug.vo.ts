@@ -20,7 +20,13 @@ export class Slug extends ValueObject<SlugProps> {
       return Err(new DomainException('Slug cannot be empty'));
     }
 
+    const trMap: Record<string, string> = {
+      'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+      'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+    };
+
     const slugValue = text
+      .replace(/[çğışöüÇĞİŞÖÜ]/g, match => trMap[match])
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, '')

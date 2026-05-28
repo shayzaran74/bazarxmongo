@@ -40,8 +40,10 @@
     <AdminHelpList
       v-model:search-query="searchQuery"
       :articles="filteredArticles"
+      :categories="categories"
       @edit="openArticleModal"
       @delete="deleteArticle"
+      @delete-category="deleteCategory"
     />
 
     <!-- Modals -->
@@ -81,7 +83,7 @@ const {
   articles, categories, searchQuery, isArticleModalOpen, isCategoryModalOpen,
   editingArticle, editingCategory, totalViews, filteredArticles,
   openArticleModal, closeArticleModal, openCategoryModal, closeCategoryModal,
-  saveCategory, saveArticle, deleteArticle
+  saveCategory, saveArticle, deleteArticle, deleteCategory
 } = useAdminHelp()
 </script>
 

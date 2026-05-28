@@ -20,5 +20,20 @@
     "@typescript-eslint/consistent-type-imports": ["error", { "prefer": "type-imports" }],
     "@typescript-eslint/no-misused-promises": "error"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "*.js", "*.d.ts"]
+  "ignorePatterns": ["dist/", "node_modules/", "*.js", "*.d.ts"],
+  "overrides": [
+    {
+      "files": ["src/**/*.ts"],
+      "excludedFiles": ["src/modules/identity/**"],
+      "rules": {
+        "no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "Decorator > CallExpression[callee.name='InjectModel'][arguments.0.value='User']",
+            "message": "Cross-module @InjectModel('User') is forbidden outside the identity module. Use IdentityPublicService from @barterborsa/domain-identity instead. Add eslint-disable with a justification comment for approved exceptions."
+          }
+        ]
+      }
+    }
+  ]
 }

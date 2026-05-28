@@ -20,7 +20,9 @@ export class HelpController {
   @ApiResponse({ status: 200 })
   @Get('categories')
   async getCategories(@Query('platform') platform = 'BAZARX', @Query('lang') lang = 'tr') {
-    return this.queryBus.execute(new GetHelpCategoriesQuery(platform, lang));
+    const categories = await this.queryBus.execute(new GetHelpCategoriesQuery(platform, lang));
+    const data = categories.map((cat: any) => ({ id: cat.id.toString(), ...cat.getProps() }));
+    return { success: true, data };
   }
 
   @Public()
@@ -34,7 +36,9 @@ export class HelpController {
   @ApiResponse({ status: 200 })
   @Get('articles/:slug')
   async getArticle(@Param('slug') slug: string) {
-    return this.queryBus.execute(new GetHelpArticleQuery(slug));
+    const article = await this.queryBus.execute(new GetHelpArticleQuery(slug));
+    if (!article) return { success: false, data: null };
+    return { success: true, data: { id: article.id.toString(), ...article.getProps() } };
   }
 
   @Public()
@@ -45,6 +49,8 @@ export class HelpController {
   @ApiResponse({ status: 200 })
   @Get('search')
   async search(@Query('q') q: string, @Query('platform') platform = 'BAZARX', @Query('lang') lang = 'tr') {
-    return this.queryBus.execute(new SearchHelpArticlesQuery(q, platform, lang));
+    const articles = await this.queryBus.execute(new SearchHelpArticlesQuery(q, platform, lang));
+    const data = articles.map((art: any) => ({ id: art.id.toString(), ...art.getProps() }));
+    return { success: true, data };
   }
 }

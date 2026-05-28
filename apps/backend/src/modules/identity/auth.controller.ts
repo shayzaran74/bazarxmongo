@@ -2,6 +2,7 @@ import { Controller, Post, Body, HttpException, HttpStatus, Req, Res, Get, UseGu
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { Response } from 'express';
+import { randomBytes } from 'crypto';
 import {
   ApiTags,
   ApiOperation,
@@ -44,22 +45,51 @@ export class AuthController {
   }
 
   @Public()
-  @ApiOperation({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur.' })
+  @ApiOperation({ summary: 'Get CSRF token', description: 'Double-submit cookie pattern için csrf_token cookie ve token değeri döner.' })
+  @ApiResponse({ status: 200, description: 'CSRF token başarıyla üretildi.' })
+  @Get('csrf')
+  getCsrfToken(@Req() req: Record<string, any>, @Res({ passthrough: true }) res: Response): Record<string, string> {
+    // Mevcut token varsa tekrar kullan (çoklu sekme hatalarını önlemek için)
+    const existingToken = req.cookies?.csrf_token;
+    if (existingToken) {
+      return { csrfToken: existingToken };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    res.cookie('csrf_token', token, {
+      httpOnly: false,  // JS tarafından okunabilmeli (double-submit pattern gereği)
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 1000, // 1 saat
+    });
+    return { csrfToken: token };
+  }
+
+  @Public()
+  @ApiOperation({ summary: 'Register a new user', description: 'Yeni bir kullanıcı hesabı oluşturur ve otomatik giriş yapar.' })
   @ApiBody({ type: RegisterUserDto })
-  @ApiResponse({ status: 201, description: 'Kullanıcı başarıyla oluşturuldu.' })
+  @ApiResponse({ status: 201, description: 'Kullanıcı başarıyla oluşturuldu ve oturum açıldı.' })
   @ApiResponse({ status: 400, description: 'Geçersiz veri veya e-posta zaten kullanımda.' })
   @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('register')
-  async register(@Body() dto: RegisterUserDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.commandBus.execute(new RegisterUserCommand(dto));
-
-    if (!result.success) {
-      throw new HttpException(result.error.message, HttpStatus.BAD_REQUEST);
+  async register(@Body() dto: RegisterUserDto, @Req() req: Record<string, any>, @Res({ passthrough: true }) res: Response) {
+    // 1. Kullanıcıyı oluştur (CQRS command)
+    const registerResult = await this.commandBus.execute(new RegisterUserCommand(dto));
+    if (!registerResult.success) {
+      throw new HttpException(registerResult.error.message, HttpStatus.BAD_REQUEST);
     }
 
-    const user = result.data;
+    // 2. Otomatik giriş yap — gerçek access/refresh token üret, session aç
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection?.remoteAddress;
+    const authData = await this.authService.login(
+      { email: dto.email, password: dto.password },
+      userAgent,
+      ipAddress,
+    );
 
-    // httpOnly cookie'ye token'ları set et
+    // 3. httpOnly cookie'ye gerçek token'ları set et
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -67,20 +97,20 @@ export class AuthController {
       path: '/',
     };
 
-    res.cookie('access_token', user.accessToken, {
+    res.cookie('access_token', authData.accessToken, {
       ...cookieOptions,
       maxAge: 15 * 60 * 1000,
     });
 
-    res.cookie('refresh_token', user.refreshToken, {
+    res.cookie('refresh_token', authData.refreshToken, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return {
       success: true,
-      message: 'Kullanıcı başarıyla oluşturuldu.',
-      data: { user: user.user },
+      message: 'Kullanıcı başarıyla oluşturuldu ve giriş yapıldı.',
+      data: { user: authData.user },
     };
   }
 

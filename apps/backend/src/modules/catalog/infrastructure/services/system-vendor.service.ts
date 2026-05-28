@@ -3,7 +3,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { IVendor, ICompany, IUser } from '@barterborsa/shared-persistence';
+import { IVendor, ICompany } from '@barterborsa/shared-persistence';
+import { IdentityPublicService } from '@barterborsa/domain-identity';
 
 @Injectable()
 export class SystemVendorService implements OnModuleInit {
@@ -13,7 +14,7 @@ export class SystemVendorService implements OnModuleInit {
   constructor(
     @InjectModel('Vendor')  private readonly vendorModel:  Model<IVendor>,
     @InjectModel('Company') private readonly companyModel: Model<ICompany>,
-    @InjectModel('User')    private readonly userModel:    Model<IUser>,
+    private readonly identityPublic: IdentityPublicService,
   ) {}
 
   async onModuleInit() {
@@ -45,7 +46,7 @@ export class SystemVendorService implements OnModuleInit {
       { upsert: true, setDefaultsOnInsert: true },
     );
 
-    const admin = await this.userModel.findOne({ role: { $in: ['ADMIN', 'SUPER_ADMIN'] } }, { id: 1 }).lean();
+    const admin = await this.identityPublic.findFirstAdmin();
     if (!admin) {
       this.logger.error('CRITICAL: No admin user found for system vendor. Seed the database!');
       return '';

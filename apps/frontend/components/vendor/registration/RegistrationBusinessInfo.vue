@@ -18,12 +18,34 @@
         </select>
       </div>
       <div class="space-y-2">
-        <label for="tax-id" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Vergi No / T.C. Kimlik No</label>
-        <input id="tax-id" v-model="form.taxId" type="text" class="input-premium" placeholder="VERGİ NUMARANIZ">
+        <label for="tax-id" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Vergi No / T.C. Kimlik No *</label>
+        <input 
+          id="tax-id" 
+          v-model="form.taxId" 
+          type="text" 
+          class="input-premium font-mono" 
+          :placeholder="form.businessType === 'INDIVIDUAL' ? '11 HANELİ TCKN' : '10 HANELİ VKN'"
+          :maxlength="form.businessType === 'INDIVIDUAL' ? 11 : 10"
+          @input="form.taxId = form.taxId.replace(/[^0-9]/g, '')"
+          required
+        >
+        <p class="text-[8px] font-black text-neutral-400 uppercase italic ml-1 mt-1">
+          Şahıs şirketleri için 11 haneli TCKN, diğerleri için 10 haneli VKN.
+        </p>
       </div>
       <div class="space-y-2">
         <label class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Ticaret Sicil No</label>
-        <input v-model="form.businessRegistration" type="text" class="input-premium" placeholder="VARSA SİCİL NUMARANIZ">
+        <input 
+          v-model="form.businessRegistration" 
+          type="text" 
+          class="input-premium font-mono" 
+          placeholder="16 HANELİ SİCİL NO"
+          maxlength="16"
+          @input="form.businessRegistration = form.businessRegistration.replace(/[^0-9]/g, '')"
+        >
+        <p class="text-[8px] font-black text-neutral-400 uppercase italic ml-1 mt-1">
+          Ticaret sicil numarası genellikle 16 hanelidir (Varsa).
+        </p>
       </div>
     </div>
   </div>

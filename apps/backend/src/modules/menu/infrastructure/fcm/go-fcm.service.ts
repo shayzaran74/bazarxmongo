@@ -1,5 +1,9 @@
 // apps/backend/src/modules/menu/infrastructure/fcm/go-fcm.service.ts
 // Faz 5: GO'ya özgü FCM servisi — user.fcmToken üzerinden push
+// IdentityPublicService yerine doğrudan @InjectModel kullanılıyor:
+// fcmToken ve notificationPreferences alanları yalnızca bu servisin ihtiyacı olan
+// GO modülüne özgü alanlardır; IdentityPublicService'e taşımak modül bağımlılığını artırır.
+/* eslint-disable @barterborsa/no-cross-module-user-inject */
 
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

@@ -35,13 +35,10 @@ export class ResetPasswordHandler implements ICommandHandler<ResetPasswordComman
       return Err(new NotFoundException('Kullanıcı bulunamadı.'));
     }
 
-    // Yeni şifreyi hashle ve kaydet
+    // Yeni şifreyi hashle ve entity encapsulation'ı üzerinden kaydet
     const hashedPassword = await this.hashingService.hash(newPassword);
-    
-    // User entity içinde passwordHash güncelleme metodu olmalı veya direkt props üzerinden (shared-core AggregateRoot izin veriyorsa)
-    // Şimdilik set-transaction-pin benzeri bir yaklaşımla:
-    (user as any).props.passwordHash = hashedPassword;
-    
+    user.changePassword(hashedPassword);
+
     await this.userRepository.update(user);
 
     // Kullanılan tokenı sil

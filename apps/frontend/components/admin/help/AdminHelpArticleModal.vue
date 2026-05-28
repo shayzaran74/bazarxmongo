@@ -120,7 +120,12 @@
             <span class="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em]">RT-EDITOR AKTİF</span>
           </div>
           <div class="bg-slate-950 rounded-[2.5rem] border border-slate-800 p-2 overflow-hidden ring-1 ring-slate-800">
-            <RichEditor v-model="modelValue.content" />
+            <textarea
+              v-model="modelValue.content"
+              rows="15"
+              class="w-full bg-transparent border-0 px-6 py-4 text-sm tracking-wide outline-none focus:ring-0 text-slate-300 placeholder:text-slate-700"
+              placeholder="MAKALENİN TAM İÇERİĞİNİ BURAYA YAZIN VEYA HTML OLARAK YAPIŞTIRIN..."
+            />
           </div>
         </div>
       </div>

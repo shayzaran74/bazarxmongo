@@ -11,6 +11,7 @@ import {
   User,
   UserResponseDto,
 } from '@barterborsa/domain-identity';
+import { UserProjectionService } from '../../application/projections/user-projection.service';
 import { LoginUserInput } from '@barterborsa/shared-types';
 import { TokenService } from './token.service';
 import { IUser, ISession, SessionSchema, LoginHistory } from '@barterborsa/shared-persistence';
@@ -27,6 +28,7 @@ export class AuthService {
     @InjectModel('Session') private readonly sessionModel: Model<ISession>,
     @InjectModel('User') private readonly userModel: Model<IUser>,
     private readonly mailService: MailService,
+    private readonly userProjectionService: UserProjectionService,
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
     @Inject('IVerificationTokenRepository') private readonly verificationTokenRepository: IVerificationTokenRepository,
   ) {}
@@ -62,7 +64,12 @@ export class AuthService {
       this.logger.error(`Session creation failed for user ${user.id}: ${err.message}`);
     });
 
-    return { user: UserResponseDto.fromEntity(user), ...tokens };
+    // Tam profili döndür — vendor/profil join'leri dahil (UserResponseDto yerine)
+    const fullProfile = await this.userProjectionService.getFullProfile(user.id);
+    if (!fullProfile) {
+      return { user: UserResponseDto.fromEntity(user), ...tokens };
+    }
+    return { user: fullProfile, ...tokens };
   }
 
   async googleLogin(
@@ -93,7 +100,11 @@ export class AuthService {
       this.logger.error(`Google Session creation failed for user ${user.id}: ${err.message}`);
     });
 
-    return { user: UserResponseDto.fromEntity(user), ...tokens };
+    const fullProfile = await this.userProjectionService.getFullProfile(user.id);
+    if (!fullProfile) {
+      return { user: UserResponseDto.fromEntity(user), ...tokens };
+    }
+    return { user: fullProfile, ...tokens };
   }
 
   async refresh(refreshToken: string) {
@@ -111,7 +122,7 @@ export class AuthService {
       const oldHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
       const newHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
 
-      // Atomic session update — findOneAndUpdate ile session bulunamazsa token geçersiz
+      // Atomic session update — findOneAndUpdate ile session bulunamazsa token reuse demektir
       const updatedSession = await this.sessionModel.findOneAndUpdate(
         { userId: user.id, tokenHash: oldHash },
         { $set: { tokenHash: newHash, lastActiveAt: new Date() } },
@@ -119,7 +130,16 @@ export class AuthService {
       ).exec();
 
       if (!updatedSession) {
-        this.logger.warn('Session bulunamadı — olası token reuse algılandı', { userId: user.id });
+        // Token reuse algılandı — kullanıcının TÜM session'larını invalidate et.
+        // Yeni üretilen token henüz session'a bağlanmadığı için ona da yer kalmıyor;
+        // saldırgan ile gerçek kullanıcı yeniden login olmaya zorlanır.
+        this.logger.error(
+          `Token reuse algılandı — kullanıcı ${user.id} için tüm oturumlar kapatılıyor`,
+        );
+        await this.sessionModel.deleteMany({ userId: user.id }).exec();
+        throw new UnauthorizedException(
+          'Güvenlik nedeniyle tüm oturumlarınız sonlandırıldı. Lütfen tekrar giriş yapın.',
+        );
       }
 
       return tokens;

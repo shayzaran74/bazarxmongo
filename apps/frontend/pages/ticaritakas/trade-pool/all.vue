@@ -8,10 +8,10 @@
         <NuxtLink to="/ticaritakas/b2b-dashboard" class="p-2 hover:bg-slate-50 rounded-xl transition-colors">
           <Icon name="heroicons:arrow-left" size="24" class="text-slate-400" />
         </NuxtLink>
-        <div>
+        <NuxtLink to="/ticaritakas" class="hover:opacity-80 transition-opacity">
           <h1 class="text-xl font-black text-[#002444] leading-none uppercase tracking-tight">TAKAS <span class="text-blue-500">HAVUZU</span></h1>
           <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Tüm Kurumsal Fırsatlar</p>
-        </div>
+        </NuxtLink>
       </div>
 
       <div class="flex items-center gap-4">

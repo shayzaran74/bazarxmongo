@@ -18,7 +18,7 @@ export class SentryExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
-    const request = ctx.getRequest<{ method: string; url: string; user?: { id: string } }>();
+    const request = ctx.getRequest<{ method: string; url: string; originalUrl: string; user?: { id: string } }>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
@@ -49,7 +49,7 @@ export class SentryExceptionFilter implements ExceptionFilter {
       });
     }
 
-    const logMessage = `${request?.method} ${request?.url} [${status}]`;
+    const logMessage = `${request?.method} ${request?.originalUrl ?? request?.url} [${status}]`;
     if (status >= 500) {
       this.logger.error(`${logMessage} — ${exception instanceof Error ? exception.message : String(exception)}`);
     } else if (status >= 400) {

@@ -86,6 +86,18 @@ export * from './infrastructure/persistence/mappers/mongo-user.mapper';
 export * from './infrastructure/persistence/mappers/mongo-user-profile.mapper';
 export * from './infrastructure/persistence/mappers/mongo-user-address.mapper';
 
+// Public API — diğer modüller @InjectModel('User') yerine bunu kullanır
+export * from './application/services/identity-public.service';
+
+// Projeksiyon arayüzü ve DTO — uygulama katmanı implementasyonu ile bağlantı
+export * from './application/dtos/user-full.dto';
+export * from './domain/services/user-projection.service.interface';
+
+// Online istatistik query
+export * from './application/queries/get-online-stats.query';
+export * from './application/queries/get-online-stats.handler';
+export * from './application/dtos/online-stats.dto';
+
 // Auth & Events (Infrastructure)
 export * from './infrastructure/auth/local.strategy';
 export * from './infrastructure/auth/session.service';

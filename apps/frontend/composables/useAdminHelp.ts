@@ -75,6 +75,9 @@ export const useAdminHelp = () => {
   const openArticleModal = (article: any = null) => {
     if (article) {
       editingArticle.value = { ...article }
+      if (!editingArticle.value.id && article._id) {
+        editingArticle.value.id = article._id
+      }
     } else {
       editingArticle.value = {
         id: undefined,
@@ -114,9 +117,17 @@ export const useAdminHelp = () => {
   const saveCategory = async () => {
     try {
       if (!editingCategory.value.name) return
-      await $api('/api/v1/admin/help/categories', {
+      
+      const payload = {
+        name: editingCategory.value.name,
+        description: editingCategory.value.description,
+        language: editingCategory.value.language,
+        order: Number(editingCategory.value.order)
+      }
+
+      await $api('/api/v1/admin/content/help/categories', {
         method: 'POST',
-        body: editingCategory.value
+        body: payload
       })
       toast.success('Kategori oluşturuldu')
       closeCategoryModal()
@@ -127,6 +138,20 @@ export const useAdminHelp = () => {
     }
   }
 
+  const deleteCategory = async (id: string) => {
+    if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return
+    try {
+      await $api(`/api/v1/admin/content/help/categories/${id}`, {
+        method: 'DELETE'
+      })
+      toast.success('Kategori silindi')
+      fetchAll()
+    } catch (e) {
+      console.error('Delete Category Error:', e)
+      toast.error('Silme işlemi başarısız')
+    }
+  }
+
   const saveArticle = async () => {
     try {
       if (!editingArticle.value.title || !editingArticle.value.categoryId) {
@@ -134,16 +159,27 @@ export const useAdminHelp = () => {
         return
       }
 
+      const payload = {
+        title: editingArticle.value.title,
+        content: editingArticle.value.content,
+        excerpt: editingArticle.value.excerpt,
+        status: editingArticle.value.status,
+        order: Number(editingArticle.value.order),
+        language: editingArticle.value.language,
+        categoryId: editingArticle.value.categoryId,
+        isPopular: editingArticle.value.isPopular,
+      }
+
       if (editingArticle.value.id) {
-        await $api(`/api/v1/admin/help/articles/${editingArticle.value.id}`, {
+        await $api(`/api/v1/admin/content/help/articles/${editingArticle.value.id}`, {
           method: 'PUT',
-          body: editingArticle.value
+          body: payload
         })
         toast.success('Makale güncellendi')
       } else {
-        await $api('/api/v1/admin/help/articles', {
+        await $api('/api/v1/admin/content/help/articles', {
           method: 'POST',
-          body: editingArticle.value
+          body: payload
         })
         toast.success('Yeni makale oluşturuldu')
       }
@@ -158,7 +194,7 @@ export const useAdminHelp = () => {
   const deleteArticle = async (id: string) => {
     if (!confirm('Bu makaleyi silmek istediğinize emin misiniz?')) return
     try {
-      await $api(`/api/v1/admin/help/articles/${id}`, {
+      await $api(`/api/v1/admin/content/help/articles/${id}`, {
         method: 'DELETE'
       })
       toast.success('Makale silindi')
@@ -175,6 +211,9 @@ export const useAdminHelp = () => {
     articles, categories, searchQuery, loading, isArticleModalOpen, isCategoryModalOpen,
     editingArticle, editingCategory, totalViews, filteredArticles,
     fetchAll, openArticleModal, closeArticleModal, openCategoryModal, closeCategoryModal,
-    saveCategory, saveArticle, deleteArticle
+    saveCategory,
+    saveArticle,
+    deleteArticle,
+    deleteCategory
   }
 }

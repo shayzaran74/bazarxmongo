@@ -3,7 +3,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { User as UserModel, IUser, UserProfile, Vendor, Company } from '@barterborsa/shared-persistence';
+import { User as UserModel, IUser, UserProfile } from '@barterborsa/shared-persistence';
 import { User as UserEntity } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { MongoUserMapper } from './mappers/mongo-user.mapper';
@@ -21,62 +21,16 @@ export class MongoUserRepository implements IUserRepository {
     return MongoUserMapper.toDomain(doc);
   }
 
+  // Saf kullanıcı döner — Vendor/Company join YAPILMAZ (Bölüm 11 düzeltmesi).
+  // Vendor verisine ihtiyaç varsa UserProjectionService.getFullProfile() kullanılmalı.
   async findById(id: string): Promise<UserEntity | null> {
     const doc = await this.model.findOne({ id, deletedAt: null }).exec();
-    if (!doc) return null;
-    
-    const profile = await UserProfile.findOne({ userId: id }).exec();
-    const vendor = await Vendor.findOne({ userId: id }).exec();
-    let company = null;
-    if (vendor?.companyId) {
-      company = await Company.findOne({ id: vendor.companyId }).exec();
-    }
-    
-    const userObj = { 
-      ...doc.toObject(), 
-      profile,
-      vendor: vendor ? {
-        status: vendor.status,
-        slug: (vendor as any).slug,
-        company: company ? {
-          id: company.id,
-          name: company.name,
-          taxNumber: company.taxNumber,
-          taxOffice: company.taxOffice,
-        } : undefined
-      } : undefined
-    };
-    
-    return this.toDomain(userObj);
+    return doc ? this.toDomain(doc) : null;
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     const doc = await this.model.findOne({ email, deletedAt: null }).exec();
-    if (!doc) return null;
-    
-    const profile = await UserProfile.findOne({ userId: doc.id }).exec();
-    const vendor = await Vendor.findOne({ userId: doc.id }).exec();
-    let company = null;
-    if (vendor?.companyId) {
-      company = await Company.findOne({ id: vendor.companyId }).exec();
-    }
-    
-    const userObj = { 
-      ...doc.toObject(), 
-      profile,
-      vendor: vendor ? {
-        status: vendor.status,
-        slug: (vendor as any).slug,
-        company: company ? {
-          id: company.id,
-          name: company.name,
-          taxNumber: company.taxNumber,
-          taxOffice: company.taxOffice,
-        } : undefined
-      } : undefined
-    };
-    
-    return this.toDomain(userObj);
+    return doc ? this.toDomain(doc) : null;
   }
 
   async findByGoogleId(googleId: string): Promise<UserEntity | null> {
@@ -162,6 +116,11 @@ export class MongoUserRepository implements IUserRepository {
       .exec();
 
     return docs.map(doc => this.toDomain(doc));
+  }
+
+  async findFirstByRole(roles: string[]): Promise<UserEntity | null> {
+    const doc = await this.model.findOne({ role: { $in: roles }, deletedAt: null }).exec();
+    return doc ? this.toDomain(doc) : null;
   }
 
   async count(filters?: any): Promise<number> {

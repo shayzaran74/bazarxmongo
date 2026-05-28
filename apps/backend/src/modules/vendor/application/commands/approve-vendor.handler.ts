@@ -6,7 +6,6 @@ import { ApproveVendorCommand } from './approve-vendor.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { MongoVendorRepository } from '../../infrastructure/persistence/mongo-vendor.repository';
 import { MongoCompanyRepository } from '../../infrastructure/persistence/mongo-company.repository';
-import { MongoUserRepository } from '../../infrastructure/persistence/mongo-user.repository';
 import { VendorApprovedEvent } from '../../domain/events/vendor-approved.event';
 
 @CommandHandler(ApproveVendorCommand)
@@ -16,7 +15,6 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly companyRepo: MongoCompanyRepository,
-    private readonly userRepo: MongoUserRepository,
     private readonly auditLog: AuditLogService,
     private readonly eventBus: EventBus,
   ) {}

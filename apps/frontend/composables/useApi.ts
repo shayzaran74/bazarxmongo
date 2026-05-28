@@ -22,8 +22,11 @@ export const useApi = () => {
     const { $toast } = useNuxtApp() as any
     const token = authStore.token || useCookie('access_token').value
     if (token) headers['Authorization'] = `Bearer ${token}`
-    if (authStore.csrfToken && options.method && options.method !== 'GET') {
-      headers['X-CSRF-Token'] = authStore.csrfToken
+    
+    const method = options.method ? options.method.toUpperCase() : 'GET'
+    const csrfToken = authStore.csrfToken || useCookie('csrf_token').value
+    if (csrfToken && method !== 'GET') {
+      headers['X-CSRF-Token'] = csrfToken
     }
 
     // 15 saniyelik default timeout

@@ -7,10 +7,10 @@
           <div class="h-10 w-10 rounded-xl bg-primary-container flex items-center justify-center text-primary">
             <Icon name="heroicons:briefcase" size="24" />
           </div>
-          <div>
+          <NuxtLink to="/ticaritakas" class="hover:opacity-80 transition-opacity">
             <h1 class="text-[22px] font-black tracking-tight text-md3-primary leading-none">TicariTakas <span class="text-blue-500">B2B</span></h1>
             <p class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Kurumsal Takas Portalı</p>
-          </div>
+          </NuxtLink>
         </div>
 
         <div class="flex items-center space-x-2 lg:space-x-4">

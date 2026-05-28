@@ -57,7 +57,7 @@ export const useProfileAccount = () => {
     avatarUploading.value = true
     try {
       const formData = new FormData()
-      formData.append('avatar', avatarFile.value)
+      formData.append('file', avatarFile.value)
       const res = await userService.uploadAvatar(formData)
       if (res.success && res.data) {
         if (authStore.user) {

@@ -90,7 +90,6 @@ import { MongoEcosystemOrderRepository } from './infrastructure/persistence/repo
 import { MongoSwapSessionRepository } from '../barter/infrastructure/persistence/mongo-swap-session.repository';
 import { MongoEarlyPaymentRepository } from './infrastructure/persistence/mongo-early-payment.repository';
 import { MongoVendorScoreRepository } from './infrastructure/persistence/mongo-vendor-score.repository';
-import { MongoUserRepository } from './infrastructure/persistence/mongo-user.repository';
 import { MongoTrustScoreRepository } from './infrastructure/persistence/mongo-trust-score.repository';
 import { WatchoverService } from './application/services/watchover.service';
 import { GarageSaleService } from './application/services/garage-sale.service';
@@ -172,7 +171,6 @@ const Repositories = [
   { provide: 'IVendorSettingsRepository', useClass: MongoVendorSettingsRepository },
   { provide: 'IVendorBannerRepository', useClass: MongoVendorBannerRepository },
   { provide: 'IBrandRepository', useClass: MongoBrandRepository },
-  { provide: 'IUserRepository', useClass: MongoUserRepository },
   { provide: 'IVendorB2BDataRepository', useClass: MongoVendorB2BDataRepository },
   { provide: 'IUserLevelRepository', useClass: MongoUserLevelRepository },
   { provide: 'ISwapSessionRepository', useClass: MongoSwapSessionRepository },
@@ -204,6 +202,7 @@ import { Listing, ListingSchema } from '../../../../../packages/shared/shared-pe
 import { TierBenefit, TierBenefitSchema } from '../../../../../packages/shared/shared-persistence/src/schemas/financial/tierBenefit.schema';
 
 import { CatalogModule } from '../catalog/catalog.module';
+import { IdentityModule } from '../identity/identity.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { MediaModule } from '../media/media.module';
 import { AuditMongooseModule } from '../audit/audit-mongoose.module';
@@ -214,6 +213,7 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     CqrsModule,
     forwardRef(() => CommerceModule),
     CatalogModule,
+    IdentityModule,
     InventoryModule,
     MediaModule,
     AuditMongooseModule,
@@ -274,7 +274,6 @@ import { FinancialGatewayModule } from '../financial-gateway/financial-gateway.m
     MongoListingRepository,
     MongoCatalogProductRepository,
     MongoCompanyRepository,
-    MongoUserRepository,
     MongoVendorProfileRepository,
     MongoVendorBannerRepository,
     MongoBrandRepository,

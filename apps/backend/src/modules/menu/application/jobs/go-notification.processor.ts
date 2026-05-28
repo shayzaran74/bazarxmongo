@@ -5,8 +5,8 @@ import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { IUser, IMenuPurchase } from '@barterborsa/shared-persistence';
+import { Model } from 'mongoose';
+import { IMenuPurchase } from '@barterborsa/shared-persistence';
 import { GoFcmService } from '../../infrastructure/fcm/go-fcm.service';
 import { MailService } from '../../../communication/infrastructure/mail/mail.service';
 
@@ -29,7 +29,6 @@ export class GoNotificationProcessor extends WorkerHost {
   private readonly logger = new Logger(GoNotificationProcessor.name);
 
   constructor(
-    @InjectModel('User') private readonly userModel: Model<IUser>,
     @InjectModel('MenuPurchase') private readonly purchaseModel: Model<IMenuPurchase>,
     private readonly fcm: GoFcmService,
     private readonly mail: MailService,

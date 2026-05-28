@@ -28,62 +28,75 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/50">
-          <tr
-            v-for="article in articles"
-            :key="article.id"
-            class="hover:bg-slate-800/30 transition-all group"
-          >
-            <td class="px-8 py-6">
-              <div class="font-black text-slate-200 text-lg leading-tight uppercase">
-                {{ article.title }}
-              </div>
-              <div class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-50">
-                /{{ article.slug }}
-              </div>
-            </td>
-            <td class="px-8 py-6">
-              <span class="px-4 py-1.5 bg-slate-950 border border-slate-800 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                {{ article.category?.name || 'BELİRSİZ' }}
-              </span>
-            </td>
-            <td class="px-8 py-6 text-center">
-              <span
-                :class="getStatusClass(article.status)"
-                class="px-5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg"
-              >
-                {{ article.status }}
-              </span>
-            </td>
-            <td class="px-8 py-6">
-              <div class="flex items-center justify-center gap-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                <span class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-blue-500" />
-                  {{ article.viewCount }}
-                </span>
-                <span class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-green-500" />
-                  {{ article.upvotes }}
-                </span>
-              </div>
-            </td>
-            <td class="px-8 py-6 text-right">
-              <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+          <template v-for="group in groupedArticles" :key="group.categoryId">
+            <tr class="bg-slate-800/40">
+              <td colspan="4" class="px-8 py-4 font-black text-blue-400 text-sm uppercase tracking-widest border-l-4 border-blue-500">
+                📁 KATEGORİ: {{ group.categoryName }} ({{ group.articles.length }} MAKALE)
+              </td>
+              <td class="px-8 py-4 text-right">
                 <button
-                  class="p-3 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all shadow-xl"
-                  @click="$emit('edit', article)"
+                  v-if="group.categoryId !== 'uncategorized'"
+                  class="p-2 bg-slate-900 hover:bg-red-600 text-slate-500 hover:text-white rounded-xl transition-all shadow-xl"
+                  @click="$emit('deleteCategory', group.categoryId)"
+                  title="Kategoriyi Sil"
                 >
-                  <span class="text-xs uppercase font-black">DÜZENLE</span>
+                  <span class="text-[10px] uppercase font-black">KATEGORİYİ SİL</span>
                 </button>
-                <button
-                  class="p-3 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all shadow-xl"
-                  @click="$emit('delete', article.id)"
+              </td>
+            </tr>
+            <tr
+              v-for="article in group.articles"
+              :key="article.id"
+              class="hover:bg-slate-800/30 transition-all group"
+            >
+              <td class="px-8 py-6">
+                <div class="font-black text-slate-200 text-lg leading-tight uppercase">
+                  {{ article.title }}
+                </div>
+                <div class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-50">
+                  SLUG: {{ article.slug }}
+                </div>
+              </td>
+              <td class="px-8 py-6">
+                <div class="inline-block px-3 py-1 bg-slate-800 rounded-lg border border-slate-700 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                  {{ getCategoryName(article.categoryId) }}
+                </div>
+              </td>
+              <td class="px-8 py-6 text-center">
+                <span
+                  class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2"
+                  :class="getStatusClass(article.status)"
                 >
-                  <span class="text-xs uppercase font-black">SİL</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="articles.length === 0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-current" />
+                  {{ article.status }}
+                </span>
+              </td>
+              <td class="px-8 py-6 text-center">
+                <div class="flex items-center justify-center gap-4 text-slate-500 font-black text-[10px] tracking-widest">
+                  <span title="Görüntülenme">👁️ {{ article.viewCount || 0 }}</span>
+                  <span class="text-green-500" title="Beğeni">👍 {{ article.upvotes || 0 }}</span>
+                  <span class="text-red-500" title="Beğenmeme">👎 {{ article.downvotes || 0 }}</span>
+                </div>
+              </td>
+              <td class="px-8 py-6">
+                <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  <button
+                    class="p-3 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all shadow-xl"
+                    @click="$emit('edit', article)"
+                  >
+                    <span class="text-xs uppercase font-black">DÜZENLE</span>
+                  </button>
+                  <button
+                    class="p-3 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all shadow-xl"
+                    @click="$emit('delete', article.id || article._id)"
+                  >
+                    <span class="text-xs uppercase font-black">SİL</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </template>
+          <tr v-if="groupedArticles.length === 0">
             <td
               colspan="5"
               class="px-8 py-20 text-center text-slate-600 font-black uppercase tracking-[0.3em] text-xs"
@@ -98,12 +111,15 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   articles: any[]
+  categories: any[]
   searchQuery: string
 }>()
 
-defineEmits(['update:searchQuery', 'edit', 'delete'])
+defineEmits(['update:searchQuery', 'edit', 'delete', 'deleteCategory'])
 
 const getStatusClass = (status: string) => {
   switch (status) {
@@ -113,4 +129,41 @@ const getStatusClass = (status: string) => {
     default: return 'bg-slate-800 text-slate-400'
   }
 }
+
+const getCategoryName = (categoryId: string) => {
+  const cat = props.categories.find((c: any) => c.id === categoryId)
+  return cat ? cat.name : 'KATEGORİSİZ'
+}
+
+const groupedArticles = computed(() => {
+  const groups: Record<string, any[]> = {}
+  
+  // Initialize groups for all categories
+  props.categories.forEach(cat => {
+    groups[cat.id] = []
+  })
+
+  // Distribute articles
+  props.articles.forEach(article => {
+    const catId = article.categoryId || 'uncategorized'
+    if (!groups[catId]) {
+      groups[catId] = []
+    }
+    groups[catId].push(article)
+  })
+
+  // Map to array and sort
+  return Object.keys(groups).map(catId => {
+    const isUncategorized = catId === 'uncategorized'
+    return {
+      categoryId: catId,
+      categoryName: isUncategorized ? 'KATEGORİSİZ' : getCategoryName(catId),
+      articles: groups[catId]
+    }
+  }).sort((a, b) => {
+    if (a.categoryId === 'uncategorized') return 1
+    if (b.categoryId === 'uncategorized') return -1
+    return a.categoryName.localeCompare(b.categoryName)
+  })
+})
 </script>

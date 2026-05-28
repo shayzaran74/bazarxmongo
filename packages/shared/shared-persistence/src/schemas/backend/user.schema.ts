@@ -20,6 +20,7 @@ export interface IUser {
   isEmailVerified: boolean;
   googleId?: string;
   lockoutUntil?: Date;
+  failedLoginCount?: number;
   lastLoginAt?: Date;
   lastSeenAt?: Date;
   referredById?: string;
@@ -51,6 +52,7 @@ export const UserSchema = new Schema<IUser>({
   isEmailVerified: { type: Boolean, default: false },
   googleId: { type: String },
   lockoutUntil: { type: Date },
+  failedLoginCount: { type: Number, default: 0 },
   lastLoginAt: { type: Date },
   lastSeenAt: { type: Date },
   referredById: { type: String },

@@ -1,22 +1,27 @@
-import { Injectable } from '@nestjs/common';
+// packages/domain-identity/src/infrastructure/auth/local.strategy.ts
+// Passport-Local stratejisi — AuthGuard('local') ile kullanılır.
+// validate() LoginUserCommand üzerinden şifre kontrolünü domain katmanına devreder.
+
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 import { CommandBus } from '@nestjs/cqrs';
-import { Result } from '@barterborsa/shared-core';
+import { LoginUserCommand } from '../../application/commands/login-user.command';
+import type { User } from '../../domain/entities/user.entity';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly commandBus: CommandBus) {
-    super({
-      usernameField: 'email',
-      passwordField: 'password',
-    });
+    super({ usernameField: 'email', passwordField: 'password' });
   }
 
-  async validate(email: string, password: string): Promise<any> {
-    // This usually calls a Login command or service
-    // For now we assume the AuthService in apps/backend will handle the actual validation
-    // or we can call a query here.
-    return { email }; // Placeholder
+  async validate(email: string, password: string): Promise<User> {
+    const result = await this.commandBus.execute(
+      new LoginUserCommand({ email, password }),
+    );
+    if (!result.success) {
+      throw new UnauthorizedException(result.error?.message || 'Giriş başarısız.');
+    }
+    return result.data as User;
   }
 }

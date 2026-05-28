@@ -3,7 +3,7 @@ import { NotFoundException, Inject } from '@nestjs/common';
 import { GetVendorOrdersQuery } from './get-vendor-orders.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IOrderRepository } from '../../../commerce/domain/repositories/order.repository.interface';
-import { IUserRepository } from '../../../identity/domain/repositories/user.repository.interface';
+import { IdentityPublicService } from '@barterborsa/domain-identity';
 import { OrderMapper } from '../../../commerce/infrastructure/persistence/mappers/order.mapper';
 import { Order } from '../../../commerce/domain/entities/order.entity';
 import { ShippingAddressProps } from '../../../commerce/domain/value-objects/shipping-address.vo';
@@ -21,7 +21,7 @@ export class GetVendorOrdersHandler
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('IOrderRepository') private readonly orderRepo: IOrderRepository,
-    @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+    private readonly identityPublic: IdentityPublicService,
   ) {}
 
   async execute(query: GetVendorOrdersQuery) {
@@ -44,13 +44,12 @@ export class GetVendorOrdersHandler
       let user: UserSummary | null = null;
       if (p.userId) {
         try {
-          const userDoc = await this.userRepo.findById(p.userId as string);
-          if (userDoc) {
+          const userDto = await this.identityPublic.getUserById(p.userId as string);
+          if (userDto) {
             user = {
-              id: userDoc.id,
-              email: userDoc.email,
-              profile: (userDoc.profile as { firstName: string; lastName: string } | undefined)
-                ?? { firstName: 'İsimsiz', lastName: '' },
+              id:      userDto.id,
+              email:   userDto.email,
+              profile: { firstName: 'İsimsiz', lastName: '' },
             };
           }
         } catch {

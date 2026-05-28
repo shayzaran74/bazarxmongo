@@ -4,7 +4,7 @@ import {
   Controller, Post, Get, Put, Delete,
   Body, Param, UseGuards, NotFoundException,
 } from '@nestjs/common';
-import { IsString, IsOptional, IsBoolean, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MaxLength, IsNumber } from 'class-validator';
 import { CommandBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
@@ -31,6 +31,12 @@ class UpdateHelpArticleDto {
   @IsOptional() @IsString() @MaxLength(500) title?: string;
   @IsOptional() @IsString() content?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsString() excerpt?: string;
+  @IsOptional() @IsString() status?: any; // ArticleStatus enum is mapped
+  @IsOptional() @IsNumber() order?: number;
+  @IsOptional() @IsString() language?: string;
+  @IsOptional() @IsString() categoryId?: string;
+  @IsOptional() @IsBoolean() isPopular?: boolean;
 }
 class UpdateAnnouncementDto {
   @IsOptional() @IsString() @MaxLength(300) title?: string;
@@ -140,7 +146,7 @@ export class ContentAdminController {
 
   @Delete('help/categories/:id')
   async deleteHelpCategory(@Param('id') id: string) {
-    await this.helpCategoryModel.deleteOne({ id });
+    await this.helpCategoryModel.deleteOne({ $or: [{ id }, { _id: id }] });
     return { success: true };
   }
 
@@ -151,19 +157,25 @@ export class ContentAdminController {
 
   @Put('help/articles/:id')
   async updateHelpArticle(@Param('id') id: string, @Body() body: UpdateHelpArticleDto) {
-    const article = await this.helpArticleModel.findOne({ id }).lean();
+    const article = await this.helpArticleModel.findOne({ $or: [{ id }, { _id: id }] }).lean();
     if (!article) throw new NotFoundException('Makale bulunamadı');
     const upd: Record<string, unknown> = {};
-    if (body.title    !== undefined) upd.title    = body.title;
-    if (body.content  !== undefined) upd.content  = body.content;
-    if (body.isActive !== undefined) upd.isActive = body.isActive;
-    const updated = await this.helpArticleModel.findOneAndUpdate({ id }, { $set: upd }, { new: true }).lean();
+    if (body.title      !== undefined) upd.title      = body.title;
+    if (body.content    !== undefined) upd.content    = body.content;
+    if (body.isActive   !== undefined) upd.isActive   = body.isActive;
+    if (body.excerpt    !== undefined) upd.excerpt    = body.excerpt;
+    if (body.status     !== undefined) upd.status     = body.status;
+    if (body.order      !== undefined) upd.order      = body.order;
+    if (body.language   !== undefined) upd.language   = body.language;
+    if (body.categoryId !== undefined) upd.categoryId = body.categoryId;
+    if (body.isPopular  !== undefined) upd.isPopular  = body.isPopular;
+    const updated = await this.helpArticleModel.findOneAndUpdate({ $or: [{ id }, { _id: id }] }, { $set: upd }, { new: true }).lean();
     return { success: true, data: updated };
   }
 
   @Delete('help/articles/:id')
   async deleteHelpArticle(@Param('id') id: string) {
-    await this.helpArticleModel.deleteOne({ id });
+    await this.helpArticleModel.deleteOne({ $or: [{ id }, { _id: id }] });
     return { success: true };
   }
 

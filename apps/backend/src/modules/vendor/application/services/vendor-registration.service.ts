@@ -7,7 +7,7 @@ import { Connection } from 'mongoose';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IVendorProfileRepository } from '../../domain/repositories/vendor-profile.repository.interface';
 import { IVendorSettingsRepository } from '../../domain/repositories/vendor-settings.repository.interface';
-import { IUserRepository } from '../../../identity/domain/repositories/user.repository.interface';
+import { IdentityPublicService } from '@barterborsa/domain-identity';
 import { Vendor } from '../../domain/entities/vendor.entity';
 import { VendorSlug } from '../../domain/value-objects/vendor-slug.vo';
 import { Company } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
@@ -20,7 +20,7 @@ export class VendorRegistrationService {
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('IVendorProfileRepository') private readonly profileRepo: IVendorProfileRepository,
     @Inject('IVendorSettingsRepository') private readonly settingsRepo: IVendorSettingsRepository,
-    @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+    private readonly identityPublic: IdentityPublicService,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -80,7 +80,7 @@ export class VendorRegistrationService {
         await this.settingsRepo.create({ vendorId });
 
         // 5. Kullanıcı rolünü güncelle
-        await this.userRepo.update(userId, { role: 'VENDOR' });
+        await this.identityPublic.updateUserRole(userId, 'VENDOR');
       });
 
       return { success: true, data: { id: vendorId, slug } };

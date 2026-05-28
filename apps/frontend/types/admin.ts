@@ -1,5 +1,13 @@
 import type { Category, Product } from './product';
 
+export interface OnlineStatsDto {
+  onlineNow: number
+  activeToday: number
+  newTodayCount: number
+  totalActiveUsers: number
+  cachedAt: string // ISO timestamp
+}
+
 export interface AdminVendor {
   id: string | number;
   businessName: string; // Legacy

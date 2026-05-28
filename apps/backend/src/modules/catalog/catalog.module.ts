@@ -6,6 +6,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BullModule } from '@nestjs/bullmq';
 import { MediaModule } from '../media/media.module';
+import { IdentityModule } from '../identity/identity.module';
 
 // Schemas
 import { Listing, ListingSchema } from '@barterborsa/shared-persistence/schemas/backend/listing.schema';
@@ -145,6 +146,7 @@ const QueryHandlers = [
       { name: 'VendorStats', schema: VendorStatsSchema },
     ]),
     MediaModule,
+    IdentityModule,
   ],
   controllers: [
     ListingController,

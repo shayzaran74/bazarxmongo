@@ -14,6 +14,7 @@ export interface UserProps {
   firstName?: string; // Profil tablosundan gelecek/gidecek
   lastName?: string;  // Profil tablosundan gelecek/gidecek
   lockoutUntil?: Date;
+  failedLoginCount?: number;
   lastLoginAt?: Date;
   lastSeenAt?: Date;
   referredById?: string;
@@ -69,6 +70,7 @@ export class User extends AggregateRoot<UserProps> {
   public changePassword(newHash: string): void {
     this.props.passwordHash = newHash;
     this.props.lockoutUntil = undefined; // Reset lockout on successful change
+    this.props.failedLoginCount = 0;
   }
 
   public verifyEmail(): void {
@@ -79,6 +81,43 @@ export class User extends AggregateRoot<UserProps> {
   public updateLastLogin(): void {
     this.props.lastLoginAt = new Date();
   }
+
+  // ── Brute-force koruması ──────────────────────────────────────────────
+  // 5 hatalı denemede 15 dakikalık lockout. Başarılı login'de sayaç sıfırlanır.
+  private static readonly MAX_FAILED_ATTEMPTS = 5;
+  private static readonly LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+
+  public isLocked(now: Date = new Date()): boolean {
+    return !!(this.props.lockoutUntil && this.props.lockoutUntil > now);
+  }
+
+  public recordFailedLogin(now: Date = new Date()): void {
+    const next = (this.props.failedLoginCount ?? 0) + 1;
+    this.props.failedLoginCount = next;
+    if (next >= User.MAX_FAILED_ATTEMPTS) {
+      this.props.lockoutUntil = new Date(now.getTime() + User.LOCKOUT_DURATION_MS);
+    }
+  }
+
+  public clearFailedLogins(): void {
+    this.props.failedLoginCount = 0;
+    this.props.lockoutUntil = undefined;
+  }
+
+  public updateRole(role: 'USER' | 'VENDOR' | 'ADMIN' | 'SUPER_ADMIN'): void {
+    this.props.role = role;
+  }
+
+  public suspend(): void {
+    this.props.status = 'SUSPENDED';
+  }
+
+  public activate(): void {
+    this.props.status = 'ACTIVE';
+  }
+
+  get lockoutUntil(): Date | undefined { return this.props.lockoutUntil; }
+  get failedLoginCount(): number { return this.props.failedLoginCount ?? 0; }
 
   get email(): string { return this.props.email; }
   get phoneNumber(): string | undefined { return this.props.phoneNumber; }

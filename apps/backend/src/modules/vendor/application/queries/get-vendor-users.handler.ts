@@ -1,14 +1,16 @@
+// apps/backend/src/modules/vendor/application/queries/get-vendor-users.handler.ts
+
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetVendorUsersQuery } from './get-vendor-users.query';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
-import { IUserRepository } from '../../../identity/domain/repositories/user.repository.interface';
+import { IdentityPublicService } from '@barterborsa/domain-identity';
 
 @QueryHandler(GetVendorUsersQuery)
 export class GetVendorUsersHandler implements IQueryHandler<GetVendorUsersQuery> {
   constructor(
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
-    @Inject('IUserRepository') private readonly userRepo: IUserRepository,
+    private readonly identityPublic: IdentityPublicService,
   ) {}
 
   async execute(query: GetVendorUsersQuery) {
@@ -19,15 +21,14 @@ export class GetVendorUsersHandler implements IQueryHandler<GetVendorUsersQuery>
     const companyId = vendorProps.companyId;
     if (!companyId) return [];
 
-    const vendorUserId = vendorProps.userId;
-    const user = await this.userRepo.findById(vendorUserId ?? '');
+    const vendorUserId = vendorProps.userId ?? '';
+    const user = await this.identityPublic.getUserById(vendorUserId);
     if (!user) return [];
 
-    const userProps = (user as unknown as { getProps?(): Record<string, unknown> }).getProps?.() ?? user as unknown as Record<string, unknown>;
     return [{
-      id:         vendorUserId ?? user.id,
-      email:      (userProps.email as string) || user.id,
-      role:       (userProps.role as string) || 'VENDOR',
+      id:          vendorUserId,
+      email:       user.email,
+      role:        user.role,
       companyRole: 'OWNER',
     }];
   }

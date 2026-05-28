@@ -6,7 +6,19 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="space-y-2">
         <label for="contact-phone" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Telefon *</label>
-        <input id="contact-phone" v-model="form.phone" type="tel" class="input-premium" placeholder="+90 5XX XXX XX XX" required>
+        <input 
+          id="contact-phone" 
+          v-model="form.phone" 
+          type="tel" 
+          class="input-premium font-mono" 
+          placeholder="+90 5XX XXX XX XX" 
+          @input="formatPhone"
+          maxlength="17"
+          required
+        >
+        <p class="text-[8px] font-black text-neutral-400 uppercase italic ml-1 mt-1">
+          Format: +90 5XX XXX XX XX
+        </p>
       </div>
       <div class="space-y-2">
         <label for="contact-email" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">E-posta Adresi *</label>
@@ -36,7 +48,22 @@
 
 <script setup>
 import { iller } from '~/assets/css/data/component/iller'
-defineProps({ form: Object })
+const props = defineProps({ form: Object })
+
+const formatPhone = (e) => {
+  let val = e.target.value.replace(/[^\d+]/g, '')
+  if (!val.startsWith('+90')) {
+    val = val.replace(/^\+?9?0?/, '')
+    val = '+90' + val
+  }
+  const numbers = val.replace(/[^\d]/g, '').substring(2)
+  let formatted = '+90'
+  if (numbers.length > 0) formatted += ' ' + numbers.substring(0, 3)
+  if (numbers.length > 3) formatted += ' ' + numbers.substring(3, 6)
+  if (numbers.length > 6) formatted += ' ' + numbers.substring(6, 8)
+  if (numbers.length > 8) formatted += ' ' + numbers.substring(8, 10)
+  props.form.phone = formatted
+}
 </script>
 
 <style scoped>

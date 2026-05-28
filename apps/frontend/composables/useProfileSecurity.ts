@@ -52,13 +52,10 @@ export const useProfileSecurity = () => {
 
   const savePreferences = async () => {
     try {
-      const res = await userService.updateProfile({ metadata: preferences.value })
-      if (res.success) {
-        if (process.client) {
-          localStorage.setItem('user_preferences', JSON.stringify(preferences.value))
-        }
-        toast.success(t('profile.profileUpdatedSuccess') || 'Tercihleriniz kaydedildi')
+      if (process.client) {
+        localStorage.setItem('user_preferences', JSON.stringify(preferences.value))
       }
+      toast.success(t('profile.profileUpdatedSuccess') || 'Tercihleriniz kaydedildi')
     } catch (e) {
       toast.error('Ayarlar kaydedilirken bir hata oluşti')
     }

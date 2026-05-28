@@ -50,9 +50,10 @@ export const useAuthStore = defineStore('auth', {
     async init() {
       if (this.isInitialized) return
 
+      // CSRF token'ı backend'den al ve cookie'yi set et (double-submit pattern)
+      await this.fetchCsrf()
+
       // httpOnly cookie'leri JavaScript'ten okuyamayız — doğrudan backend'e sor.
-      // fetchUser, cookie ile gelen access_token'ı backend'de doğrular.
-      // 401 dönerse kullanıcı zaten logged out demektir.
       await this.fetchUser(true)
 
       this.isInitialized = true
@@ -70,6 +71,8 @@ export const useAuthStore = defineStore('auth', {
           // Cookie'den token'ı oku (backend set etti)
           const accessToken = useCookie('access_token').value
           this.token = accessToken ?? null
+          // Tam profili çek — vendor/profile join'leri login response'ta eksik olabilir
+          try { await this.fetchUser(true) } catch (_) {}
           useCookie('user').value = JSON.stringify(this.user)
           return true
         }
@@ -103,11 +106,22 @@ export const useAuthStore = defineStore('auth', {
         })
 
         if (res.success && res.data) {
-          // Backend httpOnly cookie'de token'ı set etti
+          // Backend httpOnly cookie'de access/refresh token'ı set etti.
+          // /auth/me ile profili (vendor/profile join'leri dahil) yeniden çek;
+          // register response'ında tüm alanlar dolu olmayabiliyor.
           this.user = res.data.user
           this.isAuthenticated = true
           const accessToken = useCookie('access_token').value
           this.token = accessToken ?? null
+
+          // Tam kullanıcı profilini çek (firstName/lastName/profile/vendor için)
+          try {
+            await this.fetchUser(true)
+          } catch (fetchErr) {
+            // fetch hatası kayıt akışını bozmasın — kullanıcı yine de oturum açtı
+            console.warn('Register sonrası fetchUser başarısız:', fetchErr)
+          }
+
           useCookie('user').value = JSON.stringify(this.user)
           return true
         }
@@ -137,6 +151,17 @@ export const useAuthStore = defineStore('auth', {
       }
 
       navigateTo('/auth/login')
+    },
+    async fetchCsrf() {
+      const { $api } = useApi()
+      try {
+        const res = await $api<{ csrfToken: string }>('/api/auth/csrf')
+        if (res.success && res.data?.csrfToken) {
+          this.csrfToken = res.data.csrfToken
+        }
+      } catch (_) {
+        // CSRF alınamazsa devam et — sameSite cookie koruması fallback olarak devrede
+      }
     },
     async fetchUser(silent = false) {
       const { $api } = useApi()

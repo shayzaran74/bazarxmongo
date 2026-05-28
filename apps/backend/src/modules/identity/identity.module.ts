@@ -2,6 +2,7 @@
 // IdentityModule — Mongoose migration (ADR-005 Faz 2c)
 
 import { Module, Logger } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule, RabbitMQService } from '@barterborsa/shared-messaging';
@@ -34,6 +35,7 @@ import {
   LocalStrategy,
   ForgotPasswordHandler,
   ResetPasswordHandler,
+  GetOnlineStatsHandler,
 } from '@barterborsa/domain-identity';
 import {
   User, UserSchema,
@@ -66,9 +68,13 @@ import { ProfileController } from './profile.controller';
 import { AddressController } from './address.controller';
 import { UserController } from './user.controller';
 import { AdminUserController } from './presentation/admin-user.controller';
+import { AdminStatsController } from './presentation/admin-stats.controller';
 
 import { AuthService } from './infrastructure/auth/auth.service';
 import { TokenService } from './infrastructure/auth/token.service';
+import { IdentityPublicService } from '@barterborsa/domain-identity';
+import { UserProjectionService } from './application/projections/user-projection.service';
+import { SessionActivityInterceptor } from '../../common/interceptors/session-activity.interceptor';
 import { GoogleAuthGuard } from './infrastructure/auth/google-auth.guard';
 import { MongoReferralRepository } from './infrastructure/persistence/mongo-referral.repository';
 
@@ -95,6 +101,7 @@ const Handlers = [
   UpdateUserRoleHandler,
   DeleteAdminUserHandler,
   GrantReferralRewardHandler,
+  GetOnlineStatsHandler,
 ];
 
 @Module({
@@ -127,11 +134,17 @@ const Handlers = [
     AddressController,
     UserController,
     AdminUserController,
+    AdminStatsController,
   ],
   providers: [
     AuthService,
     TokenService,
+    IdentityPublicService,
+    UserProjectionService,
+    { provide: 'IUserProjectionService', useClass: UserProjectionService },
     GoogleAuthGuard,
+    // Her authenticated istekte session.lastActiveAt günceller (global)
+    { provide: APP_INTERCEPTOR, useClass: SessionActivityInterceptor },
     GoogleOAuthStrategy,
     SessionService,
     IdentityEventPublisher,
@@ -173,6 +186,6 @@ const Handlers = [
       inject: [RabbitMQService],
     },
   ],
-  exports: [AuthService, TokenService],
+  exports: [AuthService, TokenService, IdentityPublicService],
 })
 export class IdentityModule {}

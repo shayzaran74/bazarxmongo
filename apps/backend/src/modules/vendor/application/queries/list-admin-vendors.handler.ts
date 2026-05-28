@@ -1,3 +1,6 @@
+// @InjectModel('User') doğrudan kullanılıyor: admin paneli için birden fazla modelle
+// yapılan karmaşık aggregation sorgusudur; IdentityPublicService'e taşımak uygun değil.
+/* eslint-disable @barterborsa/no-cross-module-user-inject */
 import { ICompany, IVendorProfile, IUser, IUserProfile, IVendorCategory, ICategory, IListing } from '@barterborsa/shared-persistence';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Logger, Inject } from '@nestjs/common';

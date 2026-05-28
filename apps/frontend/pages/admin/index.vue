@@ -32,6 +32,11 @@
       </div>
     </div>
 
+    <!-- Online Kullanıcı İstatistikleri -->
+    <div class="mb-8 p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+      <AdminOnlineStatsWidget />
+    </div>
+
     <!-- Main Stats Grid -->
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-10">
       <AdminDashboardStatCard

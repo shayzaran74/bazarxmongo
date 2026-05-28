@@ -16,7 +16,18 @@
           </div>
           <div class="space-y-2">
             <label for="bank-iban" class="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">IBAN *</label>
-            <input id="bank-iban" v-model="form.bankIban" type="text" class="input-premium font-mono" placeholder="TRXX XXXX...">
+            <input 
+              id="bank-iban" 
+              v-model="form.bankIban" 
+              type="text" 
+              class="input-premium font-mono uppercase" 
+              placeholder="TR00 0000 0000 0000 2000 0202 1324"
+              @input="formatIban"
+              maxlength="32"
+            >
+            <p class="text-[8px] font-black text-neutral-400 uppercase italic ml-1 mt-1">
+              Türkiye'de IBAN numaraları toplam 26 haneden oluşur (TR dahil).
+            </p>
           </div>
         </div>
       </div>
@@ -44,7 +55,20 @@
 </template>
 
 <script setup>
-defineProps({ form: Object, categories: Array })
+const props = defineProps({ form: Object, categories: Array })
+
+const formatIban = (e) => {
+  let val = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+  if (val.length > 0 && !val.startsWith('TR')) {
+    val = 'TR' + val.replace(/^T?R?/, '')
+  }
+  const chunks = val.match(/.{1,4}/g)
+  if (chunks) {
+    props.form.bankIban = chunks.join(' ')
+  } else {
+    props.form.bankIban = val
+  }
+}
 </script>
 
 <style scoped>
