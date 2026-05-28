@@ -33,7 +33,14 @@ echo "🧹 7 günden eski yedekler temizleniyor..."
 find "$BACKUP_DIR" -type d -mtime +7 -exec rm -rf {} +
 echo "✅ Temizlik tamamlandı."
 
+# 4. Yedeklerin Google Drive'a Yüklenmesi (Off-site Backup)
+# 'gdrive' burada rclone config sırasında vereceğimiz bağlantı ismidir.
+echo "☁️ Yedekler Google Drive'a kopyalanıyor..."
+# Sadece yeni aldığımız yedeği Drive içindeki BazarX_Backups klasörüne gönderiyoruz.
+rclone copy "$TARGET_DIR" "gdrive:BazarX_Backups/$DATE"
+echo "✅ Google Drive aktarımı tamamlandı."
+
 echo "---------------------------------------------------------"
-echo "🎉 Tüm yedekler başarıyla alındı ve sıkıştırıldı!"
+echo "🎉 Tüm yedekler başarıyla alındı, sıkıştırıldı ve Google Drive'a kopyalandı!"
 echo "📂 Yedek konumu: $TARGET_DIR"
 echo "---------------------------------------------------------"
