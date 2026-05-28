@@ -327,14 +327,11 @@
                 <div class="relative">
                   <select
                     v-model="addressForm.city"
+                    @change="addressForm.district = ''"
                     class="w-full px-4 py-3 rounded-lg border border-black/10 bg-[var(--surface)] focus:border-[var(--brand-deep)] focus:ring-1 focus:ring-[var(--brand-deep)] outline-none transition-all appearance-none"
                   >
                     <option value="">Seçin</option>
-                    <option>İstanbul</option>
-                    <option>Ankara</option>
-                    <option>İzmir</option>
-                    <option>Bursa</option>
-                    <option>Antalya</option>
+                    <option v-for="(districts, city) in iller" :key="city" :value="city">{{ city }}</option>
                   </select>
                   <ChevronDownIcon class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/40 pointer-events-none" />
                 </div>
@@ -344,14 +341,11 @@
                 <div class="relative">
                   <select
                     v-model="addressForm.district"
-                    class="w-full px-4 py-3 rounded-lg border border-black/10 bg-[var(--surface)] focus:border-[var(--brand-deep)] focus:ring-1 focus:ring-[var(--brand-deep)] outline-none transition-all appearance-none"
+                    :disabled="!addressForm.city"
+                    class="w-full px-4 py-3 rounded-lg border border-black/10 bg-[var(--surface)] focus:border-[var(--brand-deep)] focus:ring-1 focus:ring-[var(--brand-deep)] outline-none transition-all appearance-none disabled:opacity-50"
                   >
                     <option value="">Seçin</option>
-                    <option>Beşiktaş</option>
-                    <option>Kadıköy</option>
-                    <option>Şişli</option>
-                    <option>Üsküdar</option>
-                    <option>Maltepe</option>
+                    <option v-for="district in availableDistricts" :key="district" :value="district">{{ district }}</option>
                   </select>
                   <ChevronDownIcon class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/40 pointer-events-none" />
                 </div>
@@ -483,10 +477,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { useNuxtApp } from '#app'
 import { useCartStore } from '@/stores/cart'
+import { iller } from '~/assets/css/data/component/iller'
 
 const cartStore = useCartStore()
 import {
@@ -595,6 +590,11 @@ const expiryDate = ref('')
 const cvv = ref('')
 const deliveryNote = ref('')
 const promoCode = ref('')
+
+const availableDistricts = computed(() => {
+  if (!addressForm.city) return []
+  return iller[addressForm.city] || []
+})
 
 // Methods
 function selectAddress(id: string | number) {
