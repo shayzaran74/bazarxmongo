@@ -28,18 +28,20 @@ export class MongoUserAddressRepository implements IUserAddressRepository {
 
   async save(address: UserAddress): Promise<void> {
     const data = MongoUserAddressMapper.toPersistence(address);
+    const { _id, ...updateData } = data;
     await this.model.findOneAndUpdate(
       { id: address.id },
-      data,
+      { $set: updateData, $setOnInsert: { _id: address.id } },
       { upsert: true, new: true }
     ).exec();
   }
 
   async update(address: UserAddress): Promise<void> {
     const data = MongoUserAddressMapper.toPersistence(address);
+    const { _id, ...updateData } = data;
     await this.model.findOneAndUpdate(
       { id: address.id },
-      data
+      { $set: updateData }
     ).exec();
   }
 

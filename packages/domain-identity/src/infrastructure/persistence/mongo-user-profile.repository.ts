@@ -23,18 +23,20 @@ export class MongoUserProfileRepository implements IUserProfileRepository {
 
   async save(profile: UserProfile): Promise<void> {
     const data = MongoUserProfileMapper.toPersistence(profile);
+    const { _id, ...updateData } = data;
     await this.model.findOneAndUpdate(
       { userId: profile.userId },
-      { $set: data },
+      { $set: updateData, $setOnInsert: { _id: profile.userId } },
       { upsert: true, new: true }
     ).exec();
   }
 
   async update(profile: UserProfile): Promise<void> {
     const data = MongoUserProfileMapper.toPersistence(profile);
+    const { _id, ...updateData } = data;
     await this.model.findOneAndUpdate(
       { userId: profile.userId },
-      { $set: data }
+      { $set: updateData }
     ).exec();
   }
 }

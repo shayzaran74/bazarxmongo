@@ -51,9 +51,11 @@ export class MongoUserRepository implements IUserRepository {
   async save(user: UserEntity): Promise<void> {
     try {
       const data = MongoUserMapper.toPersistence(user);
+      const { _id, ...updateData } = data; // Prevent immutable _id error
+
       await this.model.findOneAndUpdate(
         { id: user.id },
-        data,
+        { $set: updateData, $setOnInsert: { _id: user.id } },
         { upsert: true, new: true }
       ).exec();
 
