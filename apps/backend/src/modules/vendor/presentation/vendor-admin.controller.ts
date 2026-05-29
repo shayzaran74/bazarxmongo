@@ -12,6 +12,7 @@ import { AddVendorCategoryCommand } from '../application/commands/add-vendor-cat
 import { RemoveVendorCategoryCommand } from '../application/commands/remove-vendor-category.command';
 import { SuspendVendorCommand } from '../application/commands/suspend-vendor.command';
 import { ReinstateVendorCommand } from '../application/commands/reinstate-vendor.command';
+import { DeleteAdminVendorCommand } from '../application/commands/delete-admin-vendor.command';
 
 interface AuthenticatedUser {
   id: string;
@@ -145,6 +146,13 @@ export class VendorAdminController {
   @Put(':id/reinstate')
   async reinstateVendor(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
     const data = await this.commandBus.execute(new ReinstateVendorCommand(id, admin.id));
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Delete vendor completely' })
+  @Delete(':id')
+  async deleteVendor(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
+    const data = await this.commandBus.execute(new DeleteAdminVendorCommand(id, admin.id));
     return { success: true, data };
   }
 }

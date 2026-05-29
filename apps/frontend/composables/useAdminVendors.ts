@@ -223,6 +223,30 @@ export const useAdminVendors = () => {
     }
   }
 
+  const deleteVendor = async (vendor?: Record<string, unknown> | string) => {
+    const target = vendor || selectedVendor.value
+    if (!target) return
+
+    const vendorId = typeof target === 'string' ? target : target.id as string | undefined
+    if (!vendorId) return
+
+    if (!confirm('Bu satıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return
+
+    vendorActionLoading.value = true
+    try {
+      await $api(`/api/v1/admin/vendors/${vendorId}`, {
+        method: 'DELETE'
+      })
+      $toast.success('Satıcı başarıyla silindi')
+      closeVendorDetail()
+      fetchVendors()
+    } catch {
+      $toast.error('Satıcı silinirken bir hata oluştu')
+    } finally {
+      vendorActionLoading.value = false
+    }
+  }
+
   return {
     loading, vendorActionLoading,
     vendors, selectedVendor, selectedCategoryId,
@@ -233,5 +257,6 @@ export const useAdminVendors = () => {
     openVendorDetail, closeVendorDetail,
     approveVendor, rejectVendor, toggleFeatured, toggleBarterEnabled,
     saveB2BSettings, addCategory, removeCategory, updateVendorType,
+    deleteVendor,
   }
 }

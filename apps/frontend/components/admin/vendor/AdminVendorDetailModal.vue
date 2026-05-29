@@ -9,12 +9,21 @@
           <h2 class="text-xl font-bold">
             {{ vendor.profile?.storeName || vendor.company?.name || 'İsimsiz Satıcı' }}
           </h2>
-          <button
-            class="text-gray-500 hover:text-gray-700"
-            @click="$emit('close')"
-          >
-            ✕
-          </button>
+          <div class="flex items-center gap-4">
+            <button
+              class="text-red-600 hover:text-red-800 text-sm font-semibold flex items-center gap-1"
+              title="Satıcıyı Sil"
+              @click="$emit('delete', vendor.id)"
+            >
+              🗑️ Sil
+            </button>
+            <button
+              class="text-gray-500 hover:text-gray-700"
+              @click="$emit('close')"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div class="p-6 space-y-6">
@@ -436,7 +445,7 @@ defineEmits([
   'update:showRejectForm', 'update:rejectionReason', 
   'save-b2b', 'toggle-featured', 'remove-category', 
   'update:selectedCategoryId', 'add-category', 'update-type',
-  'toggle-barter'
+  'toggle-barter', 'delete'
 ])
 
 const formatDate = (dateString) => {
