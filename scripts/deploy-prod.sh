@@ -25,7 +25,12 @@ echo "✅ Konteynerler durduruldu."
 # 4. Yeni kodlarla Docker konteynerlerini yeniden inşa et ve başlat
 echo "🏗️  Projeler derleniyor (Build) ve yeniden ayağa kaldırılıyor..."
 docker compose -f docker-compose.prod.yml up -d --build
-echo "✅ Sistem başarıyla ayağa kaldırıldı."
+
+# 4.5 Nginx yapılandırmasını yenile (Backend IP değişikliklerini algılaması için)
+echo "🔄 Nginx routing tablosu yenileniyor..."
+sleep 5
+docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+echo "✅ Sistem başarıyla ayağa kaldırıldı ve Nginx güncellendi."
 
 # 5. Sunucuda yer açmak için logları ve kullanılmayan imajları temizle
 echo "🧹 Gereksiz imajlar, build önbelleği ve loglar temizleniyor..."
