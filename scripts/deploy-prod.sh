@@ -27,13 +27,6 @@ echo "🏗️  Projeler derleniyor (Build) ve yeniden ayağa kaldırılıyor..."
 docker compose -f docker-compose.prod.yml up -d --build
 echo "✅ Sistem başarıyla ayağa kaldırıldı."
 
-# 4.5. Veritabanı Şemasını Güncelle (Prisma)
-echo "🗄️  Veritabanı şeması güncelleniyor (Prisma)..."
-# Konteynerler tam ayağa kalkıp veritabanı bağlantısı kurulması için 5 saniye bekle
-sleep 5
-docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push --accept-data-loss
-echo "✅ Veritabanı başarıyla güncel kodlarla eşitlendi."
-
 # 5. Sunucuda yer açmak için logları ve kullanılmayan imajları temizle
 echo "🧹 Gereksiz imajlar, build önbelleği ve loglar temizleniyor..."
 

@@ -14,7 +14,6 @@ Sunucudaki kodları güncellemek, yeni veritabanı şemalarını (Prisma) uygula
 - `NUXT_TELEMETRY_DISABLED=1` : Nuxt'un veri göndermesini kapatarak RAM şişmesini/takılmasını engeller.
 - `git pull origin main` : En güncel kodları çeker.
 - `docker compose ... up -d --build` : Yeni kodlarla imajları tekrar oluşturur ve servisleri başlatır.
-- `npx prisma db push --accept-data-loss` : Local'de yazdığımız yeni veritabanı alanlarını (IBAN, TC No vb.) canlı PostgreSQL veritabanında otomatik açar.
 - `docker image prune -f` & `docker builder prune` : Kullanılmayan eski Docker kalıntılarını silerek SSD'de yer açar.
 - `truncate -s 0 ...` : Docker'ın şişen log dosyalarını temizler.
 - `echo 3 > /proc/sys/vm/drop_caches` : Linux RAM önbelleğini boşaltır.
