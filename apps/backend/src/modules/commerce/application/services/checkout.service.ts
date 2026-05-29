@@ -117,10 +117,12 @@ export class CheckoutService {
     // Vendor tiplerini ve profillerini al
     const vendorTypeMap = new Map<string, string>();
     const vendorProfiles = new Map<string, Record<string, unknown>>();
+    const vendorUserIdMap = new Map<string, string>();
     for (const vendorId of vendorGroups.keys()) {
       const vendor = await this.vendorRepo.findById(vendorId);
       if (vendor) {
         vendorTypeMap.set(vendorId, vendor.getProps().vendorType);
+        vendorUserIdMap.set(vendorId, vendor.getProps().userId);
         const profile = (vendor.getProps() as unknown as Record<string, unknown>).restaurantProfile as Record<string, unknown> | undefined;
         if (profile) vendorProfiles.set(vendorId, profile as Record<string, unknown>);
       }
@@ -388,6 +390,7 @@ export class CheckoutService {
           buyerId: userId,
           sellerId: order.getProps().vendorId,
           vendorId: order.getProps().vendorId,
+          vendorUserId: vendorUserIdMap.get(order.getProps().vendorId),
           totalAmount: order.getProps().totalAmount.toString(),
           shippingAddress: order.getProps().shippingAddress.toJson(),
           billingAddress: order.getProps().billingAddress.toJson(),

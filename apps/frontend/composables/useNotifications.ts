@@ -64,6 +64,18 @@ export const useNotifications = () => {
       notificationStore.fetchNotifications(true),
       notificationStore.fetchUnreadCount(),
     ])
+
+    if (notificationStore.unreadCount > 0 && process.client) {
+      if (!sessionStorage.getItem('unread_notif_shown')) {
+        $toast.info(`Okunmamış ${notificationStore.unreadCount} bildiriminiz var`, {
+          onClick: () => {
+            showDropdown.value = true
+          }
+        })
+        sessionStorage.setItem('unread_notif_shown', 'true')
+      }
+    }
+
     connectSocket()
   }
 

@@ -49,6 +49,8 @@ import { Notification, NotificationSchema } from '@barterborsa/shared-persistenc
 import { UserComplaint, UserComplaintSchema } from '@barterborsa/shared-persistence/schemas/backend/userComplaint.schema';
 import { OrderSchema, TradeOfferSchema } from '@barterborsa/shared-persistence';
 
+import { UserSchema } from '@barterborsa/shared-persistence/schemas/backend/user.schema';
+
 @Module({
   imports: [
     CqrsModule,
@@ -61,6 +63,7 @@ import { OrderSchema, TradeOfferSchema } from '@barterborsa/shared-persistence';
       { name: 'UserComplaint', schema: UserComplaintSchema },
       { name: 'Order',      schema: OrderSchema },
       { name: 'TradeOffer', schema: TradeOfferSchema },
+      { name: 'User', schema: UserSchema },
     ]),
   ],
   controllers: [
