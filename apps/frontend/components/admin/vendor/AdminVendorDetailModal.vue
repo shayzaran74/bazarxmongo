@@ -257,6 +257,65 @@
             </div>
           </div>
 
+          <!-- Hesap Durumu (Askıya Alma) -->
+          <div
+            v-if="vendor.status === 'APPROVED' || vendor.status === 'SUSPENDED'"
+            class="bg-red-50 border border-red-200 rounded-lg p-4 mt-4"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-bold text-red-900">
+                  ⚠️ Hesap Durumu
+                </h3>
+                <p class="text-xs text-red-700">
+                  Satıcının hesabını geçici olarak askıya alabilir veya tekrar aktifleştirebilirsiniz.
+                </p>
+              </div>
+              <div v-if="vendor.status === 'APPROVED'">
+                <button
+                  class="px-4 py-2 rounded-lg font-bold transition-all shadow-sm bg-red-600 text-white hover:bg-red-700"
+                  @click="showSuspendForm = !showSuspendForm"
+                >
+                  Askıya Al
+                </button>
+              </div>
+              <div v-if="vendor.status === 'SUSPENDED'">
+                <button
+                  class="px-4 py-2 rounded-lg font-bold transition-all shadow-sm bg-green-600 text-white hover:bg-green-700"
+                  @click="$emit('reinstate', vendor.id)"
+                >
+                  Aktifleştir
+                </button>
+              </div>
+            </div>
+
+            <!-- Askıya Alma Formu -->
+            <div v-if="showSuspendForm && vendor.status === 'APPROVED'" class="mt-4 bg-white border border-red-200 rounded-lg p-4">
+              <label class="block text-sm font-medium text-red-700 mb-2">Askıya Alma Nedeni</label>
+              <textarea 
+                v-model="suspendReason"
+                placeholder="Neden belirtiniz..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                rows="3"
+              />
+              <div class="flex gap-2 mt-4">
+                <button
+                  :disabled="actionLoading || !suspendReason"
+                  class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 font-semibold"
+                  @click="$emit('suspend', vendor.id, suspendReason); showSuspendForm = false; suspendReason = ''"
+                >
+                  {{ actionLoading ? 'İşleniyor...' : 'Askıya Al' }}
+                </button>
+                <button
+                  class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-semibold"
+                  @click="showSuspendForm = false; suspendReason = ''"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Bilgiler -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -415,6 +474,8 @@
 </template>
 
 <script setup>
+import { ref } from '#imports'
+
 const vendor = defineModel('vendor', { type: Object })
 
 defineProps({
@@ -445,8 +506,11 @@ defineEmits([
   'update:showRejectForm', 'update:rejectionReason', 
   'save-b2b', 'toggle-featured', 'remove-category', 
   'update:selectedCategoryId', 'add-category', 'update-type',
-  'toggle-barter', 'delete'
+  'toggle-barter', 'delete', 'suspend', 'reinstate'
 ])
+
+const showSuspendForm = ref(false)
+const suspendReason = ref('')
 
 const formatDate = (dateString) => {
   if (!dateString) return '-'

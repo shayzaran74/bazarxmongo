@@ -247,6 +247,43 @@ export const useAdminVendors = () => {
     }
   }
 
+  const suspendVendor = async (vendorId: string, reason: string) => {
+    vendorActionLoading.value = true
+    try {
+      await $api(`/api/v1/admin/vendors/${vendorId}/suspend`, {
+        method: 'PUT',
+        body: { reason }
+      })
+      $toast.success('Satıcı askıya alındı')
+      fetchVendors()
+      if (selectedVendor.value && selectedVendor.value.id === vendorId) {
+        selectedVendor.value.status = 'SUSPENDED'
+      }
+    } catch {
+      $toast.error('Askıya alma işlemi başarısız')
+    } finally {
+      vendorActionLoading.value = false
+    }
+  }
+
+  const reinstateVendor = async (vendorId: string) => {
+    vendorActionLoading.value = true
+    try {
+      await $api(`/api/v1/admin/vendors/${vendorId}/reinstate`, {
+        method: 'PUT'
+      })
+      $toast.success('Satıcı tekrar aktifleştirildi')
+      fetchVendors()
+      if (selectedVendor.value && selectedVendor.value.id === vendorId) {
+        selectedVendor.value.status = 'APPROVED'
+      }
+    } catch {
+      $toast.error('Aktifleştirme işlemi başarısız')
+    } finally {
+      vendorActionLoading.value = false
+    }
+  }
+
   return {
     loading, vendorActionLoading,
     vendors, selectedVendor, selectedCategoryId,
@@ -257,6 +294,6 @@ export const useAdminVendors = () => {
     openVendorDetail, closeVendorDetail,
     approveVendor, rejectVendor, toggleFeatured, toggleBarterEnabled,
     saveB2BSettings, addCategory, removeCategory, updateVendorType,
-    deleteVendor,
+    deleteVendor, suspendVendor, reinstateVendor,
   }
 }

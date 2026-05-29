@@ -77,6 +77,7 @@ import UserStats from '~/components/admin/users/UserStats.vue'
 import UserFilters from '~/components/admin/users/UserFilters.vue'
 import UserTable from '~/components/admin/users/UserTable.vue'
 import VendorApprovalModal from '~/components/admin/users/VendorApprovalModal.vue'
+import UserModal from '~/components/modals/UserModal.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 useHead({ title: 'Kullanıcı Yönetimi - BazarX Admin' })

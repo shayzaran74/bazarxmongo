@@ -40,6 +40,8 @@
         @update-type="updateVendorType"
         @toggle-barter="toggleBarterEnabled"
         @delete="deleteVendor"
+        @suspend="suspendVendor"
+        @reinstate="reinstateVendor"
       />
     </div>
   </div>
@@ -70,7 +72,8 @@ const {
   filteredVendors, availableCategories,
   fetchVendors, fetchCategories, openVendorDetail, closeVendorDetail,
   approveVendor, rejectVendor, toggleFeatured, toggleBarterEnabled, saveB2BSettings,
-  addCategory, removeCategory, updateVendorType, deleteVendor
+  addCategory, removeCategory, updateVendorType, deleteVendor,
+  suspendVendor, reinstateVendor
 } = useAdminVendors()
 
 onMounted(async () => {
