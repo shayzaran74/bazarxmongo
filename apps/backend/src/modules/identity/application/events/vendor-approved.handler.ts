@@ -17,8 +17,7 @@ export class IdentityVendorApprovedHandler implements IEventHandler<VendorApprov
     try {
       const user = await this.userRepo.findById(event.userId);
       if (user && user.role !== 'VENDOR') {
-        user.updateRole('VENDOR');
-        await this.userRepo.update(user);
+        await this.userRepo.updateRole(event.userId, 'VENDOR');
         this.logger.log(`Kullanıcı rolü VENDOR olarak güncellendi: ${event.userId}`);
       }
     } catch (err: any) {
