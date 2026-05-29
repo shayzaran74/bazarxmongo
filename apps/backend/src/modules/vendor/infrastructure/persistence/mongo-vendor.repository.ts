@@ -89,9 +89,10 @@ export class MongoVendorRepository implements IVendorRepository {
 
   async save(entity: Vendor): Promise<void> {
     const persistence = VendorMapper.toPersistence(entity);
+    const { _id, ...updateData } = persistence;
     await this.model.updateOne(
       { id: entity.id },
-      { $set: persistence },
+      { $set: updateData, $setOnInsert: { _id: entity.id } },
       { upsert: true }
     ).exec();
   }

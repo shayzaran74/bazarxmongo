@@ -34,6 +34,7 @@ export abstract class BaseMongoRepository<
 
   async save(entity: TDomain): Promise<void> {
     const persistence = this.mapper.toPersistence(entity);
+    const { _id, ...updateData } = persistence as any;
     const hasVersionField = !!this.model.schema.path('version');
     const existing = await this.model.findOne({ id: entity.id } as Record<string, unknown>).exec();
 
@@ -41,11 +42,11 @@ export abstract class BaseMongoRepository<
       if (hasVersionField && typeof (entity as any).version === 'number') {
         const currentVersion = (entity as any).version;
         const nextVersion = currentVersion + 1;
-        persistence.version = nextVersion;
+        updateData.version = nextVersion;
 
         const result = await this.model.findOneAndUpdate(
           { id: entity.id, version: currentVersion } as Record<string, unknown>,
-          persistence,
+          { $set: updateData },
           { new: true }
         ).exec();
 
@@ -54,7 +55,10 @@ export abstract class BaseMongoRepository<
         }
         (entity as any)._version = nextVersion;
       } else {
-        await this.model.findOneAndUpdate({ id: entity.id } as Record<string, unknown>, persistence).exec();
+        await this.model.findOneAndUpdate(
+          { id: entity.id } as Record<string, unknown>,
+          { $set: updateData }
+        ).exec();
       }
     } else {
       if (hasVersionField) {
