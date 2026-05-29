@@ -24,7 +24,7 @@ import { RabbitMQService } from './rabbitmq.service';
           // İşlenemez mesajların yönlendirildiği dead-letter exchange'leri
           { name: 'financial.dead-letter', type: 'topic' },
         ],
-        connectionInitOptions: { wait: true },
+        connectionInitOptions: { wait: true, timeout: 30000 },
       }),
       inject: [ConfigService],
     }),
