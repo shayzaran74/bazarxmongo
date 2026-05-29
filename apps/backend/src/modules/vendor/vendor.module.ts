@@ -48,6 +48,7 @@ import { CreateBannerHandler } from './application/commands/create-banner.handle
 import { UpdateBannerHandler } from './application/commands/update-banner.handler';
 import { DeleteBannerHandler } from './application/commands/delete-banner.handler';
 import { UpdateRestaurantSettingsHandler } from './application/commands/update-restaurant-settings.handler';
+import { DeleteAdminVendorHandler } from './application/commands/delete-admin-vendor.handler';
 
 // Query handlers
 import { ListVendorsHandler } from './application/queries/list-vendors.handler';
@@ -137,6 +138,7 @@ const CommandHandlers = [
   UpdateBannerHandler,
   DeleteBannerHandler,
   UpdateRestaurantSettingsHandler,
+  DeleteAdminVendorHandler,
 ];
 
 const QueryHandlers = [
