@@ -54,6 +54,7 @@ export class OrderCreatedNotificationHandler {
       .catch((err: unknown) => this.logger.error('Sipariş bildirimi gönderilemedi', { userId, orderId: id, err }));
 
     // 2. Satıcıya bildirim ve E-posta
+    this.logger.log(`OrderCreated event alındı. vendorUserId: ${vendorUserId}, orderNumber: ${orderNumber}`);
     if (vendorUserId) {
       const vendorTemplate = this.templateService.getOrderCreatedTemplate(orderNumber, id);
       const vendorMessage = `Yeni bir siparişiniz var: #${orderNumber}. Detayları kontrol edebilirsiniz.`;

@@ -22,6 +22,9 @@ echo "🛑 Mevcut konteynerler durduruluyor..."
 docker compose -f docker-compose.prod.yml down
 echo "✅ Konteynerler durduruldu."
 
+# Docker konteyner loglarını temizler (Eski logların diski doldurmasını engeller)
+sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log' || true
+
 # 4. Yeni kodlarla Docker konteynerlerini yeniden inşa et ve başlat
 echo "🏗️  Projeler derleniyor (Build) ve yeniden ayağa kaldırılıyor..."
 docker compose -f docker-compose.prod.yml up -d --build
@@ -41,8 +44,6 @@ docker image prune -f
 # Docker build önbelleğini temizler (Çok ciddi disk açar)
 docker builder prune -a -f
 
-# Docker konteyner loglarını temizler (Eski logların diski doldurmasını engeller)
-sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log' || true
 
 echo "✅ Disk temizliği tamamlandı."
 
