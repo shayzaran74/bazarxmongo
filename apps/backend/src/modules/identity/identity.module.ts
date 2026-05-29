@@ -58,6 +58,7 @@ import { UpdateUserStatusHandler } from './application/commands/update-user-stat
 import { UpdateUserRoleHandler } from './application/commands/update-user-role.handler';
 import { DeleteAdminUserHandler } from './application/commands/delete-admin-user.handler';
 import { GrantReferralRewardHandler } from './application/commands/grant-referral-reward.handler';
+import { IdentityVendorApprovedHandler } from './application/events/vendor-approved.handler';
 import { ReferralService } from './application/services/referral.service';
 import { CommunicationModule } from '../communication/communication.module';
 import { AuditMongooseModule } from '../audit/audit-mongoose.module';
@@ -102,6 +103,7 @@ const Handlers = [
   DeleteAdminUserHandler,
   GrantReferralRewardHandler,
   GetOnlineStatsHandler,
+  IdentityVendorApprovedHandler,
 ];
 
 @Module({

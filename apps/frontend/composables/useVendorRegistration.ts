@@ -92,7 +92,7 @@ export const useVendorRegistration = () => {
 
             if (response.success) {
                 toast.success('✅ Başvurunuz başarıyla alındı! Onay bekleniyor.')
-                await authStore.init()
+                await authStore.fetchUser(true)
                 currentStep.value = 6
             } else {
                 toast.error(response.error || 'Başvuru sırasında hata oluştu')
