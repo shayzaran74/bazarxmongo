@@ -9,6 +9,7 @@ import { IVendorRepository } from '../../domain/repositories/vendor.repository.i
 import { IVendorB2BDataRepository } from '../../../barter/domain/repositories/vendor-b2b-data.repository.interface';
 import { IUserLevelRepository } from '../../../barter/domain/repositories/user-level.repository.interface';
 import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
+import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
 
 export interface CommissionInput {
   vendorId:            string;
@@ -19,6 +20,10 @@ export interface CommissionInput {
   referenceType:       'TRADE' | 'ORDER';
   isFirstTransaction?: boolean;
   overrideRate?: number;
+  // Grup içi (ekosistem) komisyon oranı yalnızca iki tarafın AYNI ekosisteme üye
+  // olduğu doğrulandığında uygulanır. Gerçek mutabakatta karşı taraf zorunludur;
+  // belirtilmezse (ör. preview) doğrulama atlanır ve bayinin kendi ekosistemi baz alınır.
+  counterpartyVendorId?: string;
 }
 
 const XP_COMMISSION_SUBSIDY_MAX_PCT = 0.50;
@@ -44,6 +49,8 @@ export class CommissionEngineService {
     @Inject('IVendorB2BDataRepository') private readonly b2bRepo: IVendorB2BDataRepository,
     @Inject('IUserLevelRepository') private readonly userLevelRepo: IUserLevelRepository,
     @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
+    @Inject('IEcosystemMembershipRepository')
+    private readonly membershipRepo: IEcosystemMembershipRepository,
   ) {}
 
   async calculate(input: CommissionInput): Promise<CommissionBreakdown> {
@@ -85,19 +92,31 @@ export class CommissionEngineService {
 
     if (isGroupTransaction) {
       let groupRate = tierVO.getGroupCommissionRate();
-      // Vendor'ın ecosystemId'si üzerinden doğrudan ekosistemi bul
-      // (memberIds array yerine her vendor'da ecosystemId field'ı kullanılıyor)
-      const vendorEcosystemId = vendorProps.ecosystemId as string | undefined;
-      if (vendorEcosystemId) {
-        const ecosystem = await this.ecosystemRepo.findById(vendorEcosystemId);
+
+      // Karşı taraf doğrulaması (kural #3): internalCommRate yalnızca iki taraf AYNI
+      // ekosistemdeyse uygulanır. Aksi halde indirim verilmez.
+      let resolvedEcosystemId: string | undefined;
+      if (input.counterpartyVendorId) {
+        const shared = await this.resolveSharedEcosystemId(vendorId, input.counterpartyVendorId);
+        if (!shared) {
+          throw new BadRequestException(
+            'Grup içi komisyon yalnızca aynı ekosistemdeki taraflar arasında uygulanır. Taraflar ortak bir ekosisteme üye değil.',
+          );
+        }
+        resolvedEcosystemId = shared;
+      } else {
+        // Karşı taraf belirtilmemiş (ör. preview/ön hesaplama) — bayinin kendi aktif
+        // ekosistemi, yoksa kurduğu ekosistem baz alınır.
+        const activeMemberships = await this.membershipRepo.findActiveByDealerId(vendorId);
+        resolvedEcosystemId =
+          activeMemberships[0]?.ecosystemId ??
+          (await this.ecosystemRepo.findByOwnerId(vendorId))?.id;
+      }
+
+      if (resolvedEcosystemId) {
+        const ecosystem = await this.ecosystemRepo.findById(resolvedEcosystemId);
         if (ecosystem?.internalCommRate) {
           groupRate = Number(ecosystem.internalCommRate.toString());
-        }
-      } else {
-        // Owner ise kendi ekosistemi bulunur
-        const ownedEcosystem = await this.ecosystemRepo.findByOwnerId(vendorId);
-        if (ownedEcosystem?.internalCommRate) {
-          groupRate = Number(ownedEcosystem.internalCommRate.toString());
         }
       }
 
@@ -171,6 +190,30 @@ export class CommissionEngineService {
 
   async markFirstTransaction(vendorId: string): Promise<void> {
     await this.b2bRepo.updateFirstTransaction([vendorId]);
+  }
+
+  /**
+   * İki bayinin ortak (aktif) ekosistemini bulur. Bir taraf ekosistemin sahibi
+   * (fabrika), diğeri üye (bayi) olabilir. Ortak ekosistem yoksa null döner.
+   * Public: barter mutabakatı accept anında grup oranı tespiti için kullanır.
+   */
+  public async resolveSharedEcosystemId(
+    vendorA: string,
+    vendorB: string,
+  ): Promise<string | null> {
+    const ecoIdsFor = async (vendorId: string): Promise<Set<string>> => {
+      const memberships = await this.membershipRepo.findActiveByDealerId(vendorId);
+      const ids = new Set<string>(memberships.map(m => m.ecosystemId));
+      const owned = await this.ecosystemRepo.findByOwnerId(vendorId);
+      if (owned?.id) ids.add(owned.id);
+      return ids;
+    };
+
+    const [aIds, bIds] = await Promise.all([ecoIdsFor(vendorA), ecoIdsFor(vendorB)]);
+    for (const id of aIds) {
+      if (bIds.has(id)) return id;
+    }
+    return null;
   }
 
   private async assertXpBalance(userId: string, requestedXp: number): Promise<void> {

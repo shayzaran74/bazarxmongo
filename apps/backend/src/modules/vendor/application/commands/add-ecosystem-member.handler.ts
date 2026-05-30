@@ -86,6 +86,15 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
       // REMOVED → yeniden aktifleştir
       await this.membershipRepo.updateStatus(memberVendorId, ecosystemId, 'ACTIVE', new Date());
       const count = await this.membershipRepo.countActiveByDealerId(memberVendorId);
+      // Ekosistem denetim defteri (kural #4) — severity INFO
+      await this.auditLogRepo.create({
+        ecosystemId,
+        vendorId: memberVendorId,
+        action: 'MEMBER_REACTIVATED',
+        severity: 'INFO',
+        details: { memberVendorId, memberTier: memberVendor.tier, membershipCount: count, addedByUserId: userId },
+      });
+      // Genel uyumluluk defteri (security.md — vendor ilişkisi değişikliği)
       await this.auditLog.log({
         actorId: userId,
         action: 'MEMBER_REACTIVATED',
@@ -137,6 +146,21 @@ export class AddEcosystemMemberHandler implements ICommandHandler<AddEcosystemMe
     }
 
     // 8. AuditLog yaz
+    // Ekosistem denetim defteri (kural #4) — severity INFO
+    await this.auditLogRepo.create({
+      ecosystemId,
+      vendorId: memberVendorId,
+      action: 'MEMBER_ADDED',
+      severity: 'INFO',
+      details: {
+        memberId: memberVendorId,
+        memberTier: memberVendor.tier,
+        membershipCount: currentCount + 1,
+        limit,
+        addedByUserId: userId,
+      },
+    });
+    // Genel uyumluluk defteri (security.md — vendor ilişkisi değişikliği)
     await this.auditLog.log({
       actorId: userId,
       action: 'MEMBER_ADDED',

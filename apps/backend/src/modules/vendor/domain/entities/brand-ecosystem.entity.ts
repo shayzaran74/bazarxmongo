@@ -31,10 +31,15 @@ export class BrandEcosystem extends AggregateRoot<BrandEcosystemProps> {
     return ecosystem;
   }
 
-  public setCommissionRate(rate: number): void {
+  // Komisyon oranı domain invariant'ı — tek kaynak (hem entity hem de güncelleme akışı kullanır)
+  public static assertValidCommissionRate(rate: number): void {
     if (rate < 1 || rate > 20) {
       throw new Error('Komisyon oranı 1-20 arasında olmalıdır');
     }
+  }
+
+  public setCommissionRate(rate: number): void {
+    BrandEcosystem.assertValidCommissionRate(rate);
     this.props.internalCommRate = rate;
     (this as unknown as { _updatedAt: Date })._updatedAt = new Date();
   }

@@ -8,6 +8,7 @@ import { JwtAuthGuard, RolesGuard, Roles } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { MongoBrandEcosystemRepository } from '../infrastructure/persistence/mongo-brand-ecosystem.repository';
 import { MongoEcosystemAuditLogRepository } from '../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
+import { MongoEcosystemMembershipRepository } from '../infrastructure/persistence/repositories/mongo-ecosystem-membership.repository';
 import { IVendorRepository } from '../domain/repositories/vendor.repository.interface';
 import { ITrustScoreRepository } from '../domain/repositories/trust-score.repository.interface';
 
@@ -72,6 +73,7 @@ export class EcosystemAdminController {
   constructor(
     private readonly brandEcosystemRepo: MongoBrandEcosystemRepository,
     private readonly auditLogRepo: MongoEcosystemAuditLogRepository,
+    private readonly membershipRepo: MongoEcosystemMembershipRepository,
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
     @InjectModel('Vendor') private readonly vendorModel: Model<IVendor>,
@@ -88,9 +90,16 @@ export class EcosystemAdminController {
     const ecoIds = ecosystems.map(e => e.id);
     const ownerIds = ecosystems.map(e => e.ownerId).filter(Boolean);
 
+    // Üyelik tek doğruluk kaynağı: EcosystemMembership koleksiyonu (legacy Vendor.ecosystemId değil)
+    const membershipsPerEco = ecoIds.length
+      ? await Promise.all(ecoIds.map(id => this.membershipRepo.findByEcosystemId(id)))
+      : [];
+    const activeMemberships = membershipsPerEco.flat().filter(m => m.status === 'ACTIVE');
+    const memberDealerIds = [...new Set(activeMemberships.map(m => m.dealerId))];
+
     const [ownerVendors, memberVendors] = await Promise.all([
       ownerIds.length ? this.vendorModel.find({ id: { $in: ownerIds } }).lean().exec() : [],
-      ecoIds.length ? this.vendorModel.find({ ecosystemId: { $in: ecoIds } }).lean().exec() : []
+      memberDealerIds.length ? this.vendorModel.find({ id: { $in: memberDealerIds } }).lean().exec() : []
     ]);
 
     const allVendorIds = [...new Set([...ownerVendors.map(v => v.id), ...memberVendors.map(v => v.id)])];
@@ -108,11 +117,16 @@ export class EcosystemAdminController {
 
     const companyMap = new Map<string, ICompany>(companies.map(c => [c.id, c] as [string, ICompany]));
     
-    // Group member vendors by ecoId
+    // Group member vendors by ecoId — üyelik eşlemesi membership kayıtlarından gelir
+    const vendorById = new Map<string, import('@barterborsa/shared-persistence').IVendor>(
+      memberVendors.map(v => [v.id, v] as [string, import('@barterborsa/shared-persistence').IVendor])
+    );
     const membersByEcoId = new Map<string, import('@barterborsa/shared-persistence').IVendor[]>( );
-    memberVendors.forEach(mv => {
-      if (!membersByEcoId.has(mv.ecosystemId!)) membersByEcoId.set(mv.ecosystemId!, []);
-      membersByEcoId.get(mv.ecosystemId!)!.push(mv);
+    activeMemberships.forEach(m => {
+      const mv = vendorById.get(m.dealerId);
+      if (!mv) return;
+      if (!membersByEcoId.has(m.ecosystemId)) membersByEcoId.set(m.ecosystemId, []);
+      membersByEcoId.get(m.ecosystemId)!.push(mv);
     });
 
     // Group listings by vendorId
@@ -320,24 +334,26 @@ export class EcosystemAdminController {
     if (!memberVendor) {
       throw new NotFoundException('Üye bayi bulunamadı');
     }
-    if (!memberVendor.ecosystemId) {
+
+    // Üyelik tek doğruluk kaynağı: EcosystemMembership koleksiyonu
+    const activeMemberships = await this.membershipRepo.findActiveByDealerId(memberVendorId);
+    if (!activeMemberships.length) {
       throw new BadRequestException('Bu bayi herhangi bir ekosisteme üye değil');
     }
-    
-    const ecosystemId = memberVendor.ecosystemId;
-    
-    // Set ecosystemId to null/undefined
-    await this.vendorModel.updateOne({ id: memberVendorId }, { $unset: { ecosystemId: "" } }).exec();
-    
-    // Log removal
-    await this.auditLogRepo.create({
-      ecosystemId,
-      vendorId: memberVendorId,
-      action: 'MEMBER_REMOVED',
-      severity: 'HIGH',
-      details: { removedBy: admin.id },
-    });
-    
+
+    // Bayi birden fazla ekosisteme üye olabilir — admin işlemi tümünden çıkarır
+    const now = new Date();
+    for (const m of activeMemberships) {
+      await this.membershipRepo.updateStatus(memberVendorId, m.ecosystemId, 'REMOVED', now);
+      await this.auditLogRepo.create({
+        ecosystemId: m.ecosystemId,
+        vendorId: memberVendorId,
+        action: 'MEMBER_REMOVED',
+        severity: 'HIGH',
+        details: { removedBy: admin.id },
+      });
+    }
+
     return { success: true };
   }
 

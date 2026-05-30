@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { randomUUID } from 'crypto';
 import { EcosystemAuditLog as EcosystemAuditLogModel, IEcosystemAuditLog } from '@barterborsa/shared-persistence/schemas/backend/ecosystemAuditLog.schema';
 import { IEcosystemAuditLogRepository, EcosystemAuditLogDocument } from '../../domain/repositories/ecosystem-audit-log.repository.interface';
 
@@ -22,7 +23,8 @@ export class MongoEcosystemAuditLogRepository implements IEcosystemAuditLogRepos
     severity: string;
     details?: Record<string, unknown>;
   }): Promise<EcosystemAuditLogDocument> {
-    const id = 'ecoaudit-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    // Çarpışma güvenli birincil anahtar (modül genelindeki randomUUID konvansiyonu)
+    const id = 'ecoaudit-' + randomUUID();
     const doc = new this.model({
       _id: id,
       id,

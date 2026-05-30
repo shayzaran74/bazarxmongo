@@ -1,11 +1,12 @@
 // apps/backend/src/modules/vendor/application/commands/update-ecosystem-settings.handler.ts
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { UpdateEcosystemSettingsCommand } from './update-ecosystem-settings.command';
 import { IVendorRepository } from '../../domain/repositories/vendor.repository.interface';
 import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
 import { MongoEcosystemAuditLogRepository } from '../../infrastructure/persistence/mongo-ecosystem-audit-log.repository';
+import { BrandEcosystem } from '../../domain/entities/brand-ecosystem.entity';
 
 @CommandHandler(UpdateEcosystemSettingsCommand)
 export class UpdateEcosystemSettingsHandler
@@ -31,7 +32,15 @@ export class UpdateEcosystemSettingsHandler
 
     const updateData: Record<string, unknown> = {};
     if (settings.isBlindPool !== undefined) updateData.isBlindPool = settings.isBlindPool;
-    if (settings.internalCommRate !== undefined) updateData.internalCommRate = settings.internalCommRate;
+    if (settings.internalCommRate !== undefined) {
+      // Domain invariant'ını uygula (DTO doğrulamasına ek savunma katmanı)
+      try {
+        BrandEcosystem.assertValidCommissionRate(settings.internalCommRate);
+      } catch (err) {
+        throw new BadRequestException((err as Error).message);
+      }
+      updateData.internalCommRate = settings.internalCommRate;
+    }
 
     const updated = await this.ecosystemRepo.update(ecosystem.id, updateData as { isBlindPool?: boolean; internalCommRate?: number });
 

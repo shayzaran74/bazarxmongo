@@ -49,6 +49,19 @@ export class RemoveEcosystemMemberHandler implements ICommandHandler<RemoveEcosy
     await this.membershipRepo.updateStatus(memberVendorId, ecosystemId, 'REMOVED', now);
 
     // AuditLog yaz
+    // Ekosistem denetim defteri (kural #4) — üye çıkarma kritik eylem, severity HIGH
+    await this.auditLogRepo.create({
+      ecosystemId,
+      vendorId: memberVendorId,
+      action: 'MEMBER_REMOVED',
+      severity: 'HIGH',
+      details: {
+        memberVendorId,
+        removedAt: now,
+        removedBy: userId,
+      },
+    });
+    // Genel uyumluluk defteri (security.md — vendor ilişkisi değişikliği)
     await this.auditLog.log({
       actorId: userId,
       action: 'MEMBER_REMOVED',

@@ -10,6 +10,7 @@ import { IVendorRepository } from '../../domain/repositories/vendor.repository.i
 import { ITrustScoreRepository } from '../../domain/repositories/trust-score.repository.interface';
 import { ISwapSessionRepository } from '../../../barter/domain/repositories/swap-session.repository.interface';
 import { IBrandEcosystemRepository } from '../../domain/repositories/brand-ecosystem.repository.interface';
+import { IEcosystemMembershipRepository } from '../../domain/repositories/i-ecosystem-membership.repository';
 import { IListingRepository } from '../../../catalog/domain/repositories/listing.repository.interface';
 import { scoreToLevel } from '../../../barter/domain/trust-level.constants';
 
@@ -51,6 +52,8 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     @Inject('ITrustScoreRepository') private readonly trustScoreRepo: ITrustScoreRepository,
     @Inject('ISwapSessionRepository') private readonly swapRepo: ISwapSessionRepository,
     @Inject('IBrandEcosystemRepository') private readonly ecosystemRepo: IBrandEcosystemRepository,
+    @Inject('IEcosystemMembershipRepository')
+    private readonly membershipRepo: IEcosystemMembershipRepository,
     @Inject('IListingRepository') private readonly listingRepo: IListingRepository,
   ) {}
 
@@ -66,7 +69,8 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     if (!ecosystem) throw new NotFoundException('Ekosistem bulunamadı.');
 
     const isOwner = ecosystem.ownerId === actorVendorId;
-    const isBlindPool = ecosystem.isBlindPool ?? false;
+    // Gizlilik fail-safe: alan tanımsızsa kör havuz (kimlik gizli) varsayılır
+    const isBlindPool = ecosystem.isBlindPool ?? true;
 
     // Kör havuzda sahip dışında herkes anonymousId ile görür
     const isAnonymousViewer = isBlindPool && !isOwner;
@@ -74,9 +78,11 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     const since = new Date();
     since.setDate(since.getDate() - ACTIVITY_WINDOW_DAYS);
 
-    // IBrandEcosystem'de memberIds alanı tip dışında tutulduğundan güvenli cast kullanılır
-    const ecosystemDoc = ecosystem as unknown as { memberIds?: string[] };
-    const memberIds: string[] = ecosystemDoc.memberIds || [];
+    // Üyelik tek doğruluk kaynağı: EcosystemMembership koleksiyonu (legacy memberIds/Vendor.ecosystemId değil)
+    const memberships = await this.membershipRepo.findByEcosystemId(ecosystemId);
+    const memberIds: string[] = memberships
+      .filter(m => m.status === 'ACTIVE')
+      .map(m => m.dealerId);
 
     const members: EcosystemMemberDashboard[] = [];
     for (const memberId of memberIds) {
@@ -137,7 +143,7 @@ export class GetEcosystemDashboardHandler implements IQueryHandler<GetEcosystemD
     return {
       ecosystemId:      ecosystem.id,
       ecosystemName:    ecosystem.name || ecosystemId,
-      isBlindPool:      ecosystem.isBlindPool ?? false,
+      isBlindPool:      ecosystem.isBlindPool ?? true,
       internalCommRate: Number(ecosystem.internalCommRate ?? 4),
       memberCount:      members.length,
       members:          members.sort((a, b) => b.trustScore - a.trustScore),
