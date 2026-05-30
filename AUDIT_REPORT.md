@@ -2,10 +2,10 @@
 
 **Tarih:** 2026-05-30 / 2026-05-31
 **Branch:** `feat/barter-commission-and-audit-fixes` (remote: `origin` = `bazarxmongo`)
-**Commit sayısı:** 4
+**Commit sayısı:** 5 (+ BazarXGO admin RBAC düzeltmesi: çalışma ağacında, henüz commit'lenmedi)
 **Test durumu:** Otomatik test yazılmadı — **manuel test** edilecek.
 
-> Bu rapor, `/audit` ile yapılan iki modül denetimi (Ekosistem + Ticari Takas) ve devamında geliştirilen B2B takas komisyon motorunun özetidir.
+> Bu rapor, `/audit` ile yapılan üç modül denetimi (Ekosistem + Ticari Takas + Admin/Vendor İzolasyon) ve devamında geliştirilen B2B takas komisyon motorunun özetidir.
 
 ---
 
@@ -17,6 +17,8 @@
 | `8270f9ca` | fix(barter) | Firma onay duvarı: Company statüsü `APPROVED` + backfill + gerçek kontrol |
 | `da016e5f` | feat(barter) | B2B takas komisyon motoru (Faz 1–3c) |
 | `1cede24d` | refactor(barter) | createOffer/counterOffer → CommandHandler + getVendorWithCompany DRY |
+| `93aee4ab` | docs | Denetim & düzeltme raporu (bu dosya) |
+| _(uncommitted)_ | fix(bazarxgo) | Admin RBAC standardize: RolesGuard + `@Roles` + `SUPERADMIN`→`SUPER_ADMIN`. **Not:** bazarxgo modülünün tamamı (~27 dosya) henüz git'te takipsiz WIP; fix dosyada uygulanmış durumda, modül commit'lenince dahil olacak |
 
 ---
 
@@ -107,27 +109,62 @@ Davranış **bire bir** korundu. Yeni dosyalar: `barter-vendor-guard.service.ts`
 
 ---
 
-## 5. Kalan İşler
+## 5. Admin Dashboard & Vendor İzolasyon Denetimi — `modules/*`
 
-### 5.1 Deploy Ön-Koşulları (yayına almadan önce ZORUNLU)
+> 36 admin controller + vendor-scoped controller'lar (catalog/commerce/inventory/vendor) denetlendi.
+
+### RBAC
+- ✅ **36 admin controller'ın 35'i** standart deseni kullanıyor: `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('ADMIN','SUPER_ADMIN')`.
+- 🔴 **`bazarxgo-admin.controller.ts`** elle `assertAdmin` kullanıyordu → 3 sorun: (a) `'SUPERADMIN'` typo (kanonik `'SUPER_ADMIN'`) → gerçek SUPER_ADMIN erişemiyordu, (b) `throw new Error` = 500 (403 değil), (c) kırılgan per-metot desen. **DÜZELTİLDİ** (standart guard'a çevrildi). Not: bazarxgo modülü baştan sona takipsiz WIP olduğundan fix ayrı commit'lenmedi; modül commit'lendiğinde düzeltilmiş hâliyle girecek.
+
+### System Settings
+- ✅ `settings-admin`: `class-validator` DTO'ları + her `@Put`'ta `AuditLogService.log`.
+
+### User & Vendor Management
+- ✅ `ApproveVendorHandler`: durum-makinesi guard'lı + AuditLog.
+- 🟡 `wallet-admin` (topup/withdrawal approve/reject): controller'da AuditLog görünmüyor — downstream financial-service loglaması **doğrulanmalı**.
+
+### Analytics
+- ✅ `admin-dashboard` rol-korumalı; ağır aggregation/loop yok (servise delege).
+
+### Vendor Veri İzolasyonu (Multi-Tenancy) — ✅ tutarlı ve doğru
+- `catalog/update-listing` & `delete-listing`: `listing.vendorId !== vendor.id → Forbidden` (admin bypass).
+- `commerce/ship-order-item`: `vendor.id !== order.vendorId → Forbidden`.
+- `inventory`: tüm sorgular token'dan gelen `vendor.id` ile scope'lu (`findOne({id, vendorId})`).
+- Vendor controller'larında `vendorId` token'dan (`CurrentUser`) alınıyor; body/query'den okuyan 2 yer güvenli (public banner + ekosistem üye-çıkarma).
+
+### Dokunulan dosyalar
+`bazarxgo-admin.controller.ts` (RBAC fix — commit bekliyor)
+
+---
+
+## 6. Kalan İşler
+
+### 6.1 Deploy Ön-Koşulları (yayına almadan önce ZORUNLU)
 - [ ] Branch'i `main`'e al (sunucu `main` pull ediyor; değişiklikler şu an **`main`'de değil**).
 - [ ] `shared-persistence` paketini **build et** (SwapSession şeması değişti; dist'ten derleniyorsa).
 - [ ] **Company backfill migration `run()`** çalıştır — yoksa eski onaylı firmalar takas yapamaz.
 
-### 5.2 Komisyonu Aktifleştirmeden Önce
+### 6.2 Komisyonu Aktifleştirmeden Önce
 - [ ] `BARTER_COMMISSION_PLATFORM_ACCOUNT_ID` tanımla (geçerli platform cüzdanı).
 - [ ] `releaseFunds(sellerId=PLATFORM)` → platforma capture davranışını **financial-service'te teyit et** (varsayıma dayanıyor).
 - [ ] `BARTER_COMMISSION_HOLD_ENABLED=true` (test ortamında doğrulandıktan sonra).
 
-### 5.3 Henüz Yapılmadı
+### 6.3 Henüz Yapılmadı
+- [ ] **BazarXGO modülünü commit'le** — modül baştan sona takipsiz WIP (~27 dosya); admin RBAC fix'i diskte hazır, modül commit'lenince dahil olur.
+- [ ] `wallet-admin` topup/withdrawal approve/reject **audit-log doğrulaması** (downstream'de var mı?).
 - [ ] **Faz 3c frontend UI** (Nuxt): accept ekranında `xpToApply` girişi + nakit/XP önizlemesi (`POST /commission/preview` kullanılabilir).
 - [ ] **Otomatik testler** (manuel test edilecek — talep edilmedi).
 - [ ] Ekosistem `getAuditLogs` display fallback'i hâlâ `Vendor.ecosystemId` kullanıyor (Sprint 2'de alan silinince ele alınmalı).
+- [ ] Frontend (Nuxt) admin rotalarının `auth-admin` middleware koruması teyidi.
 - [ ] `StructuredLogger` ve admin controller DDD borcu (proje-geneli kararlar).
 
 ---
 
-## 6. Manuel Test Kontrol Listesi (öneri)
+## 7. Manuel Test Kontrol Listesi (öneri)
+
+**Admin RBAC:**
+- [ ] BazarXGO admin endpoint'lerine ADMIN ve SUPER_ADMIN erişebilmeli; normal vendor/müşteri **403** almalı.
 
 **Firma onay duvarı:**
 - [ ] Onaysız firmaya sahip vendor → surplus/teklif oluşturamamalı.
