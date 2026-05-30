@@ -36,16 +36,17 @@ export class ApproveVendorHandler implements ICommandHandler<ApproveVendorComman
     await this.vendorRepo.save(vendor);
 
     // Company güncelle (domain bypass — company ayrı aggregate)
+    // CompanyStatus enum'u: PENDING|APPROVED|REJECTED|SUSPENDED — 'APPROVED' senkronu (barter onay duvarı buna bakar)
     if (vendor.getProps().companyId) {
       await this.companyRepo.update(vendor.getProps().companyId, {
-        status: 'VERIFIED',
+        status: 'APPROVED',
         verifiedAt: new Date(),
       });
     } else {
       const newCompany = await this.companyRepo.create({
         name: vendor.getProps().slug?.value ?? 'Satıcı Şirketi',
         taxNumber: 'AUTO-' + vendorId.substring(0, 8),
-        status: 'VERIFIED',
+        status: 'APPROVED',
         verifiedAt: new Date(),
       });
       await this.vendorRepo.update(vendorId, { companyId: newCompany.id });

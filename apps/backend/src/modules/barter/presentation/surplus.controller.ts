@@ -182,7 +182,7 @@ export class SurplusController {
     
     // Load companies
     const companies = await this.companyModel.find({ id: { $in: companyIds } }).lean();
-    const companyMap = new Map<string, any>();
+    const companyMap = new Map<string, ICompany>();
     companies.forEach(c => {
       companyMap.set(c.id, c);
     });
@@ -409,7 +409,7 @@ export class SurplusController {
 
   // ─── Yardımcılar ──────────────────────────────────────────────────────────
 
-  private async getVendorWithCompany(userId: string): Promise<{ id: string; company: { id: string; name: string; status: string } | null }> {
+  private async getVendorWithCompany(userId: string): Promise<{ id: string; company: { id: string; name: string; status: string } }> {
     const vendor = await this.vendorRepository.findByUserId(userId);
 
     if (!vendor) {
@@ -422,12 +422,22 @@ export class SurplusController {
     if (!props.barterEnabled) {
       throw new BadRequestException('Takas (barter) modülü hesabınız için aktif değil.');
     }
+    if (!props.companyId) {
+      throw new BadRequestException('Satıcı hesabınıza bağlı bir firma bulunamadı.');
+    }
+
+    // Firma onay duvarı (barter-audit kural A): firma da APPROVED olmalı
+    const companyDoc = await this.companyModel.findOne({ id: props.companyId }).lean().exec();
+    if (!companyDoc) {
+      throw new BadRequestException('Firma kaydınız bulunamadı.');
+    }
+    if (companyDoc.status !== 'APPROVED') {
+      throw new BadRequestException('Firmanız henüz onaylanmamış. Takas işlemleri için firma onayı gereklidir.');
+    }
 
     return {
       id: vendor.id,
-      company: props.companyId
-        ? { id: props.companyId, name: '', status: 'APPROVED' }
-        : null,
+      company: { id: companyDoc.id, name: companyDoc.name ?? '', status: companyDoc.status },
     };
   }
 }

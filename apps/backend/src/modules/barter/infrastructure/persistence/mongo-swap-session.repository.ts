@@ -11,7 +11,7 @@ import { TradeOfferItem as TradeOfferItemModel } from '@barterborsa/shared-persi
 import { SurplusItem as SurplusItemModel } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
 import { Company as CompanyModel } from '@barterborsa/shared-persistence/schemas/backend/company.schema';
 import { SwapSessionMapper, SwapSessionDocument } from './mappers/swap-session.mapper';
-import { ISwapSessionRepository } from '../../domain/repositories/swap-session.repository.interface';
+import { ISwapSessionRepository, SwapSessionWithRelations } from '../../domain/repositories/swap-session.repository.interface';
 import { SwapSession } from '../../domain/entities/swap-session.entity';
 
 @Injectable()
@@ -56,7 +56,7 @@ export class MongoSwapSessionRepository
     return { items: docs.map(doc => this.mapper.toDomain(doc)), total };
   }
 
-  async findByIdWithRelations(id: string): Promise<any | null> {
+  async findByIdWithRelations(id: string): Promise<SwapSessionWithRelations | null> {
     const doc = await this.model.findOne({ id }).exec();
     if (!doc) return null;
     
@@ -156,7 +156,8 @@ export class MongoSwapSessionRepository
         }
       : null;
 
-    return { ...doc.toObject(), parts, tradeOffer, initiatorUserId, receiverUserId };
+    // Zenginleştirilmiş okuma modeli (parts/tradeOffer ek alanlarla) — interface tipine map edilir
+    return { ...doc.toObject(), parts, tradeOffer, initiatorUserId, receiverUserId } as unknown as SwapSessionWithRelations;
   }
 
   async updateStatus(id: string, status: string): Promise<void> {

@@ -17,7 +17,7 @@ export interface CompanyProps {
   representativeName?: string;
   representativePhone?: string;
   vatRate: number;
-  status: string; // PENDING, VERIFIED, REJECTED
+  status: string; // CompanyStatus enum: PENDING | APPROVED | REJECTED | SUSPENDED
   companyType?: string;
   tradeRegistryNumber?: string;
   mersisNumber?: string;
@@ -44,7 +44,8 @@ export class Company extends AggregateRoot<CompanyProps> {
   }
 
   public verify(): void {
-    this.props.status = 'VERIFIED';
+    // Onaylanan firma persistence enum'una uygun şekilde 'APPROVED' olur
+    this.props.status = 'APPROVED';
     this.props.verifiedAt = new Date();
     this._updatedAt = new Date();
   }
