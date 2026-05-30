@@ -40,6 +40,8 @@ import { TradeReviewController } from './presentation/trade-review.controller';
 
 // Command handlers
 import { AcceptTradeOfferHandler } from './application/commands/accept-trade-offer.handler';
+import { CreateTradeOfferHandler } from './application/commands/create-trade-offer.handler';
+import { CounterTradeOfferHandler } from './application/commands/counter-trade-offer.handler';
 import { CreateSurplusItemHandler } from './application/commands/create-surplus-item.handler';
 import { ApproveSurplusHandler } from './application/commands/approve-surplus.handler';
 import { RejectSurplusHandler } from './application/commands/reject-surplus.handler';
@@ -71,6 +73,7 @@ import { DisputeResolutionSchedulerService } from './application/services/disput
 import { BarterMatchScheduler } from './application/services/barter-match.scheduler';
 import { SwapSchedulerService } from './application/services/swap-session.scheduler';
 import { CommissionSettlementService } from './application/services/commission-settlement.service';
+import { BarterVendorGuardService } from './application/services/barter-vendor-guard.service';
 
 // Infrastructure
 import { MongoSurplusItemRepository } from './infrastructure/persistence/mongo-surplus-item.repository';
@@ -92,6 +95,8 @@ import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 
 const CommandHandlers = [
   AcceptTradeOfferHandler,
+  CreateTradeOfferHandler,
+  CounterTradeOfferHandler,
   CreateSurplusItemHandler,
   ApproveSurplusHandler,
   RejectSurplusHandler,
@@ -161,6 +166,7 @@ const QueryHandlers = [
     BarterMatchScheduler,
     SwapSchedulerService,
     CommissionSettlementService,
+    BarterVendorGuardService,
     // Handlers
     ...CommandHandlers,
     ...QueryHandlers,

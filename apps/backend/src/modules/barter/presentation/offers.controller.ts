@@ -4,18 +4,16 @@ import {
   Controller, Get, Post, Patch, Delete,
   Body, Param, Query, UseGuards, NotFoundException, BadRequestException, ForbiddenException, Inject,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
 import { CommandBus } from '@nestjs/cqrs';
-import { randomUUID } from 'crypto';
 import {
   ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { AcceptTradeOfferCommand } from '../application/commands/accept-trade-offer.command';
+import { CreateTradeOfferCommand } from '../application/commands/create-trade-offer.command';
+import { CounterTradeOfferCommand } from '../application/commands/counter-trade-offer.command';
 import { TradeOfferItem as TradeOfferItemModel } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
-import { TradeOfferItem } from '../domain/entities/trade-offer-item.entity';
-import { TRADE_OFFER_DEFAULT_TTL_MS } from '@barterborsa/shared-core';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ICompany } from '@barterborsa/shared-persistence';
@@ -24,7 +22,7 @@ import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repos
 import { IEcosystemMembershipRepository } from '../../vendor/domain/repositories/i-ecosystem-membership.repository';
 import { ITradeOfferRepository } from '../domain/repositories/trade-offer.repository.interface';
 import { ISurplusItemRepository } from '../domain/repositories/surplus-item.repository.interface';
-import { SurplusItem } from '../domain/entities/surplus-item.entity';
+import { BarterVendorGuardService, ApprovedVendorWithCompany } from '../application/services/barter-vendor-guard.service';
 
 interface AuthenticatedUser { id: string; role: string; }
 
@@ -80,6 +78,7 @@ export class OffersController {
     @Inject('ISurplusItemRepository') private readonly surplusItemRepository: ISurplusItemRepository,
     @InjectModel('Company') private readonly companyModel: Model<ICompany>,
     @InjectModel('SwapSession') private readonly swapSessionModel: Model<ISwapSession>,
+    private readonly vendorGuard: BarterVendorGuardService,
   ) {}
 
   @ApiOperation({ summary: 'Gelen/giden teklifleri listele' })
@@ -108,189 +107,9 @@ export class OffersController {
   @ApiResponse({ status: 201 })
   @Post()
   async createOffer(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateOfferBody) {
-    const vendor = await this.getVendorWithCompany(user.id);
-
-    let toCompanyId = body.toCompanyId;
-    let receiverId = body.receiverId;
-
-    // Eğer toCompanyId veya receiverId yoksa ama surplusItemId varsa, ilandan bul
-    if ((!toCompanyId || !receiverId) && body.surplusItemId) {
-      const item = await this.surplusItemRepository.findByIdWithCompany(body.surplusItemId);
-      if (item) {
-        if (!toCompanyId) toCompanyId = item.companyId;
-        if (!receiverId) receiverId = item.companyId;
-      }
-    }
-
-    if (!toCompanyId) throw new BadRequestException('Hedef şirket ID (toCompanyId) bulunamadı.');
-    if (!receiverId) throw new BadRequestException('Hedef alıcı ID (receiverId) bulunamadı.');
-
-    // Receiver vendor APPROVED + barterEnabled kontrolü (initiator getVendorWithCompany'de denetlendi)
-    const receiverVendorCheck = await this.vendorRepository.findByCompanyId(toCompanyId);
-    if (!receiverVendorCheck || receiverVendorCheck.getProps().status !== 'APPROVED') {
-      throw new BadRequestException('Hedef firmanın satıcı hesabı onaylanmamış.');
-    }
-    if (!receiverVendorCheck.getProps().barterEnabled) {
-      throw new BadRequestException('Hedef firmanın takas (barter) modülü aktif değil.');
-    }
-    // Firma onay duvarı (kural #1): teklif alan firmanın da APPROVED olması gerekir
-    const receiverCompanyDoc = await this.companyModel.findOne({ id: toCompanyId }).lean().exec();
-    if (!receiverCompanyDoc || receiverCompanyDoc.status !== 'APPROVED') {
-      throw new BadRequestException('Hedef firma onaylanmamış. Takas için karşı firmanın onaylı olması gerekir.');
-    }
-
-    // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı.
-    // Aynı fabrika ekosistemine ait iki bayi birbirleriyle takas yapamaz; pazaryerine geçmeliler.
-    // Sadece VENDOR → VENDOR takaslarında çalışır.
-    const initiatorVendor = await this.vendorRepository.findByCompanyId(vendor.company.id);
-    if (!initiatorVendor) {
-      throw new BadRequestException('Gönderen satıcı bilgisi bulunamadı.');
-    }
-
-    const initiatorIsVendor = initiatorVendor.getProps().vendorType === 'COMMERCE';
-    const receiverVendor = await this.vendorRepository.findByCompanyId(toCompanyId);
-    const receiverIsVendor = receiverVendor?.getProps().vendorType === 'COMMERCE';
-
-    if (initiatorIsVendor && receiverIsVendor) {
-      // Her iki taraf da VENDOR — ekosistem membership kontrolü yap
-      const initiatorMemberships = await this.membershipRepo.findActiveByDealerId(initiatorVendor.id);
-      const receiverMemberships = await this.membershipRepo.findActiveByDealerId(receiverVendor!.id);
-
-      const initiatorEcoIds = new Set(initiatorMemberships.map(m => m.ecosystemId));
-      const sharedEcosystem = receiverMemberships.find(m => initiatorEcoIds.has(m.ecosystemId));
-
-      if (sharedEcosystem) {
-        throw new ForbiddenException({
-          code: 'BARTER_NOT_ALLOWED_IN_ECOSYSTEM',
-          message: 'Aynı fabrika ekosistemine üye bayiler birbirleriyle takas yapamaz. Genel BazarX Pazaryeri\'ni kullanın.',
-          details: { ecosystemId: sharedEcosystem.ecosystemId },
-        });
-      }
-    }
-
-    // KENDİ İLANINA TEKLİF YASAK — Master Plan v4.3 §4
-    const allOfferedIds = [
-      ...(body.offeredItems?.map(o => o.surplusItemId) ?? []),
-      body.offeredItemId,
-    ].filter(Boolean) as string[];
-    if (body.surplusItemId && allOfferedIds.includes(body.surplusItemId)) {
-      throw new ForbiddenException({
-        code: 'SELF_BARTER_NOT_ALLOWED',
-        message: 'Kendi ilanınıza teklif yapamazsınız.',
-      });
-    }
-    // Çoklu offeredItems içinde kendi ürünü var mı kontrolü
-    if (body.offeredItems?.length && body.surplusItemId) {
-      const offeredCompanyIds = await Promise.all(
-        body.offeredItems.map(async o => {
-          if (!o.surplusItemId) return null
-          const s = await this.surplusItemRepository.findById(o.surplusItemId)
-          return s ? (s as { get companyId(): string }).companyId : null
-        })
-      )
-      const targetItem = await this.surplusItemRepository.findById(body.surplusItemId)
-      const targetCompanyId = targetItem ? (targetItem as { get companyId(): string }).companyId : null
-      if (targetCompanyId && offeredCompanyIds.includes(targetCompanyId)) {
-        throw new ForbiddenException({
-          code: 'SELF_BARTER_NOT_ALLOWED',
-          message: 'Kendi ilanınıza teklif yapamazsınız.',
-        });
-      }
-    }
-
-    // Master Plan v4.3 §4.2 — Fabrikadan satın alınan ürünler pazaryerinde takas edilebilir mi?
-    // `allowOnlineResale` izni olmayan ekosistem listing'leri takasa konu edilemez.
-    if (body.surplusItemId) {
-      const surplus = await this.surplusItemRepository.findById(body.surplusItemId);
-      // SurplusItem domain entity'sinde allowOnlineResale yansıtılmışsa kontrol et
-      interface SurplusResaleProps { ecosystemId?: string; allowOnlineResale?: boolean }
-      const surplusProps: SurplusResaleProps = (surplus as SurplusItem | null)?.getProps?.() ?? {};
-      const ecosystemListing = surplusProps.ecosystemId;
-      const allowResale = surplusProps.allowOnlineResale;
-      if (ecosystemListing && allowResale === false) {
-        throw new ForbiddenException({
-          code: 'ONLINE_RESALE_NOT_ALLOWED',
-          message: 'Bu fabrika ürünü çevrimiçi takasa açık değil.',
-        });
-      }
-    }
-
-    const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7));
-    const cashAmount = body.cashAmount ?? 0;
-
-    const createdOffer = await this.tradeOfferRepository.create({
-      fromCompanyId: vendor.company.id,
-      toCompanyId,
-      status: 'PENDING',
-      cashAmount,
-      cashDirection: body.cashDirection ?? (cashAmount > 0 ? 'TO_RECEIVER' : 'NONE'),
-      cashCurrency: body.currency ?? 'TRY',
-      message: body.note || body.message,
-      initiatorId: user.id,
-      initiatorType: 'VENDOR',
-      receiverId,
-      receiverType: 'VENDOR',
-      expiresAt,
-      requestedItemId: body.surplusItemId,
-      offeredItemId:   body.offeredItemId,
-    });
-
-    const offerId = createdOffer.id;
-
-    // ─── Çoklu offeredItems ───────────────────────────────────────────────────
-    const allOffered: TradeOfferItemBody[] =
-      (body.offeredItems?.length ?? 0) > 0
-        ? body.offeredItems!
-        : (body.offeredItemId ? [{ surplusItemId: body.offeredItemId }] : []);
-
-    for (const item of allOffered) {
-      if (!item.surplusItemId) continue
-      const surplus = await this.surplusItemRepository.findById(item.surplusItemId);
-      if (surplus) {
-        const props = surplus.getProps();
-        const qty = item.quantity ?? 1;
-        const computedValue = item.estimatedValue
-          ?? props.estimatedValue
-          ?? ((props.unitPrice ?? 0) * qty);
-        await TradeOfferItemModel.create({
-          _id:              randomUUID(),
-          id:               randomUUID(),
-          surplusItemId:    item.surplusItemId,
-          quantity:         Types.Decimal128.fromString(String(qty)),
-          estimatedValue:   Types.Decimal128.fromString(String(computedValue || 0)),
-          offered_offer_id: offerId,
-        });
-      }
-    }
-
-    // ─── Çoklu requestedItems ─────────────────────────────────────────────────
-    const allRequested: TradeOfferItemBody[] =
-      (body.requestedItems?.length ?? 0) > 0
-        ? body.requestedItems!
-        : (body.surplusItemId ? [{ surplusItemId: body.surplusItemId }] : []);
-
-    for (const item of allRequested) {
-      if (!item.surplusItemId) continue
-      const surplus = await this.surplusItemRepository.findById(item.surplusItemId);
-      if (surplus) {
-        const props = surplus.getProps();
-        const qty = item.quantity ?? 1;
-        const computedValue = item.estimatedValue
-          ?? props.estimatedValue
-          ?? ((props.unitPrice ?? 0) * qty);
-        await TradeOfferItemModel.create({
-          _id:                 randomUUID(),
-          id:                  randomUUID(),
-          surplusItemId:       item.surplusItemId,
-          quantity:            Types.Decimal128.fromString(String(qty)),
-          estimatedValue:      Types.Decimal128.fromString(String(computedValue || 0)),
-          requested_offer_id:  offerId,
-        });
-      }
-    }
-
-    const offerProps = createdOffer.getProps();
-    return { success: true, data: { ...offerProps, id: createdOffer.id } };
+    // İş mantığı CreateTradeOfferHandler'a taşındı (DDD — controller yalnızca delege eder)
+    const data = await this.commandBus.execute(new CreateTradeOfferCommand(user.id, body));
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Teklife karşı teklif ver' })
@@ -301,134 +120,9 @@ export class OffersController {
     @Param('id') originalOfferId: string,
     @Body() body: CounterOfferBody,
   ) {
-    const vendor = await this.getVendorWithCompany(user.id);
-
-    const original = await this.tradeOfferRepository.findByIdWithRelations(originalOfferId);
-
-    if (!original) {
-      throw new NotFoundException(`Orijinal teklif (${originalOfferId}) bulunamadı.`);
-    }
-
-    if (original.toCompanyId !== vendor.company.id) {
-      throw new ForbiddenException('Bu teklife karşı teklif verme yetkiniz yok (Şirket uyuşmazlığı).');
-    }
-
-    if (original.status !== 'PENDING') {
-      throw new BadRequestException(`Sadece 'BEKLEMEDE' (PENDING) durumundaki tekliflere karşı teklif verilebilir. Mevcut durum: ${original.status}`);
-    }
-
-    // KENDİ İLANINA TEKLİF YASAK — counter-offer için de geçerli
-    const allOfferedIdsCounter = [
-      ...(body.offeredItems?.map(o => o.surplusItemId) ?? []),
-      body.offeredItemId,
-    ].filter(Boolean) as string[];
-    if (body.surplusItemId && allOfferedIdsCounter.includes(body.surplusItemId)) {
-      throw new ForbiddenException({
-        code: 'SELF_BARTER_NOT_ALLOWED',
-        message: 'Kendi ilanınıza teklif yapamazsınız.',
-      });
-    }
-    if (body.offeredItems?.length && body.surplusItemId) {
-      const offeredCompanyIds = await Promise.all(
-        body.offeredItems.map(async o => {
-          if (!o.surplusItemId) return null
-          const s = await this.surplusItemRepository.findById(o.surplusItemId)
-          return s ? (s as { get companyId(): string }).companyId : null
-        })
-      )
-      const targetItem = await this.surplusItemRepository.findById(body.surplusItemId)
-      const targetCompanyId = targetItem ? (targetItem as { get companyId(): string }).companyId : null
-      if (targetCompanyId && offeredCompanyIds.includes(targetCompanyId)) {
-        throw new ForbiddenException({
-          code: 'SELF_BARTER_NOT_ALLOWED',
-          message: 'Kendi ilanınıza teklif yapamazsınız.',
-        });
-      }
-    }
-
-    // Orijinal teklifi COUNTER_OFFERED olarak işaretle
-    await this.tradeOfferRepository.updateStatus(originalOfferId, 'COUNTER_OFFERED');
-
-    // Karşı teklif alıcısının vendor kaydını bul (receiverId vendor ID olmalı, company ID değil)
-    const originalInitiatorVendor = await this.vendorRepository.findByCompanyId(original.fromCompanyId ?? '');
-    if (!originalInitiatorVendor) {
-      throw new BadRequestException('Orijinal teklif sahibinin satıcı kaydı bulunamadı.');
-    }
-
-    // Yeni karşı teklif oluştur
-    const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 7) * (TRADE_OFFER_DEFAULT_TTL_MS / 7));
-    const counter = await this.tradeOfferRepository.create({
-      fromCompanyId:  vendor.company.id,
-      toCompanyId:    original.fromCompanyId ?? '',
-      status:         'PENDING',
-      cashAmount:     body.cashAmount ?? 0,
-      cashDirection:  body.cashDirection ?? 'TO_RECEIVER',
-      cashCurrency:   body.currency ?? 'TRY',
-      message:        body.note || body.message,
-      parentOfferId:  originalOfferId,
-      counterOfferId: originalOfferId,
-      initiatorId:    user.id,
-      initiatorType:  'VENDOR',
-      receiverId:     originalInitiatorVendor.getProps().companyId,
-      receiverType:   'VENDOR',
-      expiresAt,
-      offerSource:    'COUNTER',
-    });
-
-    const counterId = counter.id;
-
-    // ─── Counter-offer için TradeOfferItem kayıtları ─────────────────────────
-    const allOffered: TradeOfferItemBody[] =
-      (body.offeredItems?.length ?? 0) > 0
-        ? body.offeredItems!
-        : (body.offeredItemId ? [{ surplusItemId: body.offeredItemId }] : []);
-
-    for (const item of allOffered) {
-      if (!item.surplusItemId) continue
-      const surplus = await this.surplusItemRepository.findById(item.surplusItemId);
-      if (surplus) {
-        const props = surplus.getProps();
-        const qty = item.quantity ?? 1;
-        const computedValue = item.estimatedValue
-          ?? props.estimatedValue
-          ?? ((props.unitPrice ?? 0) * qty);
-        await TradeOfferItemModel.create({
-          _id:              randomUUID(),
-          id:               randomUUID(),
-          surplusItemId:    item.surplusItemId,
-          quantity:         Types.Decimal128.fromString(String(qty)),
-          estimatedValue:   Types.Decimal128.fromString(String(computedValue || 0)),
-          offered_offer_id: counterId,
-        });
-      }
-    }
-
-    const allRequested: TradeOfferItemBody[] =
-      (body.requestedItems?.length ?? 0) > 0
-        ? body.requestedItems!
-        : (body.surplusItemId ? [{ surplusItemId: body.surplusItemId }] : []);
-
-    for (const item of allRequested) {
-      if (!item.surplusItemId) continue
-      const surplus = await this.surplusItemRepository.findById(item.surplusItemId);
-      if (surplus) {
-        const props = surplus.getProps();
-        const qty = item.quantity ?? 1;
-        const computedValue = item.estimatedValue
-          ?? props.estimatedValue
-          ?? ((props.unitPrice ?? 0) * qty);
-        await TradeOfferItemModel.create({
-          _id:                 randomUUID(),
-          id:                  randomUUID(),
-          surplusItemId:       item.surplusItemId,
-          quantity:            Types.Decimal128.fromString(String(qty)),
-          estimatedValue:      Types.Decimal128.fromString(String(computedValue || 0)),
-          requested_offer_id:  counterId,
-        });
-      }
-    }
-
-    return { success: true, data: counter };
+    // İş mantığı CounterTradeOfferHandler'a taşındı (DDD — controller yalnızca delege eder)
+    const data = await this.commandBus.execute(new CounterTradeOfferCommand(user.id, originalOfferId, body));
+    return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Teklif detayı' })
@@ -528,51 +222,9 @@ export class OffersController {
 
   // ─── Yardımcı ─────────────────────────────────────────────────────────────
 
-  private async getVendorWithCompany(userId: string): Promise<{
-    id: string;
-    status: string;
-    barterEnabled: boolean;
-    ecosystemId?: string;
-    company: { id: string; name: string; status: string };
-  }> {
-    const vendor = await this.vendorRepository.findByUserId(userId);
-
-    if (!vendor) {
-      throw new BadRequestException('Satıcı profiliniz bulunamadı.');
-    }
-    const props = vendor.getProps();
-    if (props.status !== 'APPROVED') {
-      throw new BadRequestException('Satıcı hesabınız henüz onaylanmamış.');
-    }
-    if (!props.barterEnabled) {
-      throw new BadRequestException('Takas (barter) modülü hesabınız için aktif değil.');
-    }
-    if (!props.companyId) {
-      throw new BadRequestException('Satıcı hesabınıza bağlı bir firma bulunamadı.');
-    }
-
-    // Firma onay duvarı (barter-audit kural A): firma da APPROVED olmalı
-    const companyDoc = await this.companyModel.findOne({ id: props.companyId }).lean().exec();
-    if (!companyDoc) {
-      throw new BadRequestException('Firma kaydınız bulunamadı.');
-    }
-    if (companyDoc.status !== 'APPROVED') {
-      throw new BadRequestException('Firmanız henüz onaylanmamış. Takas işlemleri için firma onayı gereklidir.');
-    }
-
-    const company = {
-      id: companyDoc.id,
-      name: companyDoc.name ?? '',
-      status: companyDoc.status,
-    };
-
-    return {
-      id: vendor.id,
-      status: props.status,
-      barterEnabled: props.barterEnabled ?? false,
-      ecosystemId: props.ecosystemId,
-      company,
-    };
+  // Onaylı satıcı + onaylı firma doğrulaması — paylaşılan guard servisine delege edilir (DRY)
+  private getVendorWithCompany(userId: string): Promise<ApprovedVendorWithCompany> {
+    return this.vendorGuard.requireApprovedVendorWithCompany(userId);
   }
 
   private normalizeImages(images: unknown): string[] {
