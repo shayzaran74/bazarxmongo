@@ -133,6 +133,11 @@ export class OffersController {
     if (!receiverVendorCheck.getProps().barterEnabled) {
       throw new BadRequestException('Hedef firmanın takas (barter) modülü aktif değil.');
     }
+    // Firma onay duvarı (kural #1): teklif alan firmanın da APPROVED olması gerekir
+    const receiverCompanyDoc = await this.companyModel.findOne({ id: toCompanyId }).lean().exec();
+    if (!receiverCompanyDoc || receiverCompanyDoc.status !== 'APPROVED') {
+      throw new BadRequestException('Hedef firma onaylanmamış. Takas için karşı firmanın onaylı olması gerekir.');
+    }
 
     // Master Plan v4.3 §4.5 — Ekosistem içi takas yasağı.
     // Aynı fabrika ekosistemine ait iki bayi birbirleriyle takas yapamaz; pazaryerine geçmeliler.
@@ -446,7 +451,11 @@ export class OffersController {
   @ApiOperation({ summary: 'Teklifi kabul et' })
   @ApiParam({ name: 'id' })
   @Post(':id/accept')
-  async acceptOffer(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  async acceptOffer(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { xpToApply?: number } = {},
+  ) {
     const vendor = await this.getVendorWithCompany(user.id);
 
     const offer = await this.tradeOfferRepository.findByIdWithRelations(id);
@@ -454,7 +463,10 @@ export class OffersController {
       throw new NotFoundException('Teklif bulunamadı');
     }
 
-    return this.commandBus.execute(new AcceptTradeOfferCommand(id, user.id));
+    // Opt-in XP indirimi — kabul eden tarafın kendi komisyonuna uygulanır
+    const xpToApply = Math.max(0, Number(body.xpToApply ?? 0));
+
+    return this.commandBus.execute(new AcceptTradeOfferCommand(id, user.id, xpToApply));
   }
 
   @ApiOperation({ summary: 'Teklif durumunu güncelle (reddet vb.)' })
@@ -535,11 +547,23 @@ export class OffersController {
     if (!props.barterEnabled) {
       throw new BadRequestException('Takas (barter) modülü hesabınız için aktif değil.');
     }
+    if (!props.companyId) {
+      throw new BadRequestException('Satıcı hesabınıza bağlı bir firma bulunamadı.');
+    }
+
+    // Firma onay duvarı (barter-audit kural A): firma da APPROVED olmalı
+    const companyDoc = await this.companyModel.findOne({ id: props.companyId }).lean().exec();
+    if (!companyDoc) {
+      throw new BadRequestException('Firma kaydınız bulunamadı.');
+    }
+    if (companyDoc.status !== 'APPROVED') {
+      throw new BadRequestException('Firmanız henüz onaylanmamış. Takas işlemleri için firma onayı gereklidir.');
+    }
 
     const company = {
-      id: props.companyId ?? vendor.id,
-      name: '',
-      status: 'APPROVED',
+      id: companyDoc.id,
+      name: companyDoc.name ?? '',
+      status: companyDoc.status,
     };
 
     return {

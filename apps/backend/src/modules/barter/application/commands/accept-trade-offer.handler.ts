@@ -12,6 +12,7 @@ import { SwapSession } from '../../domain/entities/swap-session.entity';
 import { BarterPart } from '../../domain/entities/barter-part.entity';
 import { CollateralCalculatorService } from '../services/collateral-calculator.service';
 import { WatchtowerService } from '../services/watchtower.service';
+import { CommissionEngineService } from '../../../vendor/application/services/commission-engine.service';
 import { DomainException } from '@barterborsa/shared-core';
 import { TradeOffer as TradeOfferModel } from '@barterborsa/shared-persistence/schemas/backend/tradeOffer.schema';
 import { TradeOfferItem as TradeOfferItemModel, ITradeOfferItem } from '@barterborsa/shared-persistence/schemas/backend/tradeOfferItem.schema';
@@ -34,6 +35,7 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     @Inject('ISwapSessionRepository') private readonly sessionRepository: ISwapSessionRepository,
     private readonly collateralCalculator: CollateralCalculatorService,
     private readonly watchtower: WatchtowerService,
+    private readonly commissionEngine: CommissionEngineService,
     @InjectConnection() private readonly connection: Connection,
     private readonly rabbitMQ: RabbitMQService,
     private readonly financialGateway: FinancialGatewayService,
@@ -95,6 +97,21 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
       }
     }
 
+    // İstenen ürünlerin toplam değeri (initiator'ın aldığı değer — komisyon tabanı)
+    let totalRequestedValue = 0;
+    if (requestedItems.length > 0) {
+      totalRequestedValue = requestedItems.reduce(
+        (acc, item) => acc + parseFloat(item.estimatedValue?.toString() ?? '0'),
+        0,
+      );
+    } else if (offerProps.requestedItemId) {
+      const reqSurplus = await SurplusItemModel.findOne({ id: offerProps.requestedItemId }).lean();
+      if (reqSurplus) {
+        const rd = reqSurplus as Record<string, unknown>;
+        totalRequestedValue = parseFloat(rd.price?.toString() ?? '0') || 0;
+      }
+    }
+
     if (totalOfferedValue <= 0) {
       throw new DomainException('Teklif edilen ürünlerin toplam değeri sıfır olamaz');
     }
@@ -124,13 +141,22 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
 
     const receiverVendor = await VendorModel
       .findOne({ companyId: receiverUserId })
-      .select('userId')
+      .select('userId id')
       .lean()
-      .exec() as { userId?: string } | null;
+      .exec() as { userId?: string; id?: string } | null;
 
     if (receiverVendor?.userId) {
       receiverUserId = receiverVendor.userId;
     }
+
+    // Komisyon motoru için her iki tarafın vendorId'si (companyId üzerinden)
+    const initiatorVendor = await VendorModel
+      .findOne({ companyId: offer.getProps().fromCompanyId })
+      .select('id')
+      .lean()
+      .exec() as { id?: string } | null;
+    const initiatorVendorId = initiatorVendor?.id;
+    const receiverVendorId = receiverVendor?.id;
 
     // ─── Bakiye Kontrolü ─────────────────────────────────────────────────────
     const { sufficient: initiatorHasBalance, currentBalance: initiatorBalance } =
@@ -192,6 +218,151 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
     session.setHoldIds(fromHoldId, toHoldId);
     session.activate();
 
+    // ─── Komisyon (Master Plan §3/§6 — Faz 1: HELD, capture Faz 2) ──────────────
+    // Her taraf ALDIĞI değer + aldığı nakit üzerinden kendi tier'ından komisyon öder.
+    const cashAmount = offerProps.cashAmount ?? 0;
+    const cashDirection = offerProps.cashDirection;
+    const initiatorBase = totalRequestedValue + (cashDirection === 'TO_INITIATOR' ? cashAmount : 0);
+    const receiverBase = totalOfferedValue + (cashDirection === 'TO_RECEIVER' ? cashAmount : 0);
+
+    let fromCommissionAmount = 0;
+    let toCommissionAmount = 0;
+    let fromXpCommission = 0;
+    let toXpCommission = 0;
+    let commissionRateType = 'STANDARD';
+    let fromCommissionHoldId: string | undefined;
+    let toCommissionHoldId: string | undefined;
+    let commissionStatus: 'NONE' | 'HELD' = 'NONE';
+
+    if (initiatorVendorId && receiverVendorId) {
+      // Faz 3c: XP indirimi opt-in. xpToApply yalnızca İSTEĞİ YAPAN tarafa (actorId) uygulanır;
+      // karşı taraf accept anında kendi XP'sini kullanamaz.
+      const xp = command.xpToApply ?? 0;
+      const initiatorXp = command.actorId === initiatorUserId ? xp : 0;
+      const receiverXp = command.actorId === receiverUserId ? xp : 0;
+
+      try {
+        // Faz 3a: taraflar ortak bir ekosisteme üye/sahip ise grup oranı (fabrika↔bayi).
+        const sharedEcosystemId = await this.commissionEngine.resolveSharedEcosystemId(
+          initiatorVendorId,
+          receiverVendorId,
+        );
+        const isGroup = !!sharedEcosystemId;
+
+        // §3: XP indirimi ile grup içi (ekosistem) oran aynı işlemde birleşemez
+        if (xp > 0 && isGroup) {
+          throw new DomainException('XP indirimi, grup içi (ekosistem) komisyon oranı ile aynı işlemde uygulanamaz.');
+        }
+
+        const [initiatorBreakdown, receiverBreakdown] = await Promise.all([
+          this.commissionEngine.calculate({
+            vendorId: initiatorVendorId,
+            counterpartyVendorId: receiverVendorId,
+            transactionAmount: initiatorBase,
+            isGroupTransaction: isGroup,
+            xpToApply: initiatorXp,
+            referenceId: session.id,
+            referenceType: 'TRADE',
+          }),
+          this.commissionEngine.calculate({
+            vendorId: receiverVendorId,
+            counterpartyVendorId: initiatorVendorId,
+            transactionAmount: receiverBase,
+            isGroupTransaction: isGroup,
+            xpToApply: receiverXp,
+            referenceId: session.id,
+            referenceType: 'TRADE',
+          }),
+        ]);
+        fromCommissionAmount = initiatorBreakdown.cashCommission;
+        toCommissionAmount = receiverBreakdown.cashCommission;
+        fromXpCommission = initiatorBreakdown.xpCommission;
+        toXpCommission = receiverBreakdown.xpCommission;
+        // XP uygulanan tarafın rateType'ı yansıtılır (yoksa standart/grup)
+        commissionRateType = receiverXp > 0 ? receiverBreakdown.rateType : initiatorBreakdown.rateType;
+      } catch (commErr: unknown) {
+        const msg = commErr instanceof Error ? commErr.message : 'Bilinmeyen hata';
+        if (xp > 0) {
+          // Kullanıcı AÇIKÇA XP istedi ama geçersiz (yetersiz XP / ilk işlem / grup çakışması):
+          // teminat blokajlarını geri al ve hatayı yüzeye çıkar.
+          for (const [hid, key] of [
+            [fromHoldId, `${idempotencyBase}-initiator-refund-xp`],
+            [toHoldId, `${idempotencyBase}-receiver-refund-xp`],
+          ] as Array<[string | undefined, string]>) {
+            if (!hid) continue;
+            try {
+              await this.financialGateway.refundFunds(hid, key);
+            } catch (refundErr: unknown) {
+              this.logger.error('XP hatası sonrası teminat iadesi başarısız', {
+                holdId: hid,
+                error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+              });
+            }
+          }
+          throw commErr;
+        }
+        this.logger.warn('Komisyon hesaplaması başarısız — komisyon olmadan devam edilecek', {
+          sessionId: session.id,
+          error: msg,
+        });
+      }
+    }
+
+    // Komisyon blokajı yalnızca config bayrağı açıkken yapılır (güvenli rollout — Faz 1)
+    const commissionHoldEnabled = process.env.BARTER_COMMISSION_HOLD_ENABLED === 'true';
+    const platformAccountId = process.env.BARTER_COMMISSION_PLATFORM_ACCOUNT_ID ?? '';
+
+    if (commissionHoldEnabled && platformAccountId && (fromCommissionAmount > 0 || toCommissionAmount > 0)) {
+      const commissionIdemBase = `barter-commission-${session.id}`;
+      try {
+        if (fromCommissionAmount > 0) {
+          const r = await this.financialGateway.holdFunds(
+            initiatorUserId,
+            fromCommissionAmount.toString(),
+            'BARTER_COMMISSION',
+            session.id,
+            'SWAP_SESSION',
+            `${commissionIdemBase}-initiator`,
+            platformAccountId,
+          );
+          fromCommissionHoldId = r.holdId as string;
+        }
+        if (toCommissionAmount > 0) {
+          const r = await this.financialGateway.holdFunds(
+            receiverUserId,
+            toCommissionAmount.toString(),
+            'BARTER_COMMISSION',
+            session.id,
+            'SWAP_SESSION',
+            `${commissionIdemBase}-receiver`,
+            platformAccountId,
+          );
+          toCommissionHoldId = r.holdId as string;
+        }
+        commissionStatus = 'HELD';
+      } catch (commHoldErr: unknown) {
+        // Telafi: yerleştirilen komisyon + her iki teminat blokajını geri al
+        const refunds: Array<[string | undefined, string]> = [
+          [fromCommissionHoldId, `${commissionIdemBase}-initiator-refund`],
+          [fromHoldId, `${idempotencyBase}-initiator-refund-commission`],
+          [toHoldId, `${idempotencyBase}-receiver-refund-commission`],
+        ];
+        for (const [hid, key] of refunds) {
+          if (!hid) continue;
+          try {
+            await this.financialGateway.refundFunds(hid, key);
+          } catch (refundErr: unknown) {
+            this.logger.error('Komisyon telafi iadesi başarısız', {
+              holdId: hid,
+              error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+            });
+          }
+        }
+        const msg = commHoldErr instanceof Error ? commHoldErr.message : 'Bilinmeyen hata';
+        throw new DomainException(`Komisyon blokajı başarısız: ${msg}`);
+      }
+    }
+
     // ─── BarterPart'lar ────────────────────────────────────────────────────────
     const part1 = BarterPart.create(
       session.id,
@@ -236,6 +407,19 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
               status: session.getProps().status,
               timeoutAt: session.getProps().timeoutAt,
               shipmentMode: session.getProps().shipmentMode,
+              // ─── Komisyon (Faz 1) ───────────────────────────────────────
+              offeredValue: Types.Decimal128.fromString(totalOfferedValue.toString()),
+              requestedValue: Types.Decimal128.fromString(totalRequestedValue.toString()),
+              cashAmount: Types.Decimal128.fromString(cashAmount.toString()),
+              cashDirection,
+              fromCommissionAmount: Types.Decimal128.fromString(fromCommissionAmount.toString()),
+              toCommissionAmount: Types.Decimal128.fromString(toCommissionAmount.toString()),
+              fromXpCommission: Types.Decimal128.fromString(fromXpCommission.toString()),
+              toXpCommission: Types.Decimal128.fromString(toXpCommission.toString()),
+              fromCommissionHoldId,
+              toCommissionHoldId,
+              commissionStatus,
+              commissionRateType,
             },
           ],
           { session: mongoSession },
@@ -311,6 +495,11 @@ export class AcceptTradeOfferHandler implements ICommandHandler<AcceptTradeOffer
         fromCollateralHoldId: fromHoldId,
         toCollateralHoldId: toHoldId,
         status: session.getProps().collateralStatus,
+        // Komisyon (Faz 1)
+        commissionStatus,
+        commissionRateType,
+        fromCommissionAmount: fromCommissionAmount.toString(),
+        toCommissionAmount: toCommissionAmount.toString(),
       },
     });
 

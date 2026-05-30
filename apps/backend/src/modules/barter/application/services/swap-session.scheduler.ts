@@ -15,6 +15,7 @@ import { ITradeOfferRepository } from '../../domain/repositories/trade-offer.rep
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
+import { CommissionSettlementService } from './commission-settlement.service';
 import { SurplusItem as SurplusItemModel } from '@barterborsa/shared-persistence/schemas/backend/surplusItem.schema';
 import { BarterPart as BarterPartModel } from '@barterborsa/shared-persistence/schemas/backend/barterPart.schema';
 import { RedisService } from '@barterborsa/shared-security';
@@ -40,6 +41,7 @@ export class SwapSchedulerService {
     @Inject('ITradeOfferRepository')  private readonly offerRepo: ITradeOfferRepository,
     private readonly auditLog:        AuditLogService,
     private readonly financialGateway:FinancialGatewayService,
+    private readonly commissionSettlement: CommissionSettlementService,
     private readonly redisService:    RedisService,
   ) {}
 
@@ -119,6 +121,10 @@ export class SwapSchedulerService {
           continue;
         }
 
+        // Komisyon önce capture edilir (HELD değilse no-op). Hata olursa teminat serbest
+        // bırakılmaz; session PENDING_RELEASE kalır ve sonraki taramada yeniden denenir.
+        await this.commissionSettlement.captureOnCompletion(session.id);
+
         await this.financialGateway.releaseFunds(
           props.initiatorHoldId,
           `auto-release-${session.id}-initiator`,
@@ -161,6 +167,9 @@ export class SwapSchedulerService {
       if (hasHoldIds) {
         await this.refundCollateral(session.id, props.fromCollateralHoldId!, props.toCollateralHoldId!);
       }
+
+      // Takas gerçekleşmedi — bloke komisyon (varsa) iade edilir (HELD değilse no-op)
+      await this.commissionSettlement.refundOnCancellation(session.id);
 
       // Timeout'ta SurplusItem.blockedQuantity düşür — session'a ait surplusItemId'leri bul
       await this.releaseBlockedQuantities(session.id);

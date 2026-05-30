@@ -20,6 +20,7 @@ import { ISwapSessionRepository } from '../domain/repositories/swap-session.repo
 import { IVendorRepository } from '../../vendor/domain/repositories/vendor.repository.interface';
 import { FinancialGatewayService } from '../../financial-gateway/financial-gateway.service';
 import { SwapSchedulerService } from '../application/services/swap-session.scheduler';
+import { CommissionSettlementService } from '../application/services/commission-settlement.service';
 import { BarterMatchScheduler } from '../application/services/barter-match.scheduler';
 import { SwapSessionStatus } from '../domain/enums/swap-session-status.enum';
 import { TrustScoreRecalculationService } from '../application/services/trust-score-recalculation.service';
@@ -50,6 +51,7 @@ export class BarterAdminController {
     @Inject('ISwapSessionRepository') private readonly sessionRepo: ISwapSessionRepository,
     @Inject('IVendorRepository') private readonly vendorRepo: IVendorRepository,
     private readonly financialGateway:    FinancialGatewayService,
+    private readonly commissionSettlement: CommissionSettlementService,
     private readonly swapScheduler:       SwapSchedulerService,
     private readonly batchMatchScheduler:  BarterMatchScheduler,
     private readonly trustScoreSvc:       TrustScoreRecalculationService,
@@ -399,6 +401,9 @@ export class BarterAdminController {
     }
 
     const idempotencyBase = `admin-release-${sessionId}`;
+
+    // Komisyon önce platforma capture edilir (HELD değilse no-op)
+    await this.commissionSettlement.captureOnCompletion(sessionId);
 
     if (s.fromCollateralHoldId) {
       try {

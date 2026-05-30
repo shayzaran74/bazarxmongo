@@ -9,6 +9,7 @@ import { SwapSessionStatus } from '../../domain/enums/swap-session-status.enum';
 import { DisputeResolutionResult } from '../../domain/enums/dispute-resolution-result.enum';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
+import { CommissionSettlementService } from '../services/commission-settlement.service';
 
 @CommandHandler(ResolveDisputeCommand)
 export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeCommand> {
@@ -19,6 +20,7 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
     @Inject('IDisputeRepository') private readonly disputeRepository: IDisputeRepository,
     private readonly auditLog: AuditLogService,
     private readonly financialGateway: FinancialGatewayService,
+    private readonly commissionSettlement: CommissionSettlementService,
   ) {}
 
   async execute(command: ResolveDisputeCommand): Promise<{ success: boolean }> {
@@ -35,6 +37,8 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
 
     // Önce finansal operasyonlar — başarısız olursa dispute "çözümlendi" olarak işaretlenmez
     if (command.result === 'SELLER_WINS' || command.result === 'RELEASE_ALL') {
+      // Takas tamamlandı sayılır → komisyon platforma capture (HELD değilse no-op)
+      await this.commissionSettlement.captureOnCompletion(command.sessionId);
       await this.executeCollateralOps([
         props.fromCollateralHoldId
           ? () => this.financialGateway.releaseFunds(props.fromCollateralHoldId!, `${idempotencyBase}-from`)
@@ -47,6 +51,8 @@ export class ResolveDisputeHandler implements ICommandHandler<ResolveDisputeComm
       session.complete();
       session.releaseCollateral();
     } else if (command.result === 'BUYER_WINS' || command.result === 'REFUND_ALL') {
+      // Takas iptal → bloke komisyon iade (HELD değilse no-op)
+      await this.commissionSettlement.refundOnCancellation(command.sessionId);
       await this.executeCollateralOps([
         props.fromCollateralHoldId
           ? () => this.financialGateway.refundFunds(props.fromCollateralHoldId!, `${idempotencyBase}-from-ref`)

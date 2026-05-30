@@ -22,6 +22,19 @@ export interface SwapSessionProps {
   toCollateralHoldId?: string;
   initiatorHoldId?: string;
   receiverHoldId?: string;
+  // ─── Barter komisyonu (Master Plan §3/§6) ───────────────────────────────
+  offeredValue?: number;
+  requestedValue?: number;
+  cashAmount?: number;
+  cashDirection?: string;
+  fromCommissionAmount?: number;
+  toCommissionAmount?: number;
+  fromXpCommission?: number;
+  toXpCommission?: number;
+  fromCommissionHoldId?: string;
+  toCommissionHoldId?: string;
+  commissionStatus?: string;     // NONE | HELD | PARTIALLY_CAPTURED | CAPTURED | REFUNDED
+  commissionRateType?: string;   // STANDARD | GROUP | XP_DISCOUNTED
   pendingReleaseAt?: Date;
   autoReleasedAt?: Date;
   timeoutAt: Date;
@@ -169,5 +182,27 @@ export class SwapSession extends AggregateRoot<SwapSessionProps> {
   public markTimeout(): void {
     this.transitionTo(SwapSessionStatus.TIMEOUT);
     this.props.cancelledAt = new Date();
+  }
+
+  // ─── Komisyon mutabakatı (Master Plan §3/§6) ──────────────────────────────
+  // Komisyon yalnızca HELD durumundan capture/refund edilebilir (idempotent koruma).
+  public captureCommission(): void {
+    if (this.props.commissionStatus !== 'HELD') {
+      throw new DomainException(
+        `Komisyon capture edilemez: durum '${this.props.commissionStatus ?? 'NONE'}' (HELD bekleniyordu)`,
+      );
+    }
+    this.props.commissionStatus = 'CAPTURED';
+    this.props.updatedAt = new Date();
+  }
+
+  public refundCommission(): void {
+    if (this.props.commissionStatus !== 'HELD') {
+      throw new DomainException(
+        `Komisyon iade edilemez: durum '${this.props.commissionStatus ?? 'NONE'}' (HELD bekleniyordu)`,
+      );
+    }
+    this.props.commissionStatus = 'REFUNDED';
+    this.props.updatedAt = new Date();
   }
 }

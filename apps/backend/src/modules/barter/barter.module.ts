@@ -70,6 +70,7 @@ import { B2BXpRulesService } from './application/services/b2b-xp-rules.service';
 import { DisputeResolutionSchedulerService } from './application/services/dispute-resolution-scheduler.service';
 import { BarterMatchScheduler } from './application/services/barter-match.scheduler';
 import { SwapSchedulerService } from './application/services/swap-session.scheduler';
+import { CommissionSettlementService } from './application/services/commission-settlement.service';
 
 // Infrastructure
 import { MongoSurplusItemRepository } from './infrastructure/persistence/mongo-surplus-item.repository';
@@ -159,6 +160,7 @@ const QueryHandlers = [
     DisputeResolutionSchedulerService,
     BarterMatchScheduler,
     SwapSchedulerService,
+    CommissionSettlementService,
     // Handlers
     ...CommandHandlers,
     ...QueryHandlers,

@@ -4,6 +4,10 @@ import { Schema, Types } from 'mongoose';
 export const CollateralStatus = ['NONE','DEPOSITED','HELD','RELEASED','FORFEITED'] as const;
 export type CollateralStatusType = typeof CollateralStatus[number];
 
+// Barter komisyon durumu (Master Plan §3/§6) — accept'te HELD, tamamlanınca CAPTURED (Faz 2)
+export const CommissionStatus = ['NONE','HELD','PARTIALLY_CAPTURED','CAPTURED','REFUNDED'] as const;
+export type CommissionStatusType = typeof CommissionStatus[number];
+
 export const ShipmentMode = ['STANDARD','CARRIER','HAND_DELIVERY','DIGITAL'] as const;
 export type ShipmentModeType = typeof ShipmentMode[number];
 
@@ -31,6 +35,19 @@ export interface ISwapSession {
   toCollateralHoldId?: string;
   initiatorHoldId?: string;    // holdFunds response — accept-trade-offer set eder
   receiverHoldId?: string;    // holdFunds response — accept-trade-offer set eder
+  // ─── Barter komisyonu (Master Plan §3/§6) ───────────────────────────────
+  offeredValue?: Types.Decimal128;         // teklif edilen malların toplam değeri (receiver'ın aldığı)
+  requestedValue?: Types.Decimal128;       // istenen malların toplam değeri (initiator'ın aldığı)
+  cashAmount?: Types.Decimal128;           // takastaki nakit fark
+  cashDirection?: string;                  // TO_INITIATOR | TO_RECEIVER
+  fromCommissionAmount?: Types.Decimal128; // initiator'ın nakit komisyonu (tam, ratio uygulanmadan)
+  toCommissionAmount?: Types.Decimal128;   // receiver'ın nakit komisyonu
+  fromCommissionHoldId?: string;           // initiator komisyon blokaj ID (sellerId=PLATFORM)
+  toCommissionHoldId?: string;             // receiver komisyon blokaj ID
+  fromXpCommission?: Types.Decimal128;     // initiator'ın XP komisyon kısmı (Faz 2)
+  toXpCommission?: Types.Decimal128;       // receiver'ın XP komisyon kısmı (Faz 2)
+  commissionStatus?: CommissionStatusType; // NONE | HELD | PARTIALLY_CAPTURED | CAPTURED | REFUNDED
+  commissionRateType?: string;             // STANDARD | GROUP | XP_DISCOUNTED
   pendingReleaseAt?: Date;     // finalize-swap anında set edilir — SLA scheduler referansı
   autoReleasedAt?: Date;       // scheduler tarafından set edilir
   timeoutAt: Date;
@@ -62,6 +79,19 @@ export const SwapSessionSchema = new Schema<ISwapSession>({
   toCollateralHoldId: { type: String },
   initiatorHoldId: { type: String },
   receiverHoldId: { type: String },
+  // ─── Barter komisyonu ───────────────────────────────────────────────────
+  offeredValue: { type: Types.Decimal128 },
+  requestedValue: { type: Types.Decimal128 },
+  cashAmount: { type: Types.Decimal128 },
+  cashDirection: { type: String },
+  fromCommissionAmount: { type: Types.Decimal128 },
+  toCommissionAmount: { type: Types.Decimal128 },
+  fromCommissionHoldId: { type: String },
+  toCommissionHoldId: { type: String },
+  fromXpCommission: { type: Types.Decimal128 },
+  toXpCommission: { type: Types.Decimal128 },
+  commissionStatus: { type: String, enum: CommissionStatus, default: 'NONE' },
+  commissionRateType: { type: String },
   pendingReleaseAt: { type: Date },
   autoReleasedAt: { type: Date },
   timeoutAt: { type: Date },
