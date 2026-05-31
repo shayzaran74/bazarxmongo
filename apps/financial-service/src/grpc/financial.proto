@@ -64,6 +64,7 @@ message HoldFundsRequest {
   string referenceId = 4;
   string referenceType = 5;
   string idempotencyKey = 6;
+  string sellerId = 7;
 }
 
 message HoldFundsResponse {
