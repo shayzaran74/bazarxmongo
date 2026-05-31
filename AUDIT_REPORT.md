@@ -2,10 +2,10 @@
 
 **Tarih:** 2026-05-30 / 2026-05-31
 **Branch:** `feat/barter-commission-and-audit-fixes` (remote: `origin` = `bazarxmongo`)
-**Commit sayısı:** 5 (+ BazarXGO admin RBAC düzeltmesi: çalışma ağacında, henüz commit'lenmedi)
+**Commit sayısı:** 8
 **Test durumu:** Otomatik test yazılmadı — **manuel test** edilecek.
 
-> Bu rapor, `/audit` ile yapılan üç modül denetimi (Ekosistem + Ticari Takas + Admin/Vendor İzolasyon) ve devamında geliştirilen B2B takas komisyon motorunun özetidir.
+> Bu rapor, `/audit` ile yapılan denetimler (Ekosistem, Ticari Takas, Admin/Vendor İzolasyon, BazarXGO) + B2B takas komisyon motoru + BazarXGO yemek-teslimat dikeyinin özetidir.
 
 ---
 
@@ -18,7 +18,9 @@
 | `da016e5f` | feat(barter) | B2B takas komisyon motoru (Faz 1–3c) |
 | `1cede24d` | refactor(barter) | createOffer/counterOffer → CommandHandler + getVendorWithCompany DRY |
 | `93aee4ab` | docs | Denetim & düzeltme raporu (bu dosya) |
-| _(uncommitted)_ | fix(bazarxgo) | Admin RBAC standardize: RolesGuard + `@Roles` + `SUPERADMIN`→`SUPER_ADMIN`. **Not:** bazarxgo modülünün tamamı (~27 dosya) henüz git'te takipsiz WIP; fix dosyada uygulanmış durumda, modül commit'lenince dahil olacak |
+| `8d5186dd` | docs | Admin/Vendor izolasyon denetimi bölümü |
+| `b0acf7f9` | feat(bazarxgo) | Backend yemek-teslimat dikeyi (takipsizdi) + ödeme settlement + kupon doğrulama + admin RBAC + şemalar |
+| `1acc31ed` | chore(bazarxgo-mobile) | Mobil uygulama versiyon kontrolüne alındı (DENETLENMEDİ) |
 
 ---
 
@@ -138,20 +140,38 @@ Davranış **bire bir** korundu. Yeni dosyalar: `barter-vendor-guard.service.ts`
 
 ---
 
-## 6. Kalan İşler
+## 6. BazarXGO (Yemek-Teslimat) Modülü — Denetim & Düzeltme — `modules/bazarxgo`
 
-### 6.1 Deploy Ön-Koşulları (yayına almadan önce ZORUNLU)
+> Modül app.module'a wire'lı (canlı) ama git'te tamamen takipsizdi (~34 backend dosya + 4 şema). Denetlendi, kritik bulgular düzeltildi, version control'e alındı (`b0acf7f9`). Mobil app ayrı, denetlenmeden alındı (`1acc31ed`).
+
+### 🔴 Ödeme settlement (DÜZELTİLDİ)
+- **Bulgu:** `place-order` `holdFunds` ile müşteri parasını bloke ediyor ama modülde **hiç** `releaseFunds`/`refundFunds` yoktu → teslimatta restoran ödenmiyor, iptalde iade yok, **müşteri parası kalıcı bloke**.
+- **Çözüm:** `sellerId = BAZARXGO_PLATFORM_ACCOUNT_ID` ile capture edilebilir blokaj; yeni `GoOrderSettlementService` (DELIVERED→capture, CANCELLED→refund); `advance-status` + scheduler wiring; `settlementStatus` alanı (HELD/CAPTURED/REFUNDED, idempotent).
+
+### 🟠 Kupon doğrulama bypass (DÜZELTİLDİ)
+- **Bulgu:** `place-order` kuponu yalnızca `findByCode` ile uyguluyordu — `isActive`/minOrder/case kontrolü yoktu (yalnızca ayrı `validate-coupon`'da) → inaktif/süresi geçmiş kupon geçebiliyordu.
+- **Çözüm:** place-order'a `toUpperCase` + `isActive` + kupona özel `minOrderAmount` doğrulaması eklendi (validate-coupon ile parite).
+
+### ✅ İyi olanlar
+Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, order auth'lu, public read'ler `@Public`) · 0 `any`, 0 `console` · DDD katmanları temiz · audit log · domain state machine.
+
+---
+
+## 7. Kalan İşler
+
+### 7.1 Deploy Ön-Koşulları (yayına almadan önce ZORUNLU)
 - [ ] Branch'i `main`'e al (sunucu `main` pull ediyor; değişiklikler şu an **`main`'de değil**).
 - [ ] `shared-persistence` paketini **build et** (SwapSession şeması değişti; dist'ten derleniyorsa).
 - [ ] **Company backfill migration `run()`** çalıştır — yoksa eski onaylı firmalar takas yapamaz.
 
-### 6.2 Komisyonu Aktifleştirmeden Önce
+### 7.2 Komisyonu Aktifleştirmeden Önce
 - [ ] `BARTER_COMMISSION_PLATFORM_ACCOUNT_ID` tanımla (geçerli platform cüzdanı).
 - [ ] `releaseFunds(sellerId=PLATFORM)` → platforma capture davranışını **financial-service'te teyit et** (varsayıma dayanıyor).
 - [ ] `BARTER_COMMISSION_HOLD_ENABLED=true` (test ortamında doğrulandıktan sonra).
 
-### 6.3 Henüz Yapılmadı
-- [ ] **BazarXGO modülünü commit'le** — modül baştan sona takipsiz WIP (~27 dosya); admin RBAC fix'i diskte hazır, modül commit'lenince dahil olur.
+### 7.3 Henüz Yapılmadı
+- [ ] **BazarXGO:** `BAZARXGO_PLATFORM_ACCOUNT_ID` env tanımla (capture hedefi); restorana payout hesabı/ilişkisi ekle (şu an tahsilat platforma); sipariş iptal endpoint'i yok (refund yolu hazır ama tetikleyici yok); kupon kullanım sayacı tutulmuyor.
+- [ ] **BazarXGO mobil app denetlenmeli** (`apps/bazarxgo-mobile`, ~95 dosya — sadece version control'e alındı).
 - [ ] `wallet-admin` topup/withdrawal approve/reject **audit-log doğrulaması** (downstream'de var mı?).
 - [ ] **Faz 3c frontend UI** (Nuxt): accept ekranında `xpToApply` girişi + nakit/XP önizlemesi (`POST /commission/preview` kullanılabilir).
 - [ ] **Otomatik testler** (manuel test edilecek — talep edilmedi).
@@ -161,7 +181,12 @@ Davranış **bire bir** korundu. Yeni dosyalar: `barter-vendor-guard.service.ts`
 
 ---
 
-## 7. Manuel Test Kontrol Listesi (öneri)
+## 8. Manuel Test Kontrol Listesi (öneri)
+
+**BazarXGO:**
+- [ ] Sipariş ver → müşteriden `total` bloke edilir (`settlementStatus=HELD`).
+- [ ] Sipariş DELIVERED'a ulaşınca → blokaj platforma capture (`CAPTURED`); fon bloke kalmaz.
+- [ ] İnaktif/süresi geçmiş kupon place-order'da reddedilmeli; kupona özel minOrder altı reddedilmeli.
 
 **Admin RBAC:**
 - [ ] BazarXGO admin endpoint'lerine ADMIN ve SUPER_ADMIN erişebilmeli; normal vendor/müşteri **403** almalı.
