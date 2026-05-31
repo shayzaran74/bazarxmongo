@@ -17,6 +17,8 @@ export interface IGoCoupon {
   maxDiscount: Types.Decimal128;
   minOrderAmount?: Types.Decimal128;
   isActive: boolean;
+  usageLimit?: number;   // Toplam kullanım limiti (yoksa sınırsız)
+  usageCount: number;    // Şimdiye kadarki kullanım sayısı
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +35,8 @@ export const GoCouponSchema = new Schema<IGoCoupon>(
     maxDiscount: { type: Types.Decimal128, default: 0 },
     minOrderAmount: { type: Types.Decimal128 },
     isActive: { type: Boolean, default: true },
+    usageLimit: { type: Number },
+    usageCount: { type: Number, default: 0 },
   },
   {
     timestamps: true,

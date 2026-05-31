@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '@barterborsa/shared-security';
 import { CurrentUser } from '@barterborsa/shared-nest';
 import { Inject } from '@nestjs/common';
 import { PlaceGoOrderCommand } from '../application/commands/place-order.command';
+import { CancelGoOrderCommand } from '../application/commands/cancel-order.command';
 import { PlaceGoOrderDto } from '../application/dtos/place-order.dto';
 import { IGoOrderRepository } from '../domain/repositories/go-order.repository.interface';
 import { IGoOrder } from '@barterborsa/shared-persistence';
@@ -92,6 +93,16 @@ export class BazarxgoOrderController {
       data: result.items.map(serializeOrder),
       meta: { page: p, limit: l, total: result.total, totalPages: Math.ceil(result.total / l) },
     };
+  }
+
+  @ApiOperation({ summary: 'Siparişi iptal et (yalnızca hazırlanmadan önce)' })
+  @ApiParam({ name: 'id' })
+  @Post(':id/cancel')
+  async cancelOrder(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ success: boolean; status: string }> {
+    return this.commandBus.execute(new CancelGoOrderCommand(id, user.id));
   }
 
   @ApiOperation({ summary: 'Sipariş detayı + takip durumu' })

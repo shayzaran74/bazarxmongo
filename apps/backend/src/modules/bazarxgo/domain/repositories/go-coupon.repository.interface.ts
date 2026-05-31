@@ -8,5 +8,6 @@ export interface IGoCouponRepository {
   findById(id: string): Promise<IGoCoupon | null>;
   create(data: Omit<IGoCoupon, '_id' | 'createdAt' | 'updatedAt'>): Promise<IGoCoupon>;
   update(id: string, data: Partial<IGoCoupon>): Promise<IGoCoupon | null>;
+  incrementUsage(id: string): Promise<void>;
   delete(id: string): Promise<void>;
 }

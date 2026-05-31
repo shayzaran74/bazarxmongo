@@ -19,6 +19,9 @@ export class ValidateGoCouponHandler implements ICommandHandler<ValidateGoCoupon
     if (!coupon || !coupon.isActive) {
       throw new DomainException('Geçersiz veya süresi dolmuş kupon');
     }
+    if (coupon.usageLimit !== undefined && (coupon.usageCount ?? 0) >= coupon.usageLimit) {
+      throw new DomainException('Bu kuponun kullanım limiti dolmuş');
+    }
 
     const orderAmt = new Decimal(command.orderAmount);
     const minOrder = coupon.minOrderAmount

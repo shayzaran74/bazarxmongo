@@ -38,6 +38,10 @@ export class MongoGoCouponRepository implements IGoCouponRepository {
     return doc as IGoCoupon | null;
   }
 
+  async incrementUsage(id: string): Promise<void> {
+    await GoCoupon.updateOne({ id }, { $inc: { usageCount: 1 }, $set: { updatedAt: new Date() } }).exec();
+  }
+
   async delete(id: string): Promise<void> {
     await GoCoupon.deleteOne({ id }).exec();
   }

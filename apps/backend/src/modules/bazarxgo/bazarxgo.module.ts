@@ -20,6 +20,7 @@ import { BazarxgoAdminController } from './presentation/bazarxgo-admin.controlle
 // Command handler'lar
 import { PlaceGoOrderHandler } from './application/commands/place-order.handler';
 import { AdvanceGoOrderStatusHandler } from './application/commands/advance-order-status.handler';
+import { CancelGoOrderHandler } from './application/commands/cancel-order.handler';
 import { ValidateGoCouponHandler } from './application/commands/validate-coupon.handler';
 
 // Servisler
@@ -43,6 +44,7 @@ import { AuditMongooseModule } from '../audit/audit-mongoose.module';
 const CommandHandlers = [
   PlaceGoOrderHandler,
   AdvanceGoOrderStatusHandler,
+  CancelGoOrderHandler,
   ValidateGoCouponHandler,
 ];
 

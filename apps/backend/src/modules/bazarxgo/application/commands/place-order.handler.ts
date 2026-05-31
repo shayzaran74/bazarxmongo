@@ -40,6 +40,9 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
       if (!coupon || !coupon.isActive) {
         throw new DomainException('Geçersiz veya süresi dolmuş kupon');
       }
+      if (coupon.usageLimit !== undefined && (coupon.usageCount ?? 0) >= coupon.usageLimit) {
+        throw new DomainException('Bu kuponun kullanım limiti dolmuş');
+      }
     }
 
     // Fiyatlandırma
@@ -69,7 +72,8 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
     // platform tarafından harici yürütülür.)
     const id = randomUUID();
     const idempotencyKey = `go-order-${id}`;
-    const platformAccountId = process.env.BAZARXGO_PLATFORM_ACCOUNT_ID ?? '';
+    // Capture hedefi: restoranın payout hesabı; tanımsızsa platform hesabı
+    const payoutAccountId = restaurant.payoutAccountId ?? process.env.BAZARXGO_PLATFORM_ACCOUNT_ID ?? '';
     let holdId: string | undefined;
 
     try {
@@ -80,7 +84,7 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
         id,
         'GO_ORDER',
         idempotencyKey,
-        platformAccountId,
+        payoutAccountId,
       ) as { holdId: string };
       holdId = holdResult.holdId;
     } catch (err: unknown) {
@@ -133,6 +137,11 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
       estimatedMinutes: order.getProps().estimatedMinutes,
       addressLine: order.getProps().addressLine,
     });
+
+    // Kupon kullanım sayacını artır (sipariş başarıyla oluşturuldu)
+    if (coupon) {
+      await this.couponRepo.incrementUsage(coupon.id);
+    }
 
     await this.auditLog.log({
       actorId: command.userId,

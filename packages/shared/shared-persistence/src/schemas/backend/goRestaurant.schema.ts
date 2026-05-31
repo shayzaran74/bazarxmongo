@@ -42,6 +42,7 @@ export interface IGoRestaurant {
   tagType?: string;
   promo?: string;
   isActive: boolean;
+  payoutAccountId?: string; // Restoranın tahsilat (wallet) hesabı; yoksa platform hesabına capture edilir
   sections: IGoMenuSectionEmbed[];
   createdAt: Date;
   updatedAt: Date;
@@ -91,6 +92,7 @@ export const GoRestaurantSchema = new Schema<IGoRestaurant>(
     tagType: { type: String },
     promo: { type: String },
     isActive: { type: Boolean, default: true },
+    payoutAccountId: { type: String },
     sections: { type: [GoMenuSectionEmbedSchema], default: [] },
   },
   {
