@@ -169,3 +169,9 @@ export { Transfer, ITransfer, TransferSchema } from './schemas/backend/transfer.
 export { TransferItem, ITransferItem, TransferItemSchema } from './schemas/backend/transferItem.schema';
 
 export { EscrowCoupon, IEscrowCoupon, EscrowCouponSchema } from './schemas/backend/escrowCoupon.schema';
+
+// BazarXGO — teslimat dikeyi şemaları
+export { GoRestaurant, IGoRestaurant, GoRestaurantSchema, IGoMenuSectionEmbed, IGoMenuItemEmbed } from './schemas/backend/goRestaurant.schema';
+export { GoCampaign, IGoCampaign, GoCampaignSchema } from './schemas/backend/goCampaign.schema';
+export { GoCoupon, IGoCoupon, GoCouponSchema, GoCouponType, GoCouponTypeValue } from './schemas/backend/goCoupon.schema';
+export { GoOrder, IGoOrder, GoOrderSchema, GoOrderStatus, GoOrderStatusValue, GoOrderMode, GoOrderModeValue, IGoOrderItem, GoSettlementStatus, GoSettlementStatusValue } from './schemas/backend/goOrder.schema';
