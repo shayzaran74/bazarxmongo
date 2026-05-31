@@ -2,7 +2,7 @@
 
 **Tarih:** 2026-05-30 / 2026-05-31
 **Branch:** `feat/barter-commission-and-audit-fixes` (remote: `origin` = `bazarxmongo`)
-**Commit sayısı:** 9
+**Commit sayısı:** 14
 **Test durumu:** Otomatik test yazılmadı — **manuel test** edilecek.
 
 > Bu rapor, `/audit` ile yapılan denetimler (Ekosistem, Ticari Takas, Admin/Vendor İzolasyon, BazarXGO) + B2B takas komisyon motoru + BazarXGO yemek-teslimat dikeyinin özetidir.
@@ -22,6 +22,10 @@
 | `b0acf7f9` | feat(bazarxgo) | Backend yemek-teslimat dikeyi (takipsizdi) + ödeme settlement + kupon doğrulama + admin RBAC + şemalar |
 | `1acc31ed` | chore(bazarxgo-mobile) | Mobil uygulama versiyon kontrolüne alındı (DENETLENMEDİ) |
 | `6cde48d1` | feat(bazarxgo) | Sipariş iptal+refund endpoint'i, restoran payout hesabı, kupon kullanım limiti |
+| `b25d8811` | docs | BazarXGO iptal/payout/kupon-limit ek düzeltmeleri |
+| `cf7c8e3b` | fix(financial) | **Faz 1.5:** `HoldFundsRequest` proto'suna `sellerId=7` → capture doğru hesaba (BazarXGO + barter komisyon) |
+| `a360af25` | feat(bazarxgo) | **Faz 2:** escrow `reason` → GO'da B2B komisyon kesilmez; `GoCommissionService`; restoran `ownerUserId`; hakediş hesabı persist |
+| `afc6a7ab` | feat(bazarxgo) | **Faz 3:** `TransferBetweenUsers` gRPC + `GoPayoutScheduler` batch hakediş (platform→restoran) |
 
 ---
 
@@ -158,6 +162,14 @@ Davranış **bire bir** korundu. Yeni dosyalar: `barter-vendor-guard.service.ts`
 - **Restoran payout:** `IGoRestaurant.payoutAccountId`; capture hedefi `payoutAccountId ?? PLATFORM`.
 - **Kupon limiti:** `usageLimit`/`usageCount` + `incrementUsage`; place-order & validate-coupon limit kontrolü.
 
+### 💰 Hakediş Mimarisi — `bazarxgoplan.md` uygulandı (Faz 1.5 / 2 / 3)
+> Detaylı tasarım + kararlar `bazarxgoplan.md`'de. Mimari: **Seçenek B** (platform tek hold → batch payout). Seçenek A (çift hold) negatif-hold + otomatik çift-komisyon + orderId-unique nedeniyle elendi.
+
+- **🔴 Faz 1.5 (`cf7c8e3b`) — proto `sellerId` bug'ı:** `HoldFundsRequest`'te `sellerId` tanımsızdı → gRPC wire'da düşürüyor → tüm hold'lar `sellerId=''` → capture boş hesaba. **BazarXGO + barter komisyon ikisini birden bozuyordu.** Her iki proto'ya `sellerId=7` eklendi.
+- **Faz 2 (`a360af25`):** escrow'a `reason` taşındı; `release-escrow` `GO_ORDER`'da otomatik B2B tier komisyonu **kesmiyor** (platform tutarın tamamını alır). `GoCommissionService` (`subtotal × GO_COMMISSION_RATE=0.15`, kupon platform-finanse → taban yalın subtotal). `GoRestaurant.ownerUserId/goCommissionRate`; place-order'da `restaurantPayoutAmount`/`platformFeeAmount` persist; teslimatta `payoutStatus=PENDING`.
+- **Faz 3 (`afc6a7ab`):** yeni `TransferBetweenUsers` gRPC primitifi (user→user, idempotent); `GoPayoutScheduler` (günlük 04:00, `GO_PAYOUT_DISPUTE_WINDOW_DAYS=3` geçmiş, CAPTURED+PENDING siparişlerde platform→restoran transfer → `payoutStatus=PAID`).
+- **Faz 4 (kapsam dışı):** gerçek kurye dispatch + `deliveryFee` kurye dağıtımı.
+
 ### ✅ İyi olanlar
 Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, order auth'lu, public read'ler `@Public`) · 0 `any`, 0 `console` · DDD katmanları temiz · audit log · domain state machine.
 
@@ -167,24 +179,26 @@ Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, 
 
 ### 7.1 Deploy Ön-Koşulları (yayına almadan önce ZORUNLU)
 - [ ] Branch'i `main`'e al (sunucu `main` pull ediyor; değişiklikler şu an **`main`'de değil**).
-- [ ] `shared-persistence` paketini **build et** (SwapSession şeması değişti; dist'ten derleniyorsa).
+- [ ] `shared-persistence` + `financial-service` + `backend` **build/restart** (proto `sellerId`/`TransferBetweenUsers` + escrow/GO şemaları değişti).
 - [ ] **Company backfill migration `run()`** çalıştır — yoksa eski onaylı firmalar takas yapamaz.
 
 ### 7.2 Komisyonu Aktifleştirmeden Önce
-- [ ] `BARTER_COMMISSION_PLATFORM_ACCOUNT_ID` tanımla (geçerli platform cüzdanı).
-- [ ] `releaseFunds(sellerId=PLATFORM)` → platforma capture davranışını **financial-service'te teyit et** (varsayıma dayanıyor).
+- [x] ~~`releaseFunds(sellerId=PLATFORM)` → platforma capture~~ — `cf7c8e3b` (Faz 1.5) ile proto `sellerId` eklendi; capture artık doğru hesaba gider.
+- [x] ~~`BARTER_COMMISSION_PLATFORM_ACCOUNT_ID` / `BAZARXGO_PLATFORM_ACCOUNT_ID` tanımla~~ — admin cüzdan ID'si ile `.env`'lere eklendi (kullanıcı).
 - [ ] `BARTER_COMMISSION_HOLD_ENABLED=true` (test ortamında doğrulandıktan sonra).
 
 ### 7.3 Henüz Yapılmadı
 - [x] ~~BazarXGO: sipariş iptal+refund endpoint'i, restoran payout alanı, kupon kullanım limiti~~ → `6cde48d1`.
-- [ ] **BazarXGO:** `BAZARXGO_PLATFORM_ACCOUNT_ID` ve restoran `payoutAccountId` DEĞERLERİNİ doldur (alan/env eklendi ama boş → capture aksi halde boş/platform hesabına gider).
+- [x] ~~BazarXGO hakediş mimarisi (proto fix + komisyon ayrımı + batch payout)~~ → `cf7c8e3b`/`a360af25`/`afc6a7ab` (bazarxgoplan.md Faz 1.5/2/3).
+- [x] ~~`wallet-admin` approve/reject audit-log~~ — DOĞRULANDI: `ProcessWalletRequestHandler`/`ProcessWithdrawalHandler` zaten `TOPUP_*`/`WITHDRAWAL_*` log'luyor (controller delege ediyor).
+- [ ] **BazarXGO restoran onboarding:** restoran `ownerUserId`/`payoutAccountId` DEĞERLERİNİ doldur (alan hazır; boşsa hakediş PENDING birikir, para kaybolmaz). Restoran cüzdanları mevcut olmalı.
 - [ ] **BazarXGO mobil app denetlenmeli** (`apps/bazarxgo-mobile`, ~95 dosya — sadece version control'e alındı).
-- [ ] `wallet-admin` topup/withdrawal approve/reject **audit-log doğrulaması** (downstream'de var mı?).
 - [ ] **Faz 3c frontend UI** (Nuxt): accept ekranında `xpToApply` girişi + nakit/XP önizlemesi (`POST /commission/preview` kullanılabilir).
+- [ ] **BazarXGO Faz 4:** gerçek kurye dispatch + `deliveryFee` kurye dağıtımı.
 - [ ] **Otomatik testler** (manuel test edilecek — talep edilmedi).
 - [ ] Ekosistem `getAuditLogs` display fallback'i hâlâ `Vendor.ecosystemId` kullanıyor (Sprint 2'de alan silinince ele alınmalı).
 - [ ] Frontend (Nuxt) admin rotalarının `auth-admin` middleware koruması teyidi.
-- [ ] `StructuredLogger` ve admin controller DDD borcu (proje-geneli kararlar).
+- [ ] `StructuredLogger` borcu (proje-geneli karar). Admin controller DDD borcu: **content/settings** çözüldü (bkz. §9); diğer modüller bekliyor.
 
 ---
 
@@ -212,3 +226,38 @@ Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, 
 **Refactor (regresyon):**
 - [ ] createOffer / counterOffer eskisiyle aynı yanıt/davranış.
 - [ ] Ekosistem içi iki bayi takas yapamamalı (BARTER_NOT_ALLOWED_IN_ECOSYSTEM).
+
+---
+
+## 9. Content / System Settings Modülü — Denetim & Düzeltme — `modules/content`
+
+> `/audit content` denetimi. Public (`settings.controller.ts`) + admin (`settings-admin.controller.ts`) ayar uçları incelendi; 3 fazda düzeltildi. **Davranış public uçta birebir korundu**, admin uçta yalnızca additive iyileştirmeler yapıldı.
+
+### Bulgular & Düzeltmeler
+
+| # | Bulgu | Düzeltme | Önem |
+|---|-------|----------|------|
+| 1 | **Defaults drift**: `HOMEPAGE_DEFAULTS` ve `BAZARX_GO_DEFAULTS` public/admin controller'larda farklıydı (örn. `siteName: 'BazarX'` vs `''`; admin'de kupon/kategori dizileri tanımsız) → DB boşken ön yüz ile panel uyuşmuyordu | **Tek kaynak** `settings.defaults.ts`. `HOMEPAGE_DISPLAY_DEFAULTS` (ortak görsel) + `HOMEPAGE_ADMIN_DEFAULTS` (= ortak + `autoApprove*`/`shippingTiers`). `BAZARX_GO_DEFAULTS` tek sabit (diziler dahil) | 🔴 Kritik |
+| 2 | `BazarxGoCouponDto.icon?: any` (Zero-Tolerance ihlali) | `@IsOptional() @IsString() icon?: string` | 🔴 Type Safety |
+| 3 | **DDD ihlali**: her iki controller presentation katmanında doğrudan `Model<ISystemSetting>` + `Connection` enjekte ediyordu (kardeş feature'lar CQRS+Repository kullanırken) | `ISystemSettingRepository` soyutlaması + `MongoSystemSettingRepository`; okuma/yazma+audit mantığı **Query/Command handler'lara** taşındı; controller yalnızca bus'a delege eder | 🟠 Yüksek |
+| 4 | `ecosystem` query param validasyonsuz (keyfi key okuma) | `EcosystemQueryDto` + `@IsIn(['bazarx','ticaritakas'])` whitelist (public + admin) | 🟡 Orta |
+| 5 | Lokal `AuthenticatedUser` interface controller'da tekrar tanımlıydı | Paylaşılan **`@barterborsa/shared-nest` → `AuthenticatedUser`** tipi oluşturuldu ve import edildi | 🟡 Orta |
+| 6 | `ShippingTierDto`'da `max > min` cross-field kontrolü yoktu | Custom `@IsGreaterThan('min')` doğrulayıcısı | 🟡 Düşük |
+
+### Yeni / dokunulan dosyalar
+**Yeni (application/settings):** `settings.defaults.ts`, `settings.dtos.ts`, `settings.queries.ts`, `settings.commands.ts`, `settings-query.handlers.ts`, `settings-command.handlers.ts`
+**Yeni (domain/infra):** `domain/repositories/system-setting.repository.interface.ts`, `infrastructure/persistence/mongo-system-setting.repository.ts`
+**Yeni (shared):** `packages/shared/shared-nest/src/types/authenticated-user.ts` (+ `index.ts` export)
+**Değişen:** `presentation/settings.controller.ts`, `presentation/settings-admin.controller.ts`, `content.module.ts`
+
+### Doğrulama
+- `tsc --noEmit` (backend): yeni/değişen dosyalarda **0 hata, 0 `any`**. (Tek hata `bazarxgo/mongo-go-order.repository.ts`'te — **bu denetimden önce mevcut**, takipsiz WIP modülü, bu işle ilgisiz.)
+- Public `/settings/homepage` ve `/settings/bazarx-go` yanıt şekli birebir korundu; admin uçta defaults artık tutarlı (additive).
+
+### Uygulanmadı (proje-geneli karar)
+- `StructuredLogger` migrasyonu — sınıf kod tabanında yok (§1 ile aynı durum). Operasyonel loglama eklenmedi; audit logging (AuditLogService) zaten mevcut ve handler'lara taşındı.
+
+### Ek: `AuthenticatedUser` tipi tüm backend'de tekilleştirildi ✅
+- Tüm backend controller'larındaki **63 lokal `AuthenticatedUser` tanımı** (64 kopya; `return.controller.ts`'te 2) kaldırılıp paylaşılan `@barterborsa/shared-nest → AuthenticatedUser` import'una çevrildi.
+- Tüm lokal tanımlar paylaşılan tipin **subset**'iydi (ekstra alan yok) ve hiçbir dosya tipi başka bir controller'dan import etmiyordu → davranış riski yok.
+- Doğrulama: `tsc --noEmit` (backend) **0 hata**.
