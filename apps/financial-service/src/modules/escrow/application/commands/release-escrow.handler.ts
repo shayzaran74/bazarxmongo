@@ -77,7 +77,12 @@ export class ReleaseEscrowHandler implements ICommandHandler<ReleaseEscrowComman
 
         const vendorTier = sellerAccount?.vendorTier || 'CORE';
         const grossAmount = new Decimal(escrow.amount.toString());
-        const { commission: commissionAmount, rate } = this.commissionCalculator.calculateSimple(grossAmount, vendorTier);
+        // GO_ORDER escrow'larında otomatik B2B tier komisyonu KESİLMEZ — platform tutarın
+        // tamamını alır; GO komisyonu ve restoran hakedişi BazarXGO tarafında hesaplanıp
+        // periyodik payout ile aktarılır (bazarxgoplan.md §3.2, Seçenek B).
+        const { commission: commissionAmount, rate } = escrow.reason === 'GO_ORDER'
+          ? { commission: new Decimal(0), rate: 0 }
+          : this.commissionCalculator.calculateSimple(grossAmount, vendorTier);
         const netAmount = grossAmount.sub(commissionAmount);
 
         // Satıcı cüzdan kredisi

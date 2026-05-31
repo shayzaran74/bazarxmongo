@@ -25,6 +25,7 @@ import { ValidateGoCouponHandler } from './application/commands/validate-coupon.
 
 // Servisler
 import { OrderPricingService } from './application/services/order-pricing.service';
+import { GoCommissionService } from './application/services/go-commission.service';
 import { GoOrderSimulationScheduler } from './application/services/go-order-simulation.scheduler';
 import { GoOrderSettlementService } from './application/services/go-order-settlement.service';
 
@@ -68,6 +69,7 @@ const CommandHandlers = [
   providers: [
     ...CommandHandlers,
     OrderPricingService,
+    GoCommissionService,
     GoOrderGateway,
     GoOrderSimulationScheduler,
     GoOrderSettlementService,

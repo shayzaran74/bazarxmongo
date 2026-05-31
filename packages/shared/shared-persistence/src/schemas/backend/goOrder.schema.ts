@@ -13,6 +13,10 @@ export type GoOrderModeValue = typeof GoOrderMode[number];
 export const GoSettlementStatus = ['HELD', 'CAPTURED', 'REFUNDED'] as const;
 export type GoSettlementStatusValue = typeof GoSettlementStatus[number];
 
+// Restoran hakediş durumu — teslimatta PENDING, batch payout sonrası PAID, iptalde CANCELLED
+export const GoPayoutStatus = ['PENDING', 'PAID', 'CANCELLED'] as const;
+export type GoPayoutStatusValue = typeof GoPayoutStatus[number];
+
 export interface IGoOrderItem {
   menuItemId: string;
   name: string;
@@ -36,6 +40,11 @@ export interface IGoOrder {
   status: GoOrderStatusValue;
   holdId?: string;
   settlementStatus?: GoSettlementStatusValue;
+  // Restoran hakedişi (Seçenek B — platform tahsil eder, batch ile restorana aktarır)
+  restaurantPayoutAmount?: Types.Decimal128; // subtotal − goCommission
+  platformFeeAmount?: Types.Decimal128;       // total − restaurantPayoutAmount (komisyon + deliveryFee − kupon)
+  payoutStatus?: GoPayoutStatusValue;
+  payoutBatchId?: string;
   estimatedMinutes: number;
   addressLine?: string;
   createdAt: Date;
@@ -69,6 +78,10 @@ export const GoOrderSchema = new Schema<IGoOrder>(
     status: { type: String, enum: GoOrderStatus, default: 'received' },
     holdId: { type: String },
     settlementStatus: { type: String, enum: GoSettlementStatus },
+    restaurantPayoutAmount: { type: Types.Decimal128 },
+    platformFeeAmount: { type: Types.Decimal128 },
+    payoutStatus: { type: String, enum: GoPayoutStatus },
+    payoutBatchId: { type: String },
     estimatedMinutes: { type: Number, default: 30 },
     addressLine: { type: String },
   },

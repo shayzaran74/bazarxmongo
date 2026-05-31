@@ -17,6 +17,7 @@ export interface IEscrow {
   releasedAt?: Date;
   payoutLog?: Schema.Types.Mixed;
   releasedAmount: Types.Decimal128;
+  reason?: string; // Hold sebebi (ör. GO_ORDER, BARTER_COLLATERAL) — release komisyon davranışını etkiler
 }
 
 export const EscrowSchema = new Schema<IEscrow>({
@@ -32,6 +33,7 @@ export const EscrowSchema = new Schema<IEscrow>({
   releasedAt: { type: Date },
   payoutLog: { type: Schema.Types.Mixed },
   releasedAmount: { type: Types.Decimal128, default: 0 },
+  reason: { type: String },
 }, {
   timestamps: true,
   collection: 'escrows',

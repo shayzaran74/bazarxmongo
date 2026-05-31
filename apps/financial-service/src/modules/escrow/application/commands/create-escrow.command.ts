@@ -9,6 +9,7 @@ export class CreateEscrowCommand extends Command {
     public readonly buyerId: string,
     public readonly sellerId: string,
     public readonly amount: Decimal,
+    public readonly reason?: string,
   ) {
     super();
   }

@@ -174,4 +174,4 @@ export { EscrowCoupon, IEscrowCoupon, EscrowCouponSchema } from './schemas/backe
 export { GoRestaurant, IGoRestaurant, GoRestaurantSchema, IGoMenuSectionEmbed, IGoMenuItemEmbed } from './schemas/backend/goRestaurant.schema';
 export { GoCampaign, IGoCampaign, GoCampaignSchema } from './schemas/backend/goCampaign.schema';
 export { GoCoupon, IGoCoupon, GoCouponSchema, GoCouponType, GoCouponTypeValue } from './schemas/backend/goCoupon.schema';
-export { GoOrder, IGoOrder, GoOrderSchema, GoOrderStatus, GoOrderStatusValue, GoOrderMode, GoOrderModeValue, IGoOrderItem, GoSettlementStatus, GoSettlementStatusValue } from './schemas/backend/goOrder.schema';
+export { GoOrder, IGoOrder, GoOrderSchema, GoOrderStatus, GoOrderStatusValue, GoOrderMode, GoOrderModeValue, IGoOrderItem, GoSettlementStatus, GoSettlementStatusValue, GoPayoutStatus, GoPayoutStatusValue } from './schemas/backend/goOrder.schema';

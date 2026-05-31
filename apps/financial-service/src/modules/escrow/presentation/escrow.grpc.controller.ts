@@ -13,6 +13,7 @@ interface HoldFundsRequest {
   userId: string;
   sellerId?: string;
   amount: string;
+  reason?: string;
 }
 
 interface ReleaseFundsRequest {
@@ -55,6 +56,7 @@ export class EscrowGrpcController {
           data.userId,
           data.sellerId || '',
           amount,
+          data.reason,
         ),
       );
 

@@ -42,7 +42,9 @@ export interface IGoRestaurant {
   tagType?: string;
   promo?: string;
   isActive: boolean;
-  payoutAccountId?: string; // Restoranın tahsilat (wallet) hesabı; yoksa platform hesabına capture edilir
+  ownerUserId?: string;      // Restoranı işleten vendor kullanıcı (hakediş alıcısı)
+  payoutAccountId?: string;  // Hakediş hesabı (= ownerUserId); yoksa platformda birikir
+  goCommissionRate?: number; // Restorana özel GO komisyon oranı (yoksa GO_COMMISSION_RATE)
   sections: IGoMenuSectionEmbed[];
   createdAt: Date;
   updatedAt: Date;
@@ -92,7 +94,9 @@ export const GoRestaurantSchema = new Schema<IGoRestaurant>(
     tagType: { type: String },
     promo: { type: String },
     isActive: { type: Boolean, default: true },
+    ownerUserId: { type: String },
     payoutAccountId: { type: String },
+    goCommissionRate: { type: Number },
     sections: { type: [GoMenuSectionEmbedSchema], default: [] },
   },
   {

@@ -29,7 +29,7 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
   ) {}
 
   async execute(command: CreateEscrowCommand): Promise<Escrow> {
-    const { orderId, buyerId, sellerId, amount } = command;
+    const { orderId, buyerId, sellerId, amount, reason } = command;
     const amountD128 = d128(amount.toFixed(2));
 
     let result: Escrow | null = null;
@@ -87,6 +87,7 @@ export class CreateEscrowHandler implements ICommandHandler<CreateEscrowCommand,
             _id: newId, id: newId, orderId, buyerId, sellerId,
             amount: amountD128, status: 'HELD',
             releasedAmount: d128(0),
+            reason,
             createdAt: new Date(), updatedAt: new Date(),
           }],
           { session },

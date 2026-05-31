@@ -11,6 +11,7 @@ import { IGoRestaurantRepository } from '../../domain/repositories/go-restaurant
 import { IGoCouponRepository } from '../../domain/repositories/go-coupon.repository.interface';
 import { IGoOrderRepository } from '../../domain/repositories/go-order.repository.interface';
 import { OrderPricingService } from '../services/order-pricing.service';
+import { GoCommissionService } from '../services/go-commission.service';
 import { GoOrder } from '../../domain/entities/go-order.entity';
 import { FinancialGatewayService } from '../../../financial-gateway/financial-gateway.service';
 import { AuditLogService } from '../../../audit/application/audit-log.service';
@@ -23,6 +24,7 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
     @Inject('IGoCouponRepository') private readonly couponRepo: IGoCouponRepository,
     @Inject('IGoOrderRepository') private readonly orderRepo: IGoOrderRepository,
     private readonly pricing: OrderPricingService,
+    private readonly goCommission: GoCommissionService,
     private readonly financial: FinancialGatewayService,
     private readonly auditLog: AuditLogService,
   ) {}
@@ -72,8 +74,8 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
     // platform tarafından harici yürütülür.)
     const id = randomUUID();
     const idempotencyKey = `go-order-${id}`;
-    // Capture hedefi: restoranın payout hesabı; tanımsızsa platform hesabı
-    const payoutAccountId = restaurant.payoutAccountId ?? process.env.BAZARXGO_PLATFORM_ACCOUNT_ID ?? '';
+    // Seçenek B: tahsilat PLATFORM hesabına yapılır; restoran hakedişi batch payout ile aktarılır.
+    const platformAccountId = process.env.BAZARXGO_PLATFORM_ACCOUNT_ID ?? '';
     let holdId: string | undefined;
 
     try {
@@ -84,7 +86,7 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
         id,
         'GO_ORDER',
         idempotencyKey,
-        payoutAccountId,
+        platformAccountId,
       ) as { holdId: string };
       holdId = holdResult.holdId;
     } catch (err: unknown) {
@@ -113,6 +115,10 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
       command.couponCode,
     );
 
+    // Restoran hakediş ayrımı — place-order'da hesaplanır; teslimatta payoutStatus=PENDING olur
+    const { restaurantPayoutAmount } = this.goCommission.compute(pricing.subtotal, restaurant);
+    const platformFeeAmount = pricing.total.sub(restaurantPayoutAmount);
+
     // DB kaydı
     const saved = await this.orderRepo.create({
       id,
@@ -134,6 +140,8 @@ export class PlaceGoOrderHandler implements ICommandHandler<PlaceGoOrderCommand>
       status: order.getProps().status,
       holdId,
       settlementStatus: 'HELD',
+      restaurantPayoutAmount: Types.Decimal128.fromString(restaurantPayoutAmount.toFixed(2)),
+      platformFeeAmount: Types.Decimal128.fromString(platformFeeAmount.toFixed(2)),
       estimatedMinutes: order.getProps().estimatedMinutes,
       addressLine: order.getProps().addressLine,
     });

@@ -53,8 +53,8 @@ message TransferBetweenUsersRequest {
   string amount = 3; string note = 4; string idempotencyKey = 5;
 }
 ```
-### 3.2 GO escrow'unda otomatik B2B komisyonu DEVRE DIŞI
-`release-escrow.handler.ts` GO siparişlerinde **vendorTier komisyonu kesmemeli** (platform tek hold'u tam alır; GO komisyonu ayrı `GoCommissionService` ile hesaplanır). Ayrım için `reason='GO_ORDER'` (zaten geçiyor) kullanılabilir → bu reason'da komisyon kesimi atlanır.
+### 3.2 GO escrow'unda otomatik B2B komisyonu DEVRE DIŞI ✅ (Faz 2)
+`release-escrow.handler.ts` artık `escrow.reason === 'GO_ORDER'` ise vendorTier komisyonu kesmiyor (platform tek hold'u tam alır). `reason` escrow zincirine eklendi: proto `HoldFundsRequest.reason` (mevcut) → `EscrowGrpcController` → `CreateEscrowCommand` → escrow şeması (`reason` alanı) → `release-escrow`. GO komisyonu ayrı `GoCommissionService` ile hesaplanır.
 ### 3.3 Proto `sellerId` düzeltmesi (§0)
 Platform escrow'una capture'ın doğru hesaba gitmesi için `sellerId=7` eklenmeli (ya da GO için platform = sabit hesap kabul edilip release default platforma yönlendirilmeli).
 
@@ -107,7 +107,7 @@ platformGross = total − restaurantPayoutAmount          // komisyon + delivery
 |-----|--------|-------|
 | **Faz 1** | Müşteriden tahsilat (HELD) + capture/refund + kupon | ✅ kod var — **ama §0 proto bug'ı yüzünden capture fiilen platforma gitmiyor** |
 | **Faz 1.5 (ACİL)** | `financial.proto`'ya `sellerId=7` ekle → mevcut capture (BazarXGO **ve barter komisyon**) gerçekten platform hesabına gider | ✅ **TAMAM** |
-| **Faz 2** | `GO escrow'da B2B komisyon kesimini devre dışı bırak` + `GoCommissionService` + `GoRestaurant.ownerUserId` + teslimatta `restaurantPayoutAmount`/`platformFeeAmount` hesabı & `payoutStatus=PENDING` persist (henüz transfer yok) | ⏳ |
+| **Faz 2** | GO escrow'da B2B komisyon kesimi devre dışı (`reason='GO_ORDER'`) + `GoCommissionService` + `GoRestaurant.ownerUserId/goCommissionRate` + place-order'da `restaurantPayoutAmount`/`platformFeeAmount` persist + teslimatta `payoutStatus=PENDING` (transfer Faz 3) | ✅ **TAMAM** |
 | **Faz 3** | `TransferBetweenUsers` gRPC primitifi + `GoPayout` ledger + **batch payout job (T+X)** + dispute penceresi | ⏳ |
 | **Faz 4** | Gerçek kurye dispatch + `deliveryFee` kurye dağıtımı | ⏳ |
 
@@ -126,8 +126,8 @@ platformGross = total − restaurantPayoutAmount          // komisyon + delivery
 
 ## 10. Acil Aksiyon Sırası (kod aşamasına geçilince)
 1. ✅ **§0 proto fix** (`sellerId=7`) — TAMAM (Faz 1.5). BazarXGO **ve** barter komisyon capture'ını aynı anda düzeltti.
-2. GO escrow'da otomatik B2B komisyon kesimini `reason='GO_ORDER'` ayrımıyla devre dışı bırak.
-3. `GoCommissionService` + `GoRestaurant.ownerUserId` + teslimatta hakediş tutarı hesabı/persist (Faz 2).
+2. ✅ GO escrow'da otomatik B2B komisyon kesimi `reason='GO_ORDER'` ayrımıyla devre dışı — TAMAM (Faz 2).
+3. ✅ `GoCommissionService` + `GoRestaurant.ownerUserId/goCommissionRate` + place-order'da hakediş persist + teslimatta `payoutStatus=PENDING` — TAMAM (Faz 2).
 4. `TransferBetweenUsers` + batch payout + `GoPayout` ledger (Faz 3).
 
 > Tüm bu kalemler **planlandı, kodlanmadı.** Faz 1.5 (proto fix) onayı sonrası uygulanacaktır.

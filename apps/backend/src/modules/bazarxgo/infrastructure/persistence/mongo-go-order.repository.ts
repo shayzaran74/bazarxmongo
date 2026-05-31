@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { GoOrder, IGoOrder, GoOrderStatusValue, GoSettlementStatusValue } from '@barterborsa/shared-persistence';
+import { GoOrder, IGoOrder, GoOrderStatusValue, GoSettlementStatusValue, GoPayoutStatusValue } from '@barterborsa/shared-persistence';
 import { IGoOrderRepository } from '../../domain/repositories/go-order.repository.interface';
 
 @Injectable()
@@ -37,6 +37,10 @@ export class MongoGoOrderRepository implements IGoOrderRepository {
 
   async updateSettlementStatus(id: string, settlementStatus: GoSettlementStatusValue): Promise<void> {
     await GoOrder.updateOne({ id }, { $set: { settlementStatus, updatedAt: new Date() } }).exec();
+  }
+
+  async updatePayoutStatus(id: string, payoutStatus: GoPayoutStatusValue): Promise<void> {
+    await GoOrder.updateOne({ id }, { $set: { payoutStatus, updatedAt: new Date() } }).exec();
   }
 
   async assignHold(id: string, holdId: string): Promise<void> {
