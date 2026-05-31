@@ -145,4 +145,15 @@ export class FinancialGatewayService {
   }) {
     return this.walletService.transferBetweenAccounts(data);
   }
+
+  // Kullanıcılar arası transfer (ör. BazarXGO platform → restoran hakediş ödemesi)
+  async transferBetweenUsers(data: {
+    fromUserId: string;
+    toUserId: string;
+    amount: string;
+    note?: string;
+    idempotencyKey?: string;
+  }) {
+    return this.walletService.transferBetweenUsers(data);
+  }
 }

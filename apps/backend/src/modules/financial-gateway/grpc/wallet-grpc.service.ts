@@ -94,6 +94,13 @@ interface FinancialService {
     amount: string;
     note?: string;
   }): Observable<GrpcSuccessResponse>;
+  transferBetweenUsers(data: {
+    fromUserId: string;
+    toUserId: string;
+    amount: string;
+    note?: string;
+    idempotencyKey?: string;
+  }): Observable<GrpcSuccessResponse>;
 }
 
 @Injectable()
@@ -339,6 +346,31 @@ export class WalletGrpcService implements OnModuleInit {
         );
         if (!response.success) {
           throw new DomainException(response.error || 'Transfer failed');
+        }
+        return response;
+      },
+      { fallbackResponse: { success: false, error: 'Servis şu an kullanılamıyor' } },
+    );
+  }
+
+  async transferBetweenUsers(data: {
+    fromUserId: string;
+    toUserId: string;
+    amount: string;
+    note?: string;
+    idempotencyKey?: string;
+  }) {
+    return this.circuitBreaker.execute(
+      'wallet.transferBetweenUsers',
+      async () => {
+        const response: GrpcSuccessResponse = await firstValueFrom(
+          this.financialService.transferBetweenUsers(data).pipe(
+            timeout(this.TIMEOUT_MS),
+            catchError((err) => { throw err; }),
+          ),
+        );
+        if (!response.success) {
+          throw new DomainException(response.error || 'Kullanıcılar arası transfer başarısız');
         }
         return response;
       },

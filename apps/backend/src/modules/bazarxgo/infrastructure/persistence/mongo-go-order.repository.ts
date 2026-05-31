@@ -43,6 +43,23 @@ export class MongoGoOrderRepository implements IGoOrderRepository {
     await GoOrder.updateOne({ id }, { $set: { payoutStatus, updatedAt: new Date() } }).exec();
   }
 
+  async findPendingPayouts(beforeDate: Date, limit: number): Promise<IGoOrder[]> {
+    const docs = await GoOrder
+      .find({ payoutStatus: 'PENDING', settlementStatus: 'CAPTURED', updatedAt: { $lt: beforeDate } })
+      .sort({ updatedAt: 1 })
+      .limit(limit)
+      .lean()
+      .exec();
+    return docs as IGoOrder[];
+  }
+
+  async markPayoutPaid(id: string, batchId: string): Promise<void> {
+    await GoOrder.updateOne(
+      { id },
+      { $set: { payoutStatus: 'PAID', payoutBatchId: batchId, updatedAt: new Date() } },
+    ).exec();
+  }
+
   async assignHold(id: string, holdId: string): Promise<void> {
     await GoOrder.updateOne({ id }, { $set: { holdId, updatedAt: new Date() } }).exec();
   }

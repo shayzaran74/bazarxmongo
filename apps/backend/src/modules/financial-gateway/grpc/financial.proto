@@ -22,6 +22,7 @@ service FinancialService {
   rpc ListGiftCards (ListGiftCardsRequest) returns (ListGiftCardsResponse) {}
   rpc GetGiftCard (GetGiftCardRequest) returns (GiftCardRecord) {}
   rpc TransferBetweenAccounts (TransferBetweenAccountsRequest) returns (TransferBetweenAccountsResponse) {}
+  rpc TransferBetweenUsers (TransferBetweenUsersRequest) returns (TransferBetweenUsersResponse) {}
 }
 
 // ---- Mevcut Messages (değişmedi) ----
@@ -280,6 +281,20 @@ message TransferBetweenAccountsRequest {
 }
 
 message TransferBetweenAccountsResponse {
+  bool success = 1;
+  string transactionId = 2;
+  string error = 3;
+}
+
+message TransferBetweenUsersRequest {
+  string fromUserId = 1;
+  string toUserId = 2;
+  string amount = 3;
+  string note = 4;
+  string idempotencyKey = 5;
+}
+
+message TransferBetweenUsersResponse {
   bool success = 1;
   string transactionId = 2;
   string error = 3;

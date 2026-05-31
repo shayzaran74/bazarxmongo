@@ -45,8 +45,8 @@ Müşteri ──(total)──▶ [HOLD: Platform Escrow (TEK hold, sellerId=PLAT
 ---
 
 ## 3. Seçenek B — Gereksinimler
-### 3.1 Yeni gRPC primitifi: `TransferBetweenUsers`
-Mevcut `TransferBetweenAccounts` yalnızca **aynı kullanıcının** hesap tipleri arası (MAIN↔BARTER). Platform→Restoran için `financial.proto`'ya yeni RPC:
+### 3.1 Yeni gRPC primitifi: `TransferBetweenUsers` ✅ (Faz 3)
+Platform→Restoran için `financial.proto`'ya yeni RPC eklendi (her iki kopya) + financial-service `WalletGrpcController.transferBetweenUsers` (çift taraflı account/wallet güncelleme + `idempotencyKey`'le idempotent, `referenceType='GO_PAYOUT'` tx) + backend `WalletGrpcService`/`FinancialGatewayService` wrapper'ları.
 ```protobuf
 message TransferBetweenUsersRequest {
   string fromUserId = 1; string toUserId = 2;
@@ -108,7 +108,7 @@ platformGross = total − restaurantPayoutAmount          // komisyon + delivery
 | **Faz 1** | Müşteriden tahsilat (HELD) + capture/refund + kupon | ✅ kod var — **ama §0 proto bug'ı yüzünden capture fiilen platforma gitmiyor** |
 | **Faz 1.5 (ACİL)** | `financial.proto`'ya `sellerId=7` ekle → mevcut capture (BazarXGO **ve barter komisyon**) gerçekten platform hesabına gider | ✅ **TAMAM** |
 | **Faz 2** | GO escrow'da B2B komisyon kesimi devre dışı (`reason='GO_ORDER'`) + `GoCommissionService` + `GoRestaurant.ownerUserId/goCommissionRate` + place-order'da `restaurantPayoutAmount`/`platformFeeAmount` persist + teslimatta `payoutStatus=PENDING` (transfer Faz 3) | ✅ **TAMAM** |
-| **Faz 3** | `TransferBetweenUsers` gRPC primitifi + `GoPayout` ledger + **batch payout job (T+X)** + dispute penceresi | ⏳ |
+| **Faz 3** | `TransferBetweenUsers` gRPC primitifi + **batch payout job** (`GoPayoutScheduler`, günlük 04:00, dispute penceresi `GO_PAYOUT_DISPUTE_WINDOW_DAYS=3`) + `payoutStatus` PENDING→PAID + `payoutBatchId`. _GoPayout ayrı koleksiyon yerine: order alanları + financial `AccountTransaction(referenceType=GO_PAYOUT)` ledger'ı._ | ✅ **TAMAM** |
 | **Faz 4** | Gerçek kurye dispatch + `deliveryFee` kurye dağıtımı | ⏳ |
 
 ---
@@ -128,6 +128,7 @@ platformGross = total − restaurantPayoutAmount          // komisyon + delivery
 1. ✅ **§0 proto fix** (`sellerId=7`) — TAMAM (Faz 1.5). BazarXGO **ve** barter komisyon capture'ını aynı anda düzeltti.
 2. ✅ GO escrow'da otomatik B2B komisyon kesimi `reason='GO_ORDER'` ayrımıyla devre dışı — TAMAM (Faz 2).
 3. ✅ `GoCommissionService` + `GoRestaurant.ownerUserId/goCommissionRate` + place-order'da hakediş persist + teslimatta `payoutStatus=PENDING` — TAMAM (Faz 2).
-4. `TransferBetweenUsers` + batch payout + `GoPayout` ledger (Faz 3).
+4. ✅ `TransferBetweenUsers` + batch payout (`GoPayoutScheduler`) — TAMAM (Faz 3).
 
-> Tüm bu kalemler **planlandı, kodlanmadı.** Faz 1.5 (proto fix) onayı sonrası uygulanacaktır.
+> **Durum:** Faz 1.5 + Faz 2 + Faz 3 uygulandı (backend + financial-service tsc temiz). Faz 4 (gerçek kurye dispatch + deliveryFee dağıtımı) kapsam dışı bırakıldı.
+> **Go-live ön-koşulları:** financial-service + backend + shared-persistence **build/restart** (proto + şema değişti); `BAZARXGO_PLATFORM_ACCOUNT_ID` (✅ admin ID set), restoran `ownerUserId/payoutAccountId` doldurma; restoran cüzdanları mevcut olmalı. Tüm değişiklikler `main`'de değil (deploy için merge gerekir).

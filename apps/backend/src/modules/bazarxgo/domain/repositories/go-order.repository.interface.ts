@@ -9,5 +9,8 @@ export interface IGoOrderRepository {
   updateStatus(id: string, status: GoOrderStatusValue): Promise<void>;
   updateSettlementStatus(id: string, settlementStatus: GoSettlementStatusValue): Promise<void>;
   updatePayoutStatus(id: string, payoutStatus: GoPayoutStatusValue): Promise<void>;
+  // Batch payout için: hakedişi PENDING + capture edilmiş + dispute penceresi geçmiş siparişler
+  findPendingPayouts(beforeDate: Date, limit: number): Promise<IGoOrder[]>;
+  markPayoutPaid(id: string, batchId: string): Promise<void>;
   assignHold(id: string, holdId: string): Promise<void>;
 }

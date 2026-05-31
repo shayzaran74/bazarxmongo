@@ -490,4 +490,70 @@ export class WalletGrpcController {
       return { success: false, error: extractError(error) };
     }
   }
+
+  @GrpcMethod('FinancialService', 'TransferBetweenUsers')
+  async transferBetweenUsers(data: { fromUserId: string; toUserId: string; amount: string; note?: string; idempotencyKey?: string }) {
+    try {
+      const amount = new Decimal(data.amount);
+      if (!amount.isPositive()) throw new Error('Transfer tutarı sıfırdan büyük olmalıdır.');
+      if (!data.fromUserId || !data.toUserId) throw new Error('fromUserId ve toUserId zorunludur.');
+      if (data.fromUserId === data.toUserId) throw new Error('Gönderen ve alıcı aynı olamaz.');
+
+      const idemKey = data.idempotencyKey || `usr-trf-${Date.now()}`;
+
+      const session = await this.connection.startSession();
+      let transactionId = '';
+      try {
+        await session.withTransaction(async () => {
+          // Idempotency: aynı idempotencyKey ile transfer yapıldıysa tekrar etme
+          const existing = await this.txModel
+            .findOne({ referenceId: idemKey, referenceType: 'GO_PAYOUT' })
+            .session(session)
+            .lean();
+          if (existing) { transactionId = existing.id; return; }
+
+          const fromAccount = await this.accountModel
+            .findOne({ userId: data.fromUserId, type: 'MAIN' })
+            .session(session)
+            .lean();
+          if (!fromAccount) throw new Error('Gönderen MAIN hesabı bulunamadı.');
+          if (new Decimal(fromAccount.availableBalance.toString()).lt(amount)) throw new Error('Yetersiz bakiye.');
+
+          let toAccount = await this.accountModel
+            .findOne({ userId: data.toUserId, type: 'MAIN' })
+            .session(session)
+            .lean();
+          if (!toAccount) {
+            const newId = new Types.ObjectId().toString();
+            await this.accountModel.create(
+              [{ _id: newId, id: newId, userId: data.toUserId, type: 'MAIN', currency: 'TRY', status: 'ACTIVE', ownerType: 'VENDOR', balance: d128(0), availableBalance: d128(0), blockedBalance: d128(0), creditLimit: d128(0), isDirty: true }],
+              { session },
+            );
+            toAccount = await this.accountModel.findOne({ userId: data.toUserId, type: 'MAIN' }).session(session).lean();
+          }
+
+          const amt = d128(amount.toFixed(2));
+          const negAmt = d128(amount.negated().toFixed(2));
+          // Çift taraflı bakiye + cüzdan senkronizasyonu (drift önleme)
+          await Promise.all([
+            this.accountModel.updateOne({ _id: fromAccount._id ?? fromAccount.id }, { $inc: { balance: negAmt, availableBalance: negAmt } }, { session }),
+            this.accountModel.updateOne({ _id: toAccount!._id ?? toAccount!.id }, { $inc: { balance: amt, availableBalance: amt } }, { session }),
+            this.walletModel.updateOne({ userId: data.fromUserId }, { $inc: { balanceTL: negAmt } }, { session }),
+            this.walletModel.updateOne({ userId: data.toUserId }, { $inc: { balanceTL: amt } }, { session }),
+          ]);
+
+          const [, txTo] = await Promise.all([
+            this.txModel.create([{ _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), accountId: fromAccount._id ?? fromAccount.id, amount: amt, type: 'TRANSFER', direction: 'DEBIT', status: 'COMPLETED', description: data.note || 'Kullanıcılar arası transfer (gönderim)', referenceId: idemKey, referenceType: 'GO_PAYOUT' }], { session }),
+            this.txModel.create([{ _id: new Types.ObjectId().toString(), id: new Types.ObjectId().toString(), accountId: toAccount!._id ?? toAccount!.id, amount: amt, type: 'TRANSFER', direction: 'CREDIT', status: 'COMPLETED', description: data.note || 'Kullanıcılar arası transfer (alım)', referenceId: idemKey, referenceType: 'GO_PAYOUT' }], { session }),
+          ]);
+          transactionId = txTo[0].id;
+        });
+      } finally {
+        await session.endSession();
+      }
+      return { success: true, transactionId };
+    } catch (error: unknown) {
+      return { success: false, error: extractError(error) };
+    }
+  }
 }

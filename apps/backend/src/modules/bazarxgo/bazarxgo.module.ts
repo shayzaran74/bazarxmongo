@@ -28,6 +28,7 @@ import { OrderPricingService } from './application/services/order-pricing.servic
 import { GoCommissionService } from './application/services/go-commission.service';
 import { GoOrderSimulationScheduler } from './application/services/go-order-simulation.scheduler';
 import { GoOrderSettlementService } from './application/services/go-order-settlement.service';
+import { GoPayoutScheduler } from './application/services/go-payout.scheduler';
 
 // WebSocket Gateway
 import { GoOrderGateway } from './infrastructure/websocket/go-order.gateway';
@@ -73,6 +74,7 @@ const CommandHandlers = [
     GoOrderGateway,
     GoOrderSimulationScheduler,
     GoOrderSettlementService,
+    GoPayoutScheduler,
     { provide: 'IGoRestaurantRepository', useClass: MongoGoRestaurantRepository },
     { provide: 'IGoCampaignRepository',   useClass: MongoGoCampaignRepository },
     { provide: 'IGoCouponRepository',     useClass: MongoGoCouponRepository },
