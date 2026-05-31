@@ -2,7 +2,7 @@
 
 **Tarih:** 2026-05-30 / 2026-05-31
 **Branch:** `feat/barter-commission-and-audit-fixes` (remote: `origin` = `bazarxmongo`)
-**Commit sayısı:** 8
+**Commit sayısı:** 9
 **Test durumu:** Otomatik test yazılmadı — **manuel test** edilecek.
 
 > Bu rapor, `/audit` ile yapılan denetimler (Ekosistem, Ticari Takas, Admin/Vendor İzolasyon, BazarXGO) + B2B takas komisyon motoru + BazarXGO yemek-teslimat dikeyinin özetidir.
@@ -21,6 +21,7 @@
 | `8d5186dd` | docs | Admin/Vendor izolasyon denetimi bölümü |
 | `b0acf7f9` | feat(bazarxgo) | Backend yemek-teslimat dikeyi (takipsizdi) + ödeme settlement + kupon doğrulama + admin RBAC + şemalar |
 | `1acc31ed` | chore(bazarxgo-mobile) | Mobil uygulama versiyon kontrolüne alındı (DENETLENMEDİ) |
+| `6cde48d1` | feat(bazarxgo) | Sipariş iptal+refund endpoint'i, restoran payout hesabı, kupon kullanım limiti |
 
 ---
 
@@ -152,6 +153,11 @@ Davranış **bire bir** korundu. Yeni dosyalar: `barter-vendor-guard.service.ts`
 - **Bulgu:** `place-order` kuponu yalnızca `findByCode` ile uyguluyordu — `isActive`/minOrder/case kontrolü yoktu (yalnızca ayrı `validate-coupon`'da) → inaktif/süresi geçmiş kupon geçebiliyordu.
 - **Çözüm:** place-order'a `toUpperCase` + `isActive` + kupona özel `minOrderAmount` doğrulaması eklendi (validate-coupon ile parite).
 
+### ➕ Ek düzeltmeler (`6cde48d1`)
+- **Sipariş iptali:** `POST /go/orders/:id/cancel` + `CancelGoOrderHandler` (sahiplik + entity.cancel + refund). Dormant refund yolu artık tetiklenebilir.
+- **Restoran payout:** `IGoRestaurant.payoutAccountId`; capture hedefi `payoutAccountId ?? PLATFORM`.
+- **Kupon limiti:** `usageLimit`/`usageCount` + `incrementUsage`; place-order & validate-coupon limit kontrolü.
+
 ### ✅ İyi olanlar
 Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, order auth'lu, public read'ler `@Public`) · 0 `any`, 0 `console` · DDD katmanları temiz · audit log · domain state machine.
 
@@ -170,7 +176,8 @@ Fiyatlama tamamen Decimal.js (float yok) · RBAC (admin RolesGuard'a çevrildi, 
 - [ ] `BARTER_COMMISSION_HOLD_ENABLED=true` (test ortamında doğrulandıktan sonra).
 
 ### 7.3 Henüz Yapılmadı
-- [ ] **BazarXGO:** `BAZARXGO_PLATFORM_ACCOUNT_ID` env tanımla (capture hedefi); restorana payout hesabı/ilişkisi ekle (şu an tahsilat platforma); sipariş iptal endpoint'i yok (refund yolu hazır ama tetikleyici yok); kupon kullanım sayacı tutulmuyor.
+- [x] ~~BazarXGO: sipariş iptal+refund endpoint'i, restoran payout alanı, kupon kullanım limiti~~ → `6cde48d1`.
+- [ ] **BazarXGO:** `BAZARXGO_PLATFORM_ACCOUNT_ID` ve restoran `payoutAccountId` DEĞERLERİNİ doldur (alan/env eklendi ama boş → capture aksi halde boş/platform hesabına gider).
 - [ ] **BazarXGO mobil app denetlenmeli** (`apps/bazarxgo-mobile`, ~95 dosya — sadece version control'e alındı).
 - [ ] `wallet-admin` topup/withdrawal approve/reject **audit-log doğrulaması** (downstream'de var mı?).
 - [ ] **Faz 3c frontend UI** (Nuxt): accept ekranında `xpToApply` girişi + nakit/XP önizlemesi (`POST /commission/preview` kullanılabilir).
